@@ -1,0 +1,33 @@
+# Ambiente virtual
+.venv/
+venv/
+env/
+
+# Variáveis de ambiente — NUNCA subir
+.env
+.env.local
+.env.production
+
+
+
+# Banco de dados e logs
+db.sqlite3
+*.log
+
+# Cache do Python
+__pycache__/
+*.py[cod]
+
+# Arquivos de sistema e editores
+.DS_Store
+.vscode/
+.idea/
+
+# Pastas de mídia e estáticos
+media/
+staticfiles/
+
+# Django
+*.log
+core_settings.py
+staticfiles/
