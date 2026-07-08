@@ -54,9 +54,9 @@ Deixar o projeto pronto para receber os apps de domínio: ambiente configurado, 
 ### Checklist
 
 **0.0 — Controle de versão e ambiente (complemento à fundação)**
-- [X] 0.0.1 Criar `.gitignore` (venv, `__pycache__`, `.env`, `db.sqlite3`, `staticfiles/`, `*.pyc`, `node_modules` se aplicável)
-- [ ] 0.0.2 Inicializar repositório Git (`git init`) e primeiro commit
-- [ ] 0.0.3 Confirmar `venv` ativo e `requirements.txt` atualizado a cada nova dependência
+- [x] 0.0.1 Criar `.gitignore` (venv, `__pycache__`, `.env`, `db.sqlite3`, `staticfiles/`, `*.pyc`, `node_modules` se aplicável)
+- [x] 0.0.2 Inicializar repositório Git (`git init`) e primeiro commit
+- [x] 0.0.3 Confirmar `venv` ativo e `requirements.txt` atualizado a cada nova dependência
 
 **0.1 — Inicializar projeto Django**
 - [x] 0.1.1 Criar projeto Django (`django-admin startproject config .`) — já existe como `core/`
