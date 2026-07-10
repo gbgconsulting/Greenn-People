@@ -17,6 +17,9 @@ db.sqlite3
 # Cache do Python
 __pycache__/
 *.py[cod]
+*.egg-info/
+dist/
+build/
 
 # Arquivos de sistema e editores
 .DS_Store

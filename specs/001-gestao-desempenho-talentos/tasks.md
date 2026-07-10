@@ -25,7 +25,7 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/` na raiz d
 **Purpose**: Migrar o esqueleto atual (`core/` settings) para a estrutura do plan.md e preparar tooling
 
 - [X] T001 Migrar pacote Django `core/` para `config/` (settings, urls, wsgi, asgi) e atualizar `manage.py` para `config.settings.dev`
-- [ ] T002 Criar split de settings em `config/settings/base.py`, `config/settings/dev.py`, `config/settings/prod.py` e `config/settings/__init__.py`
+- [X] T002 Criar split de settings em `config/settings/base.py`, `config/settings/dev.py`, `config/settings/prod.py` e `config/settings/__init__.py`
 - [ ] T003 Adicionar `django-environ` em `requirements.txt`, criar `.env.example` e carregar `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS`, Redis e e-mail em `config/settings/base.py`
 - [ ] T004 [P] Configurar `LANGUAGE_CODE = 'pt-br'` e `TIME_ZONE = 'America/Sao_Paulo'` em `config/settings/base.py`
 - [ ] T005 Criar pacotes vazios `apps/core/`, `apps/accounts/`, `apps/organization/`, `apps/competencies/`, `apps/goals/`, `apps/cycles/`, `apps/reviews/`, `apps/pdi/`, `apps/talent/`, `apps/dashboard/`, `apps/notifications/`, `apps/audit/` com `apps.py` e registrar em `INSTALLED_APPS` em `config/settings/base.py`
