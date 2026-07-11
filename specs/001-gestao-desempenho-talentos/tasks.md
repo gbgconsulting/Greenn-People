@@ -51,7 +51,7 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/` na raiz d
 - [X] T014 [P] Criar componentes DTL em `templates/components/button.html`, `input.html`, `card.html`, `badge_status.html`, `sidebar.html`, `topbar.html`, `modal.html`
 - [X] T015 [P] Criar `templates/404.html` e `templates/403.html` com mensagem genérica de acesso
 - [X] T016 Implementar `CustomUser` (`USERNAME_FIELD=email`, FKs `cargo`/`area`/`line_manager`, `is_admin`, `email_confirmado_em`, validações FR-028) em `apps/accounts/models.py` e `AUTH_USER_MODEL` em settings
-- [ ] T017 Implementar `get_visible_users`, `user_in_scope` e `get_scope_level` em `apps/accounts/services/scope.py` (BFS ORM, `contracts/scope-contract.md`)
+- [X] T017 Implementar `get_visible_users`, `user_in_scope` e `get_scope_level` em `apps/accounts/services/scope.py` (BFS ORM, `contracts/scope-contract.md`)
 - [ ] T018 Implementar auth: `RegisterForm` (@greenn.com.br), `RegisterView`, `LoginView`, `LogoutView`, `PasswordResetView`, `ConfirmEmailView` em `apps/accounts/views.py` / `forms.py` / `urls.py`
 - [ ] T019 Criar models `Area` e `Cargo` em `apps/organization/models.py` com `clean()` anti-ciclo em `parent`
 - [ ] T020 Implementar CRUD admin de áreas/cargos e listagem/edição de usuários (`UserListView`, `PendingUsersListView`) em `apps/organization/views.py` e `apps/organization/urls.py`
