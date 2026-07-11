@@ -1,0 +1,79 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Greenn People{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
+  <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.4/dist/htmx.min.js" defer></script>
+  {% block extra_head %}{% endblock %}
+</head>
+<body
+  class="min-h-screen bg-slate-50 font-sans text-sm text-slate-800 antialiased"
+  hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+>
+  <div class="flex min-h-screen">
+    {% include "components/sidebar.html" %}
+    <div class="flex min-w-0 flex-1 flex-col">
+      {% include "components/topbar.html" %}
+      <main class="flex-1 p-4 md:p-6">
+        {% if messages %}
+          <div class="mb-4 space-y-2" id="django-messages" aria-live="polite">
+            {% for message in messages %}
+              <div
+                class="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm
+                       {% if message.tags == 'error' %}border-rose-200 text-rose-700
+                       {% elif message.tags == 'success' %}border-emerald-200 text-emerald-700
+                       {% elif message.tags == 'warning' %}border-amber-200 text-amber-700
+                       {% else %}text-slate-700{% endif %}"
+                role="status"
+              >
+                {{ message }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <div id="modal-container"></div>
+  <div
+    id="toast-container"
+    class="pointer-events-none fixed right-4 bottom-4 z-50 flex max-w-sm flex-col gap-2"
+    aria-live="polite"
+  ></div>
+
+  <script>
+    document.body.addEventListener('htmx:configRequest', (e) => {
+      e.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
+    });
+
+    document.body.addEventListener('showMessage', (e) => {
+      const detail = e.detail || {};
+      const message = detail.message || detail.value || '';
+      const level = detail.level || 'info';
+      if (!message) return;
+
+      const toast = document.createElement('div');
+      const tone =
+        level === 'error'
+          ? 'border-rose-200 text-rose-700'
+          : level === 'success'
+            ? 'border-emerald-200 text-emerald-700'
+            : level === 'warning'
+              ? 'border-amber-200 text-amber-700'
+              : 'border-slate-200 text-slate-700';
+      toast.className =
+        'pointer-events-auto rounded-lg border bg-white px-4 py-3 text-sm shadow-sm ' + tone;
+      toast.setAttribute('role', 'status');
+      toast.textContent = message;
+      document.getElementById('toast-container').appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    });
+  </script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,33 @@
+{% comment %}
+  Barra superior — identidade no mobile, usuário e logout.
+{% endcomment %}
+<header class="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 md:px-6">
+  <div class="md:hidden">
+    <a href="/" class="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-base font-semibold text-transparent">
+      Greenn People
+    </a>
+  </div>
+  <div class="ml-auto flex items-center gap-3 text-sm text-slate-600">
+    {% if user.is_authenticated %}
+      <span class="hidden max-w-[12rem] truncate sm:inline" title="{{ user.get_username }}">
+        {{ user.get_username }}
+      </span>
+      <form method="post" action="/accounts/logout/" class="inline">
+        {% csrf_token %}
+        <button
+          type="submit"
+          class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 font-medium text-slate-700 transition-colors hover:bg-slate-50"
+        >
+          Sair
+        </button>
+      </form>
+    {% else %}
+      <a
+        href="/accounts/login/"
+        class="rounded-lg bg-gradient-to-r from-emerald-600 to-teal-500 px-3 py-1.5 font-medium text-white shadow-sm transition-colors hover:from-emerald-700 hover:to-teal-600"
+      >
+        Entrar
+      </a>
+    {% endif %}
+  </div>
+</header>

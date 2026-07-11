@@ -1,0 +1,47 @@
+{% comment %}
+  Shell de modal para partials HTMX (target #modal-container).
+
+  Estender e preencher o corpo:
+    {% extends "components/modal.html" %}
+    {% block modal_title %}Nova ação{% endblock %}
+    {% block modal_body %}
+      <form>...</form>
+    {% endblock %}
+
+  Ou incluir com título/conteúdo:
+    {% include "components/modal.html" with title="Confirmação" %}
+{% endcomment %}
+<div
+  class="fixed inset-0 z-50 flex items-center justify-center p-4"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="modal-title"
+>
+  <div
+    class="absolute inset-0 bg-slate-900/50"
+    onclick="document.getElementById('modal-container').innerHTML = ''"
+    aria-hidden="true"
+  ></div>
+  <div class="relative z-10 w-full max-w-lg rounded-xl border border-slate-200 bg-white shadow-lg">
+    <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+      <h2 id="modal-title" class="text-lg font-medium text-slate-800">
+        {% block modal_title %}{{ title|default:"Dialog" }}{% endblock %}
+      </h2>
+      <button
+        type="button"
+        class="rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
+        aria-label="Fechar"
+        onclick="document.getElementById('modal-container').innerHTML = ''"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5" aria-hidden="true">
+          <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+        </svg>
+      </button>
+    </div>
+    <div class="px-5 py-4">
+      {% block modal_body %}
+        {% if content %}{{ content }}{% endif %}
+      {% endblock %}
+    </div>
+  </div>
+</div>

@@ -47,9 +47,9 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/` na raiz d
 - [X] T010 Criar `TimeStampedModel` abstrato em `apps/core/models.py`
 - [X] T011 [P] Implementar helpers HTMX `is_htmx` e `htmx_response` em `apps/core/htmx.py` conforme `contracts/htmx-contract.md`
 - [X] T012 [P] Implementar `ScopedObjectMixin` em `apps/core/mixins.py` conforme `contracts/scope-contract.md`
-- [ ] T013 Criar `templates/base.html` com HTMX CDN, CSRF `hx-headers`, sidebar/topbar includes e bloco `content`
-- [ ] T014 [P] Criar componentes DTL em `templates/components/button.html`, `input.html`, `card.html`, `badge_status.html`, `sidebar.html`, `topbar.html`, `modal.html`
-- [ ] T015 [P] Criar `templates/404.html` e `templates/403.html` com mensagem genérica de acesso
+- [X] T013 Criar `templates/base.html` com HTMX CDN, CSRF `hx-headers`, sidebar/topbar includes e bloco `content`
+- [X] T014 [P] Criar componentes DTL em `templates/components/button.html`, `input.html`, `card.html`, `badge_status.html`, `sidebar.html`, `topbar.html`, `modal.html`
+- [X] T015 [P] Criar `templates/404.html` e `templates/403.html` com mensagem genérica de acesso
 - [ ] T016 Implementar `CustomUser` (`USERNAME_FIELD=email`, FKs `cargo`/`area`/`line_manager`, `is_admin`, `email_confirmado_em`, validações FR-028) em `apps/accounts/models.py` e `AUTH_USER_MODEL` em settings
 - [ ] T017 Implementar `get_visible_users`, `user_in_scope` e `get_scope_level` em `apps/accounts/services/scope.py` (BFS ORM, `contracts/scope-contract.md`)
 - [ ] T018 Implementar auth: `RegisterForm` (@greenn.com.br), `RegisterView`, `LoginView`, `LogoutView`, `PasswordResetView`, `ConfirmEmailView` em `apps/accounts/views.py` / `forms.py` / `urls.py`

@@ -1,0 +1,30 @@
+{% comment %}
+  Botão reutilizável.
+  Uso: {% include "components/button.html" with label="Salvar" variant="primary" %}
+
+  Parâmetros:
+    label       — texto do botão (obrigatório)
+    variant     — primary | secondary (default: primary)
+    type        — submit | button | reset (default: button)
+    href        — se definido, renderiza <a> em vez de <button>
+    disabled    — se true, desabilita o controle
+    attrs       — atributos HTML extras (ex. hx-get / hx-target); passar com |safe no caller se necessário
+    extra_class — classes Tailwind adicionais
+{% endcomment %}
+{% with v=variant|default:"primary" %}
+{% if href %}
+<a
+  href="{{ href }}"
+  class="{% if v == 'secondary' %}bg-white border border-slate-200 text-slate-700 hover:bg-slate-50{% else %}bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white shadow-sm{% endif %} inline-flex items-center justify-center font-medium rounded-lg px-4 py-2 transition-colors {% if disabled %}pointer-events-none opacity-50{% endif %} {{ extra_class }}"
+  {% if disabled %}aria-disabled="true" tabindex="-1"{% endif %}
+  {% if attrs %}{{ attrs|safe }}{% endif %}
+>{{ label }}</a>
+{% else %}
+<button
+  type="{{ type|default:'button' }}"
+  class="{% if v == 'secondary' %}bg-white border border-slate-200 text-slate-700 hover:bg-slate-50{% else %}bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white shadow-sm{% endif %} inline-flex items-center justify-center font-medium rounded-lg px-4 py-2 transition-colors disabled:cursor-not-allowed disabled:opacity-50 {{ extra_class }}"
+  {% if disabled %}disabled{% endif %}
+  {% if attrs %}{{ attrs|safe }}{% endif %}
+>{{ label }}</button>
+{% endif %}
+{% endwith %}
