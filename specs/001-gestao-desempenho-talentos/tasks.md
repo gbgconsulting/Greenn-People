@@ -55,7 +55,7 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/` na raiz d
 - [X] T018 Implementar auth: `RegisterForm` (@greenn.com.br), `RegisterView`, `LoginView`, `LogoutView`, `PasswordResetView`, `ConfirmEmailView` em `apps/accounts/views.py` / `forms.py` / `urls.py`
 - [X] T019 Criar models `Area` e `Cargo` em `apps/organization/models.py` com `clean()` anti-ciclo em `parent`
 - [X] T020 Implementar CRUD admin de áreas/cargos e listagem/edição de usuários (`UserListView`, `PendingUsersListView`) em `apps/organization/views.py` e `apps/organization/urls.py`
-- [ ] T021 [P] Criar models `Escala`, `Competencia`, `CargoCompetencia` em `apps/competencies/models.py`
+- [X] T021 [P] Criar models `Escala`, `Competencia`, `CargoCompetencia` em `apps/competencies/models.py`
 - [ ] T022 Implementar CRUD de escalas/competências e `CargoCompetenciaUpdateView` em `apps/competencies/views.py` e `apps/competencies/urls.py`
 - [ ] T023 Criar model `Ciclo` em `apps/cycles/models.py` (constraint app: um ciclo `aberto`) e serviços `open_cycle` / `close_cycle` em `apps/cycles/services/cycle.py` (abertura cria `Avaliacao` para `is_active=True`)
 - [ ] T024 Criar model `Avaliacao` em `apps/reviews/models.py` (`unique_together` ciclo+usuario, campo `etapa`) e migration inicial
