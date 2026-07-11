@@ -136,11 +136,12 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-# Redis / Celery (broker and result backend; Celery app wired in T006)
+# Redis / Celery (broker and result backend; app in config/celery.py)
 
 REDIS_URL = env('REDIS_URL', default='redis://127.0.0.1:6379/0')
 CELERY_BROKER_URL = env('CELERY_BROKER_URL', default=REDIS_URL)
 CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND', default=REDIS_URL)
+CELERY_TIMEZONE = TIME_ZONE
 
 
 # E-mail
