@@ -31,8 +31,8 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/` na raiz d
 - [X] T005 Criar pacotes vazios `apps/core/`, `apps/accounts/`, `apps/organization/`, `apps/competencies/`, `apps/goals/`, `apps/cycles/`, `apps/reviews/`, `apps/pdi/`, `apps/talent/`, `apps/dashboard/`, `apps/notifications/`, `apps/audit/` com `apps.py` e registrar em `INSTALLED_APPS` em `config/settings/base.py`
 - [X] T006 [P] Adicionar `celery` e `redis` em `requirements.txt`; criar `config/celery.py` e autodiscover em `config/__init__.py`
 - [X] T007 [P] Configurar Tailwind CLI standalone: `static/src/input.css`, output `static/css/tailwind.css`, `tailwind.config.js` alinhado a `docs/design-system.md`
-- [ ] T008 [P] Configurar `ruff` (PEP 8, aspas simples) com `pyproject.toml` ou `ruff.toml` na raiz
-- [ ] T009 [P] Configurar `TEMPLATES['DIRS']` e `STATICFILES_DIRS` apontando para `templates/` e `static/` na raiz em `config/settings/base.py`
+- [X] T008 [P] Configurar `ruff` (PEP 8, aspas simples) com `pyproject.toml` ou `ruff.toml` na raiz
+- [X] T009 [P] Configurar `TEMPLATES['DIRS']` e `STATICFILES_DIRS` apontando para `templates/` e `static/` na raiz em `config/settings/base.py`
 
 **Checkpoint**: `python manage.py check` passa com settings de dev; estrutura de apps registrada
 
