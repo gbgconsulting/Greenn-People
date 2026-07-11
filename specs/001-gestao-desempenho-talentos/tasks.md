@@ -57,7 +57,7 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/` na raiz d
 - [X] T020 Implementar CRUD admin de áreas/cargos e listagem/edição de usuários (`UserListView`, `PendingUsersListView`) em `apps/organization/views.py` e `apps/organization/urls.py`
 - [X] T021 [P] Criar models `Escala`, `Competencia`, `CargoCompetencia` em `apps/competencies/models.py`
 - [X] T022 Implementar CRUD de escalas/competências e `CargoCompetenciaUpdateView` em `apps/competencies/views.py` e `apps/competencies/urls.py`
-- [ ] T023 Criar model `Ciclo` em `apps/cycles/models.py` (constraint app: um ciclo `aberto`) e serviços `open_cycle` / `close_cycle` em `apps/cycles/services/cycle.py` (abertura cria `Avaliacao` para `is_active=True`)
+- [X] T023 Criar model `Ciclo` em `apps/cycles/models.py` (constraint app: um ciclo `aberto`) e serviços `open_cycle` / `close_cycle` em `apps/cycles/services/cycle.py` (abertura cria `Avaliacao` para `is_active=True`)
 - [ ] T024 Criar model `Avaliacao` em `apps/reviews/models.py` (`unique_together` ciclo+usuario, campo `etapa`) e migration inicial
 - [ ] T025 Implementar máquina de estados `can_advance` / `advance_stage` / `is_cycle_closed` em `apps/cycles/services/stage.py` conforme `contracts/stage-machine-contract.md`
 - [ ] T026 Criar model `AuditLog` append-only em `apps/audit/models.py`, signals em `apps/audit/signals.py`, admin read-only e `log_scope_denied` usado pelo `ScopedObjectMixin`
