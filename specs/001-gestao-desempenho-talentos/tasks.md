@@ -46,7 +46,7 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/` na raiz d
 
 - [X] T010 Criar `TimeStampedModel` abstrato em `apps/core/models.py`
 - [X] T011 [P] Implementar helpers HTMX `is_htmx` e `htmx_response` em `apps/core/htmx.py` conforme `contracts/htmx-contract.md`
-- [ ] T012 [P] Implementar `ScopedObjectMixin` em `apps/core/mixins.py` conforme `contracts/scope-contract.md`
+- [X] T012 [P] Implementar `ScopedObjectMixin` em `apps/core/mixins.py` conforme `contracts/scope-contract.md`
 - [ ] T013 Criar `templates/base.html` com HTMX CDN, CSRF `hx-headers`, sidebar/topbar includes e bloco `content`
 - [ ] T014 [P] Criar componentes DTL em `templates/components/button.html`, `input.html`, `card.html`, `badge_status.html`, `sidebar.html`, `topbar.html`, `modal.html`
 - [ ] T015 [P] Criar `templates/404.html` e `templates/403.html` com mensagem genérica de acesso
