@@ -1,0 +1,34 @@
+{% extends "accounts/base_auth.html" %}
+
+{% block title %}Entrar — Greenn People{% endblock %}
+
+{% block content %}
+<h1 class="mb-1 text-2xl font-semibold text-slate-800">Entrar</h1>
+<p class="mb-6 text-slate-500">Acesse com seu e-mail corporativo.</p>
+
+<form method="post" novalidate>
+  {% csrf_token %}
+
+  {% if form.non_field_errors %}
+    <div class="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700" role="alert">
+      {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+    </div>
+  {% endif %}
+
+  {% include "components/input.html" with label="E-mail" name="username" type="email" value=form.username.value id="id_username" required=True error=form.username.errors.0 %}
+  {% include "components/input.html" with label="Senha" name="password" type="password" id="id_password" required=True error=form.password.errors.0 %}
+
+  <div class="mb-4 text-right">
+    <a href="{% url 'accounts:password_reset' %}" class="text-sm text-emerald-700 hover:text-emerald-800">
+      Esqueceu a senha?
+    </a>
+  </div>
+
+  {% include "components/button.html" with label="Entrar" type="submit" variant="primary" extra_class="w-full" %}
+</form>
+
+<p class="mt-6 text-center text-slate-500">
+  Ainda não tem conta?
+  <a href="{% url 'accounts:register' %}" class="font-medium text-emerald-700 hover:text-emerald-800">Cadastre-se</a>
+</p>
+{% endblock %}

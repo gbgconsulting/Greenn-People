@@ -1,0 +1,30 @@
+{% extends "accounts/base_auth.html" %}
+
+{% block title %}Cadastro — Greenn People{% endblock %}
+
+{% block content %}
+<h1 class="mb-1 text-2xl font-semibold text-slate-800">Criar conta</h1>
+<p class="mb-6 text-slate-500">Use seu e-mail @greenn.com.br.</p>
+
+<form method="post" novalidate>
+  {% csrf_token %}
+
+  {% if form.non_field_errors %}
+    <div class="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700" role="alert">
+      {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+    </div>
+  {% endif %}
+
+  {% include "components/input.html" with label="Nome" name="nome" type="text" value=form.nome.value id="id_nome" required=True error=form.nome.errors.0 %}
+  {% include "components/input.html" with label="E-mail" name="email" type="email" value=form.email.value id="id_email" required=True error=form.email.errors.0 placeholder="nome@greenn.com.br" %}
+  {% include "components/input.html" with label="Senha" name="password1" type="password" id="id_password1" required=True error=form.password1.errors.0 %}
+  {% include "components/input.html" with label="Confirmação de senha" name="password2" type="password" id="id_password2" required=True error=form.password2.errors.0 %}
+
+  {% include "components/button.html" with label="Criar conta" type="submit" variant="primary" extra_class="w-full" %}
+</form>
+
+<p class="mt-6 text-center text-slate-500">
+  Já tem conta?
+  <a href="{% url 'accounts:login' %}" class="font-medium text-emerald-700 hover:text-emerald-800">Entrar</a>
+</p>
+{% endblock %}

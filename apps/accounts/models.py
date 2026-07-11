@@ -23,9 +23,13 @@ class CustomUserManager(BaseUserManager):
         return self._create_user(email, password, **extra_fields)
 
     def create_superuser(self, email, password=None, **extra_fields):
+        from django.utils import timezone
+
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_admin', True)
+        # createsuperuser skips confirmation link (RF-02.1 / Decisão #21).
+        extra_fields.setdefault('email_confirmado_em', timezone.now())
 
         if extra_fields.get('is_staff') is not True:
             raise ValueError('Superuser deve ter is_staff=True.')
