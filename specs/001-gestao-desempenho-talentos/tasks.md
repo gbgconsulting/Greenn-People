@@ -53,7 +53,7 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/` na raiz d
 - [X] T016 Implementar `CustomUser` (`USERNAME_FIELD=email`, FKs `cargo`/`area`/`line_manager`, `is_admin`, `email_confirmado_em`, validações FR-028) em `apps/accounts/models.py` e `AUTH_USER_MODEL` em settings
 - [X] T017 Implementar `get_visible_users`, `user_in_scope` e `get_scope_level` em `apps/accounts/services/scope.py` (BFS ORM, `contracts/scope-contract.md`)
 - [X] T018 Implementar auth: `RegisterForm` (@greenn.com.br), `RegisterView`, `LoginView`, `LogoutView`, `PasswordResetView`, `ConfirmEmailView` em `apps/accounts/views.py` / `forms.py` / `urls.py`
-- [ ] T019 Criar models `Area` e `Cargo` em `apps/organization/models.py` com `clean()` anti-ciclo em `parent`
+- [X] T019 Criar models `Area` e `Cargo` em `apps/organization/models.py` com `clean()` anti-ciclo em `parent`
 - [ ] T020 Implementar CRUD admin de áreas/cargos e listagem/edição de usuários (`UserListView`, `PendingUsersListView`) em `apps/organization/views.py` e `apps/organization/urls.py`
 - [ ] T021 [P] Criar models `Escala`, `Competencia`, `CargoCompetencia` em `apps/competencies/models.py`
 - [ ] T022 Implementar CRUD de escalas/competências e `CargoCompetenciaUpdateView` em `apps/competencies/views.py` e `apps/competencies/urls.py`

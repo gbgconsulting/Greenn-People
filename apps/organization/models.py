@@ -1,8 +1,11 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 
+from apps.core.models import TimeStampedModel
 
-class Area(models.Model):
-    """Organizational area; hierarchical via ``parent`` (cycle checks in T019)."""
+
+class Area(TimeStampedModel):
+    """Organizational area; hierarchical via ``parent`` (acyclic)."""
 
     nome = models.CharField('nome', max_length=100)
     parent = models.ForeignKey(
@@ -23,8 +26,38 @@ class Area(models.Model):
     def __str__(self) -> str:
         return self.nome
 
+    def clean(self):
+        super().clean()
+        self._validate_parent_acyclic()
 
-class Cargo(models.Model):
+    def save(self, *args, **kwargs):
+        # Enforce integrity outside ModelForm (hierarchy cycles).
+        self._validate_parent_acyclic()
+        super().save(*args, **kwargs)
+
+    def _validate_parent_acyclic(self):
+        if self.parent_id is None:
+            return
+        if self.pk and self.parent_id == self.pk:
+            raise ValidationError(
+                {'parent': 'Uma área não pode ser pai de si mesma.'},
+            )
+        seen = {self.pk} if self.pk else set()
+        current = self.parent
+        while current is not None:
+            if current.pk in seen:
+                raise ValidationError(
+                    {
+                        'parent': (
+                            'Área pai não pode criar ciclo na hierarquia.'
+                        ),
+                    },
+                )
+            seen.add(current.pk)
+            current = current.parent
+
+
+class Cargo(TimeStampedModel):
     """Job role / seniority level."""
 
     nome = models.CharField('nome', max_length=100)
