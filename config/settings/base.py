@@ -41,6 +41,19 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # Domain apps
+    'apps.core.apps.CoreConfig',
+    'apps.accounts.apps.AccountsConfig',
+    'apps.organization.apps.OrganizationConfig',
+    'apps.competencies.apps.CompetenciesConfig',
+    'apps.goals.apps.GoalsConfig',
+    'apps.cycles.apps.CyclesConfig',
+    'apps.reviews.apps.ReviewsConfig',
+    'apps.pdi.apps.PdiConfig',
+    'apps.talent.apps.TalentConfig',
+    'apps.dashboard.apps.DashboardConfig',
+    'apps.notifications.apps.NotificationsConfig',
+    'apps.audit.apps.AuditConfig',
 ]
 
 MIDDLEWARE = [

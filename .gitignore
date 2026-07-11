@@ -25,6 +25,9 @@ build/
 
 # Arquivos de sistema e editores
 .DS_Store
+Thumbs.db
+*.tmp
+*.swp
 .vscode/
 .idea/
 
