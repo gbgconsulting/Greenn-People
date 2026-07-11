@@ -35,6 +35,8 @@
           {% endif %}
         </td>
         <td class="px-4 py-3 text-right">
+          <a href="{% url 'competencies:cargo_competencia_update' cargo.pk %}" class="text-emerald-700 hover:text-emerald-800">Perfil</a>
+          <span class="mx-2 text-slate-300">|</span>
           <a href="{% url 'organization:cargo_update' cargo.pk %}" class="text-emerald-700 hover:text-emerald-800">Editar</a>
           <span class="mx-2 text-slate-300">|</span>
           <a href="{% url 'organization:cargo_delete' cargo.pk %}" class="text-rose-600 hover:text-rose-700">Excluir</a>

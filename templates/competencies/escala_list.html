@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Escalas — Greenn People{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+  <div>
+    <h1 class="text-2xl font-semibold text-slate-800">Escalas</h1>
+    <p class="mt-1 text-slate-500">Faixas de avaliação reutilizáveis nas competências.</p>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    {% url 'competencies:competencia_list' as competencias_url %}
+    {% include "components/button.html" with label="Competências" href=competencias_url variant="secondary" %}
+    {% url 'competencies:escala_create' as create_url %}
+    {% include "components/button.html" with label="Nova escala" href=create_url variant="primary" %}
+  </div>
+</div>
+
+<div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+  <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+    <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+      <tr>
+        <th class="px-4 py-3 font-medium">Nome</th>
+        <th class="px-4 py-3 font-medium">Mínimo</th>
+        <th class="px-4 py-3 font-medium">Máximo</th>
+        <th class="px-4 py-3 font-medium text-right">Ações</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+      {% for escala in escalas %}
+      <tr class="hover:bg-slate-50">
+        <td class="px-4 py-3 font-medium text-slate-800">{{ escala.nome }}</td>
+        <td class="px-4 py-3 text-slate-600">{{ escala.valor_minimo }}</td>
+        <td class="px-4 py-3 text-slate-600">{{ escala.valor_maximo }}</td>
+        <td class="px-4 py-3 text-right">
+          <a href="{% url 'competencies:escala_update' escala.pk %}" class="text-emerald-700 hover:text-emerald-800">Editar</a>
+          <span class="mx-2 text-slate-300">|</span>
+          <a href="{% url 'competencies:escala_delete' escala.pk %}" class="text-rose-600 hover:text-rose-700">Excluir</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="4" class="px-4 py-8 text-center text-slate-500">Nenhuma escala cadastrada.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% include "components/pagination.html" with page_obj=page_obj %}
+{% endblock %}
