@@ -44,7 +44,7 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/` na raiz d
 
 **⚠️ CRITICAL**: Nenhuma user story pode começar antes desta fase
 
-- [ ] T010 Criar `TimeStampedModel` abstrato em `apps/core/models.py`
+- [X] T010 Criar `TimeStampedModel` abstrato em `apps/core/models.py`
 - [ ] T011 [P] Implementar helpers HTMX `is_htmx` e `htmx_response` em `apps/core/htmx.py` conforme `contracts/htmx-contract.md`
 - [ ] T012 [P] Implementar `ScopedObjectMixin` em `apps/core/mixins.py` conforme `contracts/scope-contract.md`
 - [ ] T013 Criar `templates/base.html` com HTMX CDN, CSRF `hx-headers`, sidebar/topbar includes e bloco `content`
