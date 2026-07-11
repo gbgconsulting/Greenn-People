@@ -35,6 +35,12 @@ Thumbs.db
 media/
 staticfiles/
 
+# Tailwind CLI standalone (binário local; não versionar)
+bin/tailwindcss
+bin/tailwindcss.exe
+tailwindcss
+tailwindcss.exe
+
 # Django
 *.log
 core_settings.py

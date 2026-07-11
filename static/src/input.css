@@ -1,0 +1,33 @@
+@import 'tailwindcss';
+@config '../../tailwind.config.js';
+
+/*
+ * Tokens alinhados a docs/design-system.md.
+ * Utilitários de paleta: emerald/teal (primária), slate (neutros),
+ * amber (alerta), rose (crítico).
+ */
+@theme {
+  --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Tokens semânticos sempre disponíveis (docs/design-system.md) */
+@theme static {
+  --color-surface: #f8fafc;
+  --color-surface-card: #ffffff;
+  --color-ink: #1e293b;
+  --color-ink-muted: #64748b;
+  --color-line: #e2e8f0;
+
+  --background-image-brand-gradient: linear-gradient(to right, #059669, #14b8a6);
+  --background-image-brand-gradient-hover: linear-gradient(
+    to right,
+    #047857,
+    #0d9488
+  );
+}
+
+@layer base {
+  body {
+    @apply bg-slate-50 font-sans text-sm text-slate-800 antialiased;
+  }
+}
