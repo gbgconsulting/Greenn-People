@@ -1,0 +1,26 @@
+{% comment %}
+  Paginação padrão (paginate_by=20).
+  Uso: {% include "components/pagination.html" with page_obj=page_obj %}
+{% endcomment %}
+{% if page_obj.paginator.num_pages > 1 %}
+<nav class="mt-6 flex items-center justify-between border-t border-slate-200 pt-4" aria-label="Paginação">
+  <p class="text-sm text-slate-500">
+    Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+    ({{ page_obj.paginator.count }} no total)
+  </p>
+  <div class="flex gap-2">
+    {% if page_obj.has_previous %}
+      <a
+        href="?page={{ page_obj.previous_page_number }}"
+        class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+      >Anterior</a>
+    {% endif %}
+    {% if page_obj.has_next %}
+      <a
+        href="?page={{ page_obj.next_page_number }}"
+        class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+      >Próxima</a>
+    {% endif %}
+  </div>
+</nav>
+{% endif %}

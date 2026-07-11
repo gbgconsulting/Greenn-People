@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Excluir cargo — Greenn People{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-lg">
+  <h1 class="mb-1 text-2xl font-semibold text-slate-800">Excluir cargo</h1>
+  <p class="mb-6 text-slate-500">
+    Confirma a exclusão de <strong>{{ object.nome }}</strong>?
+    Cargos com usuários vinculados não podem ser excluídos.
+  </p>
+
+  <form method="post" class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+    {% csrf_token %}
+    <div class="flex flex-wrap gap-3">
+      {% include "components/button.html" with label="Excluir" type="submit" variant="primary" extra_class="!bg-rose-600 hover:!from-rose-600 hover:!to-rose-600" %}
+      {% url 'organization:cargo_list' as cancel_url %}
+      {% include "components/button.html" with label="Cancelar" href=cancel_url variant="secondary" %}
+    </div>
+  </form>
+</div>
+{% endblock %}

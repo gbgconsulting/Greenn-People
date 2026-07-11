@@ -2,8 +2,17 @@ from __future__ import annotations
 
 from typing import Any
 
+from django.contrib.auth.mixins import UserPassesTestMixin
 from django.db.models import Model, QuerySet
 from django.http import Http404
+
+
+class RequiresAdminMixin(UserPassesTestMixin):
+    """Restrict the view to users with ``is_admin=True``."""
+
+    def test_func(self) -> bool:
+        user = self.request.user
+        return bool(user.is_authenticated and getattr(user, 'is_admin', False))
 
 
 class ScopedObjectMixin:
