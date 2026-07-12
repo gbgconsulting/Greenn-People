@@ -14,11 +14,23 @@
       {% endif %}
     </p>
   </div>
-  {% if pode_criar %}
-    {% url 'goals:meta_create' as create_url %}
-    {% include "components/button.html" with label="Nova meta" href=create_url variant="primary" %}
-  {% endif %}
+  <div class="flex flex-wrap items-center gap-2">
+    {% if pode_criar %}
+      {% url 'goals:meta_create' as create_url %}
+      {% include "components/button.html" with label="Nova meta" href=create_url variant="primary" %}
+    {% endif %}
+    {% if avaliacao_pk and rotulo_avanco %}
+      <form method="post" action="{% url 'reviews:advance' avaliacao_pk %}" class="inline">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{% url 'goals:meta_list' %}">
+        {% include "components/button.html" with label=rotulo_avanco type="submit" variant="secondary" disabled=avanco_desabilitado %}
+      </form>
+    {% endif %}
+  </div>
 </div>
+{% if avaliacao_pk and rotulo_avanco and not pode_avancar and motivo_bloqueio_avanco %}
+<p class="mb-4 text-sm text-amber-700">{{ motivo_bloqueio_avanco }}</p>
+{% endif %}
 
 {% if ciclo_aberto %}
 <div class="mb-4 flex flex-wrap gap-2" role="navigation" aria-label="Filtro por status">

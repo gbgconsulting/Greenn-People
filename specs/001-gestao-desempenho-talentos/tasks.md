@@ -83,8 +83,8 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/` na raiz d
 - [X] T033 [US1] Implementar `MetaProgressUpdateView` + `MetaProgressForm` em `apps/goals/` (somente etapa `resultados`, HTMX partial `#meta-row-<pk>`)
 - [X] T034 [US1] Implementar `create_competency_lines` em `apps/reviews/services/evaluation.py` (copia snapshots ao entrar em `avaliacao`)
 - [X] T035 [US1] Implementar `SelfAssessmentView` + `SelfAssessmentForm` em `apps/reviews/views.py` / `forms.py` e template `templates/reviews/self_assessment.html`
-- [ ] T036 [US1] Implementar `AdvanceStageView` para avanço colaborador (`input_metas` → `aprovacao_metas`, `resultados` → `aprovacao_resultados`) em `apps/reviews/views.py` com auditoria de `etapa`
-- [ ] T037 [US1] Exibir nível esperado e nota atual no dashboard pessoal / expectativas em `templates/dashboard/personal.html` e `templates/goals/expectations.html` (FR-005)
+- [X] T036 [US1] Implementar `AdvanceStageView` para avanço colaborador (`input_metas` → `aprovacao_metas`, `resultados` → `aprovacao_resultados`) em `apps/reviews/views.py` com auditoria de `etapa`
+- [X] T037 [US1] Exibir nível esperado e nota atual no dashboard pessoal / expectativas em `templates/dashboard/personal.html` e `templates/goals/expectations.html` (FR-005)
 
 **Checkpoint**: US1 funcional e testável de forma independente (MVP)
 

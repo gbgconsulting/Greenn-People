@@ -14,9 +14,9 @@ from django.views.generic import (
 )
 
 from apps.audit.services import log_scope_denied
-from apps.competencies.models import CargoCompetencia
 from apps.core.htmx import is_htmx
 from apps.core.mixins import ScopedObjectMixin
+from apps.cycles.services.stage import can_advance
 from apps.goals.forms import (
     MetaForm,
     MetaProgressForm,
@@ -26,6 +26,15 @@ from apps.goals.forms import (
     meta_progress_editable,
 )
 from apps.goals.models import Meta
+from apps.reviews.models import Avaliacao
+from apps.reviews.services.evaluation import build_fr005_context
+
+_COLLABORATOR_ADVANCE_ETAPAS = frozenset(
+    {
+        Avaliacao.Etapa.INPUT_METAS,
+        Avaliacao.Etapa.RESULTADOS,
+    },
+)
 
 
 def _meta_row_context(request, meta, progress_form=None):
@@ -72,27 +81,16 @@ def _htmx_meta_row_response(
 
 
 class ExpectationsView(LoginRequiredMixin, TemplateView):
-    """Página de expectativas do colaborador (FR-001, FR-002)."""
+    """Pagina de expectativas do colaborador (FR-001, FR-002, FR-005)."""
 
     template_name = 'goals/expectations.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
+        fr005 = build_fr005_context(user)
+        ciclo_aberto = fr005['ciclo_aberto']
 
-        cargo = user.cargo
-        if user.cargo_id:
-            competencias_cargo = list(
-                CargoCompetencia.objects.filter(cargo_id=user.cargo_id)
-                .select_related('competencia', 'competencia__escala')
-                .order_by('competencia__nome'),
-            )
-        else:
-            competencias_cargo = []
-
-        vinculo_pendente = cargo is None or not competencias_cargo
-
-        ciclo_aberto = get_open_ciclo()
         if ciclo_aberto is not None:
             metas = list(
                 Meta.objects.filter(
@@ -105,15 +103,8 @@ class ExpectationsView(LoginRequiredMixin, TemplateView):
         else:
             metas = []
 
-        context.update(
-            {
-                'cargo': cargo,
-                'competencias_cargo': competencias_cargo,
-                'vinculo_pendente': vinculo_pendente,
-                'ciclo_aberto': ciclo_aberto,
-                'metas': metas,
-            },
-        )
+        context.update(fr005)
+        context['metas'] = metas
         return context
 
 
@@ -155,6 +146,24 @@ class MetaListView(LoginRequiredMixin, ScopedObjectMixin, ListView):
             _meta_row_context(self.request, meta) for meta in context['metas']
         ]
 
+        pode_avancar = False
+        rotulo_avanco = ''
+        motivo_bloqueio_avanco = ''
+        avaliacao_pk = None
+        if (
+            avaliacao is not None
+            and avaliacao.usuario_id == self.request.user.pk
+            and avaliacao.etapa in _COLLABORATOR_ADVANCE_ETAPAS
+        ):
+            avaliacao_pk = avaliacao.pk
+            ok, motivo = can_advance(avaliacao)
+            pode_avancar = ok
+            motivo_bloqueio_avanco = '' if ok else motivo
+            if avaliacao.etapa == Avaliacao.Etapa.INPUT_METAS:
+                rotulo_avanco = 'Enviar metas para aprovação'
+            else:
+                rotulo_avanco = 'Enviar resultados para aprovação'
+
         context.update(
             {
                 'ciclo_aberto': ciclo,
@@ -164,6 +173,11 @@ class MetaListView(LoginRequiredMixin, ScopedObjectMixin, ListView):
                 and avaliacao is not None
                 and avaliacao.etapa == avaliacao.Etapa.INPUT_METAS,
                 'meta_rows': meta_rows,
+                'avaliacao_pk': avaliacao_pk,
+                'pode_avancar': pode_avancar,
+                'avanco_desabilitado': not pode_avancar,
+                'rotulo_avanco': rotulo_avanco,
+                'motivo_bloqueio_avanco': motivo_bloqueio_avanco,
             },
         )
         return context

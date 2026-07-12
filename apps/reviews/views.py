@@ -2,11 +2,97 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import Http404, HttpResponseRedirect
 from django.urls import reverse
+from django.views import View
 from django.views.generic import DetailView
 
 from apps.audit.services import log_scope_denied
+from apps.cycles.exceptions import CycleClosedError, StageTransitionError
+from apps.cycles.services.stage import advance_stage
 from apps.reviews.forms import SelfAssessmentFormSet, self_assessment_editable
 from apps.reviews.models import Avaliacao, AvaliacaoCompetencia
+
+# Transições que o próprio colaborador dispara (T036 / US1).
+_COLLABORATOR_ADVANCE_ETAPAS = frozenset(
+    {
+        Avaliacao.Etapa.INPUT_METAS,
+        Avaliacao.Etapa.RESULTADOS,
+    },
+)
+
+# Transições de líder — permissão e fluxo completados em T044.
+_LEADER_ADVANCE_ETAPAS = frozenset(
+    {
+        Avaliacao.Etapa.APROVACAO_METAS,
+        Avaliacao.Etapa.APROVACAO_RESULTADOS,
+        Avaliacao.Etapa.AVALIACAO,
+    },
+)
+
+
+class AdvanceStageView(LoginRequiredMixin, View):
+    """Avança a etapa agregada da avaliação (POST).
+
+    Colaborador (T036): ``input_metas`` → ``aprovacao_metas``,
+    ``resultados`` → ``aprovacao_resultados``. A mudança de ``etapa`` é
+    auditada via signals + ``audit_actor`` em ``advance_stage``.
+    """
+
+    http_method_names = ['post', 'options']
+
+    def post(self, request, *args, **kwargs):
+        avaliacao = self._get_avaliacao()
+        if not self._authorize(request, avaliacao):
+            return HttpResponseRedirect(self._redirect_url(request))
+
+        try:
+            advance_stage(avaliacao, actor=request.user)
+        except CycleClosedError:
+            messages.error(
+                request,
+                'Ciclo encerrado; não é possível avançar etapas.',
+            )
+        except StageTransitionError as exc:
+            messages.error(request, str(exc))
+        else:
+            messages.success(request, 'Etapa avançada com sucesso.')
+
+        return HttpResponseRedirect(self._redirect_url(request))
+
+    def _get_avaliacao(self) -> Avaliacao:
+        try:
+            return (
+                Avaliacao.objects.select_related('ciclo', 'usuario')
+                .get(pk=self.kwargs['pk'])
+            )
+        except Avaliacao.DoesNotExist as exc:
+            raise Http404() from exc
+
+    def _authorize(self, request, avaliacao: Avaliacao) -> bool:
+        """Garante ator permitido para a etapa atual; IDOR → 404 + audit."""
+        etapa = avaliacao.etapa
+        user = request.user
+
+        if etapa in _COLLABORATOR_ADVANCE_ETAPAS:
+            if avaliacao.usuario_id != user.pk:
+                log_scope_denied(user, avaliacao)
+                raise Http404()
+            return True
+
+        if etapa in _LEADER_ADVANCE_ETAPAS:
+            messages.error(
+                request,
+                'Somente o líder pode avançar nesta etapa.',
+            )
+            return False
+
+        messages.error(request, 'Não há etapa seguinte para avançar.')
+        return False
+
+    def _redirect_url(self, request) -> str:
+        nxt = request.POST.get('next') or request.GET.get('next')
+        if nxt and nxt.startswith('/') and not nxt.startswith('//'):
+            return nxt
+        return reverse('goals:meta_list')
 
 
 class SelfAssessmentView(LoginRequiredMixin, DetailView):

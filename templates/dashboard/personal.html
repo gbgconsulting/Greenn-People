@@ -11,6 +11,95 @@
   </p>
 </div>
 
+<section class="mb-6" aria-labelledby="desempenho-heading">
+  <h2 id="desempenho-heading" class="sr-only">Nível esperado e nota atual</h2>
+  <div class="grid gap-4 sm:grid-cols-2">
+    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <p class="text-xs uppercase tracking-wide text-slate-500">Nota atual</p>
+      <p class="mt-1 text-2xl font-semibold text-slate-800">
+        {% if nota_atual is not None %}{{ nota_atual }}{% else %}—{% endif %}
+      </p>
+      <p class="mt-2 text-sm text-slate-500">
+        {% if nota_atual_origem == "lider" %}
+          Nota consolidada do líder{% if ciclo_aberto %} · {{ ciclo_aberto.nome }}{% endif %}
+        {% elif nota_atual_origem == "autoavaliacao" %}
+          Referência da autoavaliação{% if ciclo_aberto %} · {{ ciclo_aberto.nome }}{% endif %}
+        {% else %}
+          Ainda não há nota consolidada neste ciclo.
+        {% endif %}
+      </p>
+    </div>
+    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <p class="text-xs uppercase tracking-wide text-slate-500">Nível esperado</p>
+      <p class="mt-1 text-2xl font-semibold text-slate-800">
+        {% if vinculo_pendente %}—{% else %}{{ competencias_resumo|length }}{% endif %}
+      </p>
+      <p class="mt-2 text-sm text-slate-500">
+        {% if vinculo_pendente %}
+          Vínculo de cargo/competências pendente.
+        {% else %}
+          Competências do seu cargo com nível definido.
+        {% endif %}
+      </p>
+    </div>
+  </div>
+</section>
+
+{% if not vinculo_pendente and competencias_resumo %}
+<section class="mb-6" aria-labelledby="competencias-resumo-heading">
+  <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+    <h2 id="competencias-resumo-heading" class="text-lg font-medium text-slate-800">
+      Níveis esperados
+    </h2>
+    {% if cargo %}
+    <p class="text-sm text-slate-500">Cargo: {{ cargo.nome }}</p>
+    {% endif %}
+  </div>
+  <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+      <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+        <tr>
+          <th class="px-4 py-3 font-medium">Competência</th>
+          <th class="px-4 py-3 font-medium">Nível esperado</th>
+          <th class="px-4 py-3 font-medium">Nota atual</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for item in competencias_resumo %}
+        <tr class="hover:bg-slate-50">
+          <td class="px-4 py-3 font-medium text-slate-800">{{ item.competencia.nome }}</td>
+          <td class="px-4 py-3 text-slate-800">{{ item.nivel_esperado }}</td>
+          <td class="px-4 py-3 text-slate-600">
+            {% if item.nota_atual is not None %}{{ item.nota_atual }}{% else %}—{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="mt-2 text-sm text-slate-500">
+    <a href="{% url 'goals:expectations' %}" class="font-medium text-emerald-700 hover:text-emerald-800">
+      Ver expectativas e metas do ciclo
+    </a>
+  </p>
+</section>
+{% elif vinculo_pendente %}
+<div
+  class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900"
+  role="status"
+>
+  <p class="font-medium">Vínculo pendente</p>
+  <p class="mt-1 text-amber-800">
+    {% if not cargo %}
+      Seu perfil ainda não possui cargo definido. Peça ao administrador para
+      concluir o vínculo antes de visualizar o nível esperado.
+    {% else %}
+      Seu cargo ({{ cargo.nome }}) ainda não possui competências vinculadas.
+    {% endif %}
+  </p>
+</div>
+{% endif %}
+
 <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
   <dl class="grid gap-4 sm:grid-cols-2">
     <div>

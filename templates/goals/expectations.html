@@ -10,6 +10,42 @@
   </p>
 </div>
 
+<section class="mb-6" aria-labelledby="resumo-desempenho-heading">
+  <h2 id="resumo-desempenho-heading" class="sr-only">Resumo de desempenho</h2>
+  <div class="grid gap-4 sm:grid-cols-2">
+    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <p class="text-xs uppercase tracking-wide text-slate-500">Nota atual</p>
+      <p class="mt-1 text-2xl font-semibold text-slate-800">
+        {% if nota_atual is not None %}{{ nota_atual }}{% else %}—{% endif %}
+      </p>
+      <p class="mt-2 text-sm text-slate-500">
+        {% if nota_atual_origem == "lider" %}
+          Nota consolidada do líder{% if ciclo_aberto %} · {{ ciclo_aberto.nome }}{% endif %}
+        {% elif nota_atual_origem == "autoavaliacao" %}
+          Referência da autoavaliação{% if ciclo_aberto %} · {{ ciclo_aberto.nome }}{% endif %}
+        {% else %}
+          Ainda não há nota consolidada neste ciclo.
+        {% endif %}
+      </p>
+    </div>
+    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <p class="text-xs uppercase tracking-wide text-slate-500">Nível esperado</p>
+      <p class="mt-1 text-2xl font-semibold text-slate-800">
+        {% if vinculo_pendente %}—{% else %}{{ competencias_resumo|length }}{% endif %}
+      </p>
+      <p class="mt-2 text-sm text-slate-500">
+        {% if vinculo_pendente %}
+          Vínculo de cargo/competências pendente.
+        {% elif cargo %}
+          Perfil do cargo {{ cargo.nome }}.
+        {% else %}
+          Competências com nível definido para o seu cargo.
+        {% endif %}
+      </p>
+    </div>
+  </div>
+</section>
+
 {% if vinculo_pendente %}
 <div
   class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900"
@@ -43,15 +79,19 @@
           <th class="px-4 py-3 font-medium">Competência</th>
           <th class="px-4 py-3 font-medium">Tipo</th>
           <th class="px-4 py-3 font-medium">Nível esperado</th>
+          <th class="px-4 py-3 font-medium">Nota atual</th>
           <th class="px-4 py-3 font-medium">Escala</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-slate-100">
-        {% for item in competencias_cargo %}
+        {% for item in competencias_resumo %}
         <tr class="hover:bg-slate-50">
           <td class="px-4 py-3 font-medium text-slate-800">{{ item.competencia.nome }}</td>
           <td class="px-4 py-3 text-slate-600">{{ item.competencia.get_tipo_display }}</td>
           <td class="px-4 py-3 text-slate-800">{{ item.nivel_esperado }}</td>
+          <td class="px-4 py-3 text-slate-600">
+            {% if item.nota_atual is not None %}{{ item.nota_atual }}{% else %}—{% endif %}
+          </td>
           <td class="px-4 py-3 text-slate-600">
             {{ item.competencia.escala.nome }}
             <span class="text-slate-400">
