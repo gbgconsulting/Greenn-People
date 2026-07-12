@@ -2,17 +2,112 @@
 
 from __future__ import annotations
 
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
-from apps.competencies.models import CargoCompetencia
+from apps.competencies.models import CargoCompetencia, Escala
+from apps.reviews.exceptions import CalculationError
 from apps.reviews.models import Avaliacao, AvaliacaoCompetencia
 
 # Origem da nota exibida ao colaborador (FR-005).
 NOTA_ORIGEM_LIDER = 'lider'
 NOTA_ORIGEM_AUTOAVALIACAO = 'autoavaliacao'
+
+_NOTA_FINAL_QUANT = Decimal('0.0001')
+
+
+def normalize_score(nota: Decimal, escala: Escala) -> Decimal:
+    """Normaliza nota para [0, 1]: (nota - valor_minimo) / (valor_maximo - valor_minimo)."""
+    minimo = Decimal(escala.valor_minimo)
+    maximo = Decimal(escala.valor_maximo)
+    amplitude = maximo - minimo
+    if amplitude == 0:
+        raise CalculationError(
+            'Escala com valor_maximo igual a valor_minimo; nao e possivel normalizar.',
+        )
+    return (Decimal(nota) - minimo) / amplitude
+
+
+def _media_ponderada_normalizada(
+    linhas: list[AvaliacaoCompetencia],
+    *,
+    campo_nota: str,
+) -> Decimal:
+    """Σ(normalize(nota) × peso_utilizado) / Σ(peso_utilizado)."""
+    soma_pesos = Decimal('0')
+    soma_ponderada = Decimal('0')
+
+    for linha in linhas:
+        nota = getattr(linha, campo_nota)
+        if nota is None:
+            raise CalculationError(
+                f'Linha de competencia sem {campo_nota}; nao e possivel calcular.',
+            )
+        peso = Decimal(linha.peso_utilizado)
+        escala = linha.competencia.escala
+        normalizada = normalize_score(Decimal(nota), escala)
+        soma_pesos += peso
+        soma_ponderada += normalizada * peso
+
+    if soma_pesos == 0:
+        raise CalculationError(
+            'Soma de peso_utilizado igual a zero; nao e possivel calcular a nota final.',
+        )
+
+    return (soma_ponderada / soma_pesos).quantize(
+        _NOTA_FINAL_QUANT,
+        rounding=ROUND_HALF_UP,
+    )
+
+
+def calcular_nota_final_lider(avaliacao: Avaliacao) -> Decimal:
+    """Media ponderada das notas do lider normalizadas (apenas peso_utilizado).
+
+    Persiste o resultado em ``Avaliacao.nota_final_lider``.
+    Levanta ``CalculationError`` se Σpeso_utilizado == 0 ou faltar nota_lider.
+    """
+    linhas = list(
+        AvaliacaoCompetencia.objects.filter(avaliacao_id=avaliacao.pk).select_related(
+            'competencia',
+            'competencia__escala',
+        ),
+    )
+    if not linhas:
+        raise CalculationError(
+            'Avaliacao sem linhas de competencia; nao e possivel calcular a nota final.',
+        )
+
+    nota_final = _media_ponderada_normalizada(linhas, campo_nota='nota_lider')
+    avaliacao.nota_final_lider = nota_final
+    avaliacao.save(update_fields=['nota_final_lider', 'updated_at'])
+    return nota_final
+
+
+def calcular_nota_final_autoavaliacao(avaliacao: Avaliacao) -> Decimal | None:
+    """Mesma formula de nota final usando ``nota_autoavaliacao`` (opcional).
+
+    Retorna ``None`` se nenhuma linha tiver autoavaliacao preenchida.
+    Quando calculada, persiste em ``Avaliacao.nota_final_autoavaliacao``.
+    """
+    linhas = list(
+        AvaliacaoCompetencia.objects.filter(avaliacao_id=avaliacao.pk).select_related(
+            'competencia',
+            'competencia__escala',
+        ),
+    )
+    linhas_com_nota = [linha for linha in linhas if linha.nota_autoavaliacao is not None]
+    if not linhas_com_nota:
+        return None
+
+    nota_final = _media_ponderada_normalizada(
+        linhas_com_nota,
+        campo_nota='nota_autoavaliacao',
+    )
+    avaliacao.nota_final_autoavaliacao = nota_final
+    avaliacao.save(update_fields=['nota_final_autoavaliacao', 'updated_at'])
+    return nota_final
 
 
 def resolve_nota_atual(
