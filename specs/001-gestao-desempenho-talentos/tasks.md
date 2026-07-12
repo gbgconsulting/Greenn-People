@@ -143,7 +143,7 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/` na raiz d
 - [X] T054 [US4] Implementar CRUD de `ObjetivoEstrategico` sob ciclo em `apps/cycles/views.py` (ou `apps/goals/`) e rotas `/cycles/<pk>/objectives/`
 - [X] T055 [P] [US4] Criar model `AderenciaSnapshot` em `apps/dashboard/models.py`
 - [X] T056 [US4] Implementar task `calculate_adherence_snapshot` em `apps/dashboard/tasks.py` e schedule Beat diário em `config/celery.py`
-- [ ] T057 [US4] Implementar `AdherenceListView` e `AdminDashboardView` em `apps/dashboard/views.py` lendo snapshots (sem recálculo síncrono)
+- [X] T057 [US4] Implementar `AdherenceListView` e `AdminDashboardView` em `apps/dashboard/views.py` lendo snapshots (sem recálculo síncrono)
 - [ ] T058 [US4] Implementar `StructureDashboardView` e visão agregada de lacunas de competências por área/cargo em `apps/dashboard/views.py` / `templates/dashboard/`
 - [ ] T059 [US4] Ao encerrar ciclo, bloquear `advance_stage` (`CycleClosedError`) e marcar avaliações incompletas para indicador de conclusão em `apps/cycles/services/cycle.py`
 

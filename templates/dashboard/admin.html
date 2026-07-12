@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Painel admin — Greenn People{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex flex-wrap items-start justify-between gap-3">
+  <div>
+    <h1 class="text-2xl font-semibold text-slate-800">Painel administrativo</h1>
+    <p class="mt-1 text-slate-500">
+      Conclusão de ciclos e aderência da liderança
+      {% if ciclo_aberto %} · ciclo {{ ciclo_aberto.nome }}{% else %} · nenhum ciclo aberto{% endif %}.
+    </p>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    {% url 'cycles:ciclo_list' as ciclos_url %}
+    {% include "components/button.html" with label="Gerenciar ciclos" href=ciclos_url variant="primary" %}
+    {% url 'dashboard:adherence' as adherence_url %}
+    {% include "components/button.html" with label="Ver aderência" href=adherence_url variant="secondary" %}
+  </div>
+</div>
+
+<section class="mb-6" aria-labelledby="indicadores-heading">
+  <h2 id="indicadores-heading" class="sr-only">Indicadores de governança</h2>
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <p class="text-xs uppercase tracking-wide text-slate-500">Ciclos encerrados</p>
+      <p class="mt-1 text-2xl font-semibold text-slate-800">
+        {% if ciclos_resumo.percentual_encerrados is not None %}
+          {{ ciclos_resumo.percentual_encerrados }}%
+        {% else %}
+          —
+        {% endif %}
+      </p>
+      <p class="mt-2 text-sm text-slate-500">
+        {{ ciclos_resumo.encerrados }} de {{ ciclos_resumo.total }} ciclo{{ ciclos_resumo.total|pluralize }}
+        {% if ciclos_resumo.abertos %} · {{ ciclos_resumo.abertos }} aberto{{ ciclos_resumo.abertos|pluralize }}{% endif %}
+      </p>
+    </div>
+
+    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <p class="text-xs uppercase tracking-wide text-slate-500">Avaliações concluídas</p>
+      <p class="mt-1 text-2xl font-semibold text-slate-800">
+        {% if avaliacoes_resumo.percentual_concluidas is not None %}
+          {{ avaliacoes_resumo.percentual_concluidas }}%
+        {% else %}
+          —
+        {% endif %}
+      </p>
+      <p class="mt-2 text-sm text-slate-500">
+        {% if ciclo_aberto %}
+          {{ avaliacoes_resumo.concluidas }} de {{ avaliacoes_resumo.total }} no ciclo aberto
+          (feedback líder + ciência).
+        {% else %}
+          Abra um ciclo para acompanhar a conclusão.
+        {% endif %}
+      </p>
+    </div>
+
+    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <p class="text-xs uppercase tracking-wide text-slate-500">Aderência média</p>
+      <div class="mt-1 flex flex-wrap items-center gap-2">
+        <p class="text-2xl font-semibold text-slate-800">
+          {% if aderencia_resumo.media is not None %}
+            {{ aderencia_resumo.media }}%
+          {% else %}
+            —
+          {% endif %}
+        </p>
+        {% if aderencia_resumo.media is not None %}
+          {% include "components/badge_status.html" with status=aderencia_resumo.status %}
+        {% endif %}
+      </div>
+      <p class="mt-2 text-sm text-slate-500">
+        {% if aderencia_resumo.total_lideres %}
+          {{ aderencia_resumo.total_lideres }} líder{{ aderencia_resumo.total_lideres|pluralize:"es" }} com snapshot
+          (cálculo assíncrono).
+        {% else %}
+          Nenhum snapshot ainda — o job diário popula esta métrica.
+        {% endif %}
+      </p>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="baixa-aderencia-heading">
+  <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+    <h2 id="baixa-aderencia-heading" class="text-lg font-semibold text-slate-800">
+      Líderes com menor aderência
+    </h2>
+    <a href="{% url 'dashboard:adherence' %}" class="text-sm font-medium text-emerald-700 hover:text-emerald-800">
+      Ver todos
+    </a>
+  </div>
+
+  <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+      <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+        <tr>
+          <th class="px-4 py-3 font-medium">Líder</th>
+          <th class="px-4 py-3 font-medium">Área</th>
+          <th class="px-4 py-3 font-medium">Percentual</th>
+          <th class="px-4 py-3 font-medium">Status</th>
+          <th class="px-4 py-3 font-medium">Calculado em</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for item in snapshots_destaque %}
+        <tr class="hover:bg-slate-50">
+          <td class="px-4 py-3">
+            <p class="font-medium text-slate-800">{{ item.snapshot.lider.nome|default:item.snapshot.lider.email }}</p>
+            <p class="text-xs text-slate-500">{{ item.snapshot.lider.email }}</p>
+          </td>
+          <td class="px-4 py-3 text-slate-600">{{ item.snapshot.lider.area.nome|default:"—" }}</td>
+          <td class="px-4 py-3 font-medium text-slate-800">{{ item.snapshot.percentual }}%</td>
+          <td class="px-4 py-3">
+            {% include "components/badge_status.html" with status=item.status %}
+          </td>
+          <td class="px-4 py-3 text-slate-600">{{ item.snapshot.calculado_em|date:"d/m/Y H:i" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="px-4 py-8 text-center text-slate-500">
+            {% if ciclo_aberto %}
+              Ainda não há snapshots de aderência para o ciclo aberto.
+            {% else %}
+              Nenhum ciclo aberto no momento.
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

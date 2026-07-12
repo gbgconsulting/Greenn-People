@@ -23,6 +23,26 @@ class RequiresLeaderMixin(UserPassesTestMixin):
         return bool(user.is_authenticated and getattr(user, 'is_leader', False))
 
 
+class RequiresManagerMixin(UserPassesTestMixin):
+    """Restrict the view to users with ``is_manager=True``."""
+
+    def test_func(self) -> bool:
+        user = self.request.user
+        return bool(user.is_authenticated and getattr(user, 'is_manager', False))
+
+
+class RequiresManagerOrAdminMixin(UserPassesTestMixin):
+    """Restrict the view to managers or admins (e.g. adherence panel)."""
+
+    def test_func(self) -> bool:
+        user = self.request.user
+        if not user.is_authenticated:
+            return False
+        return bool(
+            getattr(user, 'is_admin', False) or getattr(user, 'is_manager', False),
+        )
+
+
 class ScopedObjectMixin:
     """Restringe listagem e detalhe ao escopo do usuário autenticado.
 

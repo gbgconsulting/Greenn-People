@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Aderência da liderança — Greenn People{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex flex-wrap items-start justify-between gap-3">
+  <div>
+    <h1 class="text-2xl font-semibold text-slate-800">Aderência da liderança</h1>
+    <p class="mt-1 text-slate-500">
+      Índices pré-calculados (snapshots) — sem recálculo nesta página.
+      {% if ciclo_filtro %} · ciclo {{ ciclo_filtro.nome }}{% endif %}
+    </p>
+  </div>
+</div>
+
+<form method="get" class="mb-6 flex flex-wrap items-end gap-3" role="search" aria-label="Filtrar por ciclo">
+  <div>
+    <label for="ciclo" class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Ciclo</label>
+    <select
+      id="ciclo"
+      name="ciclo"
+      class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500"
+      onchange="this.form.submit()"
+    >
+      <option value="">Ciclo aberto{% if ciclo_aberto %} ({{ ciclo_aberto.nome }}){% else %} (nenhum){% endif %}</option>
+      {% for c in ciclos %}
+      <option value="{{ c.pk }}" {% if ciclo_filtro and ciclo_filtro.pk == c.pk %}selected{% endif %}>
+        {{ c.nome }} — {{ c.get_status_display }}
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+</form>
+
+<div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+  <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+    <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+      <tr>
+        <th class="px-4 py-3 font-medium">Líder</th>
+        <th class="px-4 py-3 font-medium">Área</th>
+        <th class="px-4 py-3 font-medium">Ciclo</th>
+        <th class="px-4 py-3 font-medium">Aderência</th>
+        <th class="px-4 py-3 font-medium">Status</th>
+        <th class="px-4 py-3 font-medium">Aprovações</th>
+        <th class="px-4 py-3 font-medium">Feedbacks</th>
+        <th class="px-4 py-3 font-medium">Ações PDI</th>
+        <th class="px-4 py-3 font-medium">Calculado em</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+      {% for item in snapshots_resumo %}
+      <tr class="hover:bg-slate-50">
+        <td class="px-4 py-3">
+          <p class="font-medium text-slate-800">{{ item.snapshot.lider.nome|default:item.snapshot.lider.email }}</p>
+          <p class="text-xs text-slate-500">{{ item.snapshot.lider.email }}</p>
+        </td>
+        <td class="px-4 py-3 text-slate-600">{{ item.snapshot.lider.area.nome|default:"—" }}</td>
+        <td class="px-4 py-3 text-slate-600">{{ item.snapshot.ciclo.nome }}</td>
+        <td class="px-4 py-3 font-medium text-slate-800">{{ item.snapshot.percentual }}%</td>
+        <td class="px-4 py-3">
+          {% include "components/badge_status.html" with status=item.status %}
+        </td>
+        <td class="px-4 py-3 text-slate-600">
+          {% with c=item.snapshot.componentes.aprovacoes %}
+            {% if c %}{{ c.no_prazo }}/{{ c.total }} ({{ c.percentual }}%){% else %}—{% endif %}
+          {% endwith %}
+        </td>
+        <td class="px-4 py-3 text-slate-600">
+          {% with c=item.snapshot.componentes.feedbacks %}
+            {% if c %}{{ c.no_prazo }}/{{ c.total }} ({{ c.percentual }}%){% else %}—{% endif %}
+          {% endwith %}
+        </td>
+        <td class="px-4 py-3 text-slate-600">
+          {% with c=item.snapshot.componentes.acoes_pdi %}
+            {% if c %}{{ c.no_prazo }}/{{ c.total }} ({{ c.percentual }}%){% else %}—{% endif %}
+          {% endwith %}
+        </td>
+        <td class="px-4 py-3 text-slate-600">{{ item.snapshot.calculado_em|date:"d/m/Y H:i" }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="9" class="px-4 py-8 text-center text-slate-500">
+          Nenhum snapshot de aderência encontrado para o filtro atual.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% include "components/pagination.html" with page_obj=page_obj %}
+{% endblock %}
