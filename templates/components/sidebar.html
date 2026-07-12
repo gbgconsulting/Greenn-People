@@ -81,7 +81,7 @@
         </li>
         <li>
           <a
-            href="/talent/matrix/"
+            href="{% url 'talent:matrix' %}"
             class="block rounded-lg px-3 py-2 transition-colors {% if '/talent' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
           >Matriz de talentos</a>
         </li>
@@ -111,6 +111,12 @@
             href="{% url 'dashboard:adherence' %}"
             class="block rounded-lg px-3 py-2 transition-colors {% if '/dashboard/adherence' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
           >Aderência</a>
+        </li>
+        <li>
+          <a
+            href="{% url 'talent:matrix' %}"
+            class="block rounded-lg px-3 py-2 transition-colors {% if '/talent' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
+          >Matriz de talentos</a>
         </li>
         {% endif %}
         <li>

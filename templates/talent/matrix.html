@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Matriz de talentos — Greenn People{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-2xl font-semibold text-slate-800">Matriz de talentos</h1>
+  <p class="mt-1 text-slate-500">
+    Classificação 9-box (desempenho × potencial) no seu escopo hierárquico
+    {% if ciclo_filtro %} · ciclo {{ ciclo_filtro.nome }}{% else %} · nenhum ciclo selecionado{% endif %}
+    · {{ total_classificados }} classificado{{ total_classificados|pluralize:"s" }}.
+  </p>
+</div>
+
+<form method="get" class="mb-6 flex flex-wrap items-end gap-3" role="search" aria-label="Filtrar matriz de talentos">
+  <div>
+    <label for="ciclo" class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Ciclo</label>
+    <select
+      id="ciclo"
+      name="ciclo"
+      class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500"
+      onchange="this.form.submit()"
+    >
+      <option value="">Ciclo aberto{% if ciclo_aberto %} ({{ ciclo_aberto.nome }}){% else %} (nenhum){% endif %}</option>
+      {% for c in ciclos %}
+      <option value="{{ c.pk }}" {% if ciclo_filtro and ciclo_filtro.pk == c.pk %}selected{% endif %}>
+        {{ c.nome }} — {{ c.get_status_display }}
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label for="area" class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Área</label>
+    <select
+      id="area"
+      name="area"
+      class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500"
+      onchange="this.form.submit()"
+    >
+      <option value="">Todas</option>
+      {% for a in areas %}
+      <option value="{{ a.pk }}" {% if filtro_area_id == a.pk %}selected{% endif %}>{{ a.nome }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label for="cargo" class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Cargo</label>
+    <select
+      id="cargo"
+      name="cargo"
+      class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500"
+      onchange="this.form.submit()"
+    >
+      <option value="">Todos</option>
+      {% for c in cargos %}
+      <option value="{{ c.pk }}" {% if filtro_cargo_id == c.pk %}selected{% endif %}>{{ c.nome }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</form>
+
+{% if not ciclo_filtro %}
+<div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-6 text-center text-sm text-amber-800">
+  Nenhum ciclo disponível. Abra ou selecione um ciclo para visualizar a matriz.
+</div>
+{% else %}
+<div class="overflow-x-auto">
+  <div class="inline-grid min-w-full gap-0" style="grid-template-columns: 5.5rem repeat(3, minmax(10rem, 1fr));">
+    {# Cabeçalho: eixo potencial #}
+    <div class="p-2"></div>
+    {% for label in potencial_labels %}
+    <div class="border-b border-slate-200 px-2 py-2 text-center text-xs font-medium uppercase tracking-wide text-slate-500">
+      Potencial {{ label }}
+    </div>
+    {% endfor %}
+
+    {% for row in matriz_rows %}
+    <div class="flex items-center justify-end border-r border-slate-200 pr-3 text-xs font-medium uppercase tracking-wide text-slate-500">
+      <span class="max-w-[4.5rem] text-right leading-tight">Desemp. {{ row.desempenho_label }}</span>
+    </div>
+    {% for cell in row.cells %}
+    <div
+      class="min-h-[8rem] border border-slate-100 p-3 {% if cell.desempenho == 3 and cell.potencial == 3 %}bg-emerald-50/70{% elif cell.desempenho == 1 and cell.potencial == 1 %}bg-rose-50/50{% else %}bg-white{% endif %}"
+      aria-label="{{ cell.label }}"
+    >
+      <p class="mb-2 text-[10px] font-medium uppercase tracking-wide text-slate-400">{{ cell.label }}</p>
+      <ul class="space-y-1.5">
+        {% for item in cell.itens %}
+        <li class="rounded-md bg-slate-50 px-2 py-1.5 text-sm">
+          <p class="font-medium text-slate-800">{{ item.usuario.nome|default:item.usuario.email }}</p>
+          <p class="text-xs text-slate-500">
+            {{ item.usuario.area.nome|default:"—" }}
+            · {{ item.usuario.cargo.nome|default:"—" }}
+          </p>
+        </li>
+        {% empty %}
+        <li class="text-xs text-slate-400">—</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endfor %}
+    {% endfor %}
+  </div>
+</div>
+
+{% if total_classificados == 0 %}
+<p class="mt-4 text-center text-sm text-slate-500">
+  Nenhuma classificação no escopo para os filtros selecionados.
+</p>
+{% endif %}
+{% endif %}
+{% endblock %}
