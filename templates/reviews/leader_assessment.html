@@ -133,4 +133,17 @@
   {% endif %}
 </form>
 {% endif %}
+
+{% if not linhas_vazias %}
+<div class="mt-4 flex flex-wrap items-center gap-3">
+  <form method="post" action="{% url 'reviews:advance' avaliacao.pk %}" class="inline">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{% url 'reviews:feedback_list' avaliacao.pk %}">
+    {% include "components/button.html" with label="Avançar para feedback" type="submit" variant="secondary" disabled=avanco_desabilitado %}
+  </form>
+  {% if not pode_avancar and motivo_bloqueio_avanco %}
+  <p class="text-sm text-amber-700">{{ motivo_bloqueio_avanco }}</p>
+  {% endif %}
+</div>
+{% endif %}
 {% endblock %}

@@ -10,7 +10,7 @@ from apps.accounts.services.scope import user_in_scope
 from apps.audit.services import log_scope_denied
 from apps.core.mixins import ScopedObjectMixin
 from apps.cycles.exceptions import CycleClosedError, StageTransitionError
-from apps.cycles.services.stage import advance_stage
+from apps.cycles.services.stage import advance_stage, can_advance
 from apps.reviews.exceptions import CalculationError
 from apps.reviews.forms import (
     FeedbackForm,
@@ -34,7 +34,8 @@ _COLLABORATOR_ADVANCE_ETAPAS = frozenset(
     },
 )
 
-# Transições de líder — permissão e fluxo completados em T044.
+# Transições que o líder (ou admin sem gestor) dispara (T044 / US2).
+# ``aprovacao_resultados`` → ``avaliacao`` cria snapshots via ``advance_stage``.
 _LEADER_ADVANCE_ETAPAS = frozenset(
     {
         Avaliacao.Etapa.APROVACAO_METAS,
@@ -48,8 +49,14 @@ class AdvanceStageView(LoginRequiredMixin, View):
     """Avança a etapa agregada da avaliação (POST).
 
     Colaborador (T036): ``input_metas`` → ``aprovacao_metas``,
-    ``resultados`` → ``aprovacao_resultados``. A mudança de ``etapa`` é
-    auditada via signals + ``audit_actor`` em ``advance_stage``.
+    ``resultados`` → ``aprovacao_resultados``.
+
+    Líder (T044): ``aprovacao_metas`` → ``resultados``,
+    ``aprovacao_resultados`` → ``avaliacao`` (side-effect de snapshots),
+    ``avaliacao`` → ``feedback``.
+
+    A mudança de ``etapa`` é auditada via signals + ``audit_actor`` em
+    ``advance_stage``.
     """
 
     http_method_names = ['post', 'options']
@@ -57,10 +64,10 @@ class AdvanceStageView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         avaliacao = self._get_avaliacao()
         if not self._authorize(request, avaliacao):
-            return HttpResponseRedirect(self._redirect_url(request))
+            return HttpResponseRedirect(self._redirect_url(request, avaliacao))
 
         try:
-            advance_stage(avaliacao, actor=request.user)
+            avaliacao = advance_stage(avaliacao, actor=request.user)
         except CycleClosedError:
             messages.error(
                 request,
@@ -71,13 +78,16 @@ class AdvanceStageView(LoginRequiredMixin, View):
         else:
             messages.success(request, 'Etapa avançada com sucesso.')
 
-        return HttpResponseRedirect(self._redirect_url(request))
+        return HttpResponseRedirect(self._redirect_url(request, avaliacao))
 
     def _get_avaliacao(self) -> Avaliacao:
         try:
             return (
-                Avaliacao.objects.select_related('ciclo', 'usuario')
-                .get(pk=self.kwargs['pk'])
+                Avaliacao.objects.select_related(
+                    'ciclo',
+                    'usuario',
+                    'usuario__line_manager',
+                ).get(pk=self.kwargs['pk'])
             )
         except Avaliacao.DoesNotExist as exc:
             raise Http404() from exc
@@ -94,19 +104,45 @@ class AdvanceStageView(LoginRequiredMixin, View):
             return True
 
         if etapa in _LEADER_ADVANCE_ETAPAS:
-            messages.error(
-                request,
-                'Somente o líder pode avançar nesta etapa.',
-            )
-            return False
+            if not user_in_scope(user, avaliacao.usuario_id):
+                log_scope_denied(user, avaliacao)
+                raise Http404()
+            if not can_leader_assess(user, avaliacao):
+                messages.error(
+                    request,
+                    'Somente o gestor direto (ou um administrador, se o '
+                    'colaborador não tiver gestor) pode avançar nesta etapa.',
+                )
+                return False
+            return True
 
         messages.error(request, 'Não há etapa seguinte para avançar.')
         return False
 
-    def _redirect_url(self, request) -> str:
+    def _redirect_url(self, request, avaliacao: Avaliacao | None = None) -> str:
         nxt = request.POST.get('next') or request.GET.get('next')
         if nxt and nxt.startswith('/') and not nxt.startswith('//'):
             return nxt
+
+        if (
+            avaliacao is not None
+            and avaliacao.etapa == Avaliacao.Etapa.AVALIACAO
+            and can_leader_assess(request.user, avaliacao)
+        ):
+            return reverse(
+                'reviews:leader_assessment',
+                kwargs={'pk': avaliacao.pk},
+            )
+
+        if (
+            avaliacao is not None
+            and avaliacao.etapa == Avaliacao.Etapa.FEEDBACK
+        ):
+            return reverse(
+                'reviews:feedback_list',
+                kwargs={'pk': avaliacao.pk},
+            )
+
         return reverse('goals:meta_list')
 
 
@@ -254,6 +290,13 @@ class LeaderAssessmentView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
         if formset is None:
             formset = LeaderAssessmentFormSet(queryset=self._linhas_queryset())
 
+        pode_avancar = False
+        motivo_bloqueio_avanco = ''
+        if can_leader_assess(self.request.user, self.object):
+            ok, motivo = can_advance(self.object)
+            pode_avancar = ok
+            motivo_bloqueio_avanco = '' if ok else motivo
+
         context.update(
             {
                 'formset': formset,
@@ -261,6 +304,9 @@ class LeaderAssessmentView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
                 'linhas_vazias': len(formset.forms) == 0,
                 'colaborador': self.object.usuario,
                 'nota_final_lider': self.object.nota_final_lider,
+                'pode_avancar': pode_avancar,
+                'avanco_desabilitado': not pode_avancar,
+                'motivo_bloqueio_avanco': motivo_bloqueio_avanco,
             },
         )
         return context
