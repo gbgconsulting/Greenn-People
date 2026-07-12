@@ -1,176 +1,53 @@
 {% comment %}
-  Menu lateral — itens conforme visões cumulativas (colaborador + líder/gerente/admin).
+  Menu lateral desktop + drawer mobile.
   Paths alinhados a contracts/routes-contract.md.
-  Named URLs para rotas já registradas; paths literais para apps ainda sem URLconf.
   Propriedades is_leader / is_manager / is_admin vêm do CustomUser (T016).
 {% endcomment %}
 {% with path=request.path %}
-<aside class="hidden w-64 shrink-0 border-r border-slate-200 bg-white md:flex md:flex-col" aria-label="Navegação principal">
+<aside
+  class="hidden w-64 shrink-0 border-r border-slate-200 bg-white md:flex md:flex-col"
+  aria-label="Navegação principal"
+>
   <div class="border-b border-slate-200 px-4 py-5">
     <a href="{% url 'dashboard:personal' %}" class="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-lg font-semibold text-transparent">
       Greenn People
     </a>
   </div>
   <nav class="flex-1 space-y-6 overflow-y-auto p-3" aria-label="Menu">
-    {% if user.is_authenticated %}
-    <div>
-      <p class="mb-1 px-3 text-xs font-medium uppercase tracking-wide text-slate-400">Colaborador</p>
-      <ul class="space-y-0.5">
-        <li>
-          <a
-            href="{% url 'dashboard:personal' %}"
-            class="block rounded-lg px-3 py-2 transition-colors {% if path == '/' %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
-          >Meu painel</a>
-        </li>
-        <li>
-          <a
-            href="{% url 'goals:expectations' %}"
-            class="block rounded-lg px-3 py-2 transition-colors {% if '/goals/expectations' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
-          >Expectativas</a>
-        </li>
-        <li>
-          <a
-            href="{% url 'goals:meta_list' %}"
-            class="block rounded-lg px-3 py-2 transition-colors {% if path == '/goals/' or path == '/goals' %}bg-emerald-50 font-medium text-emerald-700{% elif '/goals/' in path and '/expectations' not in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
-          >Metas</a>
-        </li>
-        <li>
-          <a
-            href="{% url 'reviews:list' %}"
-            class="block rounded-lg px-3 py-2 transition-colors {% if '/reviews' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
-          >Avaliações</a>
-        </li>
-        <li>
-          <a
-            href="{% url 'pdi:list' %}"
-            class="block rounded-lg px-3 py-2 transition-colors {% if '/pdi' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
-          >Meu PDI</a>
-        </li>
-        <li>
-          <a
-            href="{% url 'talent:mine' %}"
-            class="block rounded-lg px-3 py-2 transition-colors {% if '/talent/mine' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
-          >Minha classificação</a>
-        </li>
-      </ul>
-    </div>
+    {% include "components/nav_menu.html" %}
+  </nav>
+</aside>
 
-    {% if user.is_leader %}
-    <div>
-      <p class="mb-1 px-3 text-xs font-medium uppercase tracking-wide text-slate-400">Líder</p>
-      <ul class="space-y-0.5">
-        <li>
-          <a
-            href="{% url 'dashboard:team' %}"
-            class="block rounded-lg px-3 py-2 transition-colors {% if '/dashboard/team' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
-          >Painel do time</a>
-        </li>
-      </ul>
-    </div>
-    {% endif %}
-
-    {% if user.is_manager %}
-    <div>
-      <p class="mb-1 px-3 text-xs font-medium uppercase tracking-wide text-slate-400">Gerente</p>
-      <ul class="space-y-0.5">
-        <li>
-          <a
-            href="{% url 'dashboard:structure' %}"
-            class="block rounded-lg px-3 py-2 transition-colors {% if '/dashboard/structure' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
-          >Estrutura</a>
-        </li>
-        <li>
-          <a
-            href="{% url 'dashboard:adherence' %}"
-            class="block rounded-lg px-3 py-2 transition-colors {% if '/dashboard/adherence' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
-          >Aderência</a>
-        </li>
-        <li>
-          <a
-            href="{% url 'talent:matrix' %}"
-            class="block rounded-lg px-3 py-2 transition-colors {% if '/talent/matrix' in path or '/talent/' in path and '/talent/mine' not in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
-          >Matriz de talentos</a>
-        </li>
-      </ul>
-    </div>
-    {% endif %}
-
-    {% if user.is_admin %}
-    <div>
-      <p class="mb-1 px-3 text-xs font-medium uppercase tracking-wide text-slate-400">Administração</p>
-      <ul class="space-y-0.5">
-        <li>
-          <a
-            href="{% url 'dashboard:admin' %}"
-            class="block rounded-lg px-3 py-2 transition-colors {% if '/dashboard/admin' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
-          >Painel admin</a>
-        </li>
-        {% if not user.is_manager %}
-        <li>
-          <a
-            href="{% url 'dashboard:structure' %}"
-            class="block rounded-lg px-3 py-2 transition-colors {% if '/dashboard/structure' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
-          >Estrutura</a>
-        </li>
-        <li>
-          <a
-            href="{% url 'dashboard:adherence' %}"
-            class="block rounded-lg px-3 py-2 transition-colors {% if '/dashboard/adherence' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
-          >Aderência</a>
-        </li>
-        <li>
-          <a
-            href="{% url 'talent:matrix' %}"
-            class="block rounded-lg px-3 py-2 transition-colors {% if '/talent/matrix' in path or '/talent/' in path and '/talent/mine' not in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
-          >Matriz de talentos</a>
-        </li>
-        {% endif %}
-        <li>
-          <a
-            href="{% url 'organization:area_list' %}"
-            class="block rounded-lg px-3 py-2 transition-colors {% if '/organization/areas' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
-          >Áreas</a>
-        </li>
-        <li>
-          <a
-            href="{% url 'organization:cargo_list' %}"
-            class="block rounded-lg px-3 py-2 transition-colors {% if '/organization/positions' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
-          >Cargos</a>
-        </li>
-        <li>
-          <a
-            href="{% url 'organization:user_list' %}"
-            class="block rounded-lg px-3 py-2 transition-colors {% if '/organization/users' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
-          >Usuários</a>
-        </li>
-        <li>
-          <a
-            href="{% url 'competencies:competencia_list' %}"
-            class="block rounded-lg px-3 py-2 transition-colors {% if '/competencies' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
-          >Competências</a>
-        </li>
-        <li>
-          <a
-            href="{% url 'cycles:ciclo_list' %}"
-            class="block rounded-lg px-3 py-2 transition-colors {% if '/cycles' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
-          >Ciclos</a>
-        </li>
-        <li>
-          <a
-            href="{% url 'audit:list' %}"
-            class="block rounded-lg px-3 py-2 transition-colors {% if '/audit' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
-          >Auditoria</a>
-        </li>
-        <li>
-          <a
-            href="{% url 'notifications:log_list' %}"
-            class="block rounded-lg px-3 py-2 transition-colors {% if '/notifications' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
-          >Notificações</a>
-        </li>
-      </ul>
-    </div>
-    {% endif %}
-    {% endif %}
+{# Drawer mobile #}
+<div
+  id="mobile-nav-overlay"
+  class="fixed inset-0 z-40 hidden bg-slate-900/50 md:hidden"
+  aria-hidden="true"
+  data-nav-close
+></div>
+<aside
+  id="mobile-nav"
+  class="fixed inset-y-0 left-0 z-50 flex w-[min(18rem,100vw)] -translate-x-full flex-col border-r border-slate-200 bg-white shadow-lg transition-transform duration-200 ease-out md:hidden"
+  aria-label="Navegação mobile"
+  aria-hidden="true"
+>
+  <div class="flex items-center justify-between border-b border-slate-200 px-4 py-4">
+    <a href="{% url 'dashboard:personal' %}" class="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-lg font-semibold text-transparent">
+      Greenn People
+    </a>
+    <button
+      type="button"
+      class="rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
+      aria-label="Fechar menu"
+      data-nav-close
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5" aria-hidden="true">
+        <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+      </svg>
+    </button>
+  </div>
+  <nav class="flex-1 space-y-6 overflow-y-auto p-3" aria-label="Menu mobile">
+    {% include "components/nav_menu.html" %}
   </nav>
 </aside>
 {% endwith %}

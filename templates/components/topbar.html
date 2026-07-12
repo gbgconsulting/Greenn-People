@@ -1,9 +1,21 @@
 {% comment %}
-  Barra superior — identidade no mobile, usuário e logout.
+  Barra superior — menu mobile, identidade, usuário e logout.
 {% endcomment %}
-<header class="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 md:px-6">
-  <div class="md:hidden">
-    <a href="{% url 'dashboard:personal' %}" class="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-base font-semibold text-transparent">
+<header class="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 md:px-6">
+  <div class="flex min-w-0 items-center gap-2 md:hidden">
+    <button
+      type="button"
+      id="nav-open"
+      class="rounded-lg p-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800"
+      aria-controls="mobile-nav"
+      aria-expanded="false"
+      aria-label="Abrir menu"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5" aria-hidden="true">
+        <path fill-rule="evenodd" d="M2 4.75A.75.75 0 0 1 2.75 4h14.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 4.75ZM2 10a.75.75 0 0 1 .75-.75h14.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 10Zm0 5.25a.75.75 0 0 1 .75-.75h14.5a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1-.75-.75Z" clip-rule="evenodd" />
+      </svg>
+    </button>
+    <a href="{% url 'dashboard:personal' %}" class="truncate bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-base font-semibold text-transparent">
       Greenn People
     </a>
   </div>

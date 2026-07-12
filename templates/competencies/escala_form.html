@@ -24,7 +24,7 @@
       {% if form.nome.errors %}<p class="mt-1 text-xs text-rose-600" role="alert">{{ form.nome.errors.0 }}</p>{% endif %}
     </div>
 
-    <div class="mb-4 grid grid-cols-2 gap-4">
+    <div class="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
       <div>
         <label for="{{ form.valor_minimo.id_for_label }}" class="mb-1 block text-sm font-medium text-slate-700">{{ form.valor_minimo.label }}</label>
         {{ form.valor_minimo }}

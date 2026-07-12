@@ -87,7 +87,8 @@ Templates parciais em `templates/components/`:
 | `card.html` | Cartões de conteúdo |
 | `badge_status.html` | Status de ações do PDI e aderência |
 | `sidebar.html` | Menu lateral |
-| `topbar.html` | Barra superior |
+| `nav_menu.html` | Itens de navegação (desktop + mobile) |
+| `topbar.html` | Barra superior (inclui toggle do menu mobile) |
 
 ### HTMX
 
@@ -109,3 +110,7 @@ Templates customizados (`404.html`, `403.html`) seguindo a identidade visual do 
 
 - Interface responsiva (desktop e mobile).
 - Breakpoints Tailwind para mobile em todas as listagens.
+- Sidebar fixa no desktop (`md+`); no mobile, drawer com overlay aberto pelo botão do topbar.
+- Tabelas em wrappers com `overflow-x-auto` para scroll horizontal sem quebrar o layout.
+- Filtros em `grid-cols-1` no mobile e `flex-wrap` a partir de `sm`.
+- Fonte Inter auto-hospedada em `static/fonts/InterVariable.woff2` (sem CDN em runtime).

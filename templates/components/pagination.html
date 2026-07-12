@@ -5,7 +5,10 @@
   Requer #list-container no partial da listagem (hx-target / outerHTML).
 {% endcomment %}
 {% if page_obj.paginator.num_pages > 1 %}
-<nav class="mt-6 flex items-center justify-between border-t border-slate-200 pt-4" aria-label="Paginação">
+<nav
+  class="mt-6 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between"
+  aria-label="Paginação"
+>
   <p class="text-sm text-slate-500">
     Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
     ({{ page_obj.paginator.count }} no total)

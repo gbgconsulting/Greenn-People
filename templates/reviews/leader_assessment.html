@@ -37,7 +37,7 @@
   </div>
 </div>
 {% else %}
-<form method="post" novalidate class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+<form method="post" novalidate class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
   {% csrf_token %}
   {{ formset.management_form }}
 

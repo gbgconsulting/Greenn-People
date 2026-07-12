@@ -15,13 +15,13 @@
   {% include "components/button.html" with label="Ver aderência" href=adherence_url variant="secondary" %}
 </div>
 
-<form method="get" class="mb-6 flex flex-wrap items-end gap-3" role="search" aria-label="Filtrar estrutura">
-  <div>
+<form method="get" class="mb-6 grid grid-cols-1 gap-3 sm:flex sm:flex-wrap sm:items-end" role="search" aria-label="Filtrar estrutura">
+  <div class="min-w-0 sm:min-w-[10rem]">
     <label for="ciclo" class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Ciclo</label>
     <select
       id="ciclo"
       name="ciclo"
-      class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500"
+      class="form-control w-full"
       onchange="this.form.submit()"
     >
       <option value="">Ciclo aberto{% if ciclo_aberto %} ({{ ciclo_aberto.nome }}){% else %} (nenhum){% endif %}</option>
@@ -32,12 +32,12 @@
       {% endfor %}
     </select>
   </div>
-  <div>
+  <div class="min-w-0 sm:min-w-[10rem]">
     <label for="area" class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Área</label>
     <select
       id="area"
       name="area"
-      class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500"
+      class="form-control w-full"
       onchange="this.form.submit()"
     >
       <option value="">Todas</option>
@@ -46,12 +46,12 @@
       {% endfor %}
     </select>
   </div>
-  <div>
+  <div class="min-w-0 sm:min-w-[10rem]">
     <label for="cargo" class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Cargo</label>
     <select
       id="cargo"
       name="cargo"
-      class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500"
+      class="form-control w-full"
       onchange="this.form.submit()"
     >
       <option value="">Todos</option>
@@ -64,7 +64,7 @@
 
 <section class="mb-8" aria-labelledby="lideres-heading">
   <h2 id="lideres-heading" class="mb-3 text-lg font-semibold text-slate-800">Líderes da estrutura</h2>
-  <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+  <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
     <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
       <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
         <tr>
@@ -110,7 +110,7 @@
   <p class="mb-3 text-sm text-slate-500">
     Lacuna = nível esperado − nota do líder (valores positivos indicam abaixo do esperado).
   </p>
-  <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+  <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
     <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
       <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
         <tr>
@@ -154,7 +154,7 @@
   <h2 id="lacunas-cargo-heading" class="mb-3 text-lg font-semibold text-slate-800">
     Lacunas por cargo
   </h2>
-  <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+  <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
     <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
       <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
         <tr>

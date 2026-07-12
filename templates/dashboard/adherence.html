@@ -13,13 +13,13 @@
   </div>
 </div>
 
-<form method="get" class="mb-6 flex flex-wrap items-end gap-3" role="search" aria-label="Filtrar por ciclo">
-  <div>
+<form method="get" class="mb-6 grid grid-cols-1 gap-3 sm:flex sm:flex-wrap sm:items-end" role="search" aria-label="Filtrar por ciclo">
+  <div class="min-w-0 sm:min-w-[10rem]">
     <label for="ciclo" class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Ciclo</label>
     <select
       id="ciclo"
       name="ciclo"
-      class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500"
+      class="form-control w-full"
       onchange="this.form.submit()"
     >
       <option value="">Ciclo aberto{% if ciclo_aberto %} ({{ ciclo_aberto.nome }}){% else %} (nenhum){% endif %}</option>

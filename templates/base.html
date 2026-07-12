@@ -42,7 +42,7 @@
   <div id="modal-container"></div>
   <div
     id="toast-container"
-    class="pointer-events-none fixed right-4 bottom-4 z-50 flex max-w-sm flex-col gap-2"
+    class="pointer-events-none fixed inset-x-4 bottom-4 z-50 flex max-w-sm flex-col gap-2 sm:inset-x-auto sm:right-4"
     aria-live="polite"
   ></div>
 
@@ -78,6 +78,42 @@
       const modal = document.getElementById('modal-container');
       if (modal) modal.innerHTML = '';
     });
+
+    (function initMobileNav() {
+      const drawer = document.getElementById('mobile-nav');
+      const overlay = document.getElementById('mobile-nav-overlay');
+      const openBtn = document.getElementById('nav-open');
+      if (!drawer || !overlay || !openBtn) return;
+
+      const openNav = () => {
+        drawer.classList.remove('-translate-x-full');
+        drawer.setAttribute('aria-hidden', 'false');
+        overlay.classList.remove('hidden');
+        overlay.setAttribute('aria-hidden', 'false');
+        openBtn.setAttribute('aria-expanded', 'true');
+        document.body.classList.add('overflow-hidden');
+      };
+
+      const closeNav = () => {
+        drawer.classList.add('-translate-x-full');
+        drawer.setAttribute('aria-hidden', 'true');
+        overlay.classList.add('hidden');
+        overlay.setAttribute('aria-hidden', 'true');
+        openBtn.setAttribute('aria-expanded', 'false');
+        document.body.classList.remove('overflow-hidden');
+      };
+
+      openBtn.addEventListener('click', openNav);
+      document.querySelectorAll('[data-nav-close]').forEach((el) => {
+        el.addEventListener('click', closeNav);
+      });
+      drawer.querySelectorAll('a[href]').forEach((link) => {
+        link.addEventListener('click', closeNav);
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeNav();
+      });
+    })();
   </script>
   {% block extra_js %}{% endblock %}
 </body>
