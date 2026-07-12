@@ -92,6 +92,24 @@
             {{ item.usuario.area.nome|default:"—" }}
             · {{ item.usuario.cargo.nome|default:"—" }}
           </p>
+          {% if is_admin_viewer %}
+          <div class="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
+            <a
+              href="{% url 'talent:classify' item.usuario_id %}"
+              class="font-medium text-emerald-700 hover:text-emerald-800"
+            >Editar</a>
+            <form method="post" action="{% url 'talent:toggle_visibility' item.pk %}" class="inline">
+              {% csrf_token %}
+              <button
+                type="submit"
+                class="font-medium text-slate-600 hover:text-slate-800"
+                title="{% if item.visivel_ao_colaborador %}Ocultar do colaborador{% else %}Liberar ao colaborador{% endif %}"
+              >
+                {% if item.visivel_ao_colaborador %}Visível{% else %}Oculto{% endif %}
+              </button>
+            </form>
+          </div>
+          {% endif %}
         </li>
         {% empty %}
         <li class="text-xs text-slate-400">—</li>

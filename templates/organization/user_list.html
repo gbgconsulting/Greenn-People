@@ -47,7 +47,8 @@
             {% include "components/badge_status.html" with status="arquivado" label="Inativo" %}
           {% endif %}
         </td>
-        <td class="px-4 py-3 text-right">
+        <td class="px-4 py-3 text-right space-x-3">
+          <a href="{% url 'talent:classify' u.pk %}" class="text-slate-600 hover:text-slate-800">Classificar</a>
           <a href="{% url 'organization:user_update' u.pk %}" class="text-emerald-700 hover:text-emerald-800">Editar</a>
         </td>
       </tr>
