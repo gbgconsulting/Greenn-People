@@ -31,6 +31,10 @@ CLASSIFICACAO_TRACKED_FIELDS = (
     'visivel_ao_colaborador',
 )
 
+ACAO_PDI_TRACKED_FIELDS = (
+    'status',
+)
+
 _AUDIT_OLD_ATTR = '_audit_old_values'
 _connected = False
 
@@ -83,6 +87,11 @@ def connect_audit_signals() -> None:
 
     _attach_pre_save(Avaliacao, AVALIACAO_TRACKED_FIELDS)
     _attach_post_save(Avaliacao, AVALIACAO_TRACKED_FIELDS)
+
+    from apps.pdi.models import AcaoPDI
+
+    _attach_pre_save(AcaoPDI, ACAO_PDI_TRACKED_FIELDS)
+    _attach_post_save(AcaoPDI, ACAO_PDI_TRACKED_FIELDS)
 
     try:
         from django.apps import apps

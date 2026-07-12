@@ -38,4 +38,9 @@ urlpatterns = [
         views.AcaoPDIDeleteView.as_view(),
         name='action_delete',
     ),
+    path(
+        'actions/<int:pk>/status/',
+        views.AcaoPDIStatusUpdateView.as_view(),
+        name='action_status',
+    ),
 ]

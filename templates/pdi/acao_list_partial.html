@@ -11,40 +11,7 @@
   </thead>
   <tbody class="divide-y divide-slate-100">
     {% for acao in acoes %}
-    <tr class="hover:bg-slate-50" id="acao-{{ acao.pk }}">
-      <td class="px-4 py-3 text-slate-800">{{ acao.descricao }}</td>
-      <td class="px-4 py-3 text-slate-600">
-        {{ acao.responsavel.nome|default:acao.responsavel.email }}
-      </td>
-      <td class="px-4 py-3 text-slate-600">{{ acao.prazo|date:"d/m/Y" }}</td>
-      <td class="px-4 py-3">
-        {% include "components/badge_status.html" with status=acao.status label=acao.get_status_display %}
-      </td>
-      <td class="px-4 py-3 text-slate-500">{{ acao.updated_at|date:"d/m/Y H:i" }}</td>
-      <td class="px-4 py-3">
-        <div class="flex flex-wrap items-center justify-end gap-2">
-          <button
-            type="button"
-            class="text-sm font-medium text-emerald-700 hover:text-emerald-800"
-            hx-get="{% url 'pdi:action_edit_modal' acao.pk %}"
-            hx-target="#modal-container"
-            hx-swap="innerHTML"
-          >
-            Editar
-          </button>
-          <button
-            type="button"
-            class="text-sm font-medium text-rose-600 hover:text-rose-700"
-            hx-post="{% url 'pdi:action_delete' acao.pk %}"
-            hx-target="#acao-list"
-            hx-swap="innerHTML"
-            hx-confirm="Remover esta ação do PDI?"
-          >
-            Remover
-          </button>
-        </div>
-      </td>
-    </tr>
+    {% include "pdi/partials/acao_row.html" with acao=acao status_choices=status_choices %}
     {% empty %}
     <tr>
       <td colspan="6" class="px-4 py-8 text-center text-slate-500">

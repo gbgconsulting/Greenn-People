@@ -46,7 +46,35 @@ def _acao_list_context(pdi: PDI) -> dict:
         'pdi': pdi,
         'acoes': _acoes_for_pdi(pdi),
         'progresso': calculate_pdi_progress(pdi),
+        'status_choices': AcaoPDI.Status.choices,
     }
+
+
+def _acao_row_context(acao: AcaoPDI) -> dict:
+    return {
+        'acao': acao,
+        'status_choices': AcaoPDI.Status.choices,
+    }
+
+
+def _htmx_acao_row_response(
+    request,
+    acao: AcaoPDI,
+    *,
+    message: str | None = None,
+    level: str = 'success',
+) -> HttpResponse:
+    html = render_to_string(
+        'pdi/partials/acao_row.html',
+        _acao_row_context(acao),
+        request=request,
+    )
+    response = HttpResponse(html)
+    if message:
+        response['HX-Trigger'] = json.dumps(
+            {'showMessage': {'message': message, 'level': level}},
+        )
+    return response
 
 
 def _htmx_acao_list_response(
@@ -182,6 +210,7 @@ class PDIDetailView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
                 'is_self': pdi.usuario_id == self.request.user.pk,
                 'progresso': calculate_pdi_progress(pdi),
                 'acoes': _acoes_for_pdi(pdi),
+                'status_choices': AcaoPDI.Status.choices,
             },
         )
         return context
@@ -331,3 +360,50 @@ class AcaoPDIDeleteView(LoginRequiredMixin, ScopedObjectMixin, SingleObjectMixin
             )
         messages.success(request, 'Ação removida com sucesso.')
         return HttpResponseRedirect(reverse('pdi:detail', kwargs={'pk': pdi.pk}))
+
+
+class AcaoPDIStatusUpdateView(LoginRequiredMixin, ScopedObjectMixin, SingleObjectMixin, View):
+    """Atualiza status inline da ação (HTMX); persiste ``updated_at`` e auditoria."""
+
+    model = AcaoPDI
+    scope_user_field = 'pdi__usuario'
+    queryset = AcaoPDI.objects.select_related(
+        'pdi',
+        'pdi__usuario',
+        'responsavel',
+    )
+    http_method_names = ['post', 'options']
+
+    def post(self, request, *args, **kwargs):
+        acao = self.get_object()
+        new_status = (request.POST.get('status') or '').strip()
+        valid = {c.value for c in AcaoPDI.Status}
+
+        if new_status not in valid:
+            if is_htmx(request):
+                return _htmx_acao_row_response(
+                    request,
+                    acao,
+                    message='Status inválido.',
+                    level='error',
+                )
+            messages.error(request, 'Status inválido.')
+            return HttpResponseRedirect(
+                reverse('pdi:detail', kwargs={'pk': acao.pdi_id}),
+            )
+
+        if acao.status != new_status:
+            acao.status = new_status
+            # ``updated_at`` (auto_now) só atualiza se incluído em update_fields.
+            acao.save(update_fields=['status', 'updated_at'])
+
+        if is_htmx(request):
+            return _htmx_acao_row_response(
+                request,
+                acao,
+                message='Status da ação atualizado.',
+            )
+        messages.success(request, 'Status da ação atualizado.')
+        return HttpResponseRedirect(
+            reverse('pdi:detail', kwargs={'pk': acao.pdi_id}),
+        )
