@@ -27,4 +27,14 @@ urlpatterns = [
         views.MetaProgressUpdateView.as_view(),
         name='meta_progress',
     ),
+    path(
+        '<int:pk>/approve/',
+        views.MetaApproveView.as_view(),
+        name='meta_approve',
+    ),
+    path(
+        '<int:pk>/reject/',
+        views.MetaRejectView.as_view(),
+        name='meta_reject',
+    ),
 ]

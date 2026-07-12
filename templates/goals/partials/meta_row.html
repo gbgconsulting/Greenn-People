@@ -45,10 +45,42 @@
     {% endif %}
   </td>
   <td class="px-4 py-3">
-    {% include "components/badge_status.html" with status=meta.status label=meta.get_status_display %}
+    {% include "components/badge_status.html" with status=badge_status|default:meta.status label=badge_label|default:meta.get_status_display %}
   </td>
   <td class="px-4 py-3 text-right whitespace-nowrap">
+    {% if pode_aprovar %}
+    <form
+      method="post"
+      action="{% url 'goals:meta_approve' meta.pk %}"
+      hx-post="{% url 'goals:meta_approve' meta.pk %}"
+      hx-target="#meta-row-{{ meta.pk }}"
+      hx-swap="outerHTML"
+      class="inline"
+    >
+      {% csrf_token %}
+      <button
+        type="submit"
+        class="text-emerald-700 hover:text-emerald-800"
+      >Aprovar</button>
+    </form>
+    <span class="mx-2 text-slate-300">|</span>
+    <form
+      method="post"
+      action="{% url 'goals:meta_reject' meta.pk %}"
+      hx-post="{% url 'goals:meta_reject' meta.pk %}"
+      hx-target="#meta-row-{{ meta.pk }}"
+      hx-swap="outerHTML"
+      class="inline"
+    >
+      {% csrf_token %}
+      <button
+        type="submit"
+        class="text-rose-600 hover:text-rose-700"
+      >Reprovar</button>
+    </form>
+    {% endif %}
     {% if pode_editar_conteudo and meta.status != 'aprovada' %}
+    {% if pode_aprovar %}<span class="mx-2 text-slate-300">|</span>{% endif %}
     <a href="{% url 'goals:meta_update' meta.pk %}" class="text-emerald-700 hover:text-emerald-800">Editar</a>
     {% endif %}
     {% if pode_editar_conteudo and meta.status == 'pendente' %}

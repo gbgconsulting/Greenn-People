@@ -65,6 +65,40 @@ def meta_progress_editable(
     return True
 
 
+def is_meta_approver(approver, meta: Meta) -> bool:
+    """True se ``approver`` é o aprovador válido da meta (line_manager / admin)."""
+    manager_id = meta.usuario.line_manager_id
+    if manager_id is None:
+        return bool(getattr(approver, 'is_admin', False))
+    return getattr(approver, 'pk', None) == manager_id
+
+
+def meta_approval_actionable(
+    avaliacao: Avaliacao | None,
+    meta: Meta | None,
+    approver,
+) -> bool:
+    """True se o aprovador pode aprovar/reprovar a meta na etapa atual."""
+    if (
+        avaliacao is None
+        or meta is None
+        or avaliacao.ciclo.status != Ciclo.Status.ABERTO
+        or not is_meta_approver(approver, meta)
+    ):
+        return False
+
+    if avaliacao.etapa == Avaliacao.Etapa.APROVACAO_METAS:
+        return meta.status == Meta.Status.PENDENTE
+
+    if avaliacao.etapa == Avaliacao.Etapa.APROVACAO_RESULTADOS:
+        return (
+            meta.status == Meta.Status.APROVADA
+            and meta.status_resultado == Meta.StatusResultado.PENDENTE
+        )
+
+    return False
+
+
 class MetaForm(forms.ModelForm):
     """Cadastro/edição de meta do colaborador (bloqueio fora da etapa permitida)."""
 

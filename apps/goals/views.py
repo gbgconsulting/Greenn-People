@@ -2,9 +2,11 @@ import json
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import PermissionDenied
 from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
+from django.views import View
 from django.views.generic import (
     CreateView,
     DeleteView,
@@ -12,6 +14,7 @@ from django.views.generic import (
     TemplateView,
     UpdateView,
 )
+from django.views.generic.detail import SingleObjectMixin
 
 from apps.audit.services import log_scope_denied
 from apps.core.htmx import is_htmx
@@ -22,10 +25,17 @@ from apps.goals.forms import (
     MetaProgressForm,
     get_avaliacao_for_user,
     get_open_ciclo,
+    meta_approval_actionable,
     meta_content_editable,
     meta_progress_editable,
 )
 from apps.goals.models import Meta
+from apps.goals.services.approval import (
+    approve_meta,
+    approve_resultado,
+    reject_meta,
+    reject_resultado,
+)
 from apps.reviews.models import Avaliacao
 from apps.reviews.services.evaluation import build_fr005_context
 
@@ -50,8 +60,42 @@ def _meta_row_context(request, meta, progress_form=None):
         'meta': meta,
         'pode_editar_conteudo': meta_content_editable(avaliacao, meta),
         'pode_atualizar_progresso': pode_progresso,
+        'pode_aprovar': meta_approval_actionable(avaliacao, meta, request.user),
         'progress_form': progress_form if pode_progresso else None,
+        'badge_status': (
+            meta.status_resultado
+            if avaliacao is not None
+            and avaliacao.etapa == Avaliacao.Etapa.APROVACAO_RESULTADOS
+            else meta.status
+        ),
+        'badge_label': (
+            meta.get_status_resultado_display()
+            if avaliacao is not None
+            and avaliacao.etapa == Avaliacao.Etapa.APROVACAO_RESULTADOS
+            else meta.get_status_display()
+        ),
     }
+
+
+def _apply_meta_approval(meta, approver, *, approve: bool) -> Meta:
+    """Aprova ou reprova meta/resultado conforme a etapa da avaliação."""
+    avaliacao = get_avaliacao_for_user(meta.usuario)
+    if avaliacao is None:
+        raise PermissionDenied(
+            'Não há avaliação em ciclo aberto para este colaborador.',
+        )
+
+    if avaliacao.etapa == Avaliacao.Etapa.APROVACAO_METAS:
+        return approve_meta(meta, approver) if approve else reject_meta(meta, approver)
+
+    if avaliacao.etapa == Avaliacao.Etapa.APROVACAO_RESULTADOS:
+        if approve:
+            return approve_resultado(meta, approver)
+        return reject_resultado(meta, approver)
+
+    raise PermissionDenied(
+        'Aprovação só é permitida nas etapas de aprovação de metas ou resultados.',
+    )
 
 
 def _htmx_meta_row_response(
@@ -351,3 +395,65 @@ class MetaProgressUpdateView(LoginRequiredMixin, UpdateView):
                 level='error',
             )
         return super().form_invalid(form)
+
+
+class _MetaApprovalBaseView(
+    LoginRequiredMixin,
+    ScopedObjectMixin,
+    SingleObjectMixin,
+    View,
+):
+    """Base POST para aprovar/reprovar meta (HTMX `#meta-row-<pk>`)."""
+
+    model = Meta
+    queryset = Meta.objects.select_related(
+        'usuario',
+        'objetivo_estrategico',
+    )
+    scope_user_field = 'usuario'
+    http_method_names = ['post', 'options']
+    approve: bool = True
+    success_message: str = ''
+    error_fallback: str = 'Não foi possível concluir a aprovação.'
+
+    def post(self, request, *args, **kwargs):
+        meta = self.get_object()
+        try:
+            meta = _apply_meta_approval(meta, request.user, approve=self.approve)
+        except PermissionDenied as exc:
+            message = str(exc) or self.error_fallback
+            if is_htmx(request):
+                return _htmx_meta_row_response(
+                    request,
+                    meta,
+                    message=message,
+                    level='error',
+                )
+            messages.error(request, message)
+            return HttpResponseRedirect(reverse('goals:meta_list'))
+
+        if is_htmx(request):
+            return _htmx_meta_row_response(
+                request,
+                meta,
+                message=self.success_message,
+                level='success',
+            )
+        messages.success(request, self.success_message)
+        return HttpResponseRedirect(reverse('goals:meta_list'))
+
+
+class MetaApproveView(_MetaApprovalBaseView):
+    """Aprova meta ou resultado (líder / admin sem gestor)."""
+
+    approve = True
+    success_message = 'Aprovado com sucesso.'
+    error_fallback = 'Não foi possível aprovar.'
+
+
+class MetaRejectView(_MetaApprovalBaseView):
+    """Reprova meta ou resultado (líder / admin sem gestor)."""
+
+    approve = False
+    success_message = 'Reprovado com sucesso.'
+    error_fallback = 'Não foi possível reprovar.'
