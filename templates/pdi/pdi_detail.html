@@ -44,41 +44,19 @@
 <section aria-labelledby="acoes-heading">
   <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
     <h2 id="acoes-heading" class="text-lg font-semibold text-slate-800">Ações de desenvolvimento</h2>
+    <button
+      type="button"
+      class="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-emerald-600 to-teal-500 px-4 py-2 font-medium text-white shadow-sm transition-colors hover:from-emerald-700 hover:to-teal-600"
+      hx-get="{% url 'pdi:action_create_modal' pdi.pk %}"
+      hx-target="#modal-container"
+      hx-swap="innerHTML"
+    >
+      Nova ação
+    </button>
   </div>
 
   <div id="acao-list" class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-    <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
-      <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-        <tr>
-          <th class="px-4 py-3 font-medium">Descrição</th>
-          <th class="px-4 py-3 font-medium">Responsável</th>
-          <th class="px-4 py-3 font-medium">Prazo</th>
-          <th class="px-4 py-3 font-medium">Status</th>
-          <th class="px-4 py-3 font-medium">Atualizado em</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-slate-100">
-        {% for acao in acoes %}
-        <tr class="hover:bg-slate-50" id="acao-row-{{ acao.pk }}">
-          <td class="px-4 py-3 text-slate-800">{{ acao.descricao }}</td>
-          <td class="px-4 py-3 text-slate-600">
-            {{ acao.responsavel.nome|default:acao.responsavel.email }}
-          </td>
-          <td class="px-4 py-3 text-slate-600">{{ acao.prazo|date:"d/m/Y" }}</td>
-          <td class="px-4 py-3">
-            {% include "components/badge_status.html" with status=acao.status label=acao.get_status_display %}
-          </td>
-          <td class="px-4 py-3 text-slate-500">{{ acao.updated_at|date:"d/m/Y H:i" }}</td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="5" class="px-4 py-8 text-center text-slate-500">
-            Nenhuma ação cadastrada neste PDI.
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    {% include "pdi/acao_list_partial.html" %}
   </div>
 </section>
 {% endblock %}

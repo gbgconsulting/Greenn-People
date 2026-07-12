@@ -73,6 +73,11 @@
       document.getElementById('toast-container').appendChild(toast);
       setTimeout(() => toast.remove(), 4000);
     });
+
+    document.body.addEventListener('closeModal', () => {
+      const modal = document.getElementById('modal-container');
+      if (modal) modal.innerHTML = '';
+    });
   </script>
   {% block extra_js %}{% endblock %}
 </body>
