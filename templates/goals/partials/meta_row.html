@@ -1,0 +1,59 @@
+<tr class="hover:bg-slate-50" id="meta-row-{{ meta.pk }}">
+  <td class="px-4 py-3 font-medium text-slate-800">{{ meta.descricao }}</td>
+  <td class="px-4 py-3 text-slate-600">{{ meta.usuario.nome }}</td>
+  <td class="px-4 py-3 text-slate-600">{{ meta.objetivo_estrategico.descricao }}</td>
+  <td class="px-4 py-3 text-slate-600">
+    {% if pode_atualizar_progresso and progress_form %}
+    <form
+      method="post"
+      action="{% url 'goals:meta_progress' meta.pk %}"
+      hx-post="{% url 'goals:meta_progress' meta.pk %}"
+      hx-target="#meta-row-{{ meta.pk }}"
+      hx-swap="outerHTML"
+      class="flex flex-wrap items-center gap-2"
+    >
+      {% csrf_token %}
+      <label class="sr-only" for="id_progresso_{{ meta.pk }}">Progresso (%)</label>
+      <input
+        type="number"
+        name="progresso"
+        id="id_progresso_{{ meta.pk }}"
+        value="{{ progress_form.progresso.value|default_if_none:'' }}"
+        min="0"
+        max="100"
+        step="0.01"
+        inputmode="decimal"
+        required
+        class="w-24 rounded-lg border border-slate-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+      >
+      <span class="text-slate-500">%</span>
+      <button
+        type="submit"
+        class="rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-emerald-700"
+      >Salvar</button>
+      {% if progress_form.progresso.errors %}
+      <p class="w-full text-xs text-rose-600">{{ progress_form.progresso.errors|striptags }}</p>
+      {% endif %}
+      {% if progress_form.non_field_errors %}
+      <p class="w-full text-xs text-rose-600">{{ progress_form.non_field_errors|striptags }}</p>
+      {% endif %}
+    </form>
+    {% elif meta.progresso is not None %}
+      {{ meta.progresso }}%
+    {% else %}
+      —
+    {% endif %}
+  </td>
+  <td class="px-4 py-3">
+    {% include "components/badge_status.html" with status=meta.status label=meta.get_status_display %}
+  </td>
+  <td class="px-4 py-3 text-right whitespace-nowrap">
+    {% if pode_editar_conteudo and meta.status != 'aprovada' %}
+    <a href="{% url 'goals:meta_update' meta.pk %}" class="text-emerald-700 hover:text-emerald-800">Editar</a>
+    {% endif %}
+    {% if pode_editar_conteudo and meta.status == 'pendente' %}
+    <span class="mx-2 text-slate-300">|</span>
+    <a href="{% url 'goals:meta_delete' meta.pk %}" class="text-rose-600 hover:text-rose-700">Excluir</a>
+    {% endif %}
+  </td>
+</tr>

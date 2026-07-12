@@ -51,6 +51,20 @@ def meta_content_editable(avaliacao: Avaliacao | None, meta: Meta | None = None)
     return False
 
 
+def meta_progress_editable(
+    avaliacao: Avaliacao | None,
+    meta: Meta | None = None,
+) -> bool:
+    """True se progresso pode ser registrado (etapa resultados, meta aprovada)."""
+    if avaliacao is None or avaliacao.ciclo.status != Ciclo.Status.ABERTO:
+        return False
+    if avaliacao.etapa != Avaliacao.Etapa.RESULTADOS:
+        return False
+    if meta is not None and meta.status != Meta.Status.APROVADA:
+        return False
+    return True
+
+
 class MetaForm(forms.ModelForm):
     """Cadastro/edição de meta do colaborador (bloqueio fora da etapa permitida)."""
 
@@ -96,6 +110,44 @@ class MetaForm(forms.ModelForm):
             self.add_error(
                 'objetivo_estrategico',
                 'Selecione um objetivo do ciclo aberto.',
+            )
+
+        return cleaned
+
+
+class MetaProgressForm(forms.ModelForm):
+    """Atualização de progresso (0–100) somente na etapa resultados."""
+
+    class Meta:
+        model = Meta
+        fields = ('progresso',)
+        labels = {
+            'progresso': 'Progresso (%)',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['progresso'].required = True
+        self.fields['progresso'].widget.attrs.update(
+            {
+                'class': _INPUT,
+                'min': '0',
+                'max': '100',
+                'step': '0.01',
+                'inputmode': 'decimal',
+            },
+        )
+
+    def clean(self):
+        cleaned = super().clean()
+        meta = self.instance if self.instance.pk else None
+        owner = meta.usuario if meta is not None else None
+        avaliacao = get_avaliacao_for_user(owner) if owner is not None else None
+
+        if not meta_progress_editable(avaliacao, meta):
+            raise forms.ValidationError(
+                'O progresso só pode ser atualizado na etapa de resultados '
+                'para metas aprovadas de um ciclo aberto.',
             )
 
         return cleaned

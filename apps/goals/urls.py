@@ -22,4 +22,9 @@ urlpatterns = [
         views.MetaDeleteView.as_view(),
         name='meta_delete',
     ),
+    path(
+        '<int:pk>/progress/',
+        views.MetaProgressUpdateView.as_view(),
+        name='meta_progress',
+    ),
 ]

@@ -1,6 +1,9 @@
+import json
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponseRedirect
+from django.http import Http404, HttpResponse, HttpResponseRedirect
+from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
 from django.views.generic import (
     CreateView,
@@ -10,15 +13,62 @@ from django.views.generic import (
     UpdateView,
 )
 
+from apps.audit.services import log_scope_denied
 from apps.competencies.models import CargoCompetencia
+from apps.core.htmx import is_htmx
 from apps.core.mixins import ScopedObjectMixin
 from apps.goals.forms import (
     MetaForm,
+    MetaProgressForm,
     get_avaliacao_for_user,
     get_open_ciclo,
     meta_content_editable,
+    meta_progress_editable,
 )
 from apps.goals.models import Meta
+
+
+def _meta_row_context(request, meta, progress_form=None):
+    """Contexto compartilhado do partial `#meta-row-<pk>`."""
+    avaliacao = get_avaliacao_for_user(meta.usuario)
+    pode_progresso = (
+        meta.usuario_id == request.user.pk
+        and meta_progress_editable(avaliacao, meta)
+    )
+    if progress_form is None and pode_progresso:
+        progress_form = MetaProgressForm(instance=meta)
+    return {
+        'meta': meta,
+        'pode_editar_conteudo': meta_content_editable(avaliacao, meta),
+        'pode_atualizar_progresso': pode_progresso,
+        'progress_form': progress_form if pode_progresso else None,
+    }
+
+
+def _htmx_meta_row_response(
+    request,
+    meta,
+    progress_form=None,
+    message=None,
+    level='success',
+):
+    context = _meta_row_context(request, meta, progress_form=progress_form)
+    html = render_to_string(
+        'goals/partials/meta_row.html',
+        context,
+        request=request,
+    )
+    response = HttpResponse(html)
+    if message:
+        response['HX-Trigger'] = json.dumps(
+            {
+                'showMessage': {
+                    'message': message,
+                    'level': level,
+                },
+            },
+        )
+    return response
 
 
 class ExpectationsView(LoginRequiredMixin, TemplateView):
@@ -100,6 +150,11 @@ class MetaListView(LoginRequiredMixin, ScopedObjectMixin, ListView):
         context = super().get_context_data(**kwargs)
         ciclo = get_open_ciclo()
         avaliacao = get_avaliacao_for_user(self.request.user, ciclo)
+
+        meta_rows = [
+            _meta_row_context(self.request, meta) for meta in context['metas']
+        ]
+
         context.update(
             {
                 'ciclo_aberto': ciclo,
@@ -108,6 +163,7 @@ class MetaListView(LoginRequiredMixin, ScopedObjectMixin, ListView):
                 'pode_criar': meta_content_editable(avaliacao, meta=None)
                 and avaliacao is not None
                 and avaliacao.etapa == avaliacao.Etapa.INPUT_METAS,
+                'meta_rows': meta_rows,
             },
         )
         return context
@@ -214,3 +270,70 @@ class MetaDeleteView(LoginRequiredMixin, ScopedObjectMixin, DeleteView):
     def form_valid(self, form):
         messages.success(self.request, 'Meta excluída com sucesso.')
         return super().form_valid(form)
+
+
+class MetaProgressUpdateView(LoginRequiredMixin, UpdateView):
+    """Atualiza progresso da própria meta (etapa resultados; HTMX `#meta-row-<pk>`)."""
+
+    model = Meta
+    form_class = MetaProgressForm
+    template_name = 'goals/meta_progress_form.html'
+    context_object_name = 'meta'
+    http_method_names = ['get', 'post', 'head', 'options']
+
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset)
+        if obj.usuario_id != self.request.user.pk:
+            log_scope_denied(self.request.user, obj)
+            raise Http404()
+        return obj
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        self.object = self.get_object()
+        avaliacao = get_avaliacao_for_user(self.object.usuario)
+        if not meta_progress_editable(avaliacao, self.object):
+            if is_htmx(request):
+                return _htmx_meta_row_response(
+                    request,
+                    self.object,
+                    message=(
+                        'O progresso só pode ser atualizado na etapa de '
+                        'resultados para metas aprovadas.'
+                    ),
+                    level='error',
+                )
+            messages.error(
+                request,
+                'O progresso só pode ser atualizado na etapa de resultados '
+                'para metas aprovadas de um ciclo aberto.',
+            )
+            return HttpResponseRedirect(reverse('goals:meta_list'))
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_success_url(self):
+        return reverse('goals:meta_list')
+
+    def form_valid(self, form):
+        self.object = form.save()
+        if is_htmx(self.request):
+            return _htmx_meta_row_response(
+                self.request,
+                self.object,
+                message='Progresso atualizado com sucesso.',
+                level='success',
+            )
+        messages.success(self.request, 'Progresso atualizado com sucesso.')
+        return HttpResponseRedirect(self.get_success_url())
+
+    def form_invalid(self, form):
+        if is_htmx(self.request):
+            return _htmx_meta_row_response(
+                self.request,
+                self.object,
+                progress_form=form,
+                message='Não foi possível atualizar o progresso. Verifique o valor.',
+                level='error',
+            )
+        return super().form_invalid(form)
