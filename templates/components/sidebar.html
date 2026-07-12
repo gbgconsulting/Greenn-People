@@ -69,7 +69,7 @@
       <ul class="space-y-0.5">
         <li>
           <a
-            href="/dashboard/structure/"
+            href="{% url 'dashboard:structure' %}"
             class="block rounded-lg px-3 py-2 transition-colors {% if '/dashboard/structure' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
           >Estrutura</a>
         </li>
@@ -100,6 +100,12 @@
           >Painel admin</a>
         </li>
         {% if not user.is_manager %}
+        <li>
+          <a
+            href="{% url 'dashboard:structure' %}"
+            class="block rounded-lg px-3 py-2 transition-colors {% if '/dashboard/structure' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
+          >Estrutura</a>
+        </li>
         <li>
           <a
             href="{% url 'dashboard:adherence' %}"

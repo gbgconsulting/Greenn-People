@@ -9,7 +9,13 @@ from apps.accounts.services.scope import get_visible_users
 from apps.core.mixins import RequiresAdminMixin, RequiresLeaderMixin, RequiresManagerOrAdminMixin
 from apps.cycles.models import Ciclo
 from apps.dashboard.models import AderenciaSnapshot
+from apps.dashboard.services.structure import (
+    gaps_by_area,
+    gaps_by_cargo,
+    leaders_with_adherence,
+)
 from apps.goals.forms import get_open_ciclo
+from apps.organization.models import Area, Cargo
 from apps.reviews.models import Avaliacao, Feedback
 from apps.reviews.services.evaluation import build_fr005_context
 
@@ -130,6 +136,64 @@ class AdherenceListView(LoginRequiredMixin, RequiresManagerOrAdminMixin, ListVie
             except (TypeError, ValueError):
                 return get_open_ciclo()
         return get_open_ciclo()
+
+
+class StructureDashboardView(LoginRequiredMixin, RequiresManagerOrAdminMixin, TemplateView):
+    """Painel de estrutura: líderes, aderência e lacunas por área/cargo (FR-019 / RF-29)."""
+
+    template_name = 'dashboard/structure.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        ciclo = self._resolve_ciclo()
+        area_id = self._parse_optional_int('area')
+        cargo_id = self._parse_optional_int('cargo')
+        visible = get_visible_users(self.request.user).filter(is_active=True)
+
+        context['ciclo_filtro'] = ciclo
+        context['ciclo_aberto'] = get_open_ciclo()
+        context['ciclos'] = Ciclo.objects.order_by('-data_inicio', 'nome')
+        context['areas'] = Area.objects.filter(is_active=True).order_by('nome')
+        context['cargos'] = Cargo.objects.filter(is_active=True).order_by('nivel', 'nome')
+        context['filtro_area_id'] = area_id
+        context['filtro_cargo_id'] = cargo_id
+        context['lideres_resumo'] = leaders_with_adherence(
+            visible,
+            ciclo,
+            area_id=area_id,
+            cargo_id=cargo_id,
+        )
+        context['lacunas_por_area'] = gaps_by_area(
+            visible,
+            ciclo,
+            area_id=area_id,
+            cargo_id=cargo_id,
+        )
+        context['lacunas_por_cargo'] = gaps_by_cargo(
+            visible,
+            ciclo,
+            area_id=area_id,
+            cargo_id=cargo_id,
+        )
+        return context
+
+    def _resolve_ciclo(self) -> Ciclo | None:
+        ciclo_id = self.request.GET.get('ciclo')
+        if ciclo_id:
+            try:
+                return Ciclo.objects.filter(pk=int(ciclo_id)).first()
+            except (TypeError, ValueError):
+                return get_open_ciclo()
+        return get_open_ciclo()
+
+    def _parse_optional_int(self, key: str) -> int | None:
+        raw = self.request.GET.get(key)
+        if not raw:
+            return None
+        try:
+            return int(raw)
+        except (TypeError, ValueError):
+            return None
 
 
 class AdminDashboardView(LoginRequiredMixin, RequiresAdminMixin, TemplateView):

@@ -1,1 +1,1 @@
-"""Dashboard domain services (adherence snapshots, aggregations)."""
+"""Dashboard domain services (adherence snapshots, structure aggregations)."""

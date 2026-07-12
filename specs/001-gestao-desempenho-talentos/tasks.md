@@ -144,7 +144,7 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/` na raiz d
 - [X] T055 [P] [US4] Criar model `AderenciaSnapshot` em `apps/dashboard/models.py`
 - [X] T056 [US4] Implementar task `calculate_adherence_snapshot` em `apps/dashboard/tasks.py` e schedule Beat diário em `config/celery.py`
 - [X] T057 [US4] Implementar `AdherenceListView` e `AdminDashboardView` em `apps/dashboard/views.py` lendo snapshots (sem recálculo síncrono)
-- [ ] T058 [US4] Implementar `StructureDashboardView` e visão agregada de lacunas de competências por área/cargo em `apps/dashboard/views.py` / `templates/dashboard/`
+- [X] T058 [US4] Implementar `StructureDashboardView` e visão agregada de lacunas de competências por área/cargo em `apps/dashboard/views.py` / `templates/dashboard/`
 - [ ] T059 [US4] Ao encerrar ciclo, bloquear `advance_stage` (`CycleClosedError`) e marcar avaliações incompletas para indicador de conclusão em `apps/cycles/services/cycle.py`
 
 **Checkpoint**: Governança RH operacional; US1–US4 estáveis
