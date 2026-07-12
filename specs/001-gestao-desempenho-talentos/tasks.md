@@ -75,7 +75,7 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/` na raiz d
 
 ### Implementation for User Story 1
 
-- [ ] T028 [P] [US1] Criar model `ObjetivoEstrategico` em `apps/goals/models.py` (FK `Ciclo` PROTECT)
+- [X] T028 [P] [US1] Criar model `ObjetivoEstrategico` em `apps/goals/models.py` (FK `Ciclo` PROTECT)
 - [ ] T029 [P] [US1] Criar model `Meta` em `apps/goals/models.py` (`status`, `status_resultado`, `progresso` 0–100, regras FR-026)
 - [ ] T030 [P] [US1] Criar model `AvaliacaoCompetencia` em `apps/reviews/models.py` (snapshots `peso_utilizado` / `nivel_esperado_utilizado` write-once no `save()`)
 - [ ] T031 [US1] Implementar `ExpectationsView` em `apps/goals/views.py` e template `templates/goals/expectations.html` (competências+nível esperado+metas; mensagem de vínculo pendente se sem cargo)
