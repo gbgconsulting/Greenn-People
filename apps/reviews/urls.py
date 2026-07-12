@@ -6,6 +6,11 @@ app_name = 'reviews'
 
 urlpatterns = [
     path(
+        '',
+        views.AvaliacaoListView.as_view(),
+        name='list',
+    ),
+    path(
         '<int:pk>/advance/',
         views.AdvanceStageView.as_view(),
         name='advance',
@@ -34,5 +39,11 @@ urlpatterns = [
         'feedbacks/<int:pk>/acknowledge/',
         views.FeedbackAcknowledgeView.as_view(),
         name='feedback_acknowledge',
+    ),
+    # Detalhe por último entre rotas ``<pk>/…`` para não capturar sub-paths.
+    path(
+        '<int:pk>/',
+        views.AvaliacaoDetailView.as_view(),
+        name='detail',
     ),
 ]

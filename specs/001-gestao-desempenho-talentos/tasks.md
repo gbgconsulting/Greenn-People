@@ -106,7 +106,7 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/` na raiz d
 - [X] T043 [US2] Implementar `FeedbackListView`, `FeedbackCreateView` e `FeedbackAcknowledgeView` em `apps/reviews/views.py` com escopo e histórico
 - [X] T044 [US2] Completar `AdvanceStageView` para etapas de líder (`aprovacao_metas` → `resultados`, `aprovacao_resultados` → `avaliacao` com side-effect de snapshots, `avaliacao` → `feedback`)
 - [X] T045 [US2] Implementar `TeamDashboardView` em `apps/dashboard/views.py` e `templates/dashboard/team.html` (somente `is_leader`, lista escopo)
-- [ ] T046 [US2] Garantir `AvaliacaoListView` / `AvaliacaoDetailView` com `ScopedObjectMixin` em `apps/reviews/views.py` (IDOR → Http404 + `log_scope_denied`)
+- [X] T046 [US2] Garantir `AvaliacaoListView` / `AvaliacaoDetailView` com `ScopedObjectMixin` em `apps/reviews/views.py` (IDOR → Http404 + `log_scope_denied`)
 
 **Checkpoint**: US1 e US2 independentes e funcionais
 
@@ -120,7 +120,7 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/` na raiz d
 
 ### Implementation for User Story 3
 
-- [ ] T047 [P] [US3] Criar models `PDI` e `AcaoPDI` em `apps/pdi/models.py`
+- [X] T047 [P] [US3] Criar models `PDI` e `AcaoPDI` em `apps/pdi/models.py`
 - [ ] T048 [P] [US3] Implementar `calculate_pdi_progress` em `apps/pdi/services/progress.py`
 - [ ] T049 [US3] Implementar CRUD `PDIListView`, `PDICreateView`, `PDIDetailView` com `ScopedObjectMixin` em `apps/pdi/views.py` e `apps/pdi/urls.py`
 - [ ] T050 [US3] Implementar CRUD HTMX de ações (`AcaoPDIForm`, partials `templates/pdi/acao_list_partial.html`, modal create) em `apps/pdi/views.py` conforme `contracts/htmx-contract.md`

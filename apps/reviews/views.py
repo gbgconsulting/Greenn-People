@@ -23,6 +23,7 @@ from apps.reviews.forms import (
     resolve_feedback_tipo,
     self_assessment_editable,
 )
+from apps.goals.forms import get_open_ciclo
 from apps.reviews.models import Avaliacao, AvaliacaoCompetencia, Feedback
 from apps.reviews.services.evaluation import calcular_nota_final_lider
 
@@ -43,6 +44,141 @@ _LEADER_ADVANCE_ETAPAS = frozenset(
         Avaliacao.Etapa.AVALIACAO,
     },
 )
+
+_ADVANCE_LABELS = {
+    Avaliacao.Etapa.INPUT_METAS: 'Enviar metas para aprovação',
+    Avaliacao.Etapa.APROVACAO_METAS: 'Liberar etapa de resultados',
+    Avaliacao.Etapa.RESULTADOS: 'Enviar resultados para aprovação',
+    Avaliacao.Etapa.APROVACAO_RESULTADOS: 'Liberar etapa de avaliação',
+    Avaliacao.Etapa.AVALIACAO: 'Avançar para feedback',
+}
+
+
+def _advance_context(user, avaliacao: Avaliacao) -> dict:
+    """Contexto de avanço de etapa conforme ator (colaborador ou líder)."""
+    etapa = avaliacao.etapa
+    pode_atuar = False
+
+    if etapa in _COLLABORATOR_ADVANCE_ETAPAS:
+        pode_atuar = avaliacao.usuario_id == user.pk
+    elif etapa in _LEADER_ADVANCE_ETAPAS:
+        pode_atuar = can_leader_assess(user, avaliacao)
+
+    if not pode_atuar:
+        return {
+            'pode_avancar': False,
+            'avanco_desabilitado': True,
+            'rotulo_avanco': '',
+            'motivo_bloqueio_avanco': '',
+        }
+
+    ok, motivo = can_advance(avaliacao)
+    return {
+        'pode_avancar': ok,
+        'avanco_desabilitado': not ok,
+        'rotulo_avanco': _ADVANCE_LABELS.get(etapa, 'Avançar etapa'),
+        'motivo_bloqueio_avanco': '' if ok else motivo,
+    }
+
+
+class AvaliacaoListView(LoginRequiredMixin, ScopedObjectMixin, ListView):
+    """Listagem de avaliações no escopo (ciclo aberto quando houver)."""
+
+    model = Avaliacao
+    template_name = 'reviews/avaliacao_list.html'
+    context_object_name = 'avaliacoes'
+    paginate_by = 20
+    scope_user_field = 'usuario'
+
+    def get_queryset(self):
+        qs = (
+            super()
+            .get_queryset()
+            .select_related(
+                'ciclo',
+                'usuario',
+                'usuario__area',
+                'usuario__cargo',
+            )
+            .order_by('usuario__nome', 'usuario__email', 'id')
+        )
+        ciclo = get_open_ciclo()
+        if ciclo is not None:
+            qs = qs.filter(ciclo=ciclo)
+        return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        rows = []
+        for avaliacao in context['avaliacoes']:
+            is_self = avaliacao.usuario_id == user.pk
+            rows.append(
+                {
+                    'avaliacao': avaliacao,
+                    'is_self': is_self,
+                    'pode_autoavaliar': (
+                        is_self and self_assessment_editable(avaliacao)
+                    ),
+                    'pode_avaliar_lider': (
+                        not is_self
+                        and can_leader_assess(user, avaliacao)
+                        and leader_assessment_editable(avaliacao)
+                    ),
+                },
+            )
+        context.update(
+            {
+                'ciclo_aberto': get_open_ciclo(),
+                'avaliacao_rows': rows,
+            },
+        )
+        return context
+
+
+class AvaliacaoDetailView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
+    """Detalhe da avaliação no escopo; IDOR → Http404 + ``log_scope_denied``."""
+
+    model = Avaliacao
+    template_name = 'reviews/avaliacao_detail.html'
+    context_object_name = 'avaliacao'
+    scope_user_field = 'usuario'
+    queryset = Avaliacao.objects.select_related(
+        'ciclo',
+        'usuario',
+        'usuario__area',
+        'usuario__cargo',
+        'usuario__line_manager',
+    )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        avaliacao = self.object
+        user = self.request.user
+        is_self = avaliacao.usuario_id == user.pk
+        linhas = (
+            AvaliacaoCompetencia.objects.filter(avaliacao_id=avaliacao.pk)
+            .select_related('competencia', 'competencia__escala')
+            .order_by('competencia__nome')
+        )
+        context.update(
+            {
+                'colaborador': avaliacao.usuario,
+                'is_self': is_self,
+                'linhas': linhas,
+                'pode_autoavaliar': (
+                    is_self and self_assessment_editable(avaliacao)
+                ),
+                'pode_avaliar_lider': (
+                    not is_self
+                    and can_leader_assess(user, avaliacao)
+                    and leader_assessment_editable(avaliacao)
+                ),
+                'pode_criar_feedback': feedback_create_allowed(user, avaliacao),
+                **_advance_context(user, avaliacao),
+            },
+        )
+        return context
 
 
 class AdvanceStageView(LoginRequiredMixin, View):
