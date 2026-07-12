@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Avg, Count, Exists, OuterRef, Q
+from django.db.models import Avg, Count, Q
 from django.views.generic import ListView, TemplateView
 
 from apps.accounts.models import CustomUser
@@ -16,7 +16,7 @@ from apps.dashboard.services.structure import (
 )
 from apps.goals.forms import get_open_ciclo
 from apps.organization.models import Area, Cargo
-from apps.reviews.models import Avaliacao, Feedback
+from apps.reviews.models import Avaliacao
 from apps.reviews.services.evaluation import build_fr005_context
 
 # KPI liderança (PRD): ≥ 80% alta; faixa intermediária; abaixo = baixa.
@@ -203,12 +203,22 @@ class AdminDashboardView(LoginRequiredMixin, RequiresAdminMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        ciclo = get_open_ciclo()
-        context['ciclo_aberto'] = ciclo
+        ciclo_aberto = get_open_ciclo()
+        ciclo_indicador = ciclo_aberto or (
+            Ciclo.objects.filter(status=Ciclo.Status.ENCERRADO)
+            .order_by('-data_fim', '-pk')
+            .first()
+        )
+        context['ciclo_aberto'] = ciclo_aberto
+        context['ciclo_indicador'] = ciclo_indicador
         context['ciclos_resumo'] = self._ciclos_resumo()
-        context['avaliacoes_resumo'] = self._avaliacoes_resumo(ciclo)
-        context['aderencia_resumo'] = self._aderencia_resumo(ciclo)
-        context['snapshots_destaque'] = self._snapshots_destaque(ciclo)
+        context['avaliacoes_resumo'] = self._avaliacoes_resumo(ciclo_indicador)
+        context['aderencia_resumo'] = self._aderencia_resumo(
+            ciclo_aberto or ciclo_indicador,
+        )
+        context['snapshots_destaque'] = self._snapshots_destaque(
+            ciclo_aberto or ciclo_indicador,
+        )
         return context
 
     def _ciclos_resumo(self) -> dict:
@@ -241,15 +251,9 @@ class AdminDashboardView(LoginRequiredMixin, RequiresAdminMixin, TemplateView):
                 'percentual_concluidas': None,
             }
 
-        feedback_ciente = Feedback.objects.filter(
-            avaliacao_id=OuterRef('pk'),
-            tipo=Feedback.Tipo.LIDER,
-            ciente_em__isnull=False,
-        )
-        qs = Avaliacao.objects.filter(ciclo=ciclo).annotate(
-            concluida=Exists(feedback_ciente),
-        )
-        totals = qs.aggregate(
+        # Campo persistido (congelado em close_cycle); durante ciclo aberto
+        # também reflete ciência via FeedbackAcknowledgeView.
+        totals = Avaliacao.objects.filter(ciclo=ciclo).aggregate(
             total=Count('pk'),
             concluidas=Count('pk', filter=Q(concluida=True)),
         )

@@ -50,6 +50,14 @@ class Avaliacao(TimeStampedModel):
         null=True,
         blank=True,
     )
+    concluida = models.BooleanField(
+        'concluída',
+        default=False,
+        help_text=(
+            'True quando feedback do líder tem ciente_em; '
+            'congelado no encerramento do ciclo para o indicador de conclusão.'
+        ),
+    )
 
     class Meta:
         verbose_name = 'avaliação'

@@ -37,6 +37,12 @@ def is_cycle_closed(avaliacao: Avaliacao) -> bool:
     return avaliacao.ciclo.status == Ciclo.Status.ENCERRADO
 
 
+def is_avaliacao_concluida(avaliacao: Avaliacao) -> bool:
+    """True se etapa feedback concluída (feedback líder + ciente_em)."""
+    ok, _ = _check_feedback_conclusion(avaliacao)
+    return ok
+
+
 def can_advance(avaliacao: Avaliacao) -> tuple[bool, str]:
     """Retorna (ok, motivo) para avançar etapa."""
     if is_cycle_closed(avaliacao):
@@ -70,6 +76,9 @@ def advance_stage(avaliacao: Avaliacao, actor: CustomUser) -> Avaliacao:
         if not ok:
             raise StageTransitionError(motivo)
         # Etapa terminal: conclusão é derivada (feedback líder + ciente_em).
+        if not avaliacao.concluida:
+            avaliacao.concluida = True
+            avaliacao.save(update_fields=['concluida', 'updated_at'])
         return avaliacao
 
     ok, motivo = can_advance(avaliacao)

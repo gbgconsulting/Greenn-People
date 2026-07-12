@@ -47,9 +47,11 @@
         {% endif %}
       </p>
       <p class="mt-2 text-sm text-slate-500">
-        {% if ciclo_aberto %}
-          {{ avaliacoes_resumo.concluidas }} de {{ avaliacoes_resumo.total }} no ciclo aberto
-          (feedback líder + ciência).
+        {% if ciclo_indicador %}
+          {{ avaliacoes_resumo.concluidas }} de {{ avaliacoes_resumo.total }}
+          no ciclo {{ ciclo_indicador.nome }}
+          {% if ciclo_aberto %}(aberto){% else %}(encerrado){% endif %}
+          — feedback líder + ciência.
         {% else %}
           Abra um ciclo para acompanhar a conclusão.
         {% endif %}

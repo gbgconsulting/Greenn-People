@@ -654,5 +654,11 @@ class FeedbackAcknowledgeView(LoginRequiredMixin, View):
 
         feedback.ciente_em = timezone.now()
         feedback.save(update_fields=['ciente_em', 'updated_at'])
+
+        avaliacao = feedback.avaliacao
+        if not avaliacao.concluida:
+            avaliacao.concluida = True
+            avaliacao.save(update_fields=['concluida', 'updated_at'])
+
         messages.success(request, 'Ciência registrada com sucesso.')
         return HttpResponseRedirect(list_url)

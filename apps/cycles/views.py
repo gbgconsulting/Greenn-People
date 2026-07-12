@@ -135,7 +135,8 @@ class CicloCloseView(AdminCyclesMixin, SingleObjectMixin, View):
         else:
             messages.success(
                 request,
-                f'Ciclo "{ciclo.nome}" encerrado. Nenhuma etapa pode avançar.',
+                f'Ciclo "{ciclo.nome}" encerrado. Etapas bloqueadas; '
+                'avaliações incompletas marcadas para o indicador de conclusão.',
             )
         return HttpResponseRedirect(reverse('cycles:ciclo_list'))
 
