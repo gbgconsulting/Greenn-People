@@ -30,7 +30,7 @@
         </li>
         <li>
           <a
-            href="/goals/"
+            href="{% url 'goals:meta_list' %}"
             class="block rounded-lg px-3 py-2 transition-colors {% if path == '/goals/' or path == '/goals' %}bg-emerald-50 font-medium text-emerald-700{% elif '/goals/' in path and '/expectations' not in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
           >Metas</a>
         </li>

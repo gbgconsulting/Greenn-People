@@ -10,4 +10,16 @@ urlpatterns = [
         views.ExpectationsView.as_view(),
         name='expectations',
     ),
+    path('', views.MetaListView.as_view(), name='meta_list'),
+    path('new/', views.MetaCreateView.as_view(), name='meta_create'),
+    path(
+        '<int:pk>/edit/',
+        views.MetaUpdateView.as_view(),
+        name='meta_update',
+    ),
+    path(
+        '<int:pk>/delete/',
+        views.MetaDeleteView.as_view(),
+        name='meta_delete',
+    ),
 ]

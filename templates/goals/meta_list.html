@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Metas — Greenn People{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+  <div>
+    <h1 class="text-2xl font-semibold text-slate-800">Metas</h1>
+    <p class="mt-1 text-slate-500">
+      {% if ciclo_aberto %}
+        Ciclo aberto: {{ ciclo_aberto.nome }}. Cadastre e acompanhe metas vinculadas aos objetivos estratégicos.
+      {% else %}
+        Não há ciclo aberto no momento.
+      {% endif %}
+    </p>
+  </div>
+  {% if pode_criar %}
+    {% url 'goals:meta_create' as create_url %}
+    {% include "components/button.html" with label="Nova meta" href=create_url variant="primary" %}
+  {% endif %}
+</div>
+
+{% if ciclo_aberto %}
+<div class="mb-4 flex flex-wrap gap-2" role="navigation" aria-label="Filtro por status">
+  <a
+    href="{% url 'goals:meta_list' %}"
+    class="rounded-lg px-3 py-1.5 text-sm {% if not status_filtro %}bg-emerald-50 font-medium text-emerald-700{% else %}border border-slate-200 bg-white text-slate-600 hover:bg-slate-50{% endif %}"
+  >Todos</a>
+  {% for value, label in status_choices %}
+  <a
+    href="?status={{ value }}"
+    class="rounded-lg px-3 py-1.5 text-sm {% if status_filtro == value %}bg-emerald-50 font-medium text-emerald-700{% else %}border border-slate-200 bg-white text-slate-600 hover:bg-slate-50{% endif %}"
+  >{{ label }}</a>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+  <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+    <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+      <tr>
+        <th class="px-4 py-3 font-medium">Meta</th>
+        <th class="px-4 py-3 font-medium">Colaborador</th>
+        <th class="px-4 py-3 font-medium">Objetivo estratégico</th>
+        <th class="px-4 py-3 font-medium">Progresso</th>
+        <th class="px-4 py-3 font-medium">Status</th>
+        <th class="px-4 py-3 font-medium text-right">Ações</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+      {% for meta in metas %}
+      <tr class="hover:bg-slate-50" id="meta-row-{{ meta.pk }}">
+        <td class="px-4 py-3 font-medium text-slate-800">{{ meta.descricao }}</td>
+        <td class="px-4 py-3 text-slate-600">{{ meta.usuario.nome }}</td>
+        <td class="px-4 py-3 text-slate-600">{{ meta.objetivo_estrategico.descricao }}</td>
+        <td class="px-4 py-3 text-slate-600">
+          {% if meta.progresso is not None %}{{ meta.progresso }}%{% else %}—{% endif %}
+        </td>
+        <td class="px-4 py-3">
+          {% include "components/badge_status.html" with status=meta.status label=meta.get_status_display %}
+        </td>
+        <td class="px-4 py-3 text-right whitespace-nowrap">
+          {% if meta.status != 'aprovada' %}
+          <a href="{% url 'goals:meta_update' meta.pk %}" class="text-emerald-700 hover:text-emerald-800">Editar</a>
+          {% endif %}
+          {% if meta.status == 'pendente' %}
+          <span class="mx-2 text-slate-300">|</span>
+          <a href="{% url 'goals:meta_delete' meta.pk %}" class="text-rose-600 hover:text-rose-700">Excluir</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6" class="px-4 py-8 text-center text-slate-500">
+          {% if not ciclo_aberto %}
+            Não há ciclo aberto. As metas aparecerão quando um ciclo estiver ativo.
+          {% elif status_filtro %}
+            Nenhuma meta com este status no ciclo atual.
+          {% else %}
+            Nenhuma meta cadastrada no ciclo atual.
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% include "components/pagination.html" with page_obj=page_obj %}
+{% endblock %}

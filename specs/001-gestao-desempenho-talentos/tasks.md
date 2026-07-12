@@ -71,7 +71,7 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/` na raiz d
 
 **Goal**: Colaborador visualiza competências/nível esperado e metas ligadas a objetivos; registra progresso e conclui autoavaliação
 
-**Independent Test**: Criar colaborador com cargo+competências, ciclo aberto com metas/objetivo; verificar expectativas, progresso e autoavaliação isolados (quickstart Cenário 1)
+**Independent Test**: Criar colaborador com cargo+competências, ciclo aberto com metas/objetivo; verificar expectativas, progresso e autoavaliação isolados (quickstart Cenário 1)  
 
 ### Implementation for User Story 1
 
@@ -79,7 +79,7 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/` na raiz d
 - [X] T029 [P] [US1] Criar model `Meta` em `apps/goals/models.py` (`status`, `status_resultado`, `progresso` 0–100, regras FR-026)
 - [X] T030 [P] [US1] Criar model `AvaliacaoCompetencia` em `apps/reviews/models.py` (snapshots `peso_utilizado` / `nivel_esperado_utilizado` write-once no `save()`)
 - [X] T031 [US1] Implementar `ExpectationsView` em `apps/goals/views.py` e template `templates/goals/expectations.html` (competências+nível esperado+metas; mensagem de vínculo pendente se sem cargo)
-- [ ] T032 [US1] Implementar CRUD de metas do colaborador (`MetaListView`, `MetaCreateView`, `MetaForm`) em `apps/goals/views.py` / `forms.py` com `ScopedObjectMixin` e URLs em `apps/goals/urls.py`
+- [X] T032 [US1] Implementar CRUD de metas do colaborador (`MetaListView`, `MetaCreateView`, `MetaForm`) em `apps/goals/views.py` / `forms.py` com `ScopedObjectMixin` e URLs em `apps/goals/urls.py`
 - [ ] T033 [US1] Implementar `MetaProgressUpdateView` + `MetaProgressForm` em `apps/goals/` (somente etapa `resultados`, HTMX partial `#meta-row-<pk>`)
 - [ ] T034 [US1] Implementar `create_competency_lines` em `apps/reviews/services/evaluation.py` (copia snapshots ao entrar em `avaliacao`)
 - [ ] T035 [US1] Implementar `SelfAssessmentView` + `SelfAssessmentForm` em `apps/reviews/views.py` / `forms.py` e template `templates/reviews/self_assessment.html`
