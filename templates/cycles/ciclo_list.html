@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Ciclos — Greenn People{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+  <div>
+    <h1 class="text-2xl font-semibold text-slate-800">Ciclos de avaliação</h1>
+    <p class="mt-1 text-slate-500">
+      Crie, abra e encerre ciclos centralizados. Apenas um ciclo pode estar aberto por vez.
+    </p>
+  </div>
+  {% url 'cycles:ciclo_create' as create_url %}
+  {% include "components/button.html" with label="Novo ciclo" href=create_url variant="primary" %}
+</div>
+
+<div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+  <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+    <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+      <tr>
+        <th class="px-4 py-3 font-medium">Nome</th>
+        <th class="px-4 py-3 font-medium">Início</th>
+        <th class="px-4 py-3 font-medium">Fim</th>
+        <th class="px-4 py-3 font-medium">Status</th>
+        <th class="px-4 py-3 font-medium">Avaliações</th>
+        <th class="px-4 py-3 font-medium text-right">Ações</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+      {% for ciclo in ciclos %}
+      <tr class="hover:bg-slate-50" id="ciclo-row-{{ ciclo.pk }}">
+        <td class="px-4 py-3 font-medium text-slate-800">{{ ciclo.nome }}</td>
+        <td class="px-4 py-3 text-slate-600">{{ ciclo.data_inicio|date:"d/m/Y" }}</td>
+        <td class="px-4 py-3 text-slate-600">{{ ciclo.data_fim|date:"d/m/Y" }}</td>
+        <td class="px-4 py-3">
+          {% if ciclo.status == "aberto" %}
+            {% include "components/badge_status.html" with status="ativo" label="Aberto" %}
+          {% else %}
+            {% include "components/badge_status.html" with status="arquivado" label="Encerrado" %}
+          {% endif %}
+        </td>
+        <td class="px-4 py-3 text-slate-600">{{ ciclo.avaliacoes_count }}</td>
+        <td class="px-4 py-3 text-right">
+          <div class="flex flex-wrap items-center justify-end gap-2">
+            {% if ciclo.status == "encerrado" %}
+            <form method="post" action="{% url 'cycles:ciclo_open' ciclo.pk %}" class="inline">
+              {% csrf_token %}
+              <button
+                type="submit"
+                class="text-emerald-700 hover:text-emerald-800"
+              >Abrir</button>
+            </form>
+            <span class="text-slate-300">|</span>
+            {% else %}
+            <form method="post" action="{% url 'cycles:ciclo_close' ciclo.pk %}" class="inline">
+              {% csrf_token %}
+              <button
+                type="submit"
+                class="text-amber-700 hover:text-amber-800"
+              >Encerrar</button>
+            </form>
+            <span class="text-slate-300">|</span>
+            {% endif %}
+            <a href="{% url 'cycles:ciclo_update' ciclo.pk %}" class="text-emerald-700 hover:text-emerald-800">Editar</a>
+            <span class="text-slate-300">|</span>
+            <a href="{% url 'cycles:ciclo_delete' ciclo.pk %}" class="text-rose-600 hover:text-rose-700">Excluir</a>
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6" class="px-4 py-8 text-center text-slate-500">Nenhum ciclo cadastrado.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% include "components/pagination.html" with page_obj=page_obj %}
+{% endblock %}
