@@ -15,4 +15,9 @@ urlpatterns = [
         views.SelfAssessmentView.as_view(),
         name='self_assessment',
     ),
+    path(
+        '<int:pk>/leader-assessment/',
+        views.LeaderAssessmentView.as_view(),
+        name='leader_assessment',
+    ),
 ]
