@@ -121,7 +121,7 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/` na raiz d
 ### Implementation for User Story 3
 
 - [X] T047 [P] [US3] Criar models `PDI` e `AcaoPDI` em `apps/pdi/models.py`
-- [ ] T048 [P] [US3] Implementar `calculate_pdi_progress` em `apps/pdi/services/progress.py`
+- [X] T048 [P] [US3] Implementar `calculate_pdi_progress` em `apps/pdi/services/progress.py`
 - [ ] T049 [US3] Implementar CRUD `PDIListView`, `PDICreateView`, `PDIDetailView` com `ScopedObjectMixin` em `apps/pdi/views.py` e `apps/pdi/urls.py`
 - [ ] T050 [US3] Implementar CRUD HTMX de ações (`AcaoPDIForm`, partials `templates/pdi/acao_list_partial.html`, modal create) em `apps/pdi/views.py` conforme `contracts/htmx-contract.md`
 - [ ] T051 [US3] Implementar atualização de status inline de `AcaoPDI` (HTMX) com persistência de `updated_at` e auditoria em `apps/pdi/views.py`
