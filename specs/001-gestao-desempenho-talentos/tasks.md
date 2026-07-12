@@ -81,7 +81,7 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/` na raiz d
 - [X] T031 [US1] Implementar `ExpectationsView` em `apps/goals/views.py` e template `templates/goals/expectations.html` (competências+nível esperado+metas; mensagem de vínculo pendente se sem cargo)
 - [X] T032 [US1] Implementar CRUD de metas do colaborador (`MetaListView`, `MetaCreateView`, `MetaForm`) em `apps/goals/views.py` / `forms.py` com `ScopedObjectMixin` e URLs em `apps/goals/urls.py`
 - [X] T033 [US1] Implementar `MetaProgressUpdateView` + `MetaProgressForm` em `apps/goals/` (somente etapa `resultados`, HTMX partial `#meta-row-<pk>`)
-- [ ] T034 [US1] Implementar `create_competency_lines` em `apps/reviews/services/evaluation.py` (copia snapshots ao entrar em `avaliacao`)
+- [X] T034 [US1] Implementar `create_competency_lines` em `apps/reviews/services/evaluation.py` (copia snapshots ao entrar em `avaliacao`)
 - [ ] T035 [US1] Implementar `SelfAssessmentView` + `SelfAssessmentForm` em `apps/reviews/views.py` / `forms.py` e template `templates/reviews/self_assessment.html`
 - [ ] T036 [US1] Implementar `AdvanceStageView` para avanço colaborador (`input_metas` → `aprovacao_metas`, `resultados` → `aprovacao_resultados`) em `apps/reviews/views.py` com auditoria de `etapa`
 - [ ] T037 [US1] Exibir nível esperado e nota atual no dashboard pessoal / expectativas em `templates/dashboard/personal.html` e `templates/goals/expectations.html` (FR-005)

@@ -196,10 +196,8 @@ def _check_feedback_conclusion(avaliacao: Avaliacao) -> tuple[bool, str]:
 
 
 def _create_competency_lines(avaliacao: Avaliacao) -> None:
-    """Side effect ao entrar em avaliacao (implementação plena em T034)."""
-    try:
-        from apps.reviews.services.evaluation import create_competency_lines
-    except ImportError:
-        return
+    """Side effect ao entrar em avaliacao: snapshots write-once das competências."""
+    from apps.reviews.services.evaluation import create_competency_lines
+
     create_competency_lines(avaliacao)
 
