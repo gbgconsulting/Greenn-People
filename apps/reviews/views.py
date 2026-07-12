@@ -8,7 +8,7 @@ from django.views.generic import CreateView, DetailView, ListView
 
 from apps.accounts.services.scope import user_in_scope
 from apps.audit.services import log_scope_denied
-from apps.core.mixins import ScopedObjectMixin
+from apps.core.mixins import HtmxPaginatedListMixin, ScopedObjectMixin
 from apps.cycles.exceptions import CycleClosedError, StageTransitionError
 from apps.cycles.services.stage import advance_stage, can_advance
 from apps.reviews.exceptions import CalculationError
@@ -81,13 +81,13 @@ def _advance_context(user, avaliacao: Avaliacao) -> dict:
     }
 
 
-class AvaliacaoListView(LoginRequiredMixin, ScopedObjectMixin, ListView):
+class AvaliacaoListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin, ListView):
     """Listagem de avaliações no escopo (ciclo aberto quando houver)."""
 
     model = Avaliacao
     template_name = 'reviews/avaliacao_list.html'
+    partial_template_name = 'reviews/avaliacao_list_partial.html'
     context_object_name = 'avaliacoes'
-    paginate_by = 20
     scope_user_field = 'usuario'
 
     def get_queryset(self):
@@ -507,13 +507,13 @@ def _get_avaliacao_in_scope(request, pk: int) -> Avaliacao:
     return avaliacao
 
 
-class FeedbackListView(LoginRequiredMixin, ScopedObjectMixin, ListView):
+class FeedbackListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin, ListView):
     """Histórico de feedbacks da avaliação (escopo ``avaliacao__usuario``)."""
 
     model = Feedback
     template_name = 'reviews/feedback_list.html'
+    partial_template_name = 'reviews/feedback_list_partial.html'
     context_object_name = 'feedbacks'
-    paginate_by = 20
     scope_user_field = 'avaliacao__usuario'
 
     def dispatch(self, request, *args, **kwargs):

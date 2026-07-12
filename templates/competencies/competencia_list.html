@@ -16,39 +16,5 @@
   </div>
 </div>
 
-<div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-  <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
-    <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-      <tr>
-        <th class="px-4 py-3 font-medium">Nome</th>
-        <th class="px-4 py-3 font-medium">Tipo</th>
-        <th class="px-4 py-3 font-medium">Escala</th>
-        <th class="px-4 py-3 font-medium text-right">Ações</th>
-      </tr>
-    </thead>
-    <tbody class="divide-y divide-slate-100">
-      {% for competencia in competencias %}
-      <tr class="hover:bg-slate-50">
-        <td class="px-4 py-3 font-medium text-slate-800">{{ competencia.nome }}</td>
-        <td class="px-4 py-3 text-slate-600">{{ competencia.get_tipo_display }}</td>
-        <td class="px-4 py-3 text-slate-600">
-          {{ competencia.escala.nome }}
-          <span class="text-slate-400">({{ competencia.escala.valor_minimo }}–{{ competencia.escala.valor_maximo }})</span>
-        </td>
-        <td class="px-4 py-3 text-right">
-          <a href="{% url 'competencies:competencia_update' competencia.pk %}" class="text-emerald-700 hover:text-emerald-800">Editar</a>
-          <span class="mx-2 text-slate-300">|</span>
-          <a href="{% url 'competencies:competencia_delete' competencia.pk %}" class="text-rose-600 hover:text-rose-700">Excluir</a>
-        </td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="4" class="px-4 py-8 text-center text-slate-500">Nenhuma competência cadastrada.</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-
-{% include "components/pagination.html" with page_obj=page_obj %}
+{% include "competencies/competencia_list_partial.html" %}
 {% endblock %}

@@ -1,0 +1,44 @@
+<div id="list-container">
+<div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+  <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+    <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+      <tr>
+        <th class="px-4 py-3 font-medium">Nome</th>
+        <th class="px-4 py-3 font-medium">E-mail</th>
+        <th class="px-4 py-3 font-medium">Área</th>
+        <th class="px-4 py-3 font-medium">Cargo</th>
+        <th class="px-4 py-3 font-medium">Pendência</th>
+        <th class="px-4 py-3 font-medium text-right">Ações</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+      {% for u in users %}
+      <tr class="hover:bg-slate-50">
+        <td class="px-4 py-3 font-medium text-slate-800">{{ u.nome }}</td>
+        <td class="px-4 py-3 text-slate-600">{{ u.email }}</td>
+        <td class="px-4 py-3 text-slate-600">{{ u.area.nome|default:"—" }}</td>
+        <td class="px-4 py-3 text-slate-600">{{ u.cargo.nome|default:"—" }}</td>
+        <td class="px-4 py-3">
+          {% if not u.area_id and not u.cargo_id %}
+            {% include "components/badge_status.html" with status="pendente" label="Área e cargo" %}
+          {% elif not u.area_id %}
+            {% include "components/badge_status.html" with status="pendente" label="Área" %}
+          {% else %}
+            {% include "components/badge_status.html" with status="pendente" label="Cargo" %}
+          {% endif %}
+        </td>
+        <td class="px-4 py-3 text-right">
+          <a href="{% url 'organization:user_update' u.pk %}?next=pending" class="text-emerald-700 hover:text-emerald-800">Vincular</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6" class="px-4 py-8 text-center text-slate-500">Nenhum usuário pendente de vínculo.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% include "components/pagination.html" with page_obj=page_obj %}
+</div>

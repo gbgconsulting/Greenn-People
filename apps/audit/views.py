@@ -8,20 +8,20 @@ from django.views.generic import ListView
 
 from apps.accounts.models import CustomUser
 from apps.audit.models import AuditLog
-from apps.core.mixins import RequiresAdminMixin
+from apps.core.mixins import HtmxPaginatedListMixin, RequiresAdminMixin
 
 
 class AdminAuditMixin(LoginRequiredMixin, RequiresAdminMixin):
     """Auth + admin gate for audit consultation views."""
 
 
-class AuditLogListView(AdminAuditMixin, ListView):
+class AuditLogListView(AdminAuditMixin, HtmxPaginatedListMixin, ListView):
     """Consulta de auditoria (RF-34) — filtros: usuário, ação e período."""
 
     model = AuditLog
     template_name = 'audit/auditlog_list.html'
+    partial_template_name = 'audit/auditlog_list_partial.html'
     context_object_name = 'logs'
-    paginate_by = 20
 
     def get_queryset(self) -> QuerySet[AuditLog]:
         qs = AuditLog.objects.select_related('usuario').order_by('-created_at')

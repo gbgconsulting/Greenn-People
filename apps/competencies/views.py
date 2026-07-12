@@ -19,7 +19,7 @@ from apps.competencies.forms import (
     EscalaForm,
 )
 from apps.competencies.models import Competencia, Escala
-from apps.core.mixins import RequiresAdminMixin
+from apps.core.mixins import HtmxPaginatedListMixin, RequiresAdminMixin
 from apps.organization.models import Cargo
 
 
@@ -27,11 +27,11 @@ class AdminCompetenciesMixin(LoginRequiredMixin, RequiresAdminMixin):
     """Auth + admin gate for competencies management views."""
 
 
-class EscalaListView(AdminCompetenciesMixin, ListView):
+class EscalaListView(AdminCompetenciesMixin, HtmxPaginatedListMixin, ListView):
     model = Escala
     template_name = 'competencies/escala_list.html'
+    partial_template_name = 'competencies/escala_list_partial.html'
     context_object_name = 'escalas'
-    paginate_by = 20
 
     def get_queryset(self):
         return Escala.objects.order_by('nome')
@@ -78,11 +78,11 @@ class EscalaDeleteView(AdminCompetenciesMixin, DeleteView):
         return response
 
 
-class CompetenciaListView(AdminCompetenciesMixin, ListView):
+class CompetenciaListView(AdminCompetenciesMixin, HtmxPaginatedListMixin, ListView):
     model = Competencia
     template_name = 'competencies/competencia_list.html'
+    partial_template_name = 'competencies/competencia_list_partial.html'
     context_object_name = 'competencias'
-    paginate_by = 20
 
     def get_queryset(self):
         return Competencia.objects.select_related('escala').order_by('nome')

@@ -12,7 +12,7 @@ from django.views.generic import (
 )
 
 from apps.accounts.models import CustomUser
-from apps.core.mixins import RequiresAdminMixin
+from apps.core.mixins import HtmxPaginatedListMixin, RequiresAdminMixin
 from apps.organization.forms import AreaForm, CargoForm, UserUpdateForm
 from apps.organization.models import Area, Cargo
 
@@ -21,11 +21,11 @@ class AdminOrganizationMixin(LoginRequiredMixin, RequiresAdminMixin):
     """Auth + admin gate for organization management views."""
 
 
-class AreaListView(AdminOrganizationMixin, ListView):
+class AreaListView(AdminOrganizationMixin, HtmxPaginatedListMixin, ListView):
     model = Area
     template_name = 'organization/area_list.html'
+    partial_template_name = 'organization/area_list_partial.html'
     context_object_name = 'areas'
-    paginate_by = 20
 
     def get_queryset(self):
         return (
@@ -75,11 +75,11 @@ class AreaDeleteView(AdminOrganizationMixin, DeleteView):
         return response
 
 
-class CargoListView(AdminOrganizationMixin, ListView):
+class CargoListView(AdminOrganizationMixin, HtmxPaginatedListMixin, ListView):
     model = Cargo
     template_name = 'organization/cargo_list.html'
+    partial_template_name = 'organization/cargo_list_partial.html'
     context_object_name = 'cargos'
-    paginate_by = 20
 
     def get_queryset(self):
         return Cargo.objects.order_by('nivel', 'nome')
@@ -126,11 +126,11 @@ class CargoDeleteView(AdminOrganizationMixin, DeleteView):
         return response
 
 
-class UserListView(AdminOrganizationMixin, ListView):
+class UserListView(AdminOrganizationMixin, HtmxPaginatedListMixin, ListView):
     model = CustomUser
     template_name = 'organization/user_list.html'
+    partial_template_name = 'organization/user_list_partial.html'
     context_object_name = 'users'
-    paginate_by = 20
 
     def get_queryset(self):
         return (
@@ -164,13 +164,13 @@ class UserUpdateView(AdminOrganizationMixin, UpdateView):
         return str(self.success_url)
 
 
-class PendingUsersListView(AdminOrganizationMixin, ListView):
+class PendingUsersListView(AdminOrganizationMixin, HtmxPaginatedListMixin, ListView):
     """Active users missing area and/or cargo (RF-04.2 / PRD 2.4.4)."""
 
     model = CustomUser
     template_name = 'organization/user_pending_list.html'
+    partial_template_name = 'organization/user_pending_list_partial.html'
     context_object_name = 'users'
-    paginate_by = 20
 
     def get_queryset(self):
         return (

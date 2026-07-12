@@ -1,0 +1,59 @@
+<div id="list-container">
+<div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+  <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+    <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+      <tr>
+        <th class="px-4 py-3 font-medium">Líder</th>
+        <th class="px-4 py-3 font-medium">Área</th>
+        <th class="px-4 py-3 font-medium">Ciclo</th>
+        <th class="px-4 py-3 font-medium">Aderência</th>
+        <th class="px-4 py-3 font-medium">Status</th>
+        <th class="px-4 py-3 font-medium">Aprovações</th>
+        <th class="px-4 py-3 font-medium">Feedbacks</th>
+        <th class="px-4 py-3 font-medium">Ações PDI</th>
+        <th class="px-4 py-3 font-medium">Calculado em</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+      {% for item in snapshots_resumo %}
+      <tr class="hover:bg-slate-50">
+        <td class="px-4 py-3">
+          <p class="font-medium text-slate-800">{{ item.snapshot.lider.nome|default:item.snapshot.lider.email }}</p>
+          <p class="text-xs text-slate-500">{{ item.snapshot.lider.email }}</p>
+        </td>
+        <td class="px-4 py-3 text-slate-600">{{ item.snapshot.lider.area.nome|default:"—" }}</td>
+        <td class="px-4 py-3 text-slate-600">{{ item.snapshot.ciclo.nome }}</td>
+        <td class="px-4 py-3 font-medium text-slate-800">{{ item.snapshot.percentual }}%</td>
+        <td class="px-4 py-3">
+          {% include "components/badge_status.html" with status=item.status %}
+        </td>
+        <td class="px-4 py-3 text-slate-600">
+          {% with c=item.snapshot.componentes.aprovacoes %}
+            {% if c %}{{ c.no_prazo }}/{{ c.total }} ({{ c.percentual }}%){% else %}—{% endif %}
+          {% endwith %}
+        </td>
+        <td class="px-4 py-3 text-slate-600">
+          {% with c=item.snapshot.componentes.feedbacks %}
+            {% if c %}{{ c.no_prazo }}/{{ c.total }} ({{ c.percentual }}%){% else %}—{% endif %}
+          {% endwith %}
+        </td>
+        <td class="px-4 py-3 text-slate-600">
+          {% with c=item.snapshot.componentes.acoes_pdi %}
+            {% if c %}{{ c.no_prazo }}/{{ c.total }} ({{ c.percentual }}%){% else %}—{% endif %}
+          {% endwith %}
+        </td>
+        <td class="px-4 py-3 text-slate-600">{{ item.snapshot.calculado_em|date:"d/m/Y H:i" }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="9" class="px-4 py-8 text-center text-slate-500">
+          Nenhum snapshot de aderência encontrado para o filtro atual.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% include "components/pagination.html" with page_obj=page_obj %}
+</div>

@@ -1,0 +1,42 @@
+<div id="list-container">
+<div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+  <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+    <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+      <tr>
+        <th class="px-4 py-3 font-medium">Nome</th>
+        <th class="px-4 py-3 font-medium">Nível</th>
+        <th class="px-4 py-3 font-medium">Status</th>
+        <th class="px-4 py-3 font-medium text-right">Ações</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+      {% for cargo in cargos %}
+      <tr class="hover:bg-slate-50">
+        <td class="px-4 py-3 font-medium text-slate-800">{{ cargo.nome }}</td>
+        <td class="px-4 py-3 text-slate-600">{{ cargo.nivel }}</td>
+        <td class="px-4 py-3">
+          {% if cargo.is_active %}
+            {% include "components/badge_status.html" with status="ativo" %}
+          {% else %}
+            {% include "components/badge_status.html" with status="arquivado" label="Inativo" %}
+          {% endif %}
+        </td>
+        <td class="px-4 py-3 text-right">
+          <a href="{% url 'competencies:cargo_competencia_update' cargo.pk %}" class="text-emerald-700 hover:text-emerald-800">Perfil</a>
+          <span class="mx-2 text-slate-300">|</span>
+          <a href="{% url 'organization:cargo_update' cargo.pk %}" class="text-emerald-700 hover:text-emerald-800">Editar</a>
+          <span class="mx-2 text-slate-300">|</span>
+          <a href="{% url 'organization:cargo_delete' cargo.pk %}" class="text-rose-600 hover:text-rose-700">Excluir</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="4" class="px-4 py-8 text-center text-slate-500">Nenhum cargo cadastrado.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% include "components/pagination.html" with page_obj=page_obj %}
+</div>

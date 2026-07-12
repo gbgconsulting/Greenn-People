@@ -6,6 +6,24 @@ from django.contrib.auth.mixins import UserPassesTestMixin
 from django.db.models import Model, QuerySet
 from django.http import Http404
 
+from apps.core.htmx import is_htmx
+
+
+class HtmxPaginatedListMixin:
+    """ListView com ``paginate_by=20`` e partial HTMX (htmx-contract.md).
+
+    Em requests ``HX-Request``, retorna ``partial_template_name`` (fragmento
+    ``#list-container``) em vez do template completo.
+    """
+
+    paginate_by = 20
+    partial_template_name: str | None = None
+
+    def get_template_names(self) -> list[str]:
+        if is_htmx(self.request) and self.partial_template_name:
+            return [self.partial_template_name]
+        return super().get_template_names()
+
 
 class RequiresAdminMixin(UserPassesTestMixin):
     """Restrict the view to users with ``is_admin=True``."""

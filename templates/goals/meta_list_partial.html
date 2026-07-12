@@ -1,0 +1,35 @@
+<div id="list-container">
+<div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+  <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+    <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+      <tr>
+        <th class="px-4 py-3 font-medium">Meta</th>
+        <th class="px-4 py-3 font-medium">Colaborador</th>
+        <th class="px-4 py-3 font-medium">Objetivo estratégico</th>
+        <th class="px-4 py-3 font-medium">Progresso</th>
+        <th class="px-4 py-3 font-medium">Status</th>
+        <th class="px-4 py-3 font-medium text-right">Ações</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+      {% for row in meta_rows %}
+        {% include "goals/partials/meta_row.html" with meta=row.meta pode_editar_conteudo=row.pode_editar_conteudo pode_atualizar_progresso=row.pode_atualizar_progresso pode_aprovar=row.pode_aprovar progress_form=row.progress_form badge_status=row.badge_status badge_label=row.badge_label %}
+      {% empty %}
+      <tr>
+        <td colspan="6" class="px-4 py-8 text-center text-slate-500">
+          {% if not ciclo_aberto %}
+            Não há ciclo aberto. As metas aparecerão quando um ciclo estiver ativo.
+          {% elif status_filtro %}
+            Nenhuma meta com este status no ciclo atual.
+          {% else %}
+            Nenhuma meta cadastrada no ciclo atual.
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% include "components/pagination.html" with page_obj=page_obj %}
+</div>

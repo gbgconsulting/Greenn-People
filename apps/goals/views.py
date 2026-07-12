@@ -18,7 +18,7 @@ from django.views.generic.detail import SingleObjectMixin
 
 from apps.audit.services import log_scope_denied
 from apps.core.htmx import is_htmx
-from apps.core.mixins import ScopedObjectMixin
+from apps.core.mixins import HtmxPaginatedListMixin, ScopedObjectMixin
 from apps.cycles.services.stage import can_advance
 from apps.goals.forms import (
     MetaForm,
@@ -152,13 +152,13 @@ class ExpectationsView(LoginRequiredMixin, TemplateView):
         return context
 
 
-class MetaListView(LoginRequiredMixin, ScopedObjectMixin, ListView):
+class MetaListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin, ListView):
     """Listagem de metas no escopo do usuário, com filtro por status."""
 
     model = Meta
     template_name = 'goals/meta_list.html'
+    partial_template_name = 'goals/meta_list_partial.html'
     context_object_name = 'metas'
-    paginate_by = 20
     scope_user_field = 'usuario'
 
     def get_queryset(self):

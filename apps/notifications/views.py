@@ -2,7 +2,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import QuerySet
 from django.views.generic import ListView
 
-from apps.core.mixins import RequiresAdminMixin
+from apps.core.mixins import HtmxPaginatedListMixin, RequiresAdminMixin
 from apps.notifications.models import NotificacaoLog
 
 
@@ -10,13 +10,13 @@ class AdminNotificationsMixin(LoginRequiredMixin, RequiresAdminMixin):
     """Auth + admin gate for notification log consultation."""
 
 
-class NotificacaoLogListView(AdminNotificationsMixin, ListView):
+class NotificacaoLogListView(AdminNotificationsMixin, HtmxPaginatedListMixin, ListView):
     """Consulta de envios de e-mail (RF-31) — falhas e sucessos."""
 
     model = NotificacaoLog
     template_name = 'notifications/notificacaolog_list.html'
+    partial_template_name = 'notifications/notificacaolog_list_partial.html'
     context_object_name = 'logs'
-    paginate_by = 20
 
     def get_queryset(self) -> QuerySet[NotificacaoLog]:
         qs = (

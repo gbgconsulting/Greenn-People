@@ -9,7 +9,7 @@ from django.views import View
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 from django.views.generic.detail import SingleObjectMixin
 
-from apps.core.mixins import RequiresAdminMixin
+from apps.core.mixins import HtmxPaginatedListMixin, RequiresAdminMixin
 from apps.cycles.exceptions import CycleAlreadyOpenError, CycleNotOpenError
 from apps.cycles.forms import CicloForm
 from apps.cycles.models import Ciclo
@@ -43,11 +43,11 @@ class CicloNestedMixin(AdminCyclesMixin):
         )
 
 
-class CicloListView(AdminCyclesMixin, ListView):
+class CicloListView(AdminCyclesMixin, HtmxPaginatedListMixin, ListView):
     model = Ciclo
     template_name = 'cycles/ciclo_list.html'
+    partial_template_name = 'cycles/ciclo_list_partial.html'
     context_object_name = 'ciclos'
-    paginate_by = 20
 
     def get_queryset(self):
         return (
@@ -141,11 +141,11 @@ class CicloCloseView(AdminCyclesMixin, SingleObjectMixin, View):
         return HttpResponseRedirect(reverse('cycles:ciclo_list'))
 
 
-class ObjetivoEstrategicoListView(CicloNestedMixin, ListView):
+class ObjetivoEstrategicoListView(CicloNestedMixin, HtmxPaginatedListMixin, ListView):
     model = ObjetivoEstrategico
     template_name = 'cycles/objetivo_list.html'
+    partial_template_name = 'cycles/objetivo_list_partial.html'
     context_object_name = 'objetivos'
-    paginate_by = 20
 
     def get_queryset(self):
         return (

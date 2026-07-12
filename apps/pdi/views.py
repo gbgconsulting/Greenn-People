@@ -15,7 +15,7 @@ from django.views.generic.detail import SingleObjectMixin
 from apps.accounts.services.scope import user_in_scope
 from apps.audit.services import log_scope_denied
 from apps.core.htmx import is_htmx
-from apps.core.mixins import ScopedObjectMixin
+from apps.core.mixins import HtmxPaginatedListMixin, ScopedObjectMixin
 from apps.pdi.forms import AcaoPDIForm, PDIForm
 from apps.pdi.models import AcaoPDI, PDI
 from apps.pdi.services.progress import calculate_pdi_progress
@@ -113,13 +113,13 @@ def _htmx_modal_form_response(
     return response
 
 
-class PDIListView(LoginRequiredMixin, ScopedObjectMixin, ListView):
+class PDIListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin, ListView):
     """Listagem de PDIs no escopo hierárquico do usuário."""
 
     model = PDI
     template_name = 'pdi/pdi_list.html'
+    partial_template_name = 'pdi/pdi_list_partial.html'
     context_object_name = 'pdis'
-    paginate_by = 20
     scope_user_field = 'usuario'
 
     def get_queryset(self):

@@ -6,7 +6,12 @@ from django.views.generic import ListView, TemplateView
 
 from apps.accounts.models import CustomUser
 from apps.accounts.services.scope import get_visible_users
-from apps.core.mixins import RequiresAdminMixin, RequiresLeaderMixin, RequiresManagerOrAdminMixin
+from apps.core.mixins import (
+    HtmxPaginatedListMixin,
+    RequiresAdminMixin,
+    RequiresLeaderMixin,
+    RequiresManagerOrAdminMixin,
+)
 from apps.cycles.models import Ciclo
 from apps.dashboard.models import AderenciaSnapshot
 from apps.dashboard.services.structure import (
@@ -50,12 +55,17 @@ class PersonalDashboardView(LoginRequiredMixin, TemplateView):
         return context
 
 
-class TeamDashboardView(LoginRequiredMixin, RequiresLeaderMixin, ListView):
+class TeamDashboardView(
+    LoginRequiredMixin,
+    RequiresLeaderMixin,
+    HtmxPaginatedListMixin,
+    ListView,
+):
     """Painel do time: lista colaboradores no escopo hierárquico (US2 / FR-006)."""
 
     template_name = 'dashboard/team.html'
+    partial_template_name = 'dashboard/team_list_partial.html'
     context_object_name = 'membros'
-    paginate_by = 20
 
     def get_queryset(self):
         return (
@@ -92,13 +102,18 @@ class TeamDashboardView(LoginRequiredMixin, RequiresLeaderMixin, ListView):
         return context
 
 
-class AdherenceListView(LoginRequiredMixin, RequiresManagerOrAdminMixin, ListView):
+class AdherenceListView(
+    LoginRequiredMixin,
+    RequiresManagerOrAdminMixin,
+    HtmxPaginatedListMixin,
+    ListView,
+):
     """Lista snapshots de aderência (FR-018) — só leitura, sem recálculo síncrono."""
 
     model = AderenciaSnapshot
     template_name = 'dashboard/adherence.html'
+    partial_template_name = 'dashboard/adherence_list_partial.html'
     context_object_name = 'snapshots'
-    paginate_by = 20
 
     def get_queryset(self):
         qs = (
