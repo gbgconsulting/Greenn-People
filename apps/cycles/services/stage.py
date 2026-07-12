@@ -9,6 +9,7 @@ from django.db import transaction
 from django.db.models import Sum
 
 from apps.accounts.models import CustomUser
+from apps.audit.context import audit_actor
 from apps.cycles.exceptions import CycleClosedError, StageTransitionError
 from apps.cycles.models import Ciclo
 from apps.reviews.models import Avaliacao
@@ -88,14 +89,14 @@ def advance_stage(avaliacao: Avaliacao, actor: CustomUser) -> Avaliacao:
         if is_cycle_closed(locked):
             raise CycleClosedError('Ciclo encerrado; não é possível avançar etapas.')
 
-        previous = locked.etapa
         locked.etapa = next_etapa
-        locked.save(update_fields=['etapa', 'updated_at'])
+        # Actor attributed via audit context; signals write AuditLog for etapa.
+        with audit_actor(actor):
+            locked.save(update_fields=['etapa', 'updated_at'])
 
         if next_etapa == Avaliacao.Etapa.AVALIACAO:
             _create_competency_lines(locked)
 
-        _log_etapa_change(locked, actor, previous, next_etapa)
         return locked
 
 
@@ -202,24 +203,3 @@ def _create_competency_lines(avaliacao: Avaliacao) -> None:
         return
     create_competency_lines(avaliacao)
 
-
-def _log_etapa_change(
-    avaliacao: Avaliacao,
-    actor: CustomUser,
-    valor_anterior: str,
-    valor_novo: str,
-) -> None:
-    """Registra AuditLog da transição (model criado em T026)."""
-    try:
-        AuditLog = apps.get_model('audit', 'AuditLog')
-    except LookupError:
-        return
-    AuditLog.objects.create(
-        usuario=actor,
-        acao='update',
-        entity_type='reviews.Avaliacao',
-        entity_id=avaliacao.pk,
-        campo='etapa',
-        valor_anterior=valor_anterior,
-        valor_novo=valor_novo,
-    )

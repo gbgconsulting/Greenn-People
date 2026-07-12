@@ -6,3 +6,8 @@ class AuditConfig(AppConfig):
     name = 'apps.audit'
     label = 'audit'
     verbose_name = 'Audit'
+
+    def ready(self) -> None:
+        from apps.audit.signals import connect_audit_signals
+
+        connect_audit_signals()
