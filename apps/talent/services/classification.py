@@ -103,3 +103,29 @@ def upsert_classification(
                 },
             )
     return classificacao
+
+
+def get_visible_classification_for_collaborator(
+    usuario: CustomUser,
+    ciclo=None,
+) -> ClassificacaoTalento | None:
+    """Retorna a classificação do colaborador somente se liberada (RF-25).
+
+    Colaboradores só veem o próprio registro quando ``visivel_ao_colaborador``
+    é True. Sem ciclo aberto (e sem ``ciclo`` explícito) retorna ``None``.
+    """
+    if ciclo is None:
+        from apps.goals.forms import get_open_ciclo
+
+        ciclo = get_open_ciclo()
+    if ciclo is None:
+        return None
+    return (
+        ClassificacaoTalento.objects.filter(
+            usuario=usuario,
+            ciclo=ciclo,
+            visivel_ao_colaborador=True,
+        )
+        .select_related('ciclo')
+        .first()
+    )

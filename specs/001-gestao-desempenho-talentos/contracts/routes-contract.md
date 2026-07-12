@@ -88,6 +88,7 @@ Convenções:
 
 | Método | Path | View | Escopo |
 |---|---|---|---|
+| GET | `/talent/mine/` | `MyClassificationView` | Self (`visivel_ao_colaborador`) |
 | GET | `/talent/matrix/` | `TalentMatrixView` | Manager/admin |
 | GET/POST | `/talent/<user_pk>/classify/` | `ClassifyTalentView` | Admin |
 | POST | `/talent/<pk>/toggle-visibility/` | `ToggleVisibilityView` | Admin |

@@ -46,6 +46,12 @@
             class="block rounded-lg px-3 py-2 transition-colors {% if '/pdi' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
           >Meu PDI</a>
         </li>
+        <li>
+          <a
+            href="{% url 'talent:mine' %}"
+            class="block rounded-lg px-3 py-2 transition-colors {% if '/talent/mine' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
+          >Minha classificação</a>
+        </li>
       </ul>
     </div>
 
@@ -82,7 +88,7 @@
         <li>
           <a
             href="{% url 'talent:matrix' %}"
-            class="block rounded-lg px-3 py-2 transition-colors {% if '/talent' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
+            class="block rounded-lg px-3 py-2 transition-colors {% if '/talent/matrix' in path or '/talent/' in path and '/talent/mine' not in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
           >Matriz de talentos</a>
         </li>
       </ul>
@@ -115,7 +121,7 @@
         <li>
           <a
             href="{% url 'talent:matrix' %}"
-            class="block rounded-lg px-3 py-2 transition-colors {% if '/talent' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
+            class="block rounded-lg px-3 py-2 transition-colors {% if '/talent/matrix' in path or '/talent/' in path and '/talent/mine' not in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
           >Matriz de talentos</a>
         </li>
         {% endif %}

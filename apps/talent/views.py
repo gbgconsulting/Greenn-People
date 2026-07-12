@@ -12,7 +12,7 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse, reverse_lazy
 from django.views import View
-from django.views.generic import FormView, ListView
+from django.views.generic import FormView, ListView, TemplateView
 from django.views.generic.detail import SingleObjectMixin
 
 from apps.accounts.models import CustomUser
@@ -24,7 +24,11 @@ from apps.organization.models import Area, Cargo
 from apps.reviews.models import Avaliacao
 from apps.talent.forms import ClassificacaoForm
 from apps.talent.models import ClassificacaoTalento
-from apps.talent.services.classification import derive_desempenho, upsert_classification
+from apps.talent.services.classification import (
+    derive_desempenho,
+    get_visible_classification_for_collaborator,
+    upsert_classification,
+)
 
 # Ordem visual da matriz: desempenho alto no topo, potencial crescente à direita.
 _DESEMPENHO_ROWS = (3, 2, 1)
@@ -41,6 +45,50 @@ _QUADRANTE_MEMBER = {
     (1, 2): 'BAIXO_MEDIO',
     (1, 3): 'BAIXO_ALTO',
 }
+
+
+class MyClassificationView(LoginRequiredMixin, TemplateView):
+    """Classificação 9-box do próprio colaborador (RF-25 / ``visivel_ao_colaborador``)."""
+
+    template_name = 'talent/my_classification.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        ciclo = self._resolve_ciclo()
+        classificacao = get_visible_classification_for_collaborator(
+            self.request.user,
+            ciclo=ciclo,
+        )
+        # Registro existe mas ainda oculto: não vazar desempenho/potencial/quadrante.
+        oculto = False
+        if classificacao is None and ciclo is not None:
+            oculto = ClassificacaoTalento.objects.filter(
+                usuario=self.request.user,
+                ciclo=ciclo,
+                visivel_ao_colaborador=False,
+            ).exists()
+
+        context['ciclo_filtro'] = ciclo
+        context['ciclo_aberto'] = get_open_ciclo()
+        context['ciclos'] = Ciclo.objects.order_by('-data_inicio', 'nome')
+        context['classificacao'] = classificacao
+        context['classificacao_oculta'] = oculto
+        context['desempenho_label'] = (
+            _NIVEL_LABEL[classificacao.desempenho] if classificacao else None
+        )
+        context['potencial_label'] = (
+            _NIVEL_LABEL[classificacao.potencial] if classificacao else None
+        )
+        return context
+
+    def _resolve_ciclo(self) -> Ciclo | None:
+        ciclo_id = self.request.GET.get('ciclo')
+        if ciclo_id:
+            try:
+                return Ciclo.objects.filter(pk=int(ciclo_id)).first()
+            except (TypeError, ValueError):
+                return get_open_ciclo()
+        return get_open_ciclo()
 
 
 class TalentMatrixView(LoginRequiredMixin, RequiresManagerOrAdminMixin, ListView):

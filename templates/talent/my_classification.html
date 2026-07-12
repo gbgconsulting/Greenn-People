@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Minha classificação — Greenn People{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-2xl font-semibold text-slate-800">Minha classificação</h1>
+  <p class="mt-1 text-slate-500">
+    Posicionamento 9-box (desempenho × potencial)
+    {% if ciclo_filtro %} · ciclo {{ ciclo_filtro.nome }}{% else %} · nenhum ciclo selecionado{% endif %}.
+  </p>
+</div>
+
+<form method="get" class="mb-6 flex flex-wrap items-end gap-3" role="search" aria-label="Filtrar por ciclo">
+  <div>
+    <label for="ciclo" class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Ciclo</label>
+    <select
+      id="ciclo"
+      name="ciclo"
+      class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500"
+      onchange="this.form.submit()"
+    >
+      <option value="">Ciclo aberto{% if ciclo_aberto %} ({{ ciclo_aberto.nome }}){% else %} (nenhum){% endif %}</option>
+      {% for c in ciclos %}
+      <option value="{{ c.pk }}" {% if ciclo_filtro and ciclo_filtro.pk == c.pk %}selected{% endif %}>
+        {{ c.nome }} — {{ c.get_status_display }}
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+</form>
+
+{% if classificacao %}
+<section aria-labelledby="classificacao-heading">
+  <h2 id="classificacao-heading" class="sr-only">Resultado da classificação</h2>
+  <div class="grid gap-4 sm:grid-cols-3">
+    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <p class="text-xs uppercase tracking-wide text-slate-500">Desempenho</p>
+      <p class="mt-1 text-2xl font-semibold text-slate-800">{{ desempenho_label }}</p>
+      <p class="mt-2 text-sm text-slate-500">Nível {{ classificacao.desempenho }} de 3</p>
+    </div>
+    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <p class="text-xs uppercase tracking-wide text-slate-500">Potencial</p>
+      <p class="mt-1 text-2xl font-semibold text-slate-800">{{ potencial_label }}</p>
+      <p class="mt-2 text-sm text-slate-500">Nível {{ classificacao.potencial }} de 3</p>
+    </div>
+    <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
+      <p class="text-xs uppercase tracking-wide text-emerald-700">Quadrante</p>
+      <p class="mt-1 text-2xl font-semibold text-emerald-900">{{ classificacao.get_quadrante_display }}</p>
+      <p class="mt-2 text-sm text-emerald-800">Matriz 9-box</p>
+    </div>
+  </div>
+</section>
+{% elif classificacao_oculta %}
+<div
+  class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-700"
+  role="status"
+>
+  <p class="font-medium text-slate-800">Classificação ainda não liberada</p>
+  <p class="mt-1 text-slate-600">
+    Sua classificação neste ciclo existe, mas o administrador ainda não liberou a visualização.
+  </p>
+</div>
+{% elif not ciclo_filtro %}
+<div
+  class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900"
+  role="status"
+>
+  <p class="font-medium">Nenhum ciclo disponível</p>
+  <p class="mt-1 text-amber-800">Não há ciclo aberto nem selecionado para consultar a classificação.</p>
+</div>
+{% else %}
+<div
+  class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-700"
+  role="status"
+>
+  <p class="font-medium text-slate-800">Sem classificação neste ciclo</p>
+  <p class="mt-1 text-slate-600">
+    Ainda não há classificação de talento registrada para você neste ciclo.
+  </p>
+</div>
+{% endif %}
+{% endblock %}

@@ -163,7 +163,7 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/` na raiz d
 - [X] T061 [US5] Implementar `derive_desempenho`, `calculate_quadrante` e `upsert_classification` em `apps/talent/services/classification.py`
 - [X] T062 [US5] Implementar `TalentMatrixView` com filtros área/cargo e escopo hierárquico em `apps/talent/views.py` e `templates/talent/matrix.html`
 - [X] T063 [US5] Implementar `ClassifyTalentView` e `ToggleVisibilityView` (admin) em `apps/talent/views.py` e `apps/talent/urls.py`
-- [ ] T064 [US5] Respeitar `visivel_ao_colaborador` na UI do colaborador em `apps/talent/views.py` / templates
+- [X] T064 [US5] Respeitar `visivel_ao_colaborador` na UI do colaborador em `apps/talent/views.py` / templates
 
 **Checkpoint**: Todas as user stories independentemente funcionais
 

@@ -18,6 +18,7 @@ from apps.goals.forms import get_open_ciclo
 from apps.organization.models import Area, Cargo
 from apps.reviews.models import Avaliacao
 from apps.reviews.services.evaluation import build_fr005_context
+from apps.talent.services.classification import get_visible_classification_for_collaborator
 
 # KPI liderança (PRD): ≥ 80% alta; faixa intermediária; abaixo = baixa.
 _ADERENCIA_ALTA = Decimal('80')
@@ -43,6 +44,9 @@ class PersonalDashboardView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(build_fr005_context(self.request.user))
+        context['classificacao'] = get_visible_classification_for_collaborator(
+            self.request.user,
+        )
         return context
 
 
