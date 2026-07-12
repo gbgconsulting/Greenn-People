@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}PDI — Greenn People{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+  <div>
+    <h1 class="text-2xl font-semibold text-slate-800">Meu PDI</h1>
+    <p class="mt-1 text-slate-500">
+      Planos de desenvolvimento individual no seu escopo hierárquico.
+    </p>
+  </div>
+  <div class="flex flex-wrap items-center gap-2">
+    {% if pode_criar %}
+      {% url 'pdi:create' as create_url %}
+      {% include "components/button.html" with label="Novo PDI" href=create_url variant="primary" %}
+    {% endif %}
+  </div>
+</div>
+
+<div class="mb-4 flex flex-wrap gap-2" role="navigation" aria-label="Filtro por status">
+  <a
+    href="{% url 'pdi:list' %}"
+    class="rounded-lg px-3 py-1.5 text-sm {% if not status_filtro %}bg-emerald-50 font-medium text-emerald-700{% else %}border border-slate-200 bg-white text-slate-600 hover:bg-slate-50{% endif %}"
+  >Todos</a>
+  {% for value, label in status_choices %}
+  <a
+    href="?status={{ value }}"
+    class="rounded-lg px-3 py-1.5 text-sm {% if status_filtro == value %}bg-emerald-50 font-medium text-emerald-700{% else %}border border-slate-200 bg-white text-slate-600 hover:bg-slate-50{% endif %}"
+  >{{ label }}</a>
+  {% endfor %}
+</div>
+
+<div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+  <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+    <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+      <tr>
+        <th class="px-4 py-3 font-medium">Título</th>
+        <th class="px-4 py-3 font-medium">Colaborador</th>
+        <th class="px-4 py-3 font-medium">Status</th>
+        <th class="px-4 py-3 font-medium">Progresso</th>
+        <th class="px-4 py-3 font-medium text-right">Ações</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+      {% for row in pdi_rows %}
+      <tr class="hover:bg-slate-50">
+        <td class="px-4 py-3">
+          <p class="font-medium text-slate-800">{{ row.pdi.titulo }}</p>
+        </td>
+        <td class="px-4 py-3">
+          <p class="text-slate-800">
+            {{ row.pdi.usuario.nome|default:row.pdi.usuario.email }}
+            {% if row.is_self %}
+              <span class="ml-1 text-xs font-normal text-slate-400">(você)</span>
+            {% endif %}
+          </p>
+          <p class="text-xs text-slate-500">{{ row.pdi.usuario.email }}</p>
+        </td>
+        <td class="px-4 py-3">
+          {% include "components/badge_status.html" with status=row.pdi.status label=row.pdi.get_status_display %}
+        </td>
+        <td class="px-4 py-3 text-slate-800">{{ row.progresso }}%</td>
+        <td class="px-4 py-3 text-right">
+          <a
+            href="{% url 'pdi:detail' row.pdi.pk %}"
+            class="font-medium text-emerald-700 hover:text-emerald-800"
+          >Ver</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="5" class="px-4 py-8 text-center text-slate-500">
+          {% if status_filtro %}
+            Nenhum PDI com este status no seu escopo.
+          {% else %}
+            Nenhum PDI cadastrado no seu escopo.
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% include "components/pagination.html" with page_obj=page_obj %}
+{% endblock %}
