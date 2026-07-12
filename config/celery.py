@@ -17,11 +17,20 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()
 
 # RF-32 / RF-32.1 — daily deadline checks (timezone = CELERY_TIMEZONE / TIME_ZONE)
+# RF-31 — reminder e-mails (stage / PDI) N days before deadline
 # RF-26 — daily adherence snapshots for open cycles
 app.conf.beat_schedule = {
     'mark-overdue-pdi-actions-daily': {
         'task': 'apps.pdi.tasks.mark_overdue_pdi_actions',
         'schedule': crontab(hour=0, minute=15),
+    },
+    'enviar-lembrete-prazo-etapa-daily': {
+        'task': 'apps.notifications.tasks.enviar_lembrete_prazo_etapa',
+        'schedule': crontab(hour=8, minute=0),
+    },
+    'enviar-lembrete-acao-pdi-vencendo-daily': {
+        'task': 'apps.notifications.tasks.enviar_lembrete_acao_pdi_vencendo',
+        'schedule': crontab(hour=8, minute=15),
     },
     'calculate-adherence-snapshots-daily': {
         'task': 'apps.dashboard.tasks.calculate_adherence_snapshots_daily',

@@ -1,0 +1,7 @@
+Olá {{ user.nome }},
+
+O ciclo de avaliação "{{ ciclo.nome }}" tem data de fim em {{ data_fim|date:"d/m/Y" }}.
+
+Sua avaliação ainda está na etapa "{{ etapa_label }}". Acesse o Greenn People para concluir as pendências a tempo.
+
+Esta é uma mensagem automática — não responda este e-mail.
