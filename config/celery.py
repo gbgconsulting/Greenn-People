@@ -8,9 +8,18 @@ Broker and result backend come from Django settings
 import os
 
 from celery import Celery
+from celery.schedules import crontab
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.dev')
 
 app = Celery('config')
 app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()
+
+# RF-32 / RF-32.1 — daily deadline checks (timezone = CELERY_TIMEZONE / TIME_ZONE)
+app.conf.beat_schedule = {
+    'mark-overdue-pdi-actions-daily': {
+        'task': 'apps.pdi.tasks.mark_overdue_pdi_actions',
+        'schedule': crontab(hour=0, minute=15),
+    },
+}
