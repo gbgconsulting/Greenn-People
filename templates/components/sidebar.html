@@ -157,9 +157,15 @@
         </li>
         <li>
           <a
-            href="/audit/"
+            href="{% url 'audit:list' %}"
             class="block rounded-lg px-3 py-2 transition-colors {% if '/audit' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
           >Auditoria</a>
+        </li>
+        <li>
+          <a
+            href="{% url 'notifications:log_list' %}"
+            class="block rounded-lg px-3 py-2 transition-colors {% if '/notifications' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
+          >Notificações</a>
         </li>
       </ul>
     </div>

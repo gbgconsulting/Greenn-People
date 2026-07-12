@@ -1,6 +1,7 @@
 {% comment %}
   Paginação padrão (paginate_by=20).
   Uso: {% include "components/pagination.html" with page_obj=page_obj %}
+  Preserva demais query params (filtros) ao trocar de página.
 {% endcomment %}
 {% if page_obj.paginator.num_pages > 1 %}
 <nav class="mt-6 flex items-center justify-between border-t border-slate-200 pt-4" aria-label="Paginação">
@@ -11,13 +12,13 @@
   <div class="flex gap-2">
     {% if page_obj.has_previous %}
       <a
-        href="?page={{ page_obj.previous_page_number }}"
+        href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}"
         class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
       >Anterior</a>
     {% endif %}
     {% if page_obj.has_next %}
       <a
-        href="?page={{ page_obj.next_page_number }}"
+        href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}"
         class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
       >Próxima</a>
     {% endif %}

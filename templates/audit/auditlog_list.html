@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Auditoria — Greenn People{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-2xl font-semibold text-slate-800">Auditoria</h1>
+  <p class="mt-1 text-slate-500">
+    Histórico append-only de alterações sensíveis e acessos negados por escopo.
+  </p>
+</div>
+
+<form
+  method="get"
+  class="mb-6 flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+  role="search"
+  aria-label="Filtrar logs de auditoria"
+>
+  <div>
+    <label for="usuario" class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Usuário</label>
+    <select
+      id="usuario"
+      name="usuario"
+      class="min-w-[12rem] rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500"
+    >
+      <option value="">Todos</option>
+      {% for u in usuarios %}
+      <option value="{{ u.pk }}" {% if filtro_usuario == u.pk|stringformat:"s" %}selected{% endif %}>
+        {{ u.nome|default:u.email }}
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label for="acao" class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Ação</label>
+    <select
+      id="acao"
+      name="acao"
+      class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500"
+    >
+      <option value="">Todas</option>
+      {% for value, label in acao_choices %}
+      <option value="{{ value }}" {% if filtro_acao == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label for="data_inicio" class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">De</label>
+    <input
+      type="date"
+      id="data_inicio"
+      name="data_inicio"
+      value="{{ filtro_data_inicio }}"
+      class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500"
+    />
+  </div>
+  <div>
+    <label for="data_fim" class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Até</label>
+    <input
+      type="date"
+      id="data_fim"
+      name="data_fim"
+      value="{{ filtro_data_fim }}"
+      class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500"
+    />
+  </div>
+  <div class="flex gap-2">
+    <button
+      type="submit"
+      class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+    >Filtrar</button>
+    <a
+      href="{% url 'audit:list' %}"
+      class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+    >Limpar</a>
+  </div>
+</form>
+
+<div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+  <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+    <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+      <tr>
+        <th class="px-4 py-3 font-medium">Data</th>
+        <th class="px-4 py-3 font-medium">Usuário</th>
+        <th class="px-4 py-3 font-medium">Ação</th>
+        <th class="px-4 py-3 font-medium">Entidade</th>
+        <th class="px-4 py-3 font-medium">Campo</th>
+        <th class="px-4 py-3 font-medium">Anterior</th>
+        <th class="px-4 py-3 font-medium">Novo</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+      {% for log in logs %}
+      <tr class="hover:bg-slate-50">
+        <td class="whitespace-nowrap px-4 py-3 text-slate-600">{{ log.created_at|date:"d/m/Y H:i" }}</td>
+        <td class="px-4 py-3 text-slate-800">
+          {% if log.usuario %}
+            {{ log.usuario.nome|default:log.usuario.email }}
+          {% else %}
+            <span class="text-slate-400">Sistema</span>
+          {% endif %}
+        </td>
+        <td class="px-4 py-3">
+          {% if log.acao == "access_denied" %}
+            {% include "components/badge_status.html" with status="baixa" label=log.get_acao_display %}
+          {% elif log.acao == "create" %}
+            {% include "components/badge_status.html" with status="alta" label=log.get_acao_display %}
+          {% else %}
+            {% include "components/badge_status.html" with status="media" label=log.get_acao_display %}
+          {% endif %}
+        </td>
+        <td class="px-4 py-3 text-slate-600">
+          <span class="font-medium text-slate-800">{{ log.entity_type }}</span>
+          <span class="text-slate-400">#{{ log.entity_id }}</span>
+        </td>
+        <td class="px-4 py-3 text-slate-600">{{ log.campo|default:"—" }}</td>
+        <td class="max-w-[12rem] truncate px-4 py-3 text-slate-600" title="{{ log.valor_anterior }}">
+          {{ log.valor_anterior|default:"—"|truncatechars:40 }}
+        </td>
+        <td class="max-w-[12rem] truncate px-4 py-3 text-slate-600" title="{{ log.valor_novo }}">
+          {{ log.valor_novo|default:"—"|truncatechars:40 }}
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="7" class="px-4 py-8 text-center text-slate-500">
+          Nenhum registro de auditoria encontrado para os filtros atuais.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% include "components/pagination.html" with page_obj=page_obj %}
+{% endblock %}

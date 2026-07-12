@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Logs de notificação — Greenn People{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-2xl font-semibold text-slate-800">Logs de notificação</h1>
+  <p class="mt-1 text-slate-500">
+    Histórico de envios de e-mail (lembretes de etapa e PDI), inclusive falhas de entrega.
+  </p>
+</div>
+
+<form
+  method="get"
+  class="mb-6 flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+  role="search"
+  aria-label="Filtrar logs de notificação"
+>
+  <div>
+    <label for="status" class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Status</label>
+    <select
+      id="status"
+      name="status"
+      class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500"
+    >
+      <option value="">Todos</option>
+      {% for value, label in status_choices %}
+      <option value="{{ value }}" {% if filtro_status == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label for="tipo" class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Tipo</label>
+    <select
+      id="tipo"
+      name="tipo"
+      class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500"
+    >
+      <option value="">Todos</option>
+      {% for value, label in tipo_choices %}
+      <option value="{{ value }}" {% if filtro_tipo == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="flex gap-2">
+    <button
+      type="submit"
+      class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+    >Filtrar</button>
+    <a
+      href="{% url 'notifications:log_list' %}"
+      class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+    >Limpar</a>
+  </div>
+</form>
+
+<div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+  <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+    <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+      <tr>
+        <th class="px-4 py-3 font-medium">Data</th>
+        <th class="px-4 py-3 font-medium">Destinatário</th>
+        <th class="px-4 py-3 font-medium">Tipo</th>
+        <th class="px-4 py-3 font-medium">Status</th>
+        <th class="px-4 py-3 font-medium">Erro</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+      {% for log in logs %}
+      <tr class="hover:bg-slate-50">
+        <td class="whitespace-nowrap px-4 py-3 text-slate-600">{{ log.created_at|date:"d/m/Y H:i" }}</td>
+        <td class="px-4 py-3">
+          <p class="font-medium text-slate-800">{{ log.destinatario.nome|default:log.destinatario.email }}</p>
+          <p class="text-xs text-slate-500">{{ log.destinatario.email }}</p>
+        </td>
+        <td class="px-4 py-3 text-slate-600">{{ log.get_tipo_display }}</td>
+        <td class="px-4 py-3">
+          {% if log.status == "enviado" %}
+            {% include "components/badge_status.html" with status="alta" label=log.get_status_display %}
+          {% else %}
+            {% include "components/badge_status.html" with status="baixa" label=log.get_status_display %}
+          {% endif %}
+        </td>
+        <td class="max-w-md px-4 py-3 text-slate-600" title="{{ log.erro }}">
+          {{ log.erro|default:"—"|truncatechars:80 }}
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="5" class="px-4 py-8 text-center text-slate-500">
+          Nenhum log de notificação encontrado para os filtros atuais.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% include "components/pagination.html" with page_obj=page_obj %}
+{% endblock %}

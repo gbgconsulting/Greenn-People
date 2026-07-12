@@ -19,4 +19,6 @@ urlpatterns = [
     path('talent/', include('apps.talent.urls')),
     # PersonalDashboardView em `/`; demais rotas do app sob `/dashboard/...`
     path('', include('apps.dashboard.urls')),
+    path('audit/', include('apps.audit.urls')),
+    path('notifications/', include('apps.notifications.urls')),
 ]

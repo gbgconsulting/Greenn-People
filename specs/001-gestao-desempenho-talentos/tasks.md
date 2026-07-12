@@ -174,7 +174,7 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/` na raiz d
 **Purpose**: Notificações, auditoria UI, qualidade, validação end-to-end e preparação de entrega
 
 - [X] T065 [P] Criar model `NotificacaoLog` em `apps/notifications/models.py` e tasks de e-mail (lembrete etapa/PDI) em `apps/notifications/tasks.py`
-- [ ] T066 [P] Implementar `NotificacaoLogListView` em `apps/notifications/views.py` e `AuditLogListView` com filtros em `apps/audit/views.py`
+- [X] T066 [P] Implementar `NotificacaoLogListView` em `apps/notifications/views.py` e `AuditLogListView` com filtros em `apps/audit/views.py`
 - [ ] T067 Garantir `paginate_by = 20` em todas as `ListView` dos apps e partials HTMX de paginação
 - [ ] T068 [P] Revisar UI responsiva e design system em `templates/` e `static/css/tailwind.css` (sprints de refino)
 - [ ] T069 [P] Documentar setup local (venv, migrate, Tailwind watch, Celery) em `README.md` alinhado a `specs/001-gestao-desempenho-talentos/quickstart.md`
