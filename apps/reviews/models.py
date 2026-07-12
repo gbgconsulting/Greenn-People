@@ -134,3 +134,43 @@ class AvaliacaoCompetencia(TimeStampedModel):
                 if errors:
                     raise ValidationError(errors)
         super().save(*args, **kwargs)
+
+
+class Feedback(TimeStampedModel):
+    """Structured feedback linked to an evaluation; ack tracked via ciente_em."""
+
+    class Tipo(models.TextChoices):
+        COLABORADOR = 'colaborador', 'Colaborador'
+        LIDER = 'lider', 'Líder'
+
+    avaliacao = models.ForeignKey(
+        Avaliacao,
+        on_delete=models.PROTECT,
+        related_name='feedbacks',
+        verbose_name='avaliação',
+    )
+    autor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name='feedbacks_autorados',
+        verbose_name='autor',
+    )
+    tipo = models.CharField(
+        'tipo',
+        max_length=20,
+        choices=Tipo.choices,
+    )
+    conteudo = models.TextField('conteúdo')
+    ciente_em = models.DateTimeField(
+        'ciente em',
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        verbose_name = 'feedback'
+        verbose_name_plural = 'feedbacks'
+        ordering = ['-created_at', 'id']
+
+    def __str__(self) -> str:
+        return f'{self.get_tipo_display()} — {self.avaliacao}'

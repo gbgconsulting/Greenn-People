@@ -102,7 +102,7 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/` na raiz d
 - [X] T039 [US2] Implementar `MetaApproveView` e `MetaRejectView` (HTMX `#meta-row-<pk>`) em `apps/goals/views.py`
 - [X] T040 [US2] Implementar `normalize_score`, `calcular_nota_final_lider` e `calcular_nota_final_autoavaliacao` em `apps/reviews/services/evaluation.py` conforme `contracts/calculation-contract.md`
 - [X] T041 [US2] Implementar `LeaderAssessmentView` + `LeaderAssessmentForm` em `apps/reviews/views.py` / `forms.py` e template `templates/reviews/leader_assessment.html`
-- [ ] T042 [P] [US2] Criar model `Feedback` em `apps/reviews/models.py` (`tipo`, `conteudo`, `ciente_em`)
+- [X] T042 [P] [US2] Criar model `Feedback` em `apps/reviews/models.py` (`tipo`, `conteudo`, `ciente_em`)
 - [ ] T043 [US2] Implementar `FeedbackListView`, `FeedbackCreateView` e `FeedbackAcknowledgeView` em `apps/reviews/views.py` com escopo e histórico
 - [ ] T044 [US2] Completar `AdvanceStageView` para etapas de líder (`aprovacao_metas` → `resultados`, `aprovacao_resultados` → `avaliacao` com side-effect de snapshots, `avaliacao` → `feedback`)
 - [ ] T045 [US2] Implementar `TeamDashboardView` em `apps/dashboard/views.py` e `templates/dashboard/team.html` (somente `is_leader`, lista escopo)
