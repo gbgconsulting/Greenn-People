@@ -180,7 +180,7 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/` na raiz d
 - [X] T069 [P] Documentar setup local (venv, migrate, Tailwind watch, Celery) em `README.md` alinhado a `specs/001-gestao-desempenho-talentos/quickstart.md`
 - [X] T070 Executar validação manual dos 5 cenários de `quickstart.md` e checks constitucionais (escopo, snapshots, audit append-only, dashboard < 2s)
 - [X] T071 [P] Preparar `requirements.txt` / settings para PostgreSQL (sem recursos exclusivos SQLite) conforme plan.md
-- [ ] T072 [P] Adicionar `Dockerfile` e `docker-compose.yml` (app + Redis + Postgres) nas sprints finais
+- [X] T072 [P] Adicionar `Dockerfile` e `docker-compose.yml` (app + Redis + Postgres) nas sprints finais
 - [ ] T073 Configurar `pytest-django`, `tests/factories.py` e suíte inicial de escopo/máquina de estados em `tests/` (sprints finais, research R10)
 
 ---

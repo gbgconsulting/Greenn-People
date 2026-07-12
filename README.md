@@ -92,6 +92,18 @@ ruff check apps/
 | [`specs/001-gestao-desempenho-talentos/plan.md`](specs/001-gestao-desempenho-talentos/plan.md) | Plano técnico e estrutura do projeto |
 | [`.env.example`](.env.example) | Variáveis de ambiente (Django, `DATABASE_URL`, Redis/Celery, e-mail) |
 
+## Docker (app + PostgreSQL + Redis)
+
+Stack local com Postgres, Redis, Django e Celery (worker + beat):
+
+```bash
+docker compose up --build
+# em outro terminal, após o web subir:
+docker compose exec web python manage.py createsuperuser
+```
+
+Acesse `http://127.0.0.1:8000/`. Variáveis padrão estão em `docker-compose.yml` (sobrescreva com `SECRET_KEY` no ambiente se quiser). Arquivos: `Dockerfile`, `docker-compose.yml`, `.dockerignore`.
+
 ## PostgreSQL (produção)
 
 Em desenvolvimento o default é SQLite (`db.sqlite3`). Em produção use `DJANGO_SETTINGS_MODULE=config.settings.prod` e defina `DATABASE_URL` (driver `psycopg` já está em `requirements.txt`):
