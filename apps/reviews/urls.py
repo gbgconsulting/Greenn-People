@@ -20,4 +20,19 @@ urlpatterns = [
         views.LeaderAssessmentView.as_view(),
         name='leader_assessment',
     ),
+    path(
+        '<int:pk>/feedbacks/',
+        views.FeedbackListView.as_view(),
+        name='feedback_list',
+    ),
+    path(
+        '<int:pk>/feedbacks/new/',
+        views.FeedbackCreateView.as_view(),
+        name='feedback_create',
+    ),
+    path(
+        'feedbacks/<int:pk>/acknowledge/',
+        views.FeedbackAcknowledgeView.as_view(),
+        name='feedback_acknowledge',
+    ),
 ]

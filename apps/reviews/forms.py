@@ -5,11 +5,18 @@ from decimal import Decimal
 from django import forms
 from django.forms import BaseModelFormSet, modelformset_factory
 
+from apps.accounts.services.scope import user_in_scope
 from apps.cycles.models import Ciclo
-from apps.reviews.models import Avaliacao, AvaliacaoCompetencia
+from apps.reviews.models import Avaliacao, AvaliacaoCompetencia, Feedback
 
 _INPUT = (
     'w-full max-w-[8rem] rounded-lg border border-slate-200 px-3 py-2 text-sm '
+    'focus:outline-none focus:ring-2 focus:ring-emerald-500 '
+    'focus:border-transparent'
+)
+
+_TEXTAREA = (
+    'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm '
     'focus:outline-none focus:ring-2 focus:ring-emerald-500 '
     'focus:border-transparent'
 )
@@ -229,3 +236,67 @@ LeaderAssessmentFormSet = modelformset_factory(
     extra=0,
     can_delete=False,
 )
+
+
+def feedback_create_allowed(user, avaliacao: Avaliacao | None) -> bool:
+    """True se o usuário pode registrar feedback nesta avaliação (ciclo aberto + escopo)."""
+    if avaliacao is None or not getattr(user, 'pk', None):
+        return False
+    if avaliacao.ciclo.status != Ciclo.Status.ABERTO:
+        return False
+    return user_in_scope(user, avaliacao.usuario_id)
+
+
+def resolve_feedback_tipo(autor, avaliacao: Avaliacao) -> str:
+    """Colaborador na própria avaliação; líder (ou outro no escopo) caso contrário."""
+    if getattr(autor, 'pk', None) == avaliacao.usuario_id:
+        return Feedback.Tipo.COLABORADOR
+    return Feedback.Tipo.LIDER
+
+
+def can_acknowledge_feedback(user, feedback: Feedback) -> bool:
+    """Ciência apenas do colaborador avaliado, em feedback do líder ainda sem ciente_em."""
+    if feedback.tipo != Feedback.Tipo.LIDER:
+        return False
+    if feedback.ciente_em is not None:
+        return False
+    return feedback.avaliacao.usuario_id == getattr(user, 'pk', None)
+
+
+class FeedbackForm(forms.ModelForm):
+    """Conteúdo estruturado do feedback (tipo/autor definidos na view)."""
+
+    class Meta:
+        model = Feedback
+        fields = ('conteudo',)
+        labels = {
+            'conteudo': 'Conteúdo',
+        }
+        widgets = {
+            'conteudo': forms.Textarea(
+                attrs={
+                    'class': _TEXTAREA,
+                    'rows': 5,
+                    'placeholder': 'Descreva o feedback de forma clara e objetiva.',
+                },
+            ),
+        }
+
+    def __init__(self, *args, avaliacao: Avaliacao | None = None, **kwargs):
+        self.avaliacao = avaliacao
+        super().__init__(*args, **kwargs)
+        self.fields['conteudo'].required = True
+
+    def clean_conteudo(self):
+        conteudo = (self.cleaned_data.get('conteudo') or '').strip()
+        if not conteudo:
+            raise forms.ValidationError('Informe o conteúdo do feedback.')
+        return conteudo
+
+    def clean(self):
+        cleaned = super().clean()
+        if self.avaliacao is not None and self.avaliacao.ciclo.status != Ciclo.Status.ABERTO:
+            raise forms.ValidationError(
+                'Só é possível registrar feedback em um ciclo aberto.',
+            )
+        return cleaned

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Novo feedback — Greenn People{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-lg">
+  <h1 class="mb-1 text-2xl font-semibold text-slate-800">Novo feedback</h1>
+  <p class="mb-6 text-slate-500">
+    Registre um feedback estruturado para
+    <span class="font-medium text-slate-700">{{ colaborador.nome|default:colaborador.email }}</span>
+    {% if avaliacao.ciclo %}
+      no ciclo {{ avaliacao.ciclo.nome }}
+    {% endif %}.
+    O histórico permanece vinculado a esta avaliação.
+  </p>
+
+  <form method="post" novalidate class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700" role="alert">
+        {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="mb-6">
+      <label for="{{ form.conteudo.id_for_label }}" class="mb-1 block text-sm font-medium text-slate-700">
+        {{ form.conteudo.label }}
+      </label>
+      {{ form.conteudo }}
+      {% if form.conteudo.errors %}
+        <p class="mt-1 text-xs text-rose-600" role="alert">{{ form.conteudo.errors.0 }}</p>
+      {% endif %}
+    </div>
+
+    <div class="flex flex-wrap gap-3">
+      {% url 'reviews:feedback_list' avaliacao.pk as cancel_url %}
+      {% include "components/button.html" with label="Salvar" type="submit" variant="primary" %}
+      {% include "components/button.html" with label="Cancelar" href=cancel_url variant="secondary" %}
+    </div>
+  </form>
+</div>
+{% endblock %}

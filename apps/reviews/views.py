@@ -2,22 +2,28 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import Http404, HttpResponseRedirect
 from django.urls import reverse
+from django.utils import timezone
 from django.views import View
-from django.views.generic import DetailView
+from django.views.generic import CreateView, DetailView, ListView
 
+from apps.accounts.services.scope import user_in_scope
 from apps.audit.services import log_scope_denied
 from apps.core.mixins import ScopedObjectMixin
 from apps.cycles.exceptions import CycleClosedError, StageTransitionError
 from apps.cycles.services.stage import advance_stage
 from apps.reviews.exceptions import CalculationError
 from apps.reviews.forms import (
+    FeedbackForm,
     LeaderAssessmentFormSet,
     SelfAssessmentFormSet,
+    can_acknowledge_feedback,
     can_leader_assess,
+    feedback_create_allowed,
     leader_assessment_editable,
+    resolve_feedback_tipo,
     self_assessment_editable,
 )
-from apps.reviews.models import Avaliacao, AvaliacaoCompetencia
+from apps.reviews.models import Avaliacao, AvaliacaoCompetencia, Feedback
 from apps.reviews.services.evaluation import calcular_nota_final_lider
 
 # Transições que o próprio colaborador dispara (T036 / US1).
@@ -302,3 +308,169 @@ class LeaderAssessmentView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
             self.request,
             'Avaliação do líder salva. Nota final calculada com sucesso.',
         )
+
+
+def _get_avaliacao_in_scope(request, pk: int) -> Avaliacao:
+    """Carrega avaliação no escopo; IDOR → 404 + auditoria."""
+    try:
+        avaliacao = (
+            Avaliacao.objects.select_related('ciclo', 'usuario').get(pk=pk)
+        )
+    except Avaliacao.DoesNotExist as exc:
+        raise Http404() from exc
+
+    if not user_in_scope(request.user, avaliacao.usuario_id):
+        log_scope_denied(request.user, avaliacao)
+        raise Http404()
+    return avaliacao
+
+
+class FeedbackListView(LoginRequiredMixin, ScopedObjectMixin, ListView):
+    """Histórico de feedbacks da avaliação (escopo ``avaliacao__usuario``)."""
+
+    model = Feedback
+    template_name = 'reviews/feedback_list.html'
+    context_object_name = 'feedbacks'
+    paginate_by = 20
+    scope_user_field = 'avaliacao__usuario'
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        self.avaliacao = _get_avaliacao_in_scope(request, self.kwargs['pk'])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .filter(avaliacao_id=self.avaliacao.pk)
+            .select_related(
+                'autor',
+                'avaliacao',
+                'avaliacao__usuario',
+                'avaliacao__ciclo',
+            )
+            .order_by('-created_at', 'id')
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        rows = []
+        for feedback in context['feedbacks']:
+            rows.append(
+                {
+                    'feedback': feedback,
+                    'pode_dar_ciencia': can_acknowledge_feedback(user, feedback),
+                },
+            )
+        context.update(
+            {
+                'avaliacao': self.avaliacao,
+                'colaborador': self.avaliacao.usuario,
+                'feedback_rows': rows,
+                'pode_criar': feedback_create_allowed(user, self.avaliacao),
+            },
+        )
+        return context
+
+
+class FeedbackCreateView(LoginRequiredMixin, CreateView):
+    """Registro de feedback (colaborador ou líder) no escopo da avaliação."""
+
+    model = Feedback
+    form_class = FeedbackForm
+    template_name = 'reviews/feedback_form.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+
+        self.avaliacao = _get_avaliacao_in_scope(request, self.kwargs['pk'])
+        if not feedback_create_allowed(request.user, self.avaliacao):
+            messages.error(
+                request,
+                'Só é possível registrar feedback em um ciclo aberto '
+                'para avaliações no seu escopo.',
+            )
+            return HttpResponseRedirect(
+                reverse(
+                    'reviews:feedback_list',
+                    kwargs={'pk': self.avaliacao.pk},
+                ),
+            )
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['avaliacao'] = self.avaliacao
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                'avaliacao': self.avaliacao,
+                'colaborador': self.avaliacao.usuario,
+            },
+        )
+        return context
+
+    def form_valid(self, form):
+        form.instance.avaliacao = self.avaliacao
+        form.instance.autor = self.request.user
+        form.instance.tipo = resolve_feedback_tipo(
+            self.request.user,
+            self.avaliacao,
+        )
+        messages.success(self.request, 'Feedback registrado com sucesso.')
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse(
+            'reviews:feedback_list',
+            kwargs={'pk': self.avaliacao.pk},
+        )
+
+
+class FeedbackAcknowledgeView(LoginRequiredMixin, View):
+    """Colaborador dá ciência ao feedback do líder (``ciente_em``; escopo Self)."""
+
+    http_method_names = ['post', 'options']
+
+    def post(self, request, *args, **kwargs):
+        try:
+            feedback = (
+                Feedback.objects.select_related(
+                    'avaliacao',
+                    'avaliacao__usuario',
+                ).get(pk=self.kwargs['pk'])
+            )
+        except Feedback.DoesNotExist as exc:
+            raise Http404() from exc
+
+        if feedback.avaliacao.usuario_id != request.user.pk:
+            log_scope_denied(request.user, feedback)
+            raise Http404()
+
+        list_url = reverse(
+            'reviews:feedback_list',
+            kwargs={'pk': feedback.avaliacao_id},
+        )
+
+        if feedback.tipo != Feedback.Tipo.LIDER:
+            messages.error(
+                request,
+                'Somente o feedback do líder exige ciência do colaborador.',
+            )
+            return HttpResponseRedirect(list_url)
+
+        if feedback.ciente_em is not None:
+            messages.info(request, 'Você já deu ciência a este feedback.')
+            return HttpResponseRedirect(list_url)
+
+        feedback.ciente_em = timezone.now()
+        feedback.save(update_fields=['ciente_em', 'updated_at'])
+        messages.success(request, 'Ciência registrada com sucesso.')
+        return HttpResponseRedirect(list_url)
