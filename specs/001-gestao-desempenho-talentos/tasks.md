@@ -61,7 +61,7 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/` na raiz d
 - [X] T024 Criar model `Avaliacao` em `apps/reviews/models.py` (`unique_together` ciclo+usuario, campo `etapa`) e migration inicial
 - [X] T025 Implementar máquina de estados `can_advance` / `advance_stage` / `is_cycle_closed` em `apps/cycles/services/stage.py` conforme `contracts/stage-machine-contract.md`
 - [X] T026 Criar model `AuditLog` append-only em `apps/audit/models.py`, signals em `apps/audit/signals.py`, admin read-only e `log_scope_denied` usado pelo `ScopedObjectMixin`
-- [ ] T027 Incluir URLconfs dos apps em `config/urls.py` e expor rotas públicas de accounts + shell de dashboard autenticado mínimo em `apps/dashboard/views.py` (`PersonalDashboardView` em `/`)
+- [X] T027 Incluir URLconfs dos apps em `config/urls.py` e expor rotas públicas de accounts + shell de dashboard autenticado mínimo em `apps/dashboard/views.py` (`PersonalDashboardView` em `/`)
 
 **Checkpoint**: Admin consegue cadastrar área/cargo/competências, registrar usuário, abrir ciclo (cria avaliações); login por e-mail funciona; escopo e auditoria base disponíveis
 

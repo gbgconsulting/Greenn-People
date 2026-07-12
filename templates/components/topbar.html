@@ -3,7 +3,7 @@
 {% endcomment %}
 <header class="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 md:px-6">
   <div class="md:hidden">
-    <a href="/" class="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-base font-semibold text-transparent">
+    <a href="{% url 'dashboard:personal' %}" class="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-base font-semibold text-transparent">
       Greenn People
     </a>
   </div>
@@ -12,7 +12,7 @@
       <span class="hidden max-w-[12rem] truncate sm:inline" title="{{ user.get_username }}">
         {{ user.get_username }}
       </span>
-      <form method="post" action="/accounts/logout/" class="inline">
+      <form method="post" action="{% url 'accounts:logout' %}" class="inline">
         {% csrf_token %}
         <button
           type="submit"
@@ -23,7 +23,7 @@
       </form>
     {% else %}
       <a
-        href="/accounts/login/"
+        href="{% url 'accounts:login' %}"
         class="rounded-lg bg-gradient-to-r from-emerald-600 to-teal-500 px-3 py-1.5 font-medium text-white shadow-sm transition-colors hover:from-emerald-700 hover:to-teal-600"
       >
         Entrar
