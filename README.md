@@ -90,4 +90,15 @@ ruff check apps/
 | [`docs/`](docs/README.md) | Stack, arquitetura, modelo de dados, coding standards, design system |
 | [`specs/001-gestao-desempenho-talentos/quickstart.md`](specs/001-gestao-desempenho-talentos/quickstart.md) | Setup resumido + cenários de validação |
 | [`specs/001-gestao-desempenho-talentos/plan.md`](specs/001-gestao-desempenho-talentos/plan.md) | Plano técnico e estrutura do projeto |
-| [`.env.example`](.env.example) | Variáveis de ambiente (Django, Redis/Celery, e-mail) |
+| [`.env.example`](.env.example) | Variáveis de ambiente (Django, `DATABASE_URL`, Redis/Celery, e-mail) |
+
+## PostgreSQL (produção)
+
+Em desenvolvimento o default é SQLite (`db.sqlite3`). Em produção use `DJANGO_SETTINGS_MODULE=config.settings.prod` e defina `DATABASE_URL` (driver `psycopg` já está em `requirements.txt`):
+
+```bash
+# Exemplo
+DATABASE_URL=postgresql://user:password@127.0.0.1:5432/greenn_people
+```
+
+O schema usa apenas ORM portátil Django — sem recursos exclusivos de SQLite ou PostgreSQL.

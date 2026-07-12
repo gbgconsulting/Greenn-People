@@ -89,13 +89,19 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
+# SQLite by default (local). Set DATABASE_URL for PostgreSQL (production).
+# Schema uses only portable Django ORM features — no SQLite/Postgres exclusives.
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+_database_url = env.str('DATABASE_URL', default='')
+if _database_url:
+    DATABASES = {'default': env.db_url_config(_database_url)}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
 
 
 # Password validation

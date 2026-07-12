@@ -178,8 +178,8 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/` na raiz d
 - [X] T067 Garantir `paginate_by = 20` em todas as `ListView` dos apps e partials HTMX de paginação
 - [X] T068 [P] Revisar UI responsiva e design system em `templates/` e `static/css/tailwind.css` (sprints de refino)
 - [X] T069 [P] Documentar setup local (venv, migrate, Tailwind watch, Celery) em `README.md` alinhado a `specs/001-gestao-desempenho-talentos/quickstart.md`
-- [ ] T070 Executar validação manual dos 5 cenários de `quickstart.md` e checks constitucionais (escopo, snapshots, audit append-only, dashboard < 2s)
-- [ ] T071 [P] Preparar `requirements.txt` / settings para PostgreSQL (sem recursos exclusivos SQLite) conforme plan.md
+- [X] T070 Executar validação manual dos 5 cenários de `quickstart.md` e checks constitucionais (escopo, snapshots, audit append-only, dashboard < 2s)
+- [X] T071 [P] Preparar `requirements.txt` / settings para PostgreSQL (sem recursos exclusivos SQLite) conforme plan.md
 - [ ] T072 [P] Adicionar `Dockerfile` e `docker-compose.yml` (app + Redis + Postgres) nas sprints finais
 - [ ] T073 Configurar `pytest-django`, `tests/factories.py` e suíte inicial de escopo/máquina de estados em `tests/` (sprints finais, research R10)
 
