@@ -140,7 +140,7 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/` na raiz d
 ### Implementation for User Story 4
 
 - [X] T053 [US4] Implementar CRUD de ciclos + `CicloOpenView` / `CicloCloseView` em `apps/cycles/views.py` e templates `templates/cycles/`
-- [ ] T054 [US4] Implementar CRUD de `ObjetivoEstrategico` sob ciclo em `apps/cycles/views.py` (ou `apps/goals/`) e rotas `/cycles/<pk>/objectives/`
+- [X] T054 [US4] Implementar CRUD de `ObjetivoEstrategico` sob ciclo em `apps/cycles/views.py` (ou `apps/goals/`) e rotas `/cycles/<pk>/objectives/`
 - [ ] T055 [P] [US4] Criar model `AderenciaSnapshot` em `apps/dashboard/models.py`
 - [ ] T056 [US4] Implementar task `calculate_adherence_snapshot` em `apps/dashboard/tasks.py` e schedule Beat diário em `config/celery.py`
 - [ ] T057 [US4] Implementar `AdherenceListView` e `AdminDashboardView` em `apps/dashboard/views.py` lendo snapshots (sem recálculo síncrono)

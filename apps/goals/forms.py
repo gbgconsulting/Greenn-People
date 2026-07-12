@@ -99,6 +99,24 @@ def meta_approval_actionable(
     return False
 
 
+class ObjetivoEstrategicoForm(forms.ModelForm):
+    """Cadastro/edição de objetivo estratégico vinculado a um ciclo (admin RH)."""
+
+    class Meta:
+        model = ObjetivoEstrategico
+        fields = ('descricao',)
+        labels = {
+            'descricao': 'Descrição',
+        }
+        widgets = {
+            'descricao': forms.Textarea(attrs={'rows': 4}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['descricao'].widget.attrs.update({'class': _TEXTAREA})
+
+
 class MetaForm(forms.ModelForm):
     """Cadastro/edição de meta do colaborador (bloqueio fora da etapa permitida)."""
 

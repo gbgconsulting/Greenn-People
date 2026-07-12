@@ -27,4 +27,24 @@ urlpatterns = [
         views.CicloCloseView.as_view(),
         name='ciclo_close',
     ),
+    path(
+        '<int:ciclo_pk>/objectives/',
+        views.ObjetivoEstrategicoListView.as_view(),
+        name='objetivo_list',
+    ),
+    path(
+        '<int:ciclo_pk>/objectives/new/',
+        views.ObjetivoEstrategicoCreateView.as_view(),
+        name='objetivo_create',
+    ),
+    path(
+        '<int:ciclo_pk>/objectives/<int:pk>/edit/',
+        views.ObjetivoEstrategicoUpdateView.as_view(),
+        name='objetivo_update',
+    ),
+    path(
+        '<int:ciclo_pk>/objectives/<int:pk>/delete/',
+        views.ObjetivoEstrategicoDeleteView.as_view(),
+        name='objetivo_delete',
+    ),
 ]

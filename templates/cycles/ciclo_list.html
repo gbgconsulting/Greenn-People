@@ -61,6 +61,8 @@
             </form>
             <span class="text-slate-300">|</span>
             {% endif %}
+            <a href="{% url 'cycles:objetivo_list' ciclo.pk %}" class="text-emerald-700 hover:text-emerald-800">Objetivos</a>
+            <span class="text-slate-300">|</span>
             <a href="{% url 'cycles:ciclo_update' ciclo.pk %}" class="text-emerald-700 hover:text-emerald-800">Editar</a>
             <span class="text-slate-300">|</span>
             <a href="{% url 'cycles:ciclo_delete' ciclo.pk %}" class="text-rose-600 hover:text-rose-700">Excluir</a>
