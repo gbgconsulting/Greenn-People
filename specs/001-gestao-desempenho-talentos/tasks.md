@@ -159,7 +159,7 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/` na raiz d
 
 ### Implementation for User Story 5
 
-- [ ] T060 [P] [US5] Criar model `ClassificacaoTalento` em `apps/talent/models.py` (`unique_together` usuario+ciclo)
+- [X] T060 [P] [US5] Criar model `ClassificacaoTalento` em `apps/talent/models.py` (`unique_together` usuario+ciclo)
 - [ ] T061 [US5] Implementar `derive_desempenho`, `calculate_quadrante` e `upsert_classification` em `apps/talent/services/classification.py`
 - [ ] T062 [US5] Implementar `TalentMatrixView` com filtros área/cargo e escopo hierárquico em `apps/talent/views.py` e `templates/talent/matrix.html`
 - [ ] T063 [US5] Implementar `ClassifyTalentView` e `ToggleVisibilityView` (admin) em `apps/talent/views.py` e `apps/talent/urls.py`
