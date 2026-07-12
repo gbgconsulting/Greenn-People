@@ -1,7 +1,10 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from apps.core.models import TimeStampedModel
+
+_SNAPSHOT_FIELDS = ('peso_utilizado', 'nivel_esperado_utilizado')
 
 
 class Avaliacao(TimeStampedModel):
@@ -56,3 +59,78 @@ class Avaliacao(TimeStampedModel):
 
     def __str__(self) -> str:
         return f'{self.usuario} — {self.ciclo} ({self.get_etapa_display()})'
+
+
+class AvaliacaoCompetencia(TimeStampedModel):
+    """Per-competency scores within an evaluation; weight/expected level are snapshots."""
+
+    avaliacao = models.ForeignKey(
+        Avaliacao,
+        on_delete=models.PROTECT,
+        related_name='linhas_competencia',
+        verbose_name='avaliação',
+    )
+    competencia = models.ForeignKey(
+        'competencies.Competencia',
+        on_delete=models.PROTECT,
+        related_name='avaliacoes_competencia',
+        verbose_name='competência',
+    )
+    nota_autoavaliacao = models.DecimalField(
+        'nota da autoavaliação',
+        max_digits=8,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+    nota_lider = models.DecimalField(
+        'nota do líder',
+        max_digits=8,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+    peso_utilizado = models.DecimalField(
+        'peso utilizado',
+        max_digits=8,
+        decimal_places=2,
+        help_text='Snapshot write-once do peso do cargo no momento da avaliação.',
+    )
+    nivel_esperado_utilizado = models.DecimalField(
+        'nível esperado utilizado',
+        max_digits=8,
+        decimal_places=2,
+        help_text='Snapshot write-once do nível esperado no momento da avaliação.',
+    )
+
+    class Meta:
+        verbose_name = 'avaliação de competência'
+        verbose_name_plural = 'avaliações de competência'
+        ordering = ['avaliacao', 'competencia']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['avaliacao', 'competencia'],
+                name='unique_avaliacao_competencia',
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f'{self.avaliacao} — {self.competencia}'
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            previous = (
+                AvaliacaoCompetencia.objects.filter(pk=self.pk)
+                .values(*_SNAPSHOT_FIELDS)
+                .first()
+            )
+            if previous is not None:
+                errors = {}
+                for field in _SNAPSHOT_FIELDS:
+                    if previous[field] != getattr(self, field):
+                        errors[field] = (
+                            'Campo snapshot é write-once e não pode ser alterado.'
+                        )
+                if errors:
+                    raise ValidationError(errors)
+        super().save(*args, **kwargs)

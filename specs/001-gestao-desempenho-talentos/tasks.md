@@ -70,14 +70,14 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/` na raiz d
 ## Phase 3: User Story 1 — Colaborador entende expectativas e registra desempenho (Priority: P1) 🎯 MVP
 
 **Goal**: Colaborador visualiza competências/nível esperado e metas ligadas a objetivos; registra progresso e conclui autoavaliação
-
+    
 **Independent Test**: Criar colaborador com cargo+competências, ciclo aberto com metas/objetivo; verificar expectativas, progresso e autoavaliação isolados (quickstart Cenário 1)
 
 ### Implementation for User Story 1
 
 - [X] T028 [P] [US1] Criar model `ObjetivoEstrategico` em `apps/goals/models.py` (FK `Ciclo` PROTECT)
-- [ ] T029 [P] [US1] Criar model `Meta` em `apps/goals/models.py` (`status`, `status_resultado`, `progresso` 0–100, regras FR-026)
-- [ ] T030 [P] [US1] Criar model `AvaliacaoCompetencia` em `apps/reviews/models.py` (snapshots `peso_utilizado` / `nivel_esperado_utilizado` write-once no `save()`)
+- [X] T029 [P] [US1] Criar model `Meta` em `apps/goals/models.py` (`status`, `status_resultado`, `progresso` 0–100, regras FR-026)
+- [X] T030 [P] [US1] Criar model `AvaliacaoCompetencia` em `apps/reviews/models.py` (snapshots `peso_utilizado` / `nivel_esperado_utilizado` write-once no `save()`)
 - [ ] T031 [US1] Implementar `ExpectationsView` em `apps/goals/views.py` e template `templates/goals/expectations.html` (competências+nível esperado+metas; mensagem de vínculo pendente se sem cargo)
 - [ ] T032 [US1] Implementar CRUD de metas do colaborador (`MetaListView`, `MetaCreateView`, `MetaForm`) em `apps/goals/views.py` / `forms.py` com `ScopedObjectMixin` e URLs em `apps/goals/urls.py`
 - [ ] T033 [US1] Implementar `MetaProgressUpdateView` + `MetaProgressForm` em `apps/goals/` (somente etapa `resultados`, HTMX partial `#meta-row-<pk>`)
