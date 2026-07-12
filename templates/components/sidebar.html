@@ -55,7 +55,7 @@
       <ul class="space-y-0.5">
         <li>
           <a
-            href="/dashboard/team/"
+            href="{% url 'dashboard:team' %}"
             class="block rounded-lg px-3 py-2 transition-colors {% if '/dashboard/team' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
           >Painel do time</a>
         </li>

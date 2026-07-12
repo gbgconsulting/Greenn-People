@@ -15,6 +15,14 @@ class RequiresAdminMixin(UserPassesTestMixin):
         return bool(user.is_authenticated and getattr(user, 'is_admin', False))
 
 
+class RequiresLeaderMixin(UserPassesTestMixin):
+    """Restrict the view to users with ``is_leader=True`` (direct reports)."""
+
+    def test_func(self) -> bool:
+        user = self.request.user
+        return bool(user.is_authenticated and getattr(user, 'is_leader', False))
+
+
 class ScopedObjectMixin:
     """Restringe listagem e detalhe ao escopo do usuário autenticado.
 
