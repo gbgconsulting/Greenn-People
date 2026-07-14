@@ -23,6 +23,12 @@ dist/
 build/
 .Python
 
+# Testes e lint
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
 # Arquivos de sistema e editores
 .DS_Store
 Thumbs.db
