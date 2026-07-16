@@ -35,6 +35,11 @@ ACAO_PDI_TRACKED_FIELDS = (
     'status',
 )
 
+META_TRACKED_FIELDS = (
+    'status',
+    'status_resultado',
+)
+
 _AUDIT_OLD_ATTR = '_audit_old_values'
 _connected = False
 
@@ -92,6 +97,11 @@ def connect_audit_signals() -> None:
 
     _attach_pre_save(AcaoPDI, ACAO_PDI_TRACKED_FIELDS)
     _attach_post_save(AcaoPDI, ACAO_PDI_TRACKED_FIELDS)
+
+    from apps.goals.models import Meta
+
+    _attach_pre_save(Meta, META_TRACKED_FIELDS)
+    _attach_post_save(Meta, META_TRACKED_FIELDS)
 
     try:
         from django.apps import apps
