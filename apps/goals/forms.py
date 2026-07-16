@@ -55,14 +55,23 @@ def meta_progress_editable(
     avaliacao: Avaliacao | None,
     meta: Meta | None = None,
 ) -> bool:
-    """True se progresso pode ser registrado (etapa resultados, meta aprovada)."""
+    """True se progresso pode ser registrado na etapa atual."""
     if avaliacao is None or avaliacao.ciclo.status != Ciclo.Status.ABERTO:
         return False
-    if avaliacao.etapa != Avaliacao.Etapa.RESULTADOS:
-        return False
-    if meta is not None and meta.status != Meta.Status.APROVADA:
-        return False
-    return True
+
+    etapa = avaliacao.etapa
+    if etapa == Avaliacao.Etapa.RESULTADOS:
+        if meta is not None and meta.status != Meta.Status.APROVADA:
+            return False
+        return True
+
+    if etapa == Avaliacao.Etapa.APROVACAO_RESULTADOS and meta is not None:
+        return (
+            meta.status == Meta.Status.APROVADA
+            and meta.status_resultado == Meta.StatusResultado.REPROVADO
+        )
+
+    return False
 
 
 def is_meta_approver(approver, meta: Meta) -> bool:
