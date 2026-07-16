@@ -54,7 +54,7 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/`, `tests/`
 ### Implementation for User Story 1
 
 - [X] T006 [US1] Garantir que `reject_meta` / `reject_resultado` em `apps/goals/services/approval.py` persistem `reprovada`/`reprovado` sem auto-`reopen()` e sem mutar etapa (conforme `contracts/post-rejection-contract.md`)
-- [ ] T007 [US1] Ao salvar correção de meta com `status=reprovada` na etapa `aprovacao_metas`, chamar `Meta.reopen()` em `apps/goals/views.py` / `apps/goals/forms.py` (update de conteúdo elegível)
+- [X] T007 [US1] Ao salvar correção de meta com `status=reprovada` na etapa `aprovacao_metas`, chamar `Meta.reopen()` em `apps/goals/views.py` / `apps/goals/forms.py` (update de conteúdo elegível)
 - [ ] T008 [US1] Estender `meta_progress_editable` em `apps/goals/forms.py` para permitir edição quando `status_resultado=reprovado` e etapa = `aprovacao_resultados` (além de `resultados`)
 - [ ] T009 [US1] Em `MetaProgressUpdateView` / `MetaProgressForm` (`apps/goals/views.py`, `apps/goals/forms.py`), ao salvar progresso elegível pós-reprovação, chamar `Meta.reopen_resultado()` → `pendente`
 - [ ] T010 [P] [US1] Exibir próximo passo acionável (corrigir / reenviar / reaprovar) em `templates/goals/partials/meta_row.html` e `templates/goals/meta_list_partial.html` quando item estiver reprovado

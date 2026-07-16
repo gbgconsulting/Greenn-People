@@ -291,8 +291,6 @@ class MetaUpdateView(LoginRequiredMixin, ScopedObjectMixin, UpdateView):
         return kwargs
 
     def form_valid(self, form):
-        if form.instance.status == Meta.Status.REPROVADA:
-            form.instance.status = Meta.Status.PENDENTE
         messages.success(self.request, 'Meta atualizada com sucesso.')
         return super().form_valid(form)
 

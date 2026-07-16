@@ -166,6 +166,19 @@ class MetaForm(forms.ModelForm):
 
         return cleaned
 
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if instance.pk and instance.status == Meta.Status.REPROVADA:
+            avaliacao = get_avaliacao_for_user(instance.usuario)
+            if (
+                avaliacao is not None
+                and avaliacao.etapa == Avaliacao.Etapa.APROVACAO_METAS
+            ):
+                instance.reopen()
+        if commit:
+            instance.save()
+        return instance
+
 
 class MetaProgressForm(forms.ModelForm):
     """Atualização de progresso (0–100) somente na etapa resultados."""
