@@ -39,7 +39,7 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/`, `tests/`
 **⚠️ CRITICAL**: Nenhuma user story deve começar antes desta fase
 
 - [X] T004 Incluir tracking de `Meta.status` e `Meta.status_resultado` em `apps/audit/signals.py` (novo `META_TRACKED_FIELDS` + connect nos receivers existentes) para AuditLog append-only com `audit_actor`
-- [ ] T005 Confirmar que `reject_meta` / `reject_resultado` em `apps/goals/services/approval.py` não chamam `advance_stage` nem alteram `Avaliacao.etapa` (ajuste mínimo se houver regressão)
+- [X] T005 Confirmar que `reject_meta` / `reject_resultado` em `apps/goals/services/approval.py` não chamam `advance_stage` nem alteram `Avaliacao.etapa` (ajuste mínimo se houver regressão)
 
 **Checkpoint**: Mudança de status de Meta gera AuditLog; rejeição não retrocede etapa — base pronta para US1–US6
 
