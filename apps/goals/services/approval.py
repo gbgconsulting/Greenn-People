@@ -46,7 +46,12 @@ def approve_meta(meta: Meta, approver: CustomUser) -> Meta:
 
 
 def reject_meta(meta: Meta, approver: CustomUser) -> Meta:
-    """Define ``Meta.status`` como reprovada (reabertura via FR-026 / reopen)."""
+    """Persiste ``Meta.status`` como reprovada.
+
+    Não altera ``Avaliacao.etapa``. Não chama ``Meta.reopen()`` — a reabertura
+    para ``pendente`` ocorre apenas quando o colaborador salva uma correção elegível
+    (FR-026 / ``contracts/post-rejection-contract.md``).
+    """
     _ensure_approver(meta, approver)
     with transaction.atomic():
         locked = Meta.objects.select_for_update().select_related('usuario').get(
@@ -72,7 +77,12 @@ def approve_resultado(meta: Meta, approver: CustomUser) -> Meta:
 
 
 def reject_resultado(meta: Meta, approver: CustomUser) -> Meta:
-    """Define ``Meta.status_resultado`` como reprovado (reabertura via FR-026)."""
+    """Persiste ``Meta.status_resultado`` como reprovado.
+
+    Não altera ``Avaliacao.etapa``. Não chama ``Meta.reopen_resultado()`` — a
+    reabertura para ``pendente`` ocorre apenas na correção elegível do colaborador
+    (FR-026 / ``contracts/post-rejection-contract.md``).
+    """
     _ensure_approver(meta, approver)
     with transaction.atomic():
         locked = Meta.objects.select_for_update().select_related('usuario').get(
