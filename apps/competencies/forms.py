@@ -17,6 +17,7 @@ _TEXTAREA = (
     'focus:outline-none focus:ring-2 focus:ring-emerald-500 '
     'focus:border-transparent'
 )
+_CHECKBOX = 'h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500'
 
 
 class EscalaForm(forms.ModelForm):
@@ -38,11 +39,12 @@ class EscalaForm(forms.ModelForm):
 
     class Meta:
         model = Escala
-        fields = ('nome', 'valor_minimo', 'valor_maximo')
+        fields = ('nome', 'valor_minimo', 'valor_maximo', 'is_active')
         labels = {
             'nome': 'Nome',
             'valor_minimo': 'Valor mínimo',
             'valor_maximo': 'Valor máximo',
+            'is_active': 'Ativa',
         }
 
     def __init__(self, *args, **kwargs):
@@ -50,6 +52,7 @@ class EscalaForm(forms.ModelForm):
         self.fields['nome'].widget.attrs.update({'class': _INPUT})
         self.fields['valor_minimo'].widget.attrs.update({'class': _INPUT})
         self.fields['valor_maximo'].widget.attrs.update({'class': _INPUT})
+        self.fields['is_active'].widget.attrs.update({'class': _CHECKBOX})
         if self.instance.pk and self.instance.rotulos_por_nivel:
             self.fields['rotulos_texto'].initial = json.dumps(
                 self.instance.rotulos_por_nivel,
@@ -98,12 +101,13 @@ class EscalaForm(forms.ModelForm):
 class CompetenciaForm(forms.ModelForm):
     class Meta:
         model = Competencia
-        fields = ('nome', 'descricao', 'tipo', 'escala')
+        fields = ('nome', 'descricao', 'tipo', 'escala', 'is_active')
         labels = {
             'nome': 'Nome',
             'descricao': 'Descrição',
             'tipo': 'Tipo',
             'escala': 'Escala',
+            'is_active': 'Ativa',
         }
         widgets = {
             'descricao': forms.Textarea(attrs={'rows': 3, 'class': _INPUT}),
@@ -113,7 +117,10 @@ class CompetenciaForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         for name in ('nome', 'tipo', 'escala'):
             self.fields[name].widget.attrs.update({'class': _INPUT})
-        self.fields['escala'].queryset = Escala.objects.order_by('nome')
+        self.fields['is_active'].widget.attrs.update({'class': _CHECKBOX})
+        self.fields['escala'].queryset = Escala.objects.filter(
+            is_active=True,
+        ).order_by('nome')
         self.fields['descricao'].required = False
 
 
@@ -131,9 +138,9 @@ class CargoCompetenciaForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         for name in ('competencia', 'nivel_esperado', 'peso'):
             self.fields[name].widget.attrs.update({'class': _INPUT})
-        self.fields['competencia'].queryset = Competencia.objects.select_related(
-            'escala',
-        ).order_by('nome')
+        self.fields['competencia'].queryset = Competencia.objects.filter(
+            is_active=True,
+        ).select_related('escala').order_by('nome')
         self.fields['peso'].widget.attrs.update({'min': '0.01', 'step': '0.01'})
         self.fields['nivel_esperado'].widget.attrs.update({'step': '0.01'})
 

@@ -22,6 +22,13 @@ class Area(TimeStampedModel):
         verbose_name = 'área'
         verbose_name_plural = 'áreas'
         ordering = ['nome']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['nome'],
+                condition=models.Q(is_active=True),
+                name='unique_area_nome_ativa',
+            ),
+        ]
 
     def __str__(self) -> str:
         return self.nome
@@ -68,6 +75,13 @@ class Cargo(TimeStampedModel):
         verbose_name = 'cargo'
         verbose_name_plural = 'cargos'
         ordering = ['nivel', 'nome']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['nome'],
+                condition=models.Q(is_active=True),
+                name='unique_cargo_nome_ativo',
+            ),
+        ]
 
     def __str__(self) -> str:
         return self.nome

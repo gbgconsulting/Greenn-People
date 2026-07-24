@@ -1,4 +1,5 @@
 from django import forms
+from django.core.exceptions import ValidationError
 from django.db import transaction
 
 from apps.accounts.models import CustomUser
@@ -11,6 +12,25 @@ _INPUT = (
     'focus:border-transparent'
 )
 _CHECKBOX = 'h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500'
+
+
+class ReassignDirectReportsForm(forms.Form):
+    """Seleciona o novo gestor para reatribuição em lote dos liderados ativos."""
+
+    to_manager = forms.ModelChoiceField(
+        queryset=CustomUser.objects.none(),
+        label='Novo gestor',
+        empty_label='— Selecione o novo gestor —',
+    )
+
+    def __init__(self, *args, from_manager=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.from_manager = from_manager
+        managers = CustomUser.objects.filter(is_active=True).order_by('nome')
+        if from_manager is not None and from_manager.pk:
+            managers = managers.exclude(pk=from_manager.pk)
+        self.fields['to_manager'].queryset = managers
+        self.fields['to_manager'].widget.attrs.update({'class': _INPUT})
 
 
 class AreaForm(forms.ModelForm):
@@ -108,6 +128,22 @@ class UserUpdateForm(forms.ModelForm):
         self.fields['line_manager'].queryset = managers
         self.fields['line_manager'].required = False
         self.fields['line_manager'].empty_label = '— Sem gestor —'
+
+    def clean(self):
+        cleaned = super().clean()
+        # Surface FR-028 on the form before save (ModelForm already runs
+        # instance.clean via _post_clean; keep explicit check for clarity).
+        if cleaned.get('is_active') is False and self.instance.pk:
+            if self.instance.has_active_direct_reports():
+                raise ValidationError(
+                    {
+                        'is_active': (
+                            'Não é possível desativar um colaborador que ainda '
+                            'possui liderados ativos. Reatribua-os antes.'
+                        ),
+                    },
+                )
+        return cleaned
 
     def save(self, commit=True):
         user = super().save(commit=commit)

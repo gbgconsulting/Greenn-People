@@ -143,15 +143,25 @@ class CustomUser(AbstractUser):
             seen.add(current.pk)
             current = current.line_manager
 
-    def _validate_deactivation_without_active_reports(self):
-        """FR-028: block deactivation while active direct reports remain."""
-        if self.pk is None or self.is_active:
-            return
-        has_active_reports = CustomUser.objects.filter(
+    def has_active_direct_reports(self) -> bool:
+        """True if at least one active user still reports to this user."""
+        if not self.pk:
+            return False
+        return CustomUser.objects.filter(
             line_manager_id=self.pk,
             is_active=True,
         ).exists()
-        if has_active_reports:
+
+    def _validate_deactivation_without_active_reports(self):
+        """FR-028 / FR-011: block deactivation while active direct reports remain.
+
+        Liberação só após reatribuição em lote completa
+        (``reassign_direct_reports`` zera liderados ativos); reassign parcial
+        não libera. Cada mudança de ``line_manager_id`` no lote gera AuditLog.
+        """
+        if self.pk is None or self.is_active:
+            return
+        if self.has_active_direct_reports():
             raise ValidationError(
                 {
                     'is_active': (

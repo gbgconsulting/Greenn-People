@@ -7,6 +7,25 @@
   <h1 class="mb-1 text-2xl font-semibold text-slate-800">Editar usuário</h1>
   <p class="mb-6 text-slate-500">{{ edited_user.email }}</p>
 
+  {% if active_direct_reports %}
+    <div class="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="status">
+      <p class="font-medium">
+        Este colaborador possui {{ active_direct_reports|length }} liderado(s) ativo(s).
+      </p>
+      <p class="mt-1 text-amber-800">
+        A desativação só é permitida após reatribuir todos os liderados a outro gestor.
+      </p>
+      <p class="mt-2">
+        <a
+          href="{% url 'organization:user_reassign_reports' edited_user.pk %}"
+          class="font-medium text-emerald-700 underline hover:text-emerald-800"
+        >
+          Reatribuir liderados em lote
+        </a>
+      </p>
+    </div>
+  {% endif %}
+
   <form method="post" novalidate class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
     {% csrf_token %}
 

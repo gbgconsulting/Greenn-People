@@ -1,6 +1,5 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models.deletion import ProtectedError
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
@@ -60,22 +59,18 @@ class EscalaUpdateView(AdminCompetenciesMixin, UpdateView):
 
 
 class EscalaDeleteView(AdminCompetenciesMixin, DeleteView):
+    """Soft-delete: sets ``is_active=False`` (no hard delete)."""
+
     model = Escala
     template_name = 'competencies/escala_confirm_delete.html'
     success_url = reverse_lazy('competencies:escala_list')
 
     def form_valid(self, form):
-        try:
-            response = super().form_valid(form)
-        except ProtectedError:
-            messages.error(
-                self.request,
-                'Não é possível excluir esta escala: há competências '
-                'vinculadas. Remova ou reatribua as competências primeiro.',
-            )
-            return HttpResponseRedirect(self.success_url)
-        messages.success(self.request, 'Escala excluída com sucesso.')
-        return response
+        self.object = self.get_object()
+        self.object.is_active = False
+        self.object.save(update_fields=['is_active', 'updated_at'])
+        messages.success(self.request, 'Escala desativada com sucesso.')
+        return HttpResponseRedirect(self.get_success_url())
 
 
 class CompetenciaListView(AdminCompetenciesMixin, HtmxPaginatedListMixin, ListView):
@@ -111,22 +106,18 @@ class CompetenciaUpdateView(AdminCompetenciesMixin, UpdateView):
 
 
 class CompetenciaDeleteView(AdminCompetenciesMixin, DeleteView):
+    """Soft-delete: sets ``is_active=False`` (no hard delete)."""
+
     model = Competencia
     template_name = 'competencies/competencia_confirm_delete.html'
     success_url = reverse_lazy('competencies:competencia_list')
 
     def form_valid(self, form):
-        try:
-            response = super().form_valid(form)
-        except ProtectedError:
-            messages.error(
-                self.request,
-                'Não é possível excluir esta competência: ela está vinculada '
-                'a perfis de cargo. Remova os vínculos primeiro.',
-            )
-            return HttpResponseRedirect(self.success_url)
-        messages.success(self.request, 'Competência excluída com sucesso.')
-        return response
+        self.object = self.get_object()
+        self.object.is_active = False
+        self.object.save(update_fields=['is_active', 'updated_at'])
+        messages.success(self.request, 'Competência desativada com sucesso.')
+        return HttpResponseRedirect(self.get_success_url())
 
 
 class CargoCompetenciaUpdateView(

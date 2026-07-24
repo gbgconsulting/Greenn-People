@@ -44,4 +44,9 @@ urlpatterns = [
         views.UserUpdateView.as_view(),
         name='user_update',
     ),
+    path(
+        'users/<int:pk>/reassign-reports/',
+        views.ReassignDirectReportsView.as_view(),
+        name='user_reassign_reports',
+    ),
 ]

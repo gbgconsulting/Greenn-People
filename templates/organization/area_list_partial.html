@@ -23,8 +23,10 @@
         </td>
         <td class="px-4 py-3 text-right">
           <a href="{% url 'organization:area_update' area.pk %}" class="text-emerald-700 hover:text-emerald-800">Editar</a>
+          {% if area.is_active %}
           <span class="mx-2 text-slate-300">|</span>
-          <a href="{% url 'organization:area_delete' area.pk %}" class="text-rose-600 hover:text-rose-700">Excluir</a>
+          <a href="{% url 'organization:area_delete' area.pk %}" class="text-rose-600 hover:text-rose-700">Desativar</a>
+          {% endif %}
         </td>
       </tr>
       {% empty %}

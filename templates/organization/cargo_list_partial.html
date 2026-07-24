@@ -25,8 +25,10 @@
           <a href="{% url 'competencies:cargo_competencia_update' cargo.pk %}" class="text-emerald-700 hover:text-emerald-800">Perfil</a>
           <span class="mx-2 text-slate-300">|</span>
           <a href="{% url 'organization:cargo_update' cargo.pk %}" class="text-emerald-700 hover:text-emerald-800">Editar</a>
+          {% if cargo.is_active %}
           <span class="mx-2 text-slate-300">|</span>
-          <a href="{% url 'organization:cargo_delete' cargo.pk %}" class="text-rose-600 hover:text-rose-700">Excluir</a>
+          <a href="{% url 'organization:cargo_delete' cargo.pk %}" class="text-rose-600 hover:text-rose-700">Desativar</a>
+          {% endif %}
         </td>
       </tr>
       {% empty %}

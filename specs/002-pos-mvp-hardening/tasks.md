@@ -90,12 +90,12 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/`, `tests/`
 ### Implementation for User Story 3
 
 - [X] T016 [P] [US3] Adicionar `is_active` (default True) e `UniqueConstraint(nome, condition=Q(is_active=True))` em `Escala` e `Competencia` em `apps/competencies/models.py` + migration
-- [ ] T017 [P] [US3] Adicionar `UniqueConstraint(nome, condition=Q(is_active=True))` em `Area` e `Cargo` em `apps/organization/models.py` + migration
-- [ ] T018 [US3] Converter `AreaDeleteView` / `CargoDeleteView` em `apps/organization/views.py` (e templates de confirmação) para soft-delete (`is_active=False`) em vez de hard-delete
-- [ ] T019 [US3] Converter `EscalaDeleteView` / delete de Competência em `apps/competencies/views.py` para soft-delete; atualizar forms em `apps/competencies/forms.py` e `apps/organization/forms.py` para seletores `filter(is_active=True)`
-- [ ] T020 [US3] Implementar `reassign_direct_reports` em `apps/accounts/services/offboarding.py` (transação, valida `to_manager` ativo ≠ `from_manager`, atualiza todos liderados ativos) conforme `contracts/catalog-offboarding-contract.md`
-- [ ] T021 [US3] Expor UI de reatribuição em lote (form + view + template) no fluxo de edição/desativação do gestor em `apps/organization/views.py` / `apps/organization/forms.py` / `templates/organization/` (ou `templates/accounts/`)
-- [ ] T022 [US3] Preservar bloqueio de desativação com liderados ativos em `apps/accounts/models.py` (`_validate_deactivation_without_active_reports`) e garantir que só libera após lote completo + AuditLog de `line_manager_id`
+- [X] T017 [P] [US3] Adicionar `UniqueConstraint(nome, condition=Q(is_active=True))` em `Area` e `Cargo` em `apps/organization/models.py` + migration
+- [X] T018 [US3] Converter `AreaDeleteView` / `CargoDeleteView` em `apps/organization/views.py` (e templates de confirmação) para soft-delete (`is_active=False`) em vez de hard-delete
+- [X] T019 [US3] Converter `EscalaDeleteView` / delete de Competência em `apps/competencies/views.py` para soft-delete; atualizar forms em `apps/competencies/forms.py` e `apps/organization/forms.py` para seletores `filter(is_active=True)`
+- [X] T020 [US3] Implementar `reassign_direct_reports` em `apps/accounts/services/offboarding.py` (transação, valida `to_manager` ativo ≠ `from_manager`, atualiza todos liderados ativos) conforme `contracts/catalog-offboarding-contract.md`
+- [X] T021 [US3] Expor UI de reatribuição em lote (form + view + template) no fluxo de edição/desativação do gestor em `apps/organization/views.py` / `apps/organization/forms.py` / `templates/organization/` (ou `templates/accounts/`)
+- [X] T022 [US3] Preservar bloqueio de desativação com liderados ativos em `apps/accounts/models.py` (`_validate_deactivation_without_active_reports`) e garantir que só libera após lote completo + AuditLog de `line_manager_id`
 
 **Checkpoint**: Catálogos íntegros; offboarding com reassign em lote operacional
 
