@@ -30,7 +30,7 @@
       <button
         type="submit"
         class="rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-emerald-700"
-      >Salvar</button>
+      >{{ rotulo_salvar_progresso|default:"Salvar" }}</button>
       {% if progress_form.progresso.errors %}
       <p class="w-full text-xs text-rose-600">{{ progress_form.progresso.errors|striptags }}</p>
       {% endif %}
@@ -46,6 +46,9 @@
   </td>
   <td class="px-4 py-3">
     {% include "components/badge_status.html" with status=badge_status|default:meta.status label=badge_label|default:meta.get_status_display %}
+    {% if item_reprovado and proximo_passo_hint %}
+    <p class="mt-1 text-xs text-amber-700">{{ proximo_passo_hint }}</p>
+    {% endif %}
   </td>
   <td class="px-4 py-3 text-right whitespace-nowrap">
     {% if pode_aprovar %}
@@ -61,7 +64,7 @@
       <button
         type="submit"
         class="text-emerald-700 hover:text-emerald-800"
-      >Aprovar</button>
+      >{{ rotulo_aprovar|default:"Aprovar" }}</button>
     </form>
     <span class="mx-2 text-slate-300">|</span>
     <form
@@ -80,8 +83,10 @@
     </form>
     {% endif %}
     {% if pode_editar_conteudo and meta.status != 'aprovada' %}
+      {% if not item_reprovado or rotulo_editar == 'Corrigir' %}
     {% if pode_aprovar %}<span class="mx-2 text-slate-300">|</span>{% endif %}
-    <a href="{% url 'goals:meta_update' meta.pk %}" class="text-emerald-700 hover:text-emerald-800">Editar</a>
+    <a href="{% url 'goals:meta_update' meta.pk %}" class="text-emerald-700 hover:text-emerald-800{% if item_reprovado %} font-medium{% endif %}">{{ rotulo_editar|default:"Editar" }}</a>
+      {% endif %}
     {% endif %}
     {% if pode_editar_conteudo and meta.status == 'pendente' %}
     <span class="mx-2 text-slate-300">|</span>

@@ -47,15 +47,77 @@ _COLLABORATOR_ADVANCE_ETAPAS = frozenset(
 )
 
 
+def _proximo_passo_pos_reprovacao(avaliacao, meta, *, is_owner, pode_progresso):
+    """Hint + rótulos de CTA quando o item está reprovado (FR-003 / T010)."""
+    defaults = {
+        'item_reprovado': False,
+        'proximo_passo_hint': '',
+        'rotulo_editar': 'Editar',
+        'rotulo_salvar_progresso': 'Salvar',
+        'rotulo_aprovar': 'Aprovar',
+    }
+    if avaliacao is None:
+        return defaults
+
+    if (
+        avaliacao.etapa == Avaliacao.Etapa.APROVACAO_METAS
+        and meta.status == Meta.Status.REPROVADA
+    ):
+        if is_owner and meta_content_editable(avaliacao, meta):
+            return {
+                **defaults,
+                'item_reprovado': True,
+                'proximo_passo_hint': (
+                    'Próximo passo: corrigir a meta para reenviar à aprovação.'
+                ),
+                'rotulo_editar': 'Corrigir',
+            }
+        return {
+            **defaults,
+            'item_reprovado': True,
+            'proximo_passo_hint': (
+                'Próximo passo: aguardar correção do colaborador para reaprovar.'
+            ),
+        }
+
+    if (
+        avaliacao.etapa == Avaliacao.Etapa.APROVACAO_RESULTADOS
+        and meta.status_resultado == Meta.StatusResultado.REPROVADO
+    ):
+        if is_owner and pode_progresso:
+            return {
+                **defaults,
+                'item_reprovado': True,
+                'proximo_passo_hint': (
+                    'Próximo passo: corrigir o progresso e reenviar à aprovação.'
+                ),
+                'rotulo_salvar_progresso': 'Corrigir e reenviar',
+            }
+        return {
+            **defaults,
+            'item_reprovado': True,
+            'proximo_passo_hint': (
+                'Próximo passo: aguardar correção do colaborador para reaprovar.'
+            ),
+        }
+
+    return defaults
+
+
 def _meta_row_context(request, meta, progress_form=None):
     """Contexto compartilhado do partial `#meta-row-<pk>`."""
     avaliacao = get_avaliacao_for_user(meta.usuario)
-    pode_progresso = (
-        meta.usuario_id == request.user.pk
-        and meta_progress_editable(avaliacao, meta)
-    )
+    is_owner = meta.usuario_id == request.user.pk
+    pode_progresso = is_owner and meta_progress_editable(avaliacao, meta)
     if progress_form is None and pode_progresso:
         progress_form = MetaProgressForm(instance=meta)
+
+    cta = _proximo_passo_pos_reprovacao(
+        avaliacao,
+        meta,
+        is_owner=is_owner,
+        pode_progresso=pode_progresso,
+    )
     return {
         'meta': meta,
         'pode_editar_conteudo': meta_content_editable(avaliacao, meta),
@@ -74,6 +136,7 @@ def _meta_row_context(request, meta, progress_form=None):
             and avaliacao.etapa == Avaliacao.Etapa.APROVACAO_RESULTADOS
             else meta.get_status_display()
         ),
+        **cta,
     }
 
 
@@ -329,7 +392,7 @@ class MetaDeleteView(LoginRequiredMixin, ScopedObjectMixin, DeleteView):
 
 
 class MetaProgressUpdateView(LoginRequiredMixin, UpdateView):
-    """Atualiza progresso da própria meta (etapa resultados; HTMX `#meta-row-<pk>`)."""
+    """Atualiza progresso da própria meta (resultados / pós-reprovação; HTMX)."""
 
     model = Meta
     form_class = MetaProgressForm
