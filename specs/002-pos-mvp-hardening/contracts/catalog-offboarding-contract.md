@@ -18,7 +18,9 @@ def perform_destroy / post:
     instance.save(update_fields=['is_active', 'updated_at'])
 ```
 
-**Seletores** (forms de criação de vínculos): queryset `filter(is_active=True)`.
+**Seletores**:
+- **Criação** de vínculos: queryset `filter(is_active=True)`.
+- **Edição** de vínculo existente: ativos **∪** valor atualmente vinculado (`pk` atual), mesmo se inativo — evita “choice inválida” e força de reatribuição só para salvar.
 
 **PROTECT**: hard-delete físico permanece proibido para registros referenciados; a UI padrão não oferece hard-delete.
 
@@ -56,5 +58,6 @@ Reassign parcial (se UI filtrar subset) **não** libera desativação até zerar
 - Soft-delete de Área em uso: registro inativo; FK histórica ok.
 - Criar segunda Área ativa com mesmo nome → ValidationError.
 - Nome de inativo pode ser reutilizado por novo ativo.
+- Editar Competência cuja Escala está inativa: form válido preservando `escala_id`; create ainda não lista a Escala inativa.
 - Gestor com N liderados: desativar falha; após lote, sucede.
 - `to_manager` inativo → rejeita; liderados inalterados.

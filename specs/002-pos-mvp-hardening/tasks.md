@@ -125,10 +125,10 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/`, `tests/`
 
 ### Implementation for User Story 5
 
-- [ ] T026 [US5] Adicionar campos `referencia` e `janela` (+ índice composto com destinatario/tipo) em `NotificacaoLog` em `apps/notifications/models.py` + migration
-- [ ] T027 [US5] Implementar `already_sent` e atualizar tasks em `apps/notifications/tasks.py` / `apps/notifications/emails.py` para skip se log `enviado` com mesma chave ou pendente resolvido (conforme `contracts/reminders-pdi-contract.md`)
-- [ ] T028 [US5] Implementar recálculo de atraso ao alterar `prazo` em `apps/pdi/models.py` e/ou `apps/pdi/forms.py` / serviço em `apps/pdi/services/` (`atrasada` + prazo ≥ hoje → `pendente`; prazo ainda passado permanece atrasada)
-- [ ] T029 [US5] Incluir `prazo` em `ACAO_PDI_TRACKED_FIELDS` em `apps/audit/signals.py` (status já tracked)
+- [X] T026 [US5] Adicionar campos `referencia` e `janela` (+ índice composto com destinatario/tipo) em `NotificacaoLog` em `apps/notifications/models.py` + migration
+- [X] T027 [US5] Implementar `already_sent` e atualizar tasks em `apps/notifications/tasks.py` / `apps/notifications/emails.py` para skip se log `enviado` com mesma chave ou pendente resolvido (conforme `contracts/reminders-pdi-contract.md`)
+- [X] T028 [US5] Implementar recálculo de atraso ao alterar `prazo` em `apps/pdi/models.py` e/ou `apps/pdi/forms.py` / serviço em `apps/pdi/services/` (`atrasada` + prazo ≥ hoje → `pendente`; prazo ainda passado permanece atrasada)
+- [X] T029 [US5] Incluir `prazo` em `ACAO_PDI_TRACKED_FIELDS` em `apps/audit/signals.py` (status já tracked)
 
 **Checkpoint**: SC-005/SC-006 atendíveis via jobs e alteração de prazo
 
@@ -171,6 +171,18 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/`, `tests/`
 - [ ] T042 Executar cenários C1–C7 de `specs/002-pos-mvp-hardening/quickstart.md` e corrigir gaps encontrados
 - [ ] T043 [P] Rodar `pytest tests/ -q` e `python manage.py check` com settings de prod-like onde couber; corrigir falhas
 - [ ] T044 [P] Revisar mensagens de UI (pt-BR) e labels de CTAs pós-reprovação / empty states nas templates tocadas
+
+---
+
+## Phase 10: Convergence — Seletores create vs edit (soft-delete)
+
+**Goal**: Em edição, preservar FK atual inativa nos seletores de catálogo sem reabrir soft-delete/unicidade/offboarding (Assumption + `catalog-offboarding-contract.md`).
+
+**Independent Test**: Competência com Escala inativa → update do form preserva `escala_id`; create de Competência não lista Escala inativa.
+
+- [X] T045 [US3] Em `CompetenciaForm` / `CargoCompetenciaForm` (`apps/competencies/forms.py`), queryset = ativos ∪ FK atual (`escala` / `competencia`) quando `instance.pk`
+- [X] T046 [P] [US3] Mesmo padrão em `UserUpdateForm` (`area`, `cargo`, `line_manager`) e `AreaForm.parent` em `apps/organization/forms.py`
+- [X] T047 [P] [US6] Teste em `tests/test_catalog_selector_edit.py`: create não lista inativo; edit com FK inativa valida e preserva o vínculo
 
 ---
 

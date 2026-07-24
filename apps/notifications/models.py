@@ -21,6 +21,20 @@ class NotificacaoLog(models.Model):
         verbose_name='destinatário',
     )
     tipo = models.CharField('tipo', max_length=32, choices=Tipo.choices)
+    referencia = models.CharField(
+        'referência',
+        max_length=64,
+        blank=True,
+        default='',
+        help_text='Chave do pendente (ex.: avaliacao:{id}, acao_pdi:{id}).',
+    )
+    janela = models.CharField(
+        'janela',
+        max_length=32,
+        blank=True,
+        default='',
+        help_text='Janela do lembrete (ex.: data-alvo ISO YYYY-MM-DD).',
+    )
     status = models.CharField('status', max_length=16, choices=Status.choices)
     erro = models.TextField('erro', blank=True)
     created_at = models.DateTimeField('criado em', auto_now_add=True)
@@ -34,6 +48,10 @@ class NotificacaoLog(models.Model):
             models.Index(fields=['tipo']),
             models.Index(fields=['status']),
             models.Index(fields=['created_at']),
+            models.Index(
+                fields=['destinatario', 'tipo', 'referencia', 'janela'],
+                name='notif_log_dedupe_idx',
+            ),
         ]
 
     def __str__(self) -> str:
@@ -54,3 +72,15 @@ class NotificacaoLog(models.Model):
         raise ValidationError(
             'NotificacaoLog é imutável e não pode ser excluído.',
         )
+
+
+def already_sent(destinatario, tipo: str, referencia: str, janela: str) -> bool:
+    """True if an ``enviado`` log exists for the logical reminder key."""
+    destinatario_id = getattr(destinatario, 'pk', destinatario)
+    return NotificacaoLog.objects.filter(
+        destinatario_id=destinatario_id,
+        tipo=tipo,
+        referencia=referencia,
+        janela=janela,
+        status=NotificacaoLog.Status.ENVIADO,
+    ).exists()

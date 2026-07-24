@@ -55,7 +55,7 @@ Este documento lista **apenas alterações e entidades impactadas**.
 | `is_active` | Já existe — **remoção** = `is_active=False` (não `DELETE`) |
 | `nome` | `UniqueConstraint(nome, condition=Q(is_active=True))` |
 
-**Validação**: seletores de criação de vínculos só listam ativos; inativos permanecem para histórico.
+**Validação**: seletores de criação de vínculos só listam ativos; em edição, ativos ∪ FK atual (mesmo inativo); inativos permanecem para histórico.
 
 ---
 
@@ -66,7 +66,7 @@ Este documento lista **apenas alterações e entidades impactadas**.
 | `is_active` | **Novo** BooleanField `default=True` |
 | `nome` | `UniqueConstraint(nome, condition=Q(is_active=True))` por model |
 
-`CargoCompetencia` e FKs históricas: `PROTECT` mantido; soft-delete não cascadeia.
+`CargoCompetencia` e FKs históricas: `PROTECT` mantido; soft-delete não cascadeia. Seletores de `Competencia.escala` / `CargoCompetencia.competencia` seguem a mesma regra create vs edit.
 
 ---
 

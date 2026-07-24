@@ -5,6 +5,7 @@ from django import forms
 from django.forms import inlineformset_factory
 
 from apps.competencies.models import CargoCompetencia, Competencia, Escala
+from apps.core.forms import active_choices_queryset
 from apps.organization.models import Cargo
 
 _INPUT = (
@@ -118,8 +119,12 @@ class CompetenciaForm(forms.ModelForm):
         for name in ('nome', 'tipo', 'escala'):
             self.fields[name].widget.attrs.update({'class': _INPUT})
         self.fields['is_active'].widget.attrs.update({'class': _CHECKBOX})
-        self.fields['escala'].queryset = Escala.objects.filter(
-            is_active=True,
+        current_escala_id = (
+            self.instance.escala_id if self.instance.pk else None
+        )
+        self.fields['escala'].queryset = active_choices_queryset(
+            Escala.objects.all(),
+            current_pk=current_escala_id,
         ).order_by('nome')
         self.fields['descricao'].required = False
 
@@ -138,9 +143,13 @@ class CargoCompetenciaForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         for name in ('competencia', 'nivel_esperado', 'peso'):
             self.fields[name].widget.attrs.update({'class': _INPUT})
-        self.fields['competencia'].queryset = Competencia.objects.filter(
-            is_active=True,
-        ).select_related('escala').order_by('nome')
+        current_competencia_id = (
+            self.instance.competencia_id if self.instance.pk else None
+        )
+        self.fields['competencia'].queryset = active_choices_queryset(
+            Competencia.objects.select_related('escala'),
+            current_pk=current_competencia_id,
+        ).order_by('nome')
         self.fields['peso'].widget.attrs.update({'min': '0.01', 'step': '0.01'})
         self.fields['nivel_esperado'].widget.attrs.update({'step': '0.01'})
 

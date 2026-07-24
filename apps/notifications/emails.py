@@ -10,6 +10,16 @@ from apps.pdi.models import AcaoPDI
 from apps.reviews.models import Avaliacao
 
 
+def referencia_lembrete_etapa(avaliacao: Avaliacao) -> str:
+    """Stable pending key for stage-deadline reminders."""
+    return f'avaliacao:{avaliacao.pk}'
+
+
+def referencia_lembrete_pdi(acao: AcaoPDI) -> str:
+    """Stable pending key for PDI action deadline reminders."""
+    return f'acao_pdi:{acao.pk}'
+
+
 def send_lembrete_etapa_email(avaliacao: Avaliacao) -> None:
     """Send cycle-stage deadline reminder to the evaluation owner."""
     user = avaliacao.usuario

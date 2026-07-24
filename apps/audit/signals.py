@@ -33,6 +33,7 @@ CLASSIFICACAO_TRACKED_FIELDS = (
 
 ACAO_PDI_TRACKED_FIELDS = (
     'status',
+    'prazo',
 )
 
 META_TRACKED_FIELDS = (

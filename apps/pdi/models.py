@@ -75,3 +75,21 @@ class AcaoPDI(TimeStampedModel):
         if len(preview) > 60:
             preview = f'{preview[:57]}...'
         return preview or f'Ação PDI #{self.pk}'
+
+    def save(self, *args, **kwargs):
+        """Recalcula atraso quando ``prazo`` entra no save (FR-018)."""
+        update_fields = kwargs.get('update_fields')
+        should_recalc = update_fields is None or 'prazo' in update_fields
+        if should_recalc:
+            # Import local evita ciclo com ``apps.pdi.services.overdue``.
+            from apps.pdi.services.overdue import recalculate_overdue_status
+
+            previous_status = self.status
+            recalculate_overdue_status(self)
+            if (
+                update_fields is not None
+                and self.status != previous_status
+                and 'status' not in update_fields
+            ):
+                kwargs['update_fields'] = list(update_fields) + ['status']
+        super().save(*args, **kwargs)

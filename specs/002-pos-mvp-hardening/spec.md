@@ -213,7 +213,7 @@ A organização consegue colocar o sistema em produção com configuração mín
 
 - Escala-alvo: ~130 colaboradores e ~6 gestores; um ciclo aberto por vez permanece como na v1.
 - Esta feature endurece o MVP existente; não reabre o desenho de papéis, fórmula de nota consolidada nem a lista canônica de etapas.
-- Soft-delete com unicidade entre registros ativos é o padrão para Área, Cargo, Escala e Competência; registros inativos não entram em seletores de criação de novos vínculos.
+- Soft-delete com unicidade entre registros ativos é o padrão para Área, Cargo, Escala e Competência; registros inativos não entram em seletores de criação de novos vínculos. Em edição de vínculo existente, o seletor lista ativos mais o valor atualmente vinculado (mesmo inativo), para permitir salvar sem forçar reatribuição.
 - Aprovação por administrador é exceção de governança RH, não substitui o gestor no fluxo feliz nem altera o modelo de escopo hierárquico para líderes.
 - Paridade ambiente de desenvolvimento / produção no código de aplicação é preservada (mesmas regras de negócio); diferenças limitam-se a configuração operacional.
 - Stack e restrições da constituição do projeto permanecem vigentes (monólito server-rendered; sem API/SPA; escopo no backend; histórico imutável).

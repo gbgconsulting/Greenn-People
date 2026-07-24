@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 
 from apps.accounts.models import CustomUser
+from apps.core.forms import active_choices_queryset
 from apps.organization.models import Area, Cargo
 from apps.reviews.services.enrollment import ensure_avaliacao_for_user
 
@@ -48,7 +49,13 @@ class AreaForm(forms.ModelForm):
         self.fields['nome'].widget.attrs.update({'class': _INPUT})
         self.fields['parent'].widget.attrs.update({'class': _INPUT})
         self.fields['is_active'].widget.attrs.update({'class': _CHECKBOX})
-        qs = Area.objects.filter(is_active=True).order_by('nome')
+        current_parent_id = (
+            self.instance.parent_id if self.instance.pk else None
+        )
+        qs = active_choices_queryset(
+            Area.objects.all(),
+            current_pk=current_parent_id,
+        ).order_by('nome')
         if self.instance.pk:
             qs = qs.exclude(pk=self.instance.pk)
         self.fields['parent'].queryset = qs
@@ -110,19 +117,29 @@ class UserUpdateForm(forms.ModelForm):
         for name in ('is_admin', 'is_active'):
             self.fields[name].widget.attrs.update({'class': _CHECKBOX})
 
-        self.fields['area'].queryset = Area.objects.filter(
-            is_active=True,
+        current_area_id = self.instance.area_id if self.instance.pk else None
+        self.fields['area'].queryset = active_choices_queryset(
+            Area.objects.all(),
+            current_pk=current_area_id,
         ).order_by('nome')
         self.fields['area'].required = False
         self.fields['area'].empty_label = '— Sem área —'
 
-        self.fields['cargo'].queryset = Cargo.objects.filter(
-            is_active=True,
+        current_cargo_id = self.instance.cargo_id if self.instance.pk else None
+        self.fields['cargo'].queryset = active_choices_queryset(
+            Cargo.objects.all(),
+            current_pk=current_cargo_id,
         ).order_by('nivel', 'nome')
         self.fields['cargo'].required = False
         self.fields['cargo'].empty_label = '— Sem cargo —'
 
-        managers = CustomUser.objects.filter(is_active=True).order_by('nome')
+        current_manager_id = (
+            self.instance.line_manager_id if self.instance.pk else None
+        )
+        managers = active_choices_queryset(
+            CustomUser.objects.all(),
+            current_pk=current_manager_id,
+        ).order_by('nome')
         if self.instance.pk:
             managers = managers.exclude(pk=self.instance.pk)
         self.fields['line_manager'].queryset = managers
