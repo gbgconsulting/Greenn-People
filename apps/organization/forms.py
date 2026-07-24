@@ -1,7 +1,9 @@
 from django import forms
+from django.db import transaction
 
 from apps.accounts.models import CustomUser
 from apps.organization.models import Area, Cargo
+from apps.reviews.services.enrollment import ensure_avaliacao_for_user
 
 _INPUT = (
     'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm '
@@ -82,6 +84,7 @@ class UserUpdateForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._was_active = bool(self.instance.pk and self.instance.is_active)
         for name in ('nome', 'area', 'cargo', 'line_manager'):
             self.fields[name].widget.attrs.update({'class': _INPUT})
         for name in ('is_admin', 'is_active'):
@@ -105,3 +108,11 @@ class UserUpdateForm(forms.ModelForm):
         self.fields['line_manager'].queryset = managers
         self.fields['line_manager'].required = False
         self.fields['line_manager'].empty_label = '— Sem gestor —'
+
+    def save(self, commit=True):
+        user = super().save(commit=commit)
+        if commit and user.is_active and not self._was_active:
+            transaction.on_commit(
+                lambda u=user: ensure_avaliacao_for_user(u),
+            )
+        return user

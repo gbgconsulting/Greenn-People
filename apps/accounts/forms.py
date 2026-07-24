@@ -2,11 +2,13 @@ from django import forms
 from django.contrib.auth import authenticate
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.urls import reverse_lazy
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
 from apps.accounts.models import CustomUser
+from apps.reviews.services.enrollment import ensure_avaliacao_for_user
 
 ALLOWED_EMAIL_DOMAIN = 'greenn.com.br'
 
@@ -62,6 +64,10 @@ class RegisterForm(UserCreationForm):
         user.email_confirmado_em = None
         if commit:
             user.save()
+            if user.is_active:
+                transaction.on_commit(
+                    lambda u=user: ensure_avaliacao_for_user(u),
+                )
         return user
 
 

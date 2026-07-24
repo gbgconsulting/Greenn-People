@@ -9,16 +9,14 @@ from django.db.models import Exists, OuterRef
 from apps.accounts.models import CustomUser
 from apps.cycles.exceptions import CycleAlreadyOpenError, CycleNotOpenError
 from apps.cycles.models import Ciclo
-
-# Initial stage for new Avaliacao rows (contracts/stage-machine-contract.md).
-_ETAPA_INICIAL = 'input_metas'
+from apps.reviews.services.enrollment import ensure_avaliacao_for_user
 
 
 def open_cycle(ciclo: Ciclo) -> Ciclo:
     """Open ``ciclo``, enforcing a single open cycle, and create evaluations.
 
     Creates one ``Avaliacao`` per ``CustomUser`` with ``is_active=True``
-    (idempotent via get_or_create on ciclo+usuario).
+    via ``ensure_avaliacao_for_user`` (idempotent on ciclo+usuario).
     """
     with transaction.atomic():
         locked = Ciclo.objects.select_for_update().get(pk=ciclo.pk)
@@ -40,13 +38,8 @@ def open_cycle(ciclo: Ciclo) -> Ciclo:
         locked.status = Ciclo.Status.ABERTO
         locked.save()
 
-        Avaliacao = apps.get_model('reviews', 'Avaliacao')
         for user in CustomUser.objects.filter(is_active=True).iterator():
-            Avaliacao.objects.get_or_create(
-                ciclo=locked,
-                usuario=user,
-                defaults={'etapa': _ETAPA_INICIAL},
-            )
+            ensure_avaliacao_for_user(user, ciclo=locked)
 
         return locked
 

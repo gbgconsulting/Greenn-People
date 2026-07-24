@@ -72,10 +72,10 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/`, `tests/`
 
 ### Implementation for User Story 2
 
-- [ ] T012 [US2] Criar `ensure_avaliacao_for_user` em `apps/reviews/services/enrollment.py` (`get_or_create` com `etapa=input_metas`; retorna `None` se user inativo ou sem ciclo `aberto`) conforme `contracts/mid-cycle-enrollment-contract.md`
-- [ ] T013 [US2] Invocar `ensure_avaliacao_for_user` após commit em `RegisterForm.save` em `apps/accounts/forms.py` quando o usuário fica ativo
-- [ ] T014 [US2] Invocar `ensure_avaliacao_for_user` em `UserUpdateForm` / `UserUpdateView` (`apps/organization/forms.py`, `apps/organization/views.py`) quando `is_active` passa a `True`
-- [ ] T015 [US2] Alinhar `open_cycle` em `apps/cycles/services/cycle.py` para reutilizar `ensure_avaliacao_for_user` (ou manter batch `get_or_create` equivalente) sem duplicar avaliações
+- [X] T012 [US2] Criar `ensure_avaliacao_for_user` em `apps/reviews/services/enrollment.py` (`get_or_create` com `etapa=input_metas`; retorna `None` se user inativo ou sem ciclo `aberto`) conforme `contracts/mid-cycle-enrollment-contract.md`
+- [X] T013 [US2] Invocar `ensure_avaliacao_for_user` após commit em `RegisterForm.save` em `apps/accounts/forms.py` quando o usuário fica ativo
+- [X] T014 [US2] Invocar `ensure_avaliacao_for_user` em `UserUpdateForm` / `UserUpdateView` (`apps/organization/forms.py`, `apps/organization/views.py`) quando `is_active` passa a `True`
+- [X] T015 [US2] Alinhar `open_cycle` em `apps/cycles/services/cycle.py` para reutilizar `ensure_avaliacao_for_user` (ou manter batch `get_or_create` equivalente) sem duplicar avaliações
 
 **Checkpoint**: US2 independente; admitidos mid-cycle cobertos no ciclo aberto
 
