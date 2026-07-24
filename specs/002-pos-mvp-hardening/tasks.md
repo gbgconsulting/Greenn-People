@@ -109,9 +109,9 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/`, `tests/`
 
 ### Implementation for User Story 4
 
-- [ ] T023 [US4] Atualizar `_ensure_approver` em `apps/goals/services/approval.py` para permitir `approver.is_admin` sempre (líderes não-admin só se `line_manager`) conforme `contracts/admin-approval-contract.md`
-- [ ] T024 [P] [US4] Exibir botões aprovar/reprovar para `request.user.is_admin` em `templates/goals/partials/meta_row.html` (itens `pendente`) sem surface de bypass para líder comum
-- [ ] T025 [US4] Garantir que views `MetaApproveView` / `MetaRejectView` (e equivalentes de resultado) em `apps/goals/views.py` rejeitam ação inválida (já aprovado / etapa inelegível) sem AuditLog de sucesso falso; ator = admin via `audit_actor`
+- [X] T023 [US4] Atualizar `_ensure_approver` em `apps/goals/services/approval.py` para permitir `approver.is_admin` sempre (líderes não-admin só se `line_manager`) conforme `contracts/admin-approval-contract.md`
+- [X] T024 [P] [US4] Exibir botões aprovar/reprovar para `request.user.is_admin` em `templates/goals/partials/meta_row.html` (itens `pendente`) sem surface de bypass para líder comum
+- [X] T025 [US4] Garantir que views `MetaApproveView` / `MetaRejectView` (e equivalentes de resultado) em `apps/goals/views.py` rejeitam ação inválida (já aprovado / etapa inelegível) sem AuditLog de sucesso falso; ator = admin via `audit_actor`
 
 **Checkpoint**: Override RH funcional sem enfraquecer escopo hierárquico
 

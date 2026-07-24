@@ -16,6 +16,7 @@ from django.views.generic import (
 )
 from django.views.generic.detail import SingleObjectMixin
 
+from apps.audit.context import audit_actor
 from apps.audit.services import log_scope_denied
 from apps.core.htmx import is_htmx
 from apps.core.mixins import HtmxPaginatedListMixin, ScopedObjectMixin
@@ -141,20 +142,37 @@ def _meta_row_context(request, meta, progress_form=None):
 
 
 def _apply_meta_approval(meta, approver, *, approve: bool) -> Meta:
-    """Aprova ou reprova meta/resultado conforme a etapa da avaliação."""
+    """Aprova ou reprova meta/resultado conforme a etapa da avaliação.
+
+    Rejeita item já decidido ou etapa inelegível sem gravar AuditLog de sucesso
+    (FR-014/FR-015 / ``contracts/admin-approval-contract.md``). O ator do
+    AuditLog é o aprovador autenticado via ``audit_actor``.
+    """
     avaliacao = get_avaliacao_for_user(meta.usuario)
     if avaliacao is None:
         raise PermissionDenied(
             'Não há avaliação em ciclo aberto para este colaborador.',
         )
 
-    if avaliacao.etapa == Avaliacao.Etapa.APROVACAO_METAS:
-        return approve_meta(meta, approver) if approve else reject_meta(meta, approver)
+    # UI e POST devem alinhar: só pendente na etapa correta (evita sucesso falso).
+    if not meta_approval_actionable(avaliacao, meta, approver):
+        raise PermissionDenied(
+            'Não é possível aprovar ou reprovar: item já decidido '
+            'ou etapa inelegível.',
+        )
 
-    if avaliacao.etapa == Avaliacao.Etapa.APROVACAO_RESULTADOS:
-        if approve:
-            return approve_resultado(meta, approver)
-        return reject_resultado(meta, approver)
+    with audit_actor(approver):
+        if avaliacao.etapa == Avaliacao.Etapa.APROVACAO_METAS:
+            return (
+                approve_meta(meta, approver)
+                if approve
+                else reject_meta(meta, approver)
+            )
+
+        if avaliacao.etapa == Avaliacao.Etapa.APROVACAO_RESULTADOS:
+            if approve:
+                return approve_resultado(meta, approver)
+            return reject_resultado(meta, approver)
 
     raise PermissionDenied(
         'Aprovação só é permitida nas etapas de aprovação de metas ou resultados.',

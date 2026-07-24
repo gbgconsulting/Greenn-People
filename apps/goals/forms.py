@@ -75,10 +75,16 @@ def meta_progress_editable(
 
 
 def is_meta_approver(approver, meta: Meta) -> bool:
-    """True se ``approver`` é o aprovador válido da meta (line_manager / admin)."""
+    """True se ``approver`` é o aprovador válido da meta (admin ou line_manager).
+
+    Espelha ``approval._ensure_approver`` / FR-014: admin sempre; líder comum
+    só se for o ``line_manager`` do colaborador (sem surface de bypass).
+    """
+    if getattr(approver, 'is_admin', False):
+        return True
     manager_id = meta.usuario.line_manager_id
     if manager_id is None:
-        return bool(getattr(approver, 'is_admin', False))
+        return False
     return getattr(approver, 'pk', None) == manager_id
 
 
