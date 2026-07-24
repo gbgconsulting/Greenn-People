@@ -89,7 +89,7 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/`, `tests/`
 
 ### Implementation for User Story 3
 
-- [ ] T016 [P] [US3] Adicionar `is_active` (default True) e `UniqueConstraint(nome, condition=Q(is_active=True))` em `Escala` e `Competencia` em `apps/competencies/models.py` + migration
+- [X] T016 [P] [US3] Adicionar `is_active` (default True) e `UniqueConstraint(nome, condition=Q(is_active=True))` em `Escala` e `Competencia` em `apps/competencies/models.py` + migration
 - [ ] T017 [P] [US3] Adicionar `UniqueConstraint(nome, condition=Q(is_active=True))` em `Area` e `Cargo` em `apps/organization/models.py` + migration
 - [ ] T018 [US3] Converter `AreaDeleteView` / `CargoDeleteView` em `apps/organization/views.py` (e templates de confirmação) para soft-delete (`is_active=False`) em vez de hard-delete
 - [ ] T019 [US3] Converter `EscalaDeleteView` / delete de Competência em `apps/competencies/views.py` para soft-delete; atualizar forms em `apps/competencies/forms.py` e `apps/organization/forms.py` para seletores `filter(is_active=True)`

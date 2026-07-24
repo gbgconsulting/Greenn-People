@@ -19,11 +19,19 @@ class Escala(TimeStampedModel):
         blank=True,
         help_text='Mapa nível → rótulo (ex.: {"1": "Iniciante", "5": "Expert"}).',
     )
+    is_active = models.BooleanField('ativa', default=True)
 
     class Meta:
         verbose_name = 'escala'
         verbose_name_plural = 'escalas'
         ordering = ['nome']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['nome'],
+                condition=models.Q(is_active=True),
+                name='unique_escala_nome_ativa',
+            ),
+        ]
 
     def __str__(self) -> str:
         return self.nome
@@ -72,11 +80,19 @@ class Competencia(TimeStampedModel):
         related_name='competencias',
         verbose_name='escala',
     )
+    is_active = models.BooleanField('ativa', default=True)
 
     class Meta:
         verbose_name = 'competência'
         verbose_name_plural = 'competências'
         ordering = ['nome']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['nome'],
+                condition=models.Q(is_active=True),
+                name='unique_competencia_nome_ativa',
+            ),
+        ]
 
     def __str__(self) -> str:
         return self.nome
