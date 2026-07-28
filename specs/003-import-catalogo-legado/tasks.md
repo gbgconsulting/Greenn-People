@@ -118,12 +118,12 @@ Monólito Django: `config/`, `apps/<domain>/`, `tests/` na raiz do repositório.
 
 **Purpose**: Suíte de testes, validação quickstart e verificação de conformidade constitucional
 
-- [ ] T023 [P] Criar `tests/test_import_catalogo_legado.py` com fixtures CSV temporárias e testes de de-para `Cargo.nivel` / `nivel_esperado` (research R13)
-- [ ] T024 [P] Adicionar testes de filtro KPI + ambíguos em `tests/test_import_catalogo_legado.py`
-- [ ] T025 [P] Adicionar testes de reconciliação de matriz e divergências reportadas em `tests/test_import_catalogo_legado.py`
-- [ ] T026 [P] Adicionar testes de idempotência (2ª execução) e soft-delete não reativado em `tests/test_import_catalogo_legado.py`
-- [ ] T027 Adicionar teste de arquivo inválido/ausente (exit 1, DB inalterado) em `tests/test_import_catalogo_legado.py`
-- [ ] T028 Executar validação manual dos cenários C1–C5 em `specs/003-import-catalogo-legado/quickstart.md` contra `lista-cargos.xlsx` e `lista-competencias.xlsx` na raiz
+- [X] T023 [P] Criar `tests/test_import_catalogo_legado.py` com fixtures CSV temporárias e testes de de-para `Cargo.nivel` / `nivel_esperado` (research R13)
+- [X] T024 [P] Adicionar testes de filtro KPI + ambíguos em `tests/test_import_catalogo_legado.py`
+- [X] T025 [P] Adicionar testes de reconciliação de matriz e divergências reportadas em `tests/test_import_catalogo_legado.py`
+- [X] T026 [P] Adicionar testes de idempotência (2ª execução) e soft-delete não reativado em `tests/test_import_catalogo_legado.py`
+- [X] T027 Adicionar teste de arquivo inválido/ausente (exit 1, DB inalterado) em `tests/test_import_catalogo_legado.py`
+- [X] T028 Executar validação manual dos cenários C1–C5 em `specs/003-import-catalogo-legado/quickstart.md` contra `lista-cargos.xlsx` e `lista-competencias.xlsx` na raiz
 
 **Checkpoint**: `pytest tests/test_import_catalogo_legado.py -q` verde; quickstart smoke ok; SC-001..SC-007 verificados
 
