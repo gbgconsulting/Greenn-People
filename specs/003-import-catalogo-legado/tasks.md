@@ -54,11 +54,11 @@ Monólito Django: `config/`, `apps/<domain>/`, `tests/` na raiz do repositório.
 
 ### Implementation for User Story 1
 
-- [ ] T007 [US1] Implementar `resolve_default_escala()` em `apps/competencies/services/catalog_import/importer.py` — reutilizar escala ativa `Escala padrão 1-5` ou criar; conflito fatal se só inativa (research R9)
-- [ ] T008 [US1] Implementar upsert de `organization.Cargo` (create/update ativo por `canonical_key`; `nivel` via `infer_cargo_nivel`) em `apps/competencies/services/catalog_import/importer.py`
-- [ ] T009 [US1] Implementar upsert de `competencies.Competencia` (somente avaliáveis; `tipo`, `descricao`, FK escala) em `apps/competencies/services/catalog_import/importer.py`
-- [ ] T010 [US1] Orquestrar fase parse→persist (Escala → Cargos → Competências) em `import_catalog()` com `transaction.atomic()` em `apps/competencies/services/catalog_import/importer.py`
-- [ ] T011 [US1] Criar management command fino `apps/competencies/management/commands/importar_competencias_cargo.py` com args `--cargos`, `--competencias`, `--report-file`, `--dry-run` e impressão do relatório
+- [X] T007 [US1] Implementar `resolve_default_escala()` em `apps/competencies/services/catalog_import/importer.py` — reutilizar escala ativa `Escala padrão 1-5` ou criar; conflito fatal se só inativa (research R9)
+- [X] T008 [US1] Implementar upsert de `organization.Cargo` (create/update ativo por `canonical_key`; `nivel` via `infer_cargo_nivel`) em `apps/competencies/services/catalog_import/importer.py`
+- [X] T009 [US1] Implementar upsert de `competencies.Competencia` (somente avaliáveis; `tipo`, `descricao`, FK escala) em `apps/competencies/services/catalog_import/importer.py`
+- [X] T010 [US1] Orquestrar fase parse→persist (Escala → Cargos → Competências) em `import_catalog()` com `transaction.atomic()` em `apps/competencies/services/catalog_import/importer.py`
+- [X] T011 [US1] Criar management command fino `apps/competencies/management/commands/importar_competencias_cargo.py` com args `--cargos`, `--competencias`, `--report-file`, `--dry-run` e impressão do relatório
 
 **Checkpoint**: US1 funcional — catálogo de cargos e competências populado; KPIs ainda podem ser filtrados mas vínculos ainda ausentes
 
