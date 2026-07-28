@@ -78,7 +78,11 @@ class AcaoPDI(TimeStampedModel):
 
     def save(self, *args, **kwargs):
         """Recalcula atraso quando ``prazo`` entra no save (FR-018)."""
-        update_fields = kwargs.get('update_fields')
+        raw_update_fields = kwargs.get('update_fields')
+        # Materializa antes das memberships (Django aceita qualquer iterable).
+        update_fields = (
+            None if raw_update_fields is None else frozenset(raw_update_fields)
+        )
         should_recalc = update_fields is None or 'prazo' in update_fields
         if should_recalc:
             # Import local evita ciclo com ``apps.pdi.services.overdue``.
@@ -91,5 +95,5 @@ class AcaoPDI(TimeStampedModel):
                 and self.status != previous_status
                 and 'status' not in update_fields
             ):
-                kwargs['update_fields'] = list(update_fields) + ['status']
+                kwargs['update_fields'] = update_fields | {'status'}
         super().save(*args, **kwargs)

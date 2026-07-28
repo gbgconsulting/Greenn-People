@@ -35,21 +35,35 @@ def reassign_direct_reports(
         )
 
     with transaction.atomic():
+        # Lock order: from → to → reports (pk) to serialize offboarding and
+        # avoid lost updates / deadlocks under concurrent edits.
+        locked_from = CustomUser.objects.select_for_update().get(
+            pk=from_manager.pk,
+        )
+        locked_to = CustomUser.objects.select_for_update().get(pk=to_manager.pk)
+        if not locked_to.is_active:
+            raise ValidationError('O novo gestor precisa estar ativo.')
+        if locked_to.pk == locked_from.pk:
+            raise ValidationError(
+                'O novo gestor deve ser diferente do gestor de origem.',
+            )
+
         reports = list(
-            CustomUser.objects.filter(
-                line_manager_id=from_manager.pk,
+            CustomUser.objects.select_for_update()
+            .filter(
+                line_manager_id=locked_from.pk,
                 is_active=True,
-            ),
+            )
+            .order_by('pk'),
         )
         # One save per report so audit signals emit line_manager_id AuditLog
         # with ``actor``; bulk_update would skip that trail (FR-011 / T022).
         with audit_actor(actor):
             for report in reports:
-                report.line_manager = to_manager
+                report.line_manager = locked_to
                 report.save(update_fields=['line_manager'])
 
-        from_manager.refresh_from_db(fields=['is_active'])
-        if from_manager.has_active_direct_reports():
+        if locked_from.has_active_direct_reports():
             raise ValidationError(
                 'Ainda restam liderados ativos; a desativação continua bloqueada.',
             )
