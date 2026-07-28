@@ -144,21 +144,21 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/`, `tests/`
 
 > Escrever testes que falhem nas violações listadas em `contracts/production-ux-test-contract.md`; implementar/ajustar código até passarem.
 
-- [ ] T030 [P] [US6] Criar `tests/test_scope.py` cobrindo `get_visible_users` / IDOR em DetailView (`ScopedObjectMixin` → 404 + audit)
-- [ ] T031 [P] [US6] Criar `tests/test_stage_machine.py` cobrindo `can_advance` / `advance_stage` com pré-condições inválidas
-- [ ] T032 [P] [US6] Criar `tests/test_post_rejection.py` cobrindo etapa inalterada após reject, reopen, itens irmãos intactos e regra 100%
-- [ ] T033 [P] [US6] Criar `tests/test_mid_cycle_enrollment.py` cobrindo `ensure_avaliacao_for_user` (cria / não duplica / no-op sem ciclo)
-- [ ] T034 [P] [US6] Criar `tests/test_admin_approval.py` cobrindo approve admin + `AuditLog.actor` e negação a líder fora do escopo
-- [ ] T035 [P] [US6] Criar `tests/test_catalog_offboarding.py` cobrindo soft-delete, unicidade ativos e bloqueio/reatribuição de liderados
+- [X] T030 [P] [US6] Criar `tests/test_scope.py` cobrindo `get_visible_users` / IDOR em DetailView (`ScopedObjectMixin` → 404 + audit)
+- [X] T031 [P] [US6] Criar `tests/test_stage_machine.py` cobrindo `can_advance` / `advance_stage` com pré-condições inválidas
+- [X] T032 [P] [US6] Criar `tests/test_post_rejection.py` cobrindo etapa inalterada após reject, reopen, itens irmãos intactos e regra 100%
+- [X] T033 [P] [US6] Criar `tests/test_mid_cycle_enrollment.py` cobrindo `ensure_avaliacao_for_user` (cria / não duplica / no-op sem ciclo)
+- [X] T034 [P] [US6] Criar `tests/test_admin_approval.py` cobrindo approve admin + `AuditLog.actor` e negação a líder fora do escopo
+- [X] T035 [P] [US6] Criar `tests/test_catalog_offboarding.py` cobrindo soft-delete, unicidade ativos e bloqueio/reatribuição de liderados
 
 ### Implementation for User Story 6
 
-- [ ] T036 [US6] Implementar view `GET /health/` (DB `SELECT 1`; 200 ok / 503 se DB falhar) em `apps/core/views.py` (ou equivalente) e registrar em `config/urls.py` conforme `contracts/production-ux-test-contract.md`
-- [ ] T037 [P] [US6] Definir `STATIC_ROOT` (e WhiteNoise **ou** nota de reverse-proxy) em `config/settings/prod.py` / `requirements.txt` se necessário; documentar `collectstatic` em `docs/ops/`
-- [ ] T038 [P] [US6] Escrever `docs/ops/backup.md` com frequência/retenção mínimas e procedimento PostgreSQL aplicável
-- [ ] T039 [US6] Criar indicador HTMX compartilhado (`templates/components/htmx_indicator.html` ou equivalente) e aplicar `hx-indicator` nas ações partials críticas de metas/PDI
-- [ ] T040 [US6] Criar partial `templates/components/empty_state.html` com CTA condicional e aplicar em listas vazias de metas, ações PDI e catálogos
-- [ ] T041 [US6] Endurecer acessibilidade de modal em `templates/components/modal.html` + JS mínimo em `static/js/modal.js` (focus, Escape, restore no trigger; `role="dialog"` `aria-modal="true"`)
+- [X] T036 [US6] Implementar view `GET /health/` (DB `SELECT 1`; 200 ok / 503 se DB falhar) em `apps/core/views.py` (ou equivalente) e registrar em `config/urls.py` conforme `contracts/production-ux-test-contract.md`
+- [X] T037 [P] [US6] Definir `STATIC_ROOT` (e WhiteNoise **ou** nota de reverse-proxy) em `config/settings/prod.py` / `requirements.txt` se necessário; documentar `collectstatic` em `docs/ops/`
+- [X] T038 [P] [US6] Escrever `docs/ops/backup.md` com frequência/retenção mínimas e procedimento PostgreSQL aplicável
+- [X] T039 [US6] Criar indicador HTMX compartilhado (`templates/components/htmx_indicator.html` ou equivalente) e aplicar `hx-indicator` nas ações partials críticas de metas/PDI
+- [X] T040 [US6] Criar partial `templates/components/empty_state.html` com CTA condicional e aplicar em listas vazias de metas, ações PDI e catálogos
+- [X] T041 [US6] Endurecer acessibilidade de modal em `templates/components/modal.html` + JS mínimo em `static/js/modal.js` (focus, Escape, restore no trigger; `role="dialog"` `aria-modal="true"`)
 
 **Checkpoint**: Go-live checklist + suíte crítica + polish UX nas telas críticas
 

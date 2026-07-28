@@ -31,7 +31,10 @@
       </tr>
       {% empty %}
       <tr>
-        <td colspan="4" class="px-4 py-8 text-center text-slate-500">Nenhuma área cadastrada.</td>
+        <td colspan="4" class="px-4 py-8">
+          {% url 'organization:area_create' as area_create_url %}
+          {% include "components/empty_state.html" with message="Nenhuma área cadastrada." cta_label="Nova área" cta_href=area_create_url %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>

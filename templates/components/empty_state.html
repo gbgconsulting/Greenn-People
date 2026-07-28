@@ -1,0 +1,47 @@
+{% comment %}
+  Empty state reutilizável com CTA condicional à permissão.
+
+  Uso (mensagem apenas):
+    {% include "components/empty_state.html" with message="Nenhuma meta cadastrada." %}
+
+  Uso com link (CTA liberado pelo caller):
+    {% url 'goals:meta_create' as create_url %}
+    {% include "components/empty_state.html" with message="..." cta_label="Nova meta" cta_href=create_url %}
+
+  Uso com ação HTMX:
+    {% url 'pdi:action_create_modal' pdi.pk as modal_url %}
+    {% include "components/empty_state.html" with message="..." cta_label="Nova ação" cta_hx_get=modal_url %}
+
+  Parâmetros:
+    message       — texto principal (obrigatório)
+    title         — título opcional acima da mensagem
+    cta_label     — texto do CTA; se omitido, não renderiza botão
+    cta_href      — se definido, CTA é link (<a>)
+    cta_hx_get    — se definido (sem cta_href), CTA é botão com hx-get
+    cta_hx_target — alvo HTMX (default: #modal-container)
+    cta_hx_swap   — swap HTMX (default: innerHTML)
+    cta_attrs     — atributos HTML extras no CTA (passar com |safe se necessário)
+{% endcomment %}
+<div class="flex flex-col items-center justify-center gap-3 text-center" role="status">
+  {% if title %}
+  <p class="text-sm font-medium text-slate-800">{{ title }}</p>
+  {% endif %}
+  <p class="text-sm text-slate-500">{{ message }}</p>
+  {% if cta_label %}
+    {% if cta_href %}
+      {% include "components/button.html" with label=cta_label href=cta_href variant="primary" attrs=cta_attrs %}
+    {% elif cta_hx_get %}
+      <button
+        type="button"
+        class="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-emerald-600 to-teal-500 px-4 py-2 font-medium text-white shadow-sm transition-colors hover:from-emerald-700 hover:to-teal-600"
+        hx-get="{{ cta_hx_get }}"
+        hx-target="{{ cta_hx_target|default:'#modal-container' }}"
+        hx-swap="{{ cta_hx_swap|default:'innerHTML' }}"
+        hx-indicator="#htmx-indicator"
+        {% if cta_attrs %}{{ cta_attrs|safe }}{% endif %}
+      >{{ cta_label }}</button>
+    {% elif cta_attrs %}
+      {% include "components/button.html" with label=cta_label type="button" variant="primary" attrs=cta_attrs %}
+    {% endif %}
+  {% endif %}
+</div>

@@ -14,6 +14,7 @@
         hx-target="#acao-{{ acao.pk }}"
         hx-swap="outerHTML"
         hx-include="this"
+        hx-indicator="#htmx-indicator"
         aria-label="Atualizar status da ação"
       >
         {% for value, label in status_choices %}
@@ -31,6 +32,7 @@
         hx-get="{% url 'pdi:action_edit_modal' acao.pk %}"
         hx-target="#modal-container"
         hx-swap="innerHTML"
+        hx-indicator="#htmx-indicator"
       >
         Editar
       </button>
@@ -41,6 +43,7 @@
         hx-target="#acao-list"
         hx-swap="innerHTML"
         hx-confirm="Remover esta ação do PDI?"
+        hx-indicator="#htmx-indicator"
       >
         Remover
       </button>

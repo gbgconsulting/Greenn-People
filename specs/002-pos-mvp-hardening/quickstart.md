@@ -80,7 +80,7 @@ Ver [post-rejection-contract.md](./contracts/post-rejection-contract.md).
 | Passo | Ação | Esperado |
 |---|---|---|
 | 1 | `GET /health/` | 200 com DB ok |
-| 2 | Seguir [docs/ops/backup.md](../../docs/ops/backup.md) (quando publicado) | Procedimento aplicável |
+| 2 | Seguir [docs/ops/backup.md](../../docs/ops/backup.md) | Procedimento aplicável |
 | 3 | `pytest` (suíte escopo/stage) | Casos inválidos falham; válidos passam |
 | 4 | UI: ação HTMX / lista vazia / modal | Loading, empty+CTA, Escape/foco |
 

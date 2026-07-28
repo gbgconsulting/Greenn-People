@@ -10,6 +10,7 @@
       hx-post="{% url 'goals:meta_progress' meta.pk %}"
       hx-target="#meta-row-{{ meta.pk }}"
       hx-swap="outerHTML"
+      hx-indicator="#htmx-indicator"
       class="flex flex-wrap items-center gap-2"
     >
       {% csrf_token %}
@@ -58,6 +59,7 @@
       hx-post="{% url 'goals:meta_approve' meta.pk %}"
       hx-target="#meta-row-{{ meta.pk }}"
       hx-swap="outerHTML"
+      hx-indicator="#htmx-indicator"
       class="inline"
     >
       {% csrf_token %}
@@ -73,6 +75,7 @@
       hx-post="{% url 'goals:meta_reject' meta.pk %}"
       hx-target="#meta-row-{{ meta.pk }}"
       hx-swap="outerHTML"
+      hx-indicator="#htmx-indicator"
       class="inline"
     >
       {% csrf_token %}

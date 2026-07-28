@@ -17,6 +17,26 @@ DATABASES = {
     'default': env.db('DATABASE_URL'),  # noqa: F405
 }
 
+# Static files — destination of ``collectstatic``; served by WhiteNoise behind WSGI
+# (single-container deploy). Alternative: reverse-proxy — see docs/ops/static.md.
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # noqa: F405
+
+MIDDLEWARE = list(MIDDLEWARE)  # noqa: F405 — copy from base before insert
+_security = 'django.middleware.security.SecurityMiddleware'
+MIDDLEWARE.insert(
+    MIDDLEWARE.index(_security) + 1,
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+)
+
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage',
+    },
+}
+
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True

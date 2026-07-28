@@ -7,6 +7,18 @@
   <title>{% block title %}Greenn People{% endblock %}</title>
   <link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
   <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.4/dist/htmx.min.js" defer></script>
+  <script src="{% static 'js/modal.js' %}" defer></script>
+  <style>
+    .htmx-indicator {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 200ms ease-in;
+    }
+    .htmx-request.htmx-indicator,
+    .htmx-request .htmx-indicator {
+      opacity: 1;
+    }
+  </style>
   {% block extra_head %}{% endblock %}
 </head>
 <body
@@ -40,6 +52,7 @@
   </div>
 
   <div id="modal-container"></div>
+  {% include "components/htmx_indicator.html" %}
   <div
     id="toast-container"
     class="pointer-events-none fixed inset-x-4 bottom-4 z-50 flex max-w-sm flex-col gap-2 sm:inset-x-auto sm:right-4"
@@ -74,11 +87,6 @@
       setTimeout(() => toast.remove(), 4000);
     });
 
-    document.body.addEventListener('closeModal', () => {
-      const modal = document.getElementById('modal-container');
-      if (modal) modal.innerHTML = '';
-    });
-
     (function initMobileNav() {
       const drawer = document.getElementById('mobile-nav');
       const overlay = document.getElementById('mobile-nav-overlay');
@@ -111,7 +119,9 @@
         link.addEventListener('click', closeNav);
       });
       document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeNav();
+        if (e.key !== 'Escape') return;
+        if (typeof window.isAppModalOpen === 'function' && window.isAppModalOpen()) return;
+        closeNav();
       });
     })();
   </script>

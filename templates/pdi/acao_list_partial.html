@@ -14,8 +14,9 @@
     {% include "pdi/partials/acao_row.html" with acao=acao status_choices=status_choices %}
     {% empty %}
     <tr>
-      <td colspan="6" class="px-4 py-8 text-center text-slate-500">
-        Nenhuma ação cadastrada neste PDI.
+      <td colspan="6" class="px-4 py-8">
+        {% url 'pdi:action_create_modal' pdi.pk as acao_create_modal_url %}
+        {% include "components/empty_state.html" with message="Nenhuma ação cadastrada neste PDI." cta_label="Nova ação" cta_hx_get=acao_create_modal_url %}
       </td>
     </tr>
     {% endfor %}

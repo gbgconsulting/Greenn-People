@@ -33,7 +33,10 @@
       </tr>
       {% empty %}
       <tr>
-        <td colspan="4" class="px-4 py-8 text-center text-slate-500">Nenhum cargo cadastrado.</td>
+        <td colspan="4" class="px-4 py-8">
+          {% url 'organization:cargo_create' as cargo_create_url %}
+          {% include "components/empty_state.html" with message="Nenhum cargo cadastrado." cta_label="Novo cargo" cta_href=cargo_create_url %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>
