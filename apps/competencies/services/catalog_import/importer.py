@@ -4,27 +4,37 @@ T007: resolução da escala padrão 1–5 (research R9).
 T008: upsert de ``organization.Cargo`` por chave canônica.
 T009: upsert de ``competencies.Competencia`` (somente avaliáveis).
 T010: ``import_catalog`` — parse → persist (Escala → Cargos → Competências).
-Vínculos CargoCompetencia: T014/T015.
+T014: upsert de ``competencies.CargoCompetencia`` (peso=1, nivel_esperado).
+T015: reconcile + vínculos no pipeline após cargos/competências.
 """
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
+from decimal import Decimal
 from pathlib import Path
 
 from django.db import transaction
 
-from apps.competencies.models import Competencia, Escala
+from apps.competencies.models import CargoCompetencia, Competencia, Escala
 from apps.organization.models import Cargo
 
-from .mapping import classify_competencia, infer_cargo_nivel
+from .mapping import classify_competencia, infer_cargo_nivel, nivel_esperado_for
 from .normalize import canonical_key, display_name
 from .parse import CompetenciaRow, parse_catalog
+from .reconcile import (
+    CatalogPair,
+    avaliavel_competencia_keys,
+    extract_pairs_vista_a,
+    extract_pairs_vista_b,
+    reconcile_matrix,
+)
 from .report import ImportReport, ReportEntry
 
 DEFAULT_ESCALA_NOME = "Escala padrão 1-5"
 DEFAULT_ESCALA_MIN = 1
 DEFAULT_ESCALA_MAX = 5
+DEFAULT_VINCULO_PESO = Decimal("1")
 
 
 class EscalaInativaError(Exception):
@@ -326,23 +336,103 @@ def upsert_competencias(
     return resolved
 
 
+def upsert_cargo_competencia(
+    cargo: Cargo,
+    competencia: Competencia,
+    report: ImportReport,
+) -> CargoCompetencia:
+    """Cria ou atualiza ``CargoCompetencia`` pelo par único (§4 / research R5).
+
+    - ``peso`` sempre ``Decimal('1')``.
+    - ``nivel_esperado`` via ``nivel_esperado_for(cargo.nivel)``.
+    - Existente com mesmos valores → ``vinculos_inalterados``.
+    - Existente divergente → atualiza e ``vinculos_atualizados``.
+    - Ausente → create e ``vinculos_criados``.
+
+    Equivale semanticamente a ``update_or_create(cargo=..., competencia=...)``
+    com contagem explícita de inalterados (sem save desnecessário).
+    """
+    peso = DEFAULT_VINCULO_PESO
+    nivel_esperado = Decimal(nivel_esperado_for(cargo.nivel))
+
+    existing = CargoCompetencia.objects.filter(
+        cargo=cargo,
+        competencia=competencia,
+    ).first()
+
+    if existing is not None:
+        changed = False
+        if existing.nivel_esperado != nivel_esperado:
+            existing.nivel_esperado = nivel_esperado
+            changed = True
+        if existing.peso != peso:
+            existing.peso = peso
+            changed = True
+        if changed:
+            existing.save(
+                update_fields=["nivel_esperado", "peso", "updated_at"]
+            )
+            report.vinculos_atualizados += 1
+        else:
+            report.vinculos_inalterados += 1
+        return existing
+
+    vinculo = CargoCompetencia.objects.create(
+        cargo=cargo,
+        competencia=competencia,
+        peso=peso,
+        nivel_esperado=nivel_esperado,
+    )
+    report.vinculos_criados += 1
+    return vinculo
+
+
+def upsert_cargo_competencias(
+    pairs: Iterable[CatalogPair],
+    cargos: Mapping[str, Cargo],
+    competencias: Mapping[str, Competencia],
+    report: ImportReport,
+) -> list[CargoCompetencia]:
+    """Upsert em lote a partir da matriz reconciliada (chaves canônicas).
+
+    Pares cuja ponta não está nos mapas resolvidos são ignorados (caller
+    deve filtrar via ``reconcile_matrix``; este skip é defesa em profundidade).
+    """
+    result: list[CargoCompetencia] = []
+    seen: set[tuple[int, int]] = set()
+
+    for pair in pairs:
+        cargo = cargos.get(pair.cargo_key)
+        competencia = competencias.get(pair.competencia_key)
+        if cargo is None or competencia is None:
+            continue
+        identity = (cargo.pk, competencia.pk)
+        if identity in seen:
+            continue
+        seen.add(identity)
+        result.append(upsert_cargo_competencia(cargo, competencia, report))
+
+    return result
+
+
 def import_catalog(
     cargos_path: str | Path,
     competencias_path: str | Path,
     *,
     dry_run: bool = False,
 ) -> ImportReport:
-    """Orquestra parse → persistência do catálogo legado (US1 / research R11).
+    """Orquestra parse → persistência do catálogo legado (US1–US2 / research R11).
 
     1. **Parse** (sem DB): valida arquivos/colunas; monta estruturas em memória.
        ``CatalogParseError`` propaga (exit 1 no command; zero writes).
-    2. **Persist** em ``transaction.atomic()``: Escala → Cargos → Competências.
+    2. **Persist** em ``transaction.atomic()``:
+       Escala → Cargos → Competências → Reconcile → Vínculos.
        ``EscalaInativaError`` → conflito ``escala_inativa`` + re-raise (rollback).
     3. ``dry_run``: mesma lógica com ``set_rollback(True)`` (zero commit).
 
     Cargos: nomes de ``lista-cargos`` primeiro (preferência de display), depois
     cargos referenciados em ``lista-competencias``. Competências: só da fonte
-    ``lista-competencias``. Vínculos: T015.
+    ``lista-competencias``. Vínculos: união A'∪B' com pontas resolvidas (§8).
     """
     parsed = parse_catalog(cargos_path, competencias_path)
     report = ImportReport(
@@ -368,8 +458,28 @@ def import_catalog(
             )
             raise EscalaInativaError(exc.nome, report=report) from exc
 
-        upsert_cargos(cargo_names, report)
-        upsert_competencias(parsed.competencias, escala, report)
+        cargos_resolvidos = upsert_cargos(cargo_names, report)
+        competencias_resolvidas = upsert_competencias(
+            parsed.competencias, escala, report
+        )
+
+        pairs_a = extract_pairs_vista_a(parsed.cargos)
+        pairs_b = extract_pairs_vista_b(parsed.competencias)
+        avaliavel_keys = avaliavel_competencia_keys(parsed.competencias)
+        reconciled = reconcile_matrix(
+            pairs_a,
+            pairs_b,
+            avaliavel_keys=avaliavel_keys,
+            resolved_cargo_keys=set(cargos_resolvidos),
+            resolved_competencia_keys=set(competencias_resolvidas),
+        )
+        report.divergencias.extend(reconciled.divergencias)
+        upsert_cargo_competencias(
+            reconciled.matriz,
+            cargos_resolvidos,
+            competencias_resolvidas,
+            report,
+        )
 
         if dry_run:
             transaction.set_rollback(True)

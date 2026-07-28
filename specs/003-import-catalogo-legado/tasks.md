@@ -72,10 +72,10 @@ Monólito Django: `config/`, `apps/<domain>/`, `tests/` na raiz do repositório.
 
 ### Implementation for User Story 2
 
-- [ ] T012 [P] [US2] Implementar extração de pares `(cargo, competencia)` das vistas A/B em `apps/competencies/services/catalog_import/reconcile.py`
-- [ ] T013 [US2] Implementar detecção de divergências (symmetric difference) e matriz final (união de pares elegíveis) em `apps/competencies/services/catalog_import/reconcile.py` conforme `contracts/legado-domain-mapping-contract.md` §8
-- [ ] T014 [US2] Implementar upsert de `competencies.CargoCompetencia` (`update_or_create` por par; `peso=Decimal('1')`; `nivel_esperado` via `nivel_esperado_for(cargo.nivel)`) em `apps/competencies/services/catalog_import/importer.py`
-- [ ] T015 [US2] Integrar reconcile + persistência de vínculos no pipeline `import_catalog()` após cargos/competências em `apps/competencies/services/catalog_import/importer.py`
+- [X] T012 [P] [US2] Implementar extração de pares `(cargo, competencia)` das vistas A/B em `apps/competencies/services/catalog_import/reconcile.py`
+- [X] T013 [US2] Implementar detecção de divergências (symmetric difference) e matriz final (união de pares elegíveis) em `apps/competencies/services/catalog_import/reconcile.py` conforme `contracts/legado-domain-mapping-contract.md` §8
+- [X] T014 [US2] Implementar upsert de `competencies.CargoCompetencia` (`update_or_create` por par; `peso=Decimal('1')`; `nivel_esperado` via `nivel_esperado_for(cargo.nivel)`) em `apps/competencies/services/catalog_import/importer.py`
+- [X] T015 [US2] Integrar reconcile + persistência de vínculos no pipeline `import_catalog()` após cargos/competências em `apps/competencies/services/catalog_import/importer.py`
 
 **Checkpoint**: US1 + US2 completos — perfil esperado por cargo disponível no CRUD existente (SC-008)
 
