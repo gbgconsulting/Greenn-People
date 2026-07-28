@@ -227,7 +227,8 @@ class MetaProgressForm(forms.ModelForm):
         if not meta_progress_editable(avaliacao, meta):
             raise forms.ValidationError(
                 'O progresso só pode ser atualizado na etapa de resultados '
-                'para metas aprovadas de um ciclo aberto.',
+                'para metas aprovadas, ou após reprovação de um resultado '
+                'em ciclo aberto.',
             )
 
         return cleaned

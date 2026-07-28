@@ -85,11 +85,9 @@
       >Reprovar</button>
     </form>
     {% endif %}
-    {% if pode_editar_conteudo and meta.status != 'aprovada' %}
-      {% if not item_reprovado or rotulo_editar == 'Corrigir' %}
+    {% if pode_editar_conteudo and meta.status != 'aprovada' and mostrar_link_editar|default:True %}
     {% if pode_aprovar %}<span class="mx-2 text-slate-300">|</span>{% endif %}
     <a href="{% url 'goals:meta_update' meta.pk %}" class="text-emerald-700 hover:text-emerald-800{% if item_reprovado %} font-medium{% endif %}">{{ rotulo_editar|default:"Editar" }}</a>
-      {% endif %}
     {% endif %}
     {% if pode_editar_conteudo and meta.status == 'pendente' %}
     <span class="mx-2 text-slate-300">|</span>

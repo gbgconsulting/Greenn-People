@@ -1,14 +1,20 @@
 {% extends "base.html" %}
 
-{% block title %}{% if meta %}Editar meta{% else %}Nova meta{% endif %} — Greenn People{% endblock %}
+{% block title %}{% if meta_reprovada %}Corrigir meta{% elif meta %}Editar meta{% else %}Nova meta{% endif %} — Greenn People{% endblock %}
 
 {% block content %}
 <div class="mx-auto max-w-lg">
   <h1 class="mb-1 text-2xl font-semibold text-slate-800">
-    {% if meta %}Editar meta{% else %}Nova meta{% endif %}
+    {% if meta_reprovada %}Corrigir meta{% elif meta %}Editar meta{% else %}Nova meta{% endif %}
   </h1>
   <p class="mb-6 text-slate-500">
-    Vincule a meta a um objetivo estratégico do ciclo aberto. Novas metas nascem com status pendente.
+    {% if meta_reprovada %}
+      Esta meta foi reprovada. Ajuste o conteúdo e salve para reenviar à aprovação.
+    {% elif meta %}
+      Atualize a meta vinculada a um objetivo estratégico do ciclo aberto.
+    {% else %}
+      Vincule a meta a um objetivo estratégico do ciclo aberto. Novas metas nascem com status pendente.
+    {% endif %}
   </p>
 
   <form method="post" novalidate class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -42,7 +48,7 @@
 
     <div class="flex flex-wrap gap-3">
       {% url 'goals:meta_list' as cancel_url %}
-      {% include "components/button.html" with label="Salvar" type="submit" variant="primary" %}
+      {% include "components/button.html" with label=meta_reprovada|yesno:"Corrigir e reenviar,Salvar" type="submit" variant="primary" %}
       {% include "components/button.html" with label="Cancelar" href=cancel_url variant="secondary" %}
     </div>
   </form>

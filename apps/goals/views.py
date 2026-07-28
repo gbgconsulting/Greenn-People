@@ -56,6 +56,7 @@ def _proximo_passo_pos_reprovacao(avaliacao, meta, *, is_owner, pode_progresso):
         'rotulo_editar': 'Editar',
         'rotulo_salvar_progresso': 'Salvar',
         'rotulo_aprovar': 'Aprovar',
+        'mostrar_link_editar': True,
     }
     if avaliacao is None:
         return defaults
@@ -69,15 +70,16 @@ def _proximo_passo_pos_reprovacao(avaliacao, meta, *, is_owner, pode_progresso):
                 **defaults,
                 'item_reprovado': True,
                 'proximo_passo_hint': (
-                    'Próximo passo: corrigir a meta para reenviar à aprovação.'
+                    'Corrija a meta e salve para reenviar à aprovação.'
                 ),
                 'rotulo_editar': 'Corrigir',
             }
         return {
             **defaults,
             'item_reprovado': True,
+            'mostrar_link_editar': False,
             'proximo_passo_hint': (
-                'Próximo passo: aguardar correção do colaborador para reaprovar.'
+                'Aguardando o colaborador corrigir esta meta para reaprovação.'
             ),
         }
 
@@ -89,16 +91,18 @@ def _proximo_passo_pos_reprovacao(avaliacao, meta, *, is_owner, pode_progresso):
             return {
                 **defaults,
                 'item_reprovado': True,
+                'mostrar_link_editar': False,
                 'proximo_passo_hint': (
-                    'Próximo passo: corrigir o progresso e reenviar à aprovação.'
+                    'Ajuste o progresso e clique em «Corrigir e reenviar».'
                 ),
                 'rotulo_salvar_progresso': 'Corrigir e reenviar',
             }
         return {
             **defaults,
             'item_reprovado': True,
+            'mostrar_link_editar': False,
             'proximo_passo_hint': (
-                'Próximo passo: aguardar correção do colaborador para reaprovar.'
+                'Aguardando o colaborador corrigir o resultado para reaprovação.'
             ),
         }
 
@@ -366,14 +370,33 @@ class MetaUpdateView(LoginRequiredMixin, ScopedObjectMixin, UpdateView):
             return HttpResponseRedirect(reverse('goals:meta_list'))
         return super().dispatch(request, *args, **kwargs)
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        meta = self.object
+        avaliacao = get_avaliacao_for_user(meta.usuario)
+        context['meta_reprovada'] = (
+            meta.status == Meta.Status.REPROVADA
+            and avaliacao is not None
+            and avaliacao.etapa == Avaliacao.Etapa.APROVACAO_METAS
+        )
+        return context
+
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
         return kwargs
 
     def form_valid(self, form):
-        messages.success(self.request, 'Meta atualizada com sucesso.')
-        return super().form_valid(form)
+        era_reprovada = self.object.status == Meta.Status.REPROVADA
+        response = super().form_valid(form)
+        if era_reprovada:
+            messages.success(
+                self.request,
+                'Meta corrigida e reenviada para aprovação.',
+            )
+        else:
+            messages.success(self.request, 'Meta atualizada com sucesso.')
+        return response
 
 
 class MetaDeleteView(LoginRequiredMixin, ScopedObjectMixin, DeleteView):
@@ -437,14 +460,14 @@ class MetaProgressUpdateView(LoginRequiredMixin, UpdateView):
                     self.object,
                     message=(
                         'O progresso só pode ser atualizado na etapa de '
-                        'resultados para metas aprovadas.'
+                        'resultados ou após reprovação de um resultado.'
                     ),
                     level='error',
                 )
             messages.error(
                 request,
                 'O progresso só pode ser atualizado na etapa de resultados '
-                'para metas aprovadas de um ciclo aberto.',
+                'ou após reprovação de um resultado em ciclo aberto.',
             )
             return HttpResponseRedirect(reverse('goals:meta_list'))
         return super().dispatch(request, *args, **kwargs)
@@ -453,15 +476,29 @@ class MetaProgressUpdateView(LoginRequiredMixin, UpdateView):
         return reverse('goals:meta_list')
 
     def form_valid(self, form):
+        era_resultado_reprovado = (
+            self.object.status_resultado == Meta.StatusResultado.REPROVADO
+        )
         self.object = form.save()
         if is_htmx(self.request):
             return _htmx_meta_row_response(
                 self.request,
                 self.object,
-                message='Progresso atualizado com sucesso.',
+                message=(
+                    'Resultado corrigido e reenviado para aprovação.'
+                    if era_resultado_reprovado
+                    else 'Progresso atualizado com sucesso.'
+                ),
                 level='success',
             )
-        messages.success(self.request, 'Progresso atualizado com sucesso.')
+        messages.success(
+            self.request,
+            (
+                'Resultado corrigido e reenviado para aprovação.'
+                if era_resultado_reprovado
+                else 'Progresso atualizado com sucesso.'
+            ),
+        )
         return HttpResponseRedirect(self.get_success_url())
 
     def form_invalid(self, form):

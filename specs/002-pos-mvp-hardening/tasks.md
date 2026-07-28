@@ -168,9 +168,9 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/`, `tests/`
 
 **Purpose**: Validação end-to-end e limpeza final
 
-- [ ] T042 Executar cenários C1–C7 de `specs/002-pos-mvp-hardening/quickstart.md` e corrigir gaps encontrados
-- [ ] T043 [P] Rodar `pytest tests/ -q` e `python manage.py check` com settings de prod-like onde couber; corrigir falhas
-- [ ] T044 [P] Revisar mensagens de UI (pt-BR) e labels de CTAs pós-reprovação / empty states nas templates tocadas
+- [X] T042 Executar cenários C1–C7 de `specs/002-pos-mvp-hardening/quickstart.md` e corrigir gaps encontrados
+- [X] T043 [P] Rodar `pytest tests/ -q` e `python manage.py check` com settings de prod-like onde couber; corrigir falhas
+- [X] T044 [P] Revisar mensagens de UI (pt-BR) e labels de CTAs pós-reprovação / empty states nas templates tocadas
 
 ---
 

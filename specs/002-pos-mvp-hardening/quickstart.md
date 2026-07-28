@@ -100,6 +100,16 @@ python manage.py collectstatic --noinput
 
 ## Critérios de aceite rápidos
 
-- [ ] SC-001–SC-004 (P1/P2 operacionais)
-- [ ] SC-005–SC-006 (lembretes/PDI)
-- [ ] SC-007–SC-009 (prod/testes/UX)
+- [x] SC-001–SC-004 (P1/P2 operacionais)
+- [x] SC-005–SC-006 (lembretes/PDI)
+- [x] SC-007–SC-009 (prod/testes/UX)
+
+## Validação automatizada (T042)
+
+```bash
+# Cenários C1–C7 (rollback; não persiste dados)
+PYTHONPATH=. python scripts/validate_quickstart_c1_c7.py
+
+# Suíte (inclui cobertura dedicada C6/C7)
+pytest tests/ -q
+```

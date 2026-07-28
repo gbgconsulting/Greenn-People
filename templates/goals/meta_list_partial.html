@@ -13,14 +13,14 @@
     </thead>
     <tbody class="divide-y divide-slate-100">
       {% for row in meta_rows %}
-        {% include "goals/partials/meta_row.html" with meta=row.meta pode_editar_conteudo=row.pode_editar_conteudo pode_atualizar_progresso=row.pode_atualizar_progresso pode_aprovar=row.pode_aprovar progress_form=row.progress_form badge_status=row.badge_status badge_label=row.badge_label item_reprovado=row.item_reprovado proximo_passo_hint=row.proximo_passo_hint rotulo_editar=row.rotulo_editar rotulo_salvar_progresso=row.rotulo_salvar_progresso rotulo_aprovar=row.rotulo_aprovar %}
+        {% include "goals/partials/meta_row.html" with meta=row.meta pode_editar_conteudo=row.pode_editar_conteudo pode_atualizar_progresso=row.pode_atualizar_progresso pode_aprovar=row.pode_aprovar progress_form=row.progress_form badge_status=row.badge_status badge_label=row.badge_label item_reprovado=row.item_reprovado proximo_passo_hint=row.proximo_passo_hint rotulo_editar=row.rotulo_editar rotulo_salvar_progresso=row.rotulo_salvar_progresso rotulo_aprovar=row.rotulo_aprovar mostrar_link_editar=row.mostrar_link_editar %}
       {% empty %}
       <tr>
         <td colspan="6" class="px-4 py-8">
           {% if not ciclo_aberto %}
             {% include "components/empty_state.html" with message="Não há ciclo aberto. As metas aparecerão quando um ciclo estiver ativo." %}
           {% elif status_filtro %}
-            {% include "components/empty_state.html" with message="Nenhuma meta com este status no ciclo atual." %}
+            {% include "components/empty_state.html" with message="Nenhuma meta com este status no ciclo atual. Tente remover o filtro ou escolha outro status." %}
           {% elif pode_criar %}
             {% url 'goals:meta_create' as meta_create_url %}
             {% include "components/empty_state.html" with message="Nenhuma meta cadastrada no ciclo atual." cta_label="Nova meta" cta_href=meta_create_url %}
