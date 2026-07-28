@@ -56,7 +56,7 @@ _GRUPO_TIPO: dict[str, str] = {
     canonical_key("Desempenho"): "tecnica",
 }
 
-# --- §6.1 KPI — chaves canônicas (família por igualdade ou prefixo+separador) ----
+# --- §6.1 KPI — chaves canônicas (igualdade ou família por prefixo+separador) ----
 
 KPI_KEYS: frozenset[str] = frozenset(
     {
@@ -69,19 +69,35 @@ KPI_KEYS: frozenset[str] = frozenset(
     }
 )
 
-# --- §6.2 Ambíguos — não importar nesta versão -----------------------------------
-
-AMBIGUOUS_KEYS: frozenset[str] = frozenset(
+# Bases com variantes de sufixo documentadas (data-model *; exemplos §6.1).
+KPI_FAMILY_BASES: frozenset[str] = frozenset(
     {
-        canonical_key("Erros de usabilidade"),
-        canonical_key(
-            "Oportunidade de usabilidades entregues e cm problemas resolvidos"
-        ),
-        canonical_key("Oportunidades entregues de modernização"),
-        canonical_key("Oportunidades tracionadas"),
-        canonical_key("Monitoramento contínuo"),
+        canonical_key("Throughput por Colaborador"),
+        canonical_key("Índice de incidentes"),
     }
 )
+
+# Separadores de família na ordem do contrato: ` - `, ` -`, espaço.
+_KPI_FAMILY_SEPARATORS: tuple[str, ...] = (" - ", " -", " ")
+
+# --- §6.2 Ambíguos — não importar nesta versão -----------------------------------
+# Nomes exatos da tabela do contrato. Match só por igualdade de `canonical_key`
+# (sem família/prefixo, ao contrário de §6.1). Mesmo com grupo mapeável
+# (ex.: Desempenho → tecnica), classificação → `nao_mapeados` e **não persiste**.
+
+AMBIGUOUS_LEGACY_NAMES: tuple[str, ...] = (
+    "Erros de usabilidade",
+    "Oportunidade de usabilidades entregues e cm problemas resolvidos",
+    "Oportunidades entregues de modernização",
+    "Oportunidades tracionadas",
+    "Monitoramento contínuo",
+)
+
+AMBIGUOUS_KEYS: frozenset[str] = frozenset(
+    canonical_key(name) for name in AMBIGUOUS_LEGACY_NAMES
+)
+
+MOTIVO_AMBIGUO = "ambiguo"
 
 ClassificationKind = Literal["avaliavel", "excluidos_kpi", "nao_mapeados"]
 
@@ -129,12 +145,29 @@ def map_grupo_tipo(grupo: str) -> str | None:
     return _GRUPO_TIPO.get(canonical_key(grupo))
 
 
-def _is_kpi_key(key: str) -> bool:
-    """Igualdade ou família: base + separador (` - `, ` -`, espaço) (§6.1)."""
-    for base in KPI_KEYS:
-        if key == base:
+def _matches_kpi_family(key: str, base: str) -> bool:
+    """True se `key` é `base` + separador + sufixo não vazio (§6.1)."""
+    for sep in _KPI_FAMILY_SEPARATORS:
+        prefix = f"{base}{sep}"
+        if not key.startswith(prefix):
+            continue
+        remainder = key[len(prefix) :]
+        if remainder.strip():
             return True
-        if key.startswith(base + " -") or key.startswith(base + " "):
+    return False
+
+
+def _is_kpi_key(key: str) -> bool:
+    """Igualdade em KPI_KEYS ou família (prefixo + separador) (§6.1).
+
+    `KPI_FAMILY_BASES` documenta throughput / índice de incidentes (sufixos).
+    A regra geral do contrato aplica o mesmo padrão a qualquer base em KPI_KEYS;
+    bases mais longas são avaliadas primeiro.
+    """
+    if key in KPI_KEYS:
+        return True
+    for base in sorted(KPI_KEYS, key=len, reverse=True):
+        if _matches_kpi_family(key, base):
             return True
     return False
 
@@ -145,7 +178,7 @@ def is_kpi(nome: str) -> bool:
 
 
 def is_ambiguous(nome: str) -> bool:
-    """True se o nome está na lista documentada de ambíguos (§6.2)."""
+    """True se o nome canônico ∈ lista documentada §6.2 (igualdade exata)."""
     return canonical_key(nome) in AMBIGUOUS_KEYS
 
 
@@ -153,9 +186,11 @@ def classify_competencia(nome: str, grupo: str) -> CompetenciaClassification:
     """Classifica item de lista-competencias na ordem normativa §6.
 
     1. KPI → excluidos_kpi (motivo=kpi_operacional)
-    2. Ambíguo → nao_mapeados (motivo=ambiguo)
+    2. Ambíguo → nao_mapeados (motivo=ambiguo) — bloqueia persistência
     3. Grupo mapeável → avaliavel (+ tipo)
     4. Senão → nao_mapeados (motivo=grupo_desconhecido)
+
+    Somente ``kind=avaliavel`` é elegível a upsert de ``Competencia``.
     """
     if is_kpi(nome):
         return CompetenciaClassification(
@@ -165,7 +200,7 @@ def classify_competencia(nome: str, grupo: str) -> CompetenciaClassification:
     if is_ambiguous(nome):
         return CompetenciaClassification(
             kind="nao_mapeados",
-            motivo="ambiguo",
+            motivo=MOTIVO_AMBIGUO,
         )
     tipo = map_grupo_tipo(grupo)
     if tipo is not None:

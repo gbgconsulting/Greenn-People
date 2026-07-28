@@ -6,6 +6,7 @@ T009: upsert de ``competencies.Competencia`` (somente avaliáveis).
 T010: ``import_catalog`` — parse → persist (Escala → Cargos → Competências).
 T014: upsert de ``competencies.CargoCompetencia`` (peso=1, nivel_esperado).
 T015: reconcile + vínculos no pipeline após cargos/competências.
+T018: seções Excluídos KPI / Não mapeados (classificação parse → relatório).
 """
 
 from __future__ import annotations
@@ -19,9 +20,13 @@ from django.db import transaction
 from apps.competencies.models import CargoCompetencia, Competencia, Escala
 from apps.organization.models import Cargo
 
-from .mapping import classify_competencia, infer_cargo_nivel, nivel_esperado_for
+from .mapping import infer_cargo_nivel, nivel_esperado_for
 from .normalize import canonical_key, display_name
-from .parse import CompetenciaRow, parse_catalog
+from .parse import (
+    CompetenciaRow,
+    classify_competencia_rows,
+    parse_catalog,
+)
 from .reconcile import (
     CatalogPair,
     avaliavel_competencia_keys,
@@ -29,7 +34,12 @@ from .reconcile import (
     extract_pairs_vista_b,
     reconcile_matrix,
 )
-from .report import ImportReport, ReportEntry
+from .report import (
+    ImportReport,
+    ReportEntry,
+    extend_excluidos_kpi,
+    extend_nao_mapeados,
+)
 
 DEFAULT_ESCALA_NOME = "Escala padrão 1-5"
 DEFAULT_ESCALA_MIN = 1
@@ -282,50 +292,29 @@ def upsert_competencias(
     escala: Escala,
     report: ImportReport,
 ) -> dict[str, Competencia]:
-    """Classifica linhas e faz upsert só das avaliáveis; dedupe por chave.
+    """Classifica (parse §6) e faz upsert só das avaliáveis.
 
-    KPI → ``excluidos_kpi``; ambíguos/grupo desconhecido → ``nao_mapeados``.
-    Primeira grafia por ``canonical_key`` vence (fonte: lista-competencias).
+    Preenche seções ``Excluídos KPI`` e ``Não mapeados`` via
+    ``classify_competencia_rows`` (contadores = ``len`` das listas).
+    Primeira grafia por ``canonical_key`` vence (lista-competencias).
 
     Returns:
         Mapa ``canonical_key`` → ``Competencia`` ativa resolvida.
         Chaves KPI/não mapeadas/conflito inativo não entram no mapa.
     """
+    classified = classify_competencia_rows(rows)
+    extend_excluidos_kpi(report, classified.excluidos_kpi)
+    extend_nao_mapeados(report, classified.nao_mapeados)
+
     index = _build_competencia_index()
     resolved: dict[str, Competencia] = {}
-    seen_keys: set[str] = set()
 
-    for row in rows:
-        display = display_name(row.nome)
-        if not display:
-            continue
-        key = canonical_key(display)
-        if key in seen_keys:
-            continue
-        seen_keys.add(key)
-
-        classification = classify_competencia(display, row.grupo)
-        if classification.kind == "excluidos_kpi":
-            report.excluidos_kpi.append(
-                ReportEntry(label=display, motivo=classification.motivo)
-            )
-            continue
-        if classification.kind == "nao_mapeados":
-            report.nao_mapeados.append(
-                ReportEntry(label=display, motivo=classification.motivo)
-            )
-            continue
-
-        if classification.tipo is None:
-            report.nao_mapeados.append(
-                ReportEntry(label=display, motivo="grupo_desconhecido")
-            )
-            continue
-
+    for item in classified.avaliaveis:
+        key = canonical_key(item.row.nome)
         competencia = upsert_competencia(
-            display,
-            classification.tipo,
-            row.descricao,
+            item.row.nome,
+            item.tipo,
+            item.row.descricao,
             escala,
             report,
             index=index,
@@ -421,18 +410,19 @@ def import_catalog(
     *,
     dry_run: bool = False,
 ) -> ImportReport:
-    """Orquestra parse → persistência do catálogo legado (US1–US2 / research R11).
+    """Orquestra parse → persistência do catálogo legado (US1–US3 / research R11).
 
     1. **Parse** (sem DB): valida arquivos/colunas; monta estruturas em memória.
        ``CatalogParseError`` propaga (exit 1 no command; zero writes).
     2. **Persist** em ``transaction.atomic()``:
-       Escala → Cargos → Competências → Reconcile → Vínculos.
+       Escala → Cargos → Competências (classificação §6 preenche
+       ``Excluídos KPI`` / ``Não mapeados``) → Reconcile → Vínculos.
        ``EscalaInativaError`` → conflito ``escala_inativa`` + re-raise (rollback).
     3. ``dry_run``: mesma lógica com ``set_rollback(True)`` (zero commit).
 
     Cargos: nomes de ``lista-cargos`` primeiro (preferência de display), depois
     cargos referenciados em ``lista-competencias``. Competências: só da fonte
-    ``lista-competencias``. Vínculos: união A'∪B' com pontas resolvidas (§8).
+    ``lista-competencias`` (avaliáveis). Vínculos: união A'∪B' (§8).
     """
     parsed = parse_catalog(cargos_path, competencias_path)
     report = ImportReport(

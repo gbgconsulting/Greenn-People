@@ -89,9 +89,9 @@ Monólito Django: `config/`, `apps/<domain>/`, `tests/` na raiz do repositório.
 
 ### Implementation for User Story 3
 
-- [ ] T016 [US3] Completar match por família/prefixo de KPI (throughput, índice de incidentes, variantes com sufixo) em `apps/competencies/services/catalog_import/mapping.py` conforme `contracts/legado-domain-mapping-contract.md` §6.1
-- [ ] T017 [US3] Garantir lista de ambíguos documentados bloqueia persistência com `motivo=ambiguo` em `apps/competencies/services/catalog_import/mapping.py` conforme §6.2
-- [ ] T018 [US3] Preencher seções `Excluídos KPI` e `Não mapeados` no relatório com contadores alinhados às listas em `apps/competencies/services/catalog_import/report.py` e integração no fluxo de `parse.py`/`importer.py`
+- [X] T016 [US3] Completar match por família/prefixo de KPI (throughput, índice de incidentes, variantes com sufixo) em `apps/competencies/services/catalog_import/mapping.py` conforme `contracts/legado-domain-mapping-contract.md` §6.1
+- [X] T017 [US3] Garantir lista de ambíguos documentados bloqueia persistência com `motivo=ambiguo` em `apps/competencies/services/catalog_import/mapping.py` conforme §6.2
+- [X] T018 [US3] Preencher seções `Excluídos KPI` e `Não mapeados` no relatório com contadores alinhados às listas em `apps/competencies/services/catalog_import/report.py` e integração no fluxo de `parse.py`/`importer.py`
 
 **Checkpoint**: SC-005 atendido — zero KPI ativo no catálogo; operador distingue excluídos vs avaliáveis no relatório
 

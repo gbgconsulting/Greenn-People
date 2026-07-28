@@ -2,10 +2,15 @@
 
 Contadores + listas detalhadas e formatação textual conforme
 `contracts/import-command-contract.md` §Formato do relatório.
+
+Contadores de ``excluidos_kpi`` / ``nao_mapeados`` / ``conflitos`` /
+``divergencias`` / ``merged`` no resumo **MUST** igualar ``len`` das
+listas correspondentes (FR-009 / SC-007).
 """
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 
 
@@ -31,7 +36,8 @@ class ImportReport:
     """Relatório estruturado da importação (contadores + listas detalhadas).
 
     Contadores de persistência são preenchidos pelo importer.
-    Contadores de listas no resumo vêm de ``len(...)`` em ``format_report``.
+    Contadores de listas no resumo vêm de ``len(...)`` das listas
+    (sempre alinhados — ver ``format_report``).
     """
 
     modo: str = "persist"
@@ -54,9 +60,57 @@ class ImportReport:
     divergencias: list[ReportEntry] = field(default_factory=list)
     merged: list[ReportEntry] = field(default_factory=list)
 
+    @property
+    def n_excluidos_kpi(self) -> int:
+        """Contador alinhado à seção Excluídos KPI."""
+        return len(self.excluidos_kpi)
+
+    @property
+    def n_nao_mapeados(self) -> int:
+        """Contador alinhado à seção Não mapeados."""
+        return len(self.nao_mapeados)
+
+
+def record_excluido_kpi(
+    report: ImportReport,
+    nome: str,
+    motivo: str = "kpi_operacional",
+) -> None:
+    """Acrescenta item à seção Excluídos KPI (contador = ``len`` da lista)."""
+    report.excluidos_kpi.append(ReportEntry(label=nome, motivo=motivo))
+
+
+def record_nao_mapeado(
+    report: ImportReport,
+    nome: str,
+    motivo: str,
+) -> None:
+    """Acrescenta item à seção Não mapeados (contador = ``len`` da lista)."""
+    report.nao_mapeados.append(ReportEntry(label=nome, motivo=motivo))
+
+
+def extend_excluidos_kpi(
+    report: ImportReport,
+    entries: Iterable[ReportEntry],
+) -> None:
+    """Mescla entradas pré-classificadas em Excluídos KPI."""
+    report.excluidos_kpi.extend(entries)
+
+
+def extend_nao_mapeados(
+    report: ImportReport,
+    entries: Iterable[ReportEntry],
+) -> None:
+    """Mescla entradas pré-classificadas em Não mapeados."""
+    report.nao_mapeados.extend(entries)
+
 
 def format_report(report: ImportReport) -> str:
-    """Serializa o relatório em texto UTF-8 com seções na ordem do contrato."""
+    """Serializa o relatório em texto UTF-8 com seções na ordem do contrato.
+
+    Contadores ``excluidos_kpi`` / ``nao_mapeados`` no resumo usam
+    ``n_excluidos_kpi`` / ``n_nao_mapeados`` (= ``len`` das listas).
+    """
     lines: list[str] = [
         "=== Importação catálogo legado ===",
         f"modo: {report.modo}",
@@ -73,8 +127,8 @@ def format_report(report: ImportReport) -> str:
         f"vinculos_criados: {report.vinculos_criados}",
         f"vinculos_atualizados: {report.vinculos_atualizados}",
         f"vinculos_inalterados: {report.vinculos_inalterados}",
-        f"excluidos_kpi: {len(report.excluidos_kpi)}",
-        f"nao_mapeados: {len(report.nao_mapeados)}",
+        f"excluidos_kpi: {report.n_excluidos_kpi}",
+        f"nao_mapeados: {report.n_nao_mapeados}",
         f"conflitos: {len(report.conflitos)}",
         f"divergencias: {len(report.divergencias)}",
         f"merged: {len(report.merged)}",

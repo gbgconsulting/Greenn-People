@@ -1,16 +1,19 @@
 """Leitura CSV UTF-8, validação de colunas e expansão pipe-separated.
 
 Research R2; `contracts/import-command-contract.md` §Pré-condições;
-`contracts/legado-domain-mapping-contract.md` §2.
+`contracts/legado-domain-mapping-contract.md` §2 e §6 (classificação).
 """
 
 from __future__ import annotations
 
 import csv
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
-from .normalize import display_name, split_pipe
+from .mapping import classify_competencia
+from .normalize import canonical_key, display_name, split_pipe
+from .report import ReportEntry
 
 CARGOS_REQUIRED_COLUMNS: tuple[str, ...] = ("Cargo", "Competência")
 COMPETENCIAS_REQUIRED_COLUMNS: tuple[str, ...] = (
@@ -57,6 +60,93 @@ class ParsedSources:
     competencias: tuple[CompetenciaRow, ...]
     cargos_path: str
     competencias_path: str
+
+
+@dataclass(frozen=True)
+class AvaliavelCompetenciaRow:
+    """Linha de lista-competencias classificada como avaliável (§6)."""
+
+    row: CompetenciaRow
+    tipo: str
+
+
+@dataclass(frozen=True)
+class ClassifiedCompetencias:
+    """Resultado da classificação §6 sobre linhas parseadas (sem DB).
+
+    ``excluidos_kpi`` / ``nao_mapeados`` já no formato de relatório;
+    contadores no resumo = ``len`` dessas tuplas após merge no
+    ``ImportReport``.
+    """
+
+    avaliaveis: tuple[AvaliavelCompetenciaRow, ...]
+    excluidos_kpi: tuple[ReportEntry, ...]
+    nao_mapeados: tuple[ReportEntry, ...]
+
+
+def classify_competencia_rows(
+    rows: Iterable[CompetenciaRow],
+) -> ClassifiedCompetencias:
+    """Classifica linhas de lista-competencias (§6) sem persistir.
+
+    Deduplica por ``canonical_key`` (primeira grafia vence). Somente
+    ``avaliaveis`` são elegíveis a upsert; KPI e não mapeados seguem
+    para as seções do relatório.
+    """
+    avaliaveis: list[AvaliavelCompetenciaRow] = []
+    excluidos_kpi: list[ReportEntry] = []
+    nao_mapeados: list[ReportEntry] = []
+    seen_keys: set[str] = set()
+
+    for row in rows:
+        display = display_name(row.nome)
+        if not display:
+            continue
+        key = canonical_key(display)
+        if not key or key in seen_keys:
+            continue
+        seen_keys.add(key)
+
+        classification = classify_competencia(display, row.grupo)
+        if classification.kind == "excluidos_kpi":
+            excluidos_kpi.append(
+                ReportEntry(
+                    label=display,
+                    motivo=classification.motivo or "kpi_operacional",
+                )
+            )
+            continue
+        if classification.kind == "nao_mapeados":
+            nao_mapeados.append(
+                ReportEntry(
+                    label=display,
+                    motivo=classification.motivo or "grupo_desconhecido",
+                )
+            )
+            continue
+        if classification.tipo is None:
+            nao_mapeados.append(
+                ReportEntry(label=display, motivo="grupo_desconhecido")
+            )
+            continue
+
+        avaliaveis.append(
+            AvaliavelCompetenciaRow(
+                row=CompetenciaRow(
+                    nome=display,
+                    grupo=row.grupo,
+                    descricao=row.descricao,
+                    cargos=row.cargos,
+                ),
+                tipo=classification.tipo,
+            )
+        )
+
+    return ClassifiedCompetencias(
+        avaliaveis=tuple(avaliaveis),
+        excluidos_kpi=tuple(excluidos_kpi),
+        nao_mapeados=tuple(nao_mapeados),
+    )
 
 
 def _cell(row: dict[str, str | None], column: str) -> str:
