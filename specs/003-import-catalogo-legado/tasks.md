@@ -105,10 +105,10 @@ Monólito Django: `config/`, `apps/<domain>/`, `tests/` na raiz do repositório.
 
 ### Implementation for User Story 4
 
-- [ ] T019 [US4] Implementar lookup por `canonical_key` com ramos ativo (update/noop) vs inativo (conflito `inativo_existente`, skip create) para Cargo e Competencia em `apps/competencies/services/catalog_import/importer.py` conforme `contracts/legado-domain-mapping-contract.md` §9
-- [ ] T020 [US4] Implementar modo `--dry-run` (parse + totais projetados, zero commit) e códigos de saída 0/1 em `apps/competencies/services/catalog_import/importer.py` e `apps/competencies/management/commands/importar_competencias_cargo.py`
-- [ ] T021 [US4] Implementar falha fatal pré-persistência (arquivo ausente, encoding/colunas inválidas, escala inativa) com exit `1` e rollback em `apps/competencies/services/catalog_import/parse.py` e command
-- [ ] T022 [US4] Registrar entradas `merged` (mesma chave canônica, grafias distintas) durante normalização em `apps/competencies/services/catalog_import/normalize.py` e seção correspondente em `report.py`
+- [X] T019 [US4] Implementar lookup por `canonical_key` com ramos ativo (update/noop) vs inativo (conflito `inativo_existente`, skip create) para Cargo e Competencia em `apps/competencies/services/catalog_import/importer.py` conforme `contracts/legado-domain-mapping-contract.md` §9
+- [X] T020 [US4] Implementar modo `--dry-run` (parse + totais projetados, zero commit) e códigos de saída 0/1 em `apps/competencies/services/catalog_import/importer.py` e `apps/competencies/management/commands/importar_competencias_cargo.py`
+- [X] T021 [US4] Implementar falha fatal pré-persistência (arquivo ausente, encoding/colunas inválidas, escala inativa) com exit `1` e rollback em `apps/competencies/services/catalog_import/parse.py` e command
+- [X] T022 [US4] Registrar entradas `merged` (mesma chave canônica, grafias distintas) durante normalização em `apps/competencies/services/catalog_import/normalize.py` e seção correspondente em `report.py`
 
 **Checkpoint**: SC-006 atendido — reexecução estável; dry-run operacional; soft-delete respeitado
 

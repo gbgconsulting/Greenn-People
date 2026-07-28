@@ -7,6 +7,14 @@ T010: ``import_catalog`` — parse → persist (Escala → Cargos → Competênc
 T014: upsert de ``competencies.CargoCompetencia`` (peso=1, nivel_esperado).
 T015: reconcile + vínculos no pipeline após cargos/competências.
 T018: seções Excluídos KPI / Não mapeados (classificação parse → relatório).
+T019: lookup ``canonical_key`` — ativo (update/noop) vs inativo
+      (``inativo_existente``, skip create) para Cargo e Competencia (§9 / R10).
+T020: ``dry_run`` — parse + totais projetados com ``set_rollback``
+      (zero commit); códigos de saída no command (0/1).
+T021: falhas fatais pré-persistência — ``CatalogParseError`` (parse) e
+      ``EscalaInativaError`` (escala inativa) → exit 1 + rollback atomic.
+T022: ``merged`` — grafias distintas com mesma ``canonical_key``
+      (``CanonicalNameIndex`` / seção Merged no relatório).
 """
 
 from __future__ import annotations
@@ -14,14 +22,16 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 from decimal import Decimal
 from pathlib import Path
+from typing import Literal, TypeVar
 
 from django.db import transaction
+from django.db.models import Model
 
 from apps.competencies.models import CargoCompetencia, Competencia, Escala
 from apps.organization.models import Cargo
 
 from .mapping import infer_cargo_nivel, nivel_esperado_for
-from .normalize import canonical_key, display_name
+from .normalize import CanonicalNameIndex, canonical_key, display_name
 from .parse import (
     CompetenciaRow,
     classify_competencia_rows,
@@ -38,8 +48,13 @@ from .report import (
     ImportReport,
     ReportEntry,
     extend_excluidos_kpi,
+    extend_merged,
     extend_nao_mapeados,
+    record_merged,
 )
+
+_T = TypeVar("_T", bound=Model)
+_MatchKind = Literal["active", "inactive", "missing"]
 
 DEFAULT_ESCALA_NOME = "Escala padrão 1-5"
 DEFAULT_ESCALA_MIN = 1
@@ -110,6 +125,42 @@ def _build_cargo_index() -> dict[str, Cargo]:
     return index
 
 
+def _lookup_by_canonical_key(
+    index: Mapping[str, _T],
+    key: str,
+) -> tuple[_T | None, _MatchKind]:
+    """Resolve match por ``canonical_key`` nos três ramos do contrato §9.
+
+    Returns:
+        ``(entity, "active")`` — update/noop no registro ativo.
+        ``(entity, "inactive")`` — soft-delete: conflito, não reativar,
+        não criar duplicata ativa.
+        ``(None, "missing")`` — create ``is_active=True``.
+    """
+    existing = index.get(key)
+    if existing is None:
+        return None, "missing"
+    if existing.is_active:
+        return existing, "active"
+    return existing, "inactive"
+
+
+def _record_inativo_existente(
+    report: ImportReport,
+    *,
+    tipo: Literal["cargo", "competencia"],
+    nome: str,
+) -> None:
+    """Registra conflito de soft-delete (motivo ``inativo_existente``)."""
+    report.conflitos.append(
+        ReportEntry(
+            label=tipo,
+            extra=nome,
+            motivo="inativo_existente",
+        )
+    )
+
+
 def upsert_cargo(
     nome: str,
     report: ImportReport,
@@ -118,8 +169,10 @@ def upsert_cargo(
 ) -> Cargo | None:
     """Cria ou atualiza ``Cargo`` ativo por chave canônica (§9 / research R10).
 
+    Ramos (T019):
     - Ativo com mesma chave → atualiza ``nome``/``nivel`` se diferirem.
-    - Inativo com mesma chave → conflito ``inativo_existente``; não reativa.
+    - Inativo com mesma chave → conflito ``inativo_existente``; não reativa;
+      não cria ativo duplicado.
     - Sem match → create ``is_active=True`` com ``nivel`` via ``infer_cargo_nivel``.
 
     Returns:
@@ -132,23 +185,15 @@ def upsert_cargo(
 
     key = canonical_key(display)
     nivel = infer_cargo_nivel(display)
+    resolved_index = index if index is not None else _build_cargo_index()
+    existing, kind = _lookup_by_canonical_key(resolved_index, key)
 
-    if index is not None:
-        existing = index.get(key)
-    else:
-        existing = _build_cargo_index().get(key)
+    if kind == "inactive":
+        _record_inativo_existente(report, tipo="cargo", nome=display)
+        return None
 
-    if existing is not None:
-        if not existing.is_active:
-            report.conflitos.append(
-                ReportEntry(
-                    label="cargo",
-                    extra=display,
-                    motivo="inativo_existente",
-                )
-            )
-            return None
-
+    if kind == "active":
+        assert existing is not None
         changed = False
         if existing.nivel != nivel:
             existing.nivel = nivel
@@ -176,26 +221,33 @@ def upsert_cargos(
 ) -> dict[str, Cargo]:
     """Upsert em lote; deduplica por chave canônica (primeira grafia vence).
 
+    Grafias distintas com a mesma chave são registradas em ``merged``.
+
     Returns:
         Mapa ``canonical_key`` → ``Cargo`` ativo resolvido (criado/atualizado/
         inalterado). Chaves com conflito de inativo não entram no mapa.
     """
     index = _build_cargo_index()
     resolved: dict[str, Cargo] = {}
-    seen_keys: set[str] = set()
+    name_index = CanonicalNameIndex()
 
     for nome in nomes:
-        display = display_name(nome)
-        if not display:
+        observed = name_index.observe(nome)
+        if observed is None:
             continue
-        key = canonical_key(display)
-        if key in seen_keys:
+        if observed.merge is not None:
+            record_merged(
+                report,
+                observed.merge.nome_a,
+                observed.merge.nome_b,
+                observed.merge.chave,
+            )
+        if not observed.is_first:
             continue
-        seen_keys.add(key)
 
-        cargo = upsert_cargo(display, report, index=index)
+        cargo = upsert_cargo(observed.display, report, index=index)
         if cargo is not None:
-            resolved[key] = cargo
+            resolved[observed.key] = cargo
 
     return resolved
 
@@ -222,8 +274,12 @@ def upsert_competencia(
     """Cria ou atualiza ``Competencia`` ativa por chave canônica (§9 / R10).
 
     Caller MUST passar apenas itens já classificados como avaliáveis
-    (``tipo`` mapeado). Soft-delete: inativo com mesma chave → conflito
-    ``inativo_existente``; não reativa.
+    (``tipo`` mapeado).
+
+    Ramos (T019):
+    - Ativo → update campos divergentes / noop (inalterada).
+    - Inativo → conflito ``inativo_existente``; não reativa; não cria.
+    - Sem match → create ``is_active=True``.
 
     Returns:
         Instância ativa criada/atualizada/inalterada, ou ``None`` se skip
@@ -235,23 +291,17 @@ def upsert_competencia(
 
     key = canonical_key(display)
     desc = display_name(descricao)
+    resolved_index = (
+        index if index is not None else _build_competencia_index()
+    )
+    existing, kind = _lookup_by_canonical_key(resolved_index, key)
 
-    if index is not None:
-        existing = index.get(key)
-    else:
-        existing = _build_competencia_index().get(key)
+    if kind == "inactive":
+        _record_inativo_existente(report, tipo="competencia", nome=display)
+        return None
 
-    if existing is not None:
-        if not existing.is_active:
-            report.conflitos.append(
-                ReportEntry(
-                    label="competencia",
-                    extra=display,
-                    motivo="inativo_existente",
-                )
-            )
-            return None
-
+    if kind == "active":
+        assert existing is not None
         changed = False
         if existing.nome != display:
             existing.nome = display
@@ -294,7 +344,7 @@ def upsert_competencias(
 ) -> dict[str, Competencia]:
     """Classifica (parse §6) e faz upsert só das avaliáveis.
 
-    Preenche seções ``Excluídos KPI`` e ``Não mapeados`` via
+    Preenche seções ``Excluídos KPI``, ``Não mapeados`` e ``Merged`` via
     ``classify_competencia_rows`` (contadores = ``len`` das listas).
     Primeira grafia por ``canonical_key`` vence (lista-competencias).
 
@@ -305,6 +355,7 @@ def upsert_competencias(
     classified = classify_competencia_rows(rows)
     extend_excluidos_kpi(report, classified.excluidos_kpi)
     extend_nao_mapeados(report, classified.nao_mapeados)
+    extend_merged(report, classified.merged)
 
     index = _build_competencia_index()
     resolved: dict[str, Competencia] = {}
@@ -410,20 +461,28 @@ def import_catalog(
     *,
     dry_run: bool = False,
 ) -> ImportReport:
-    """Orquestra parse → persistência do catálogo legado (US1–US3 / research R11).
+    """Orquestra parse → persistência do catálogo legado (US1–US4 / research R11).
 
-    1. **Parse** (sem DB): valida arquivos/colunas; monta estruturas em memória.
-       ``CatalogParseError`` propaga (exit 1 no command; zero writes).
+    1. **Parse** (sem DB / T021): valida paths, encoding UTF-8 e colunas;
+       monta estruturas em memória. ``CatalogParseError`` propaga
+       (exit 1 no command; **zero writes** — fase pré-persistência).
     2. **Persist** em ``transaction.atomic()``:
        Escala → Cargos → Competências (classificação §6 preenche
        ``Excluídos KPI`` / ``Não mapeados``) → Reconcile → Vínculos.
-       ``EscalaInativaError`` → conflito ``escala_inativa`` + re-raise (rollback).
-    3. ``dry_run``: mesma lógica com ``set_rollback(True)`` (zero commit).
+       ``EscalaInativaError`` (T021) → conflito ``escala_inativa`` +
+       re-raise; a saída do ``atomic`` faz **rollback** completo
+       (nenhuma escrita parcial). Qualquer outra exceção idem.
+    3. **``dry_run`` (T020)**: executa a mesma lógica de persistência para
+       projetar totais no relatório (``modo=dry-run``), mas marca a
+       transação com ``set_rollback(True)`` em ``finally`` — **zero commit**.
+       Sucesso de dry-run → exit ``0`` no command (conflitos/divergências
+       não-fatais não abortam).
 
     Cargos: nomes de ``lista-cargos`` primeiro (preferência de display), depois
     cargos referenciados em ``lista-competencias``. Competências: só da fonte
     ``lista-competencias`` (avaliáveis). Vínculos: união A'∪B' (§8).
     """
+    # Fase 1 (T021): parse+validate fora do atomic — falha → zero writes.
     parsed = parse_catalog(cargos_path, competencias_path)
     report = ImportReport(
         modo="dry-run" if dry_run else "persist",
@@ -437,8 +496,32 @@ def import_catalog(
 
     with transaction.atomic():
         try:
+            # Escala primeiro: escala_inativa aborta antes de cargos/comps.
             escala = resolve_default_escala()
+            cargos_resolvidos = upsert_cargos(cargo_names, report)
+            competencias_resolvidas = upsert_competencias(
+                parsed.competencias, escala, report
+            )
+
+            pairs_a = extract_pairs_vista_a(parsed.cargos)
+            pairs_b = extract_pairs_vista_b(parsed.competencias)
+            avaliavel_keys = avaliavel_competencia_keys(parsed.competencias)
+            reconciled = reconcile_matrix(
+                pairs_a,
+                pairs_b,
+                avaliavel_keys=avaliavel_keys,
+                resolved_cargo_keys=set(cargos_resolvidos),
+                resolved_competencia_keys=set(competencias_resolvidas),
+            )
+            report.divergencias.extend(reconciled.divergencias)
+            upsert_cargo_competencias(
+                reconciled.matriz,
+                cargos_resolvidos,
+                competencias_resolvidas,
+                report,
+            )
         except EscalaInativaError as exc:
+            # T021: fatal — registra conflito e re-raise para rollback + exit 1.
             report.conflitos.append(
                 ReportEntry(
                     label="escala",
@@ -447,31 +530,10 @@ def import_catalog(
                 )
             )
             raise EscalaInativaError(exc.nome, report=report) from exc
-
-        cargos_resolvidos = upsert_cargos(cargo_names, report)
-        competencias_resolvidas = upsert_competencias(
-            parsed.competencias, escala, report
-        )
-
-        pairs_a = extract_pairs_vista_a(parsed.cargos)
-        pairs_b = extract_pairs_vista_b(parsed.competencias)
-        avaliavel_keys = avaliavel_competencia_keys(parsed.competencias)
-        reconciled = reconcile_matrix(
-            pairs_a,
-            pairs_b,
-            avaliavel_keys=avaliavel_keys,
-            resolved_cargo_keys=set(cargos_resolvidos),
-            resolved_competencia_keys=set(competencias_resolvidas),
-        )
-        report.divergencias.extend(reconciled.divergencias)
-        upsert_cargo_competencias(
-            reconciled.matriz,
-            cargos_resolvidos,
-            competencias_resolvidas,
-            report,
-        )
-
-        if dry_run:
-            transaction.set_rollback(True)
+        finally:
+            # T020: dry-run sempre descarta writes, inclusive se exceção
+            # fatal (ex.: escala_inativa) — evita commit parcial.
+            if dry_run:
+                transaction.set_rollback(True)
 
     return report

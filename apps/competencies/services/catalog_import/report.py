@@ -70,6 +70,11 @@ class ImportReport:
         """Contador alinhado à seção Não mapeados."""
         return len(self.nao_mapeados)
 
+    @property
+    def n_merged(self) -> int:
+        """Contador alinhado à seção Merged."""
+        return len(self.merged)
+
 
 def record_excluido_kpi(
     report: ImportReport,
@@ -105,6 +110,30 @@ def extend_nao_mapeados(
     report.nao_mapeados.extend(entries)
 
 
+def record_merged(
+    report: ImportReport,
+    nome_a: str,
+    nome_b: str,
+    chave: str,
+) -> None:
+    """Acrescenta item à seção Merged (contador = ``len`` da lista).
+
+    ``nome_a`` = grafia mantida (primeira); ``nome_b`` = grafia descartada;
+    ``chave`` = ``canonical_key`` compartilhada.
+    """
+    report.merged.append(
+        ReportEntry(label=nome_a, extra=nome_b, motivo=chave)
+    )
+
+
+def extend_merged(
+    report: ImportReport,
+    entries: Iterable[ReportEntry],
+) -> None:
+    """Mescla entradas pré-classificadas em Merged."""
+    report.merged.extend(entries)
+
+
 def format_report(report: ImportReport) -> str:
     """Serializa o relatório em texto UTF-8 com seções na ordem do contrato.
 
@@ -131,7 +160,7 @@ def format_report(report: ImportReport) -> str:
         f"nao_mapeados: {report.n_nao_mapeados}",
         f"conflitos: {len(report.conflitos)}",
         f"divergencias: {len(report.divergencias)}",
-        f"merged: {len(report.merged)}",
+        f"merged: {report.n_merged}",
         "",
         "--- Excluídos KPI ---",
     ]

@@ -9,7 +9,10 @@ from apps.competencies.services.catalog_import.importer import (
     EscalaInativaError,
     import_catalog,
 )
-from apps.competencies.services.catalog_import.parse import CatalogParseError
+from apps.competencies.services.catalog_import.parse import (
+    CatalogParseError,
+    validate_source_paths,
+)
 from apps.competencies.services.catalog_import.report import (
     ImportReport,
     ReportEntry,
@@ -23,4 +26,5 @@ __all__ = [
     "ReportEntry",
     "format_report",
     "import_catalog",
+    "validate_source_paths",
 ]

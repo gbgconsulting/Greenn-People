@@ -1,7 +1,11 @@
 """Leitura CSV UTF-8, validação de colunas e expansão pipe-separated.
 
-Research R2; `contracts/import-command-contract.md` §Pré-condições;
+Research R2 / R11; `contracts/import-command-contract.md` §Pré-condições;
 `contracts/legado-domain-mapping-contract.md` §2 e §6 (classificação).
+
+T021: falhas fatais pré-persistência (arquivo ausente/ilegível, encoding
+inválido, colunas obrigatórias ausentes) → ``CatalogParseError`` (exit 1
+no command; zero writes).
 """
 
 from __future__ import annotations
@@ -12,7 +16,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .mapping import classify_competencia
-from .normalize import canonical_key, display_name, split_pipe
+from .normalize import CanonicalNameIndex, display_name, split_pipe
 from .report import ReportEntry
 
 CARGOS_REQUIRED_COLUMNS: tuple[str, ...] = ("Cargo", "Competência")
@@ -27,7 +31,10 @@ COMPETENCIAS_REQUIRED_COLUMNS: tuple[str, ...] = (
 
 
 class CatalogParseError(Exception):
-    """Erro fatal de pré-condição de parse (arquivo, encoding, colunas)."""
+    """Erro fatal de pré-condição de parse (arquivo, encoding, colunas).
+
+    Propagado para o management command → exit ``1``, sem escrita no DB.
+    """
 
 
 @dataclass(frozen=True)
@@ -74,14 +81,15 @@ class AvaliavelCompetenciaRow:
 class ClassifiedCompetencias:
     """Resultado da classificação §6 sobre linhas parseadas (sem DB).
 
-    ``excluidos_kpi`` / ``nao_mapeados`` já no formato de relatório;
-    contadores no resumo = ``len`` dessas tuplas após merge no
+    ``excluidos_kpi`` / ``nao_mapeados`` / ``merged`` já no formato de
+    relatório; contadores no resumo = ``len`` dessas tuplas após merge no
     ``ImportReport``.
     """
 
     avaliaveis: tuple[AvaliavelCompetenciaRow, ...]
     excluidos_kpi: tuple[ReportEntry, ...]
     nao_mapeados: tuple[ReportEntry, ...]
+    merged: tuple[ReportEntry, ...] = ()
 
 
 def classify_competencia_rows(
@@ -89,24 +97,33 @@ def classify_competencia_rows(
 ) -> ClassifiedCompetencias:
     """Classifica linhas de lista-competencias (§6) sem persistir.
 
-    Deduplica por ``canonical_key`` (primeira grafia vence). Somente
+    Deduplica por ``canonical_key`` (primeira grafia vence). Grafias
+    distintas com a mesma chave entram em ``merged``. Somente
     ``avaliaveis`` são elegíveis a upsert; KPI e não mapeados seguem
     para as seções do relatório.
     """
     avaliaveis: list[AvaliavelCompetenciaRow] = []
     excluidos_kpi: list[ReportEntry] = []
     nao_mapeados: list[ReportEntry] = []
-    seen_keys: set[str] = set()
+    merged: list[ReportEntry] = []
+    index = CanonicalNameIndex()
 
     for row in rows:
-        display = display_name(row.nome)
-        if not display:
+        observed = index.observe(row.nome)
+        if observed is None:
             continue
-        key = canonical_key(display)
-        if not key or key in seen_keys:
+        if observed.merge is not None:
+            merged.append(
+                ReportEntry(
+                    label=observed.merge.nome_a,
+                    extra=observed.merge.nome_b,
+                    motivo=observed.merge.chave,
+                )
+            )
+        if not observed.is_first:
             continue
-        seen_keys.add(key)
 
+        display = observed.display
         classification = classify_competencia(display, row.grupo)
         if classification.kind == "excluidos_kpi":
             excluidos_kpi.append(
@@ -146,6 +163,7 @@ def classify_competencia_rows(
         avaliaveis=tuple(avaliaveis),
         excluidos_kpi=tuple(excluidos_kpi),
         nao_mapeados=tuple(nao_mapeados),
+        merged=tuple(merged),
     )
 
 
@@ -153,6 +171,46 @@ def _cell(row: dict[str, str | None], column: str) -> str:
     """Valor de célula como string (None → vazio)."""
     value = row.get(column)
     return "" if value is None else value
+
+
+def _assert_readable_file(path: Path) -> None:
+    """Garante que ``path`` existe e é um arquivo legível.
+
+    Raises:
+        CatalogParseError: ausente ou não é arquivo.
+    """
+    if not path.exists():
+        raise CatalogParseError(f"Arquivo não encontrado: {path}")
+    if not path.is_file():
+        raise CatalogParseError(f"Path não é um arquivo legível: {path}")
+
+
+def validate_source_paths(
+    cargos_path: str | Path,
+    competencias_path: str | Path,
+) -> tuple[Path, Path]:
+    """Pré-condição §1: ambos os paths existem e são arquivos (T021).
+
+    Valida os dois paths **antes** de ler qualquer conteúdo, para falhar
+    cedo sem escrita parcial. Se ambos falharem, a mensagem agrega os dois.
+
+    Returns:
+        ``(cargos_path, competencias_path)`` resolvidos como ``Path``.
+
+    Raises:
+        CatalogParseError: um ou ambos os paths inválidos.
+    """
+    cargos = Path(cargos_path)
+    competencias = Path(competencias_path)
+    errors: list[str] = []
+    for path in (cargos, competencias):
+        try:
+            _assert_readable_file(path)
+        except CatalogParseError as exc:
+            errors.append(str(exc))
+    if errors:
+        raise CatalogParseError("; ".join(errors))
+    return cargos, competencias
 
 
 def _read_csv_rows(
@@ -163,12 +221,9 @@ def _read_csv_rows(
 
     Raises:
         CatalogParseError: arquivo ausente/ilegível, encoding inválido
-            ou colunas obrigatórias ausentes.
+            ou colunas obrigatórias ausentes (T021 — fatal, zero writes).
     """
-    if not path.exists():
-        raise CatalogParseError(f"Arquivo não encontrado: {path}")
-    if not path.is_file():
-        raise CatalogParseError(f"Path não é um arquivo legível: {path}")
+    _assert_readable_file(path)
 
     try:
         # utf-8-sig tolera BOM opcional sem alterar conteúdo sem BOM.
@@ -193,6 +248,8 @@ def _read_csv_rows(
         raise CatalogParseError(
             f"Encoding inválido (esperado UTF-8): {path}"
         ) from exc
+    except CatalogParseError:
+        raise
     except OSError as exc:
         raise CatalogParseError(f"Arquivo ilegível: {path} ({exc})") from exc
 
@@ -240,11 +297,17 @@ def parse_catalog(
 ) -> ParsedSources:
     """Parse completo das duas fontes (sem persistência).
 
-    Falha fatal em qualquer pré-condição → `CatalogParseError`
-    (mapeado para exit 1 no management command).
+    Ordem (T021 / research R11 fase 1):
+    1. Valida existência/legibilidade de **ambos** os paths.
+    2. Lê CSV UTF-8 e valida colunas obrigatórias.
+    3. Monta estruturas em memória.
+
+    Falha em qualquer pré-condição → ``CatalogParseError`` (exit 1 no
+    management command; **nenhuma** escrita no banco).
     """
-    cargos_path = Path(cargos_path)
-    competencias_path = Path(competencias_path)
+    cargos_path, competencias_path = validate_source_paths(
+        cargos_path, competencias_path
+    )
     return ParsedSources(
         cargos=parse_cargos_file(cargos_path),
         competencias=parse_competencias_file(competencias_path),
