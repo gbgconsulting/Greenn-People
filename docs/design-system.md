@@ -2,6 +2,15 @@
 
 Identidade visual moderna, clara e responsiva, aplicada de forma consistente em todas as telas via Tailwind CSS dentro do Django Template Language (template base + componentes reutilizáveis via `{% include %}`).
 
+## Fontes de tokens (dualidade)
+
+| Papel | Arquivo | Uso |
+|---|---|---|
+| Fonte documental (canônica) | Este arquivo (`docs/design-system.md`) | Tabelas, padrões de componente, freeze futuro |
+| Tokens CSS / tema Tailwind | `static/src/input.css` (`@theme`, `@layer`) | Variáveis semânticas e base tipográfica em runtime |
+
+Não criar `DESIGN.md` na raiz: a documentação de design deste projeto vive aqui. Alterações de token devem atualizar **doc e CSS na mesma entrega** para evitar divergência.
+
 ## Paleta de cores
 
 | Uso | Tailwind | Hex aproximado |
