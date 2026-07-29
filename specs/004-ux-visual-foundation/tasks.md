@@ -71,7 +71,7 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/`, `tests/`
 
 ### Implementation for User Story 2
 
-- [ ] T011 [P] [US2] Reordenar/agrupar first viewport e hierarquia (títulos, badges, indicadores existentes) em `templates/dashboard/team.html` e `templates/dashboard/team_list_partial.html` sem novos KPIs/queries agregadas
+- [X] T011 [P] [US2] Reordenar/agrupar first viewport e hierarquia (títulos, badges, indicadores existentes) em `templates/dashboard/team.html` e `templates/dashboard/team_list_partial.html` sem novos KPIs/queries agregadas
 - [ ] T012 [P] [US2] Aplicar espelho de clareza (tipografia/espaçamento/badges existentes) em `templates/dashboard/personal.html`
 - [ ] T013 [P] [US2] Polish leve de hierarquia (sem novos KPIs) em `templates/dashboard/admin.html` e `templates/dashboard/structure.html` (FR-002; fora do conjunto A de evidência se tempo limitado — clareza scoped)
 - [ ] T014 [US2] Garantir empty states acionáveis via `templates/components/empty_state.html` onde listas/KPIs vazios já se aplicam nos dashboards-piloto (sem inventar dados)
