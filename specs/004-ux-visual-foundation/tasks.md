@@ -57,7 +57,7 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/`, `tests/`
 - [X] T007 [US1] Reorganizar o bloco `{% if user.is_admin %}` em `templates/components/nav_menu.html` em subgrupos Governança / Cadastros / Sistema conforme [contracts/admin-nav-grouping.md](./contracts/admin-nav-grouping.md) (URLs `{% url %}` existentes; preservar lógica Estrutura/Matriz já condicionada)
 - [X] T008 [US1] Aplicar classes de destaque documentáveis (peso/ordem/ênfase) a Ciclos e Aderência vs. itens de Cadastros em `templates/components/nav_menu.html` (FR-004)
 - [X] T009 [US1] Verificar que `templates/components/sidebar.html` (desktop + drawer mobile) continua incluindo o mesmo `nav_menu` sem regressão de seções Colaborador/Líder/Gerente
-- [ ] T010 [US1] Capturar `01-shell-admin-after.png` e anotar 1–3 bullets objetivos em `specs/004-ux-visual-foundation/evidence/before-after/README.md`
+- [X] T010 [US1] Capturar `01-shell-admin-after.png` e anotar 1–3 bullets objetivos em `specs/004-ux-visual-foundation/evidence/before-after/README.md`
 
 **Checkpoint**: US1 independentemente aceitável (MVP shell)
 

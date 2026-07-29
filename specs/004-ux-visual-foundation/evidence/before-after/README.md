@@ -33,14 +33,22 @@ Verificado em 2026-07-29 antes de qualquer polish de templates:
 
 ## Status de captura
 
-Baseline **before** capturado (viewport ~1280px) em 2026-07-29 — UI operacional atual. **After** permanece pendente até o polish de cada superfície.
+Baseline **before** capturado (viewport ~1280px) em 2026-07-29 — UI operacional atual. **After** por superfície, conforme polish.
 
 | ID | Tela | Before | After | Notas de hierarquia/clareza |
 |---|---|---|---|---|
-| 01 | Shell / nav Admin | ✓ `01-shell-admin-before.png` | _pendente_ | Governança + destaque Ciclos/Aderência |
+| 01 | Shell / nav Admin | ✓ `01-shell-admin-before.png` | ✓ `01-shell-admin-after.png` | Ver bullets US1 abaixo |
 | 02 | Dashboard time | ✓ `02-dashboard-team-before.png` | _pendente_ | Status no first viewport |
 | 03 | Dashboard pessoal | ✓ `03-dashboard-pessoal-before.png` | _pendente_ | Espelho de clareza (KPIs existentes) |
 | 04 | Login | ✓ `04-login-before.png` | _pendente_ | Consistência tipografia/form |
 | 05 | Lista ciclos | ✓ `05-lista-ciclos-before.png` | _pendente_ | Hierarquia lista/empty |
 | 06 | PDI detail | ✓ `06-pdi-detail-before.png` | _pendente_ | Badges/ações/empty + HTMX |
 | 07 | Avaliações list | ✓ `07-avaliacoes-list-before.png` | _pendente_ | Scan + empty/HTMX |
+
+### 01 — Shell / nav Admin (after · US1)
+
+Conta: `admin@test.greenn.com.br` · URL: `/dashboard/admin/` · viewport ~1280×900 · 2026-07-29
+
+- Lista flat **Administração** substituída por três grupos: **Governança** / **Cadastros** / **Sistema**
+- **Ciclos** no topo de Governança com `font-semibold` + `border-l-2 border-emerald-500` (peso maior que itens de Cadastros)
+- **Aderência** mantém o mesmo destaque P1 (seção Gerente quando o usuário também é manager; Governança no admin-only)
