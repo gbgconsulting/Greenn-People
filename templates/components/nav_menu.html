@@ -70,9 +70,10 @@
       >Estrutura</a>
     </li>
     <li>
+      {# FR-004 destaque P1: font-semibold + text-slate-800 / emerald-800 vs Cadastros (font-medium / slate-600) #}
       <a
         href="{% url 'dashboard:adherence' %}"
-        class="block rounded-lg px-3 py-2 transition-colors {% if '/dashboard/adherence' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
+        class="block rounded-lg border-l-2 border-emerald-500 px-3 py-2 font-semibold transition-colors {% if '/dashboard/adherence' in path %}bg-emerald-50 text-emerald-800{% else %}text-slate-800 hover:bg-slate-50{% endif %}"
       >Aderência</a>
     </li>
     <li>
@@ -90,16 +91,18 @@
   <p class="mb-1 px-3 text-xs font-medium uppercase tracking-wide text-slate-400">Governança</p>
   <ul class="space-y-0.5">
     <li>
+      {# FR-004 destaque P1: ordem no topo + font-semibold + border-l + texto mais forte vs Cadastros #}
       <a
         href="{% url 'cycles:ciclo_list' %}"
-        class="block rounded-lg px-3 py-2 transition-colors {% if '/cycles' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
+        class="block rounded-lg border-l-2 border-emerald-500 px-3 py-2 font-semibold transition-colors {% if '/cycles' in path %}bg-emerald-50 text-emerald-800{% else %}text-slate-800 hover:bg-slate-50{% endif %}"
       >Ciclos</a>
     </li>
     {% if not user.is_manager %}
     <li>
+      {# FR-004 destaque P1 (mesmo padrão de Ciclos) #}
       <a
         href="{% url 'dashboard:adherence' %}"
-        class="block rounded-lg px-3 py-2 transition-colors {% if '/dashboard/adherence' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
+        class="block rounded-lg border-l-2 border-emerald-500 px-3 py-2 font-semibold transition-colors {% if '/dashboard/adherence' in path %}bg-emerald-50 text-emerald-800{% else %}text-slate-800 hover:bg-slate-50{% endif %}"
       >Aderência</a>
     </li>
     {% endif %}
