@@ -87,8 +87,22 @@
 
 {% if user.is_admin %}
 <div>
-  <p class="mb-1 px-3 text-xs font-medium uppercase tracking-wide text-slate-400">Administração</p>
+  <p class="mb-1 px-3 text-xs font-medium uppercase tracking-wide text-slate-400">Governança</p>
   <ul class="space-y-0.5">
+    <li>
+      <a
+        href="{% url 'cycles:ciclo_list' %}"
+        class="block rounded-lg px-3 py-2 transition-colors {% if '/cycles' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
+      >Ciclos</a>
+    </li>
+    {% if not user.is_manager %}
+    <li>
+      <a
+        href="{% url 'dashboard:adherence' %}"
+        class="block rounded-lg px-3 py-2 transition-colors {% if '/dashboard/adherence' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
+      >Aderência</a>
+    </li>
+    {% endif %}
     <li>
       <a
         href="{% url 'dashboard:admin' %}"
@@ -104,17 +118,17 @@
     </li>
     <li>
       <a
-        href="{% url 'dashboard:adherence' %}"
-        class="block rounded-lg px-3 py-2 transition-colors {% if '/dashboard/adherence' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
-      >Aderência</a>
-    </li>
-    <li>
-      <a
         href="{% url 'talent:matrix' %}"
         class="block rounded-lg px-3 py-2 transition-colors {% if '/talent/matrix' in path or '/talent/' in path and '/talent/mine' not in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
       >Matriz de talentos</a>
     </li>
     {% endif %}
+  </ul>
+</div>
+
+<div>
+  <p class="mb-1 px-3 text-xs font-medium uppercase tracking-wide text-slate-400">Cadastros</p>
+  <ul class="space-y-0.5">
     <li>
       <a
         href="{% url 'organization:area_list' %}"
@@ -139,12 +153,12 @@
         class="block rounded-lg px-3 py-2 transition-colors {% if '/competencies' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
       >Competências</a>
     </li>
-    <li>
-      <a
-        href="{% url 'cycles:ciclo_list' %}"
-        class="block rounded-lg px-3 py-2 transition-colors {% if '/cycles' in path %}bg-emerald-50 font-medium text-emerald-700{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-800{% endif %}"
-      >Ciclos</a>
-    </li>
+  </ul>
+</div>
+
+<div>
+  <p class="mb-1 px-3 text-xs font-medium uppercase tracking-wide text-slate-400">Sistema</p>
+  <ul class="space-y-0.5">
     <li>
       <a
         href="{% url 'audit:list' %}"
