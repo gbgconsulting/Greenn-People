@@ -3,67 +3,90 @@
 {% block title %}Estrutura — Greenn People{% endblock %}
 
 {% block content %}
-<div class="mb-6 flex flex-wrap items-start justify-between gap-3">
-  <div>
-    <h1 class="text-2xl font-semibold text-slate-800">Estrutura</h1>
-    <p class="mt-1 text-slate-500">
-      Líderes no seu escopo e lacunas de competências por área e cargo
-      {% if ciclo_filtro %} · ciclo {{ ciclo_filtro.nome }}{% else %} · nenhum ciclo selecionado{% endif %}.
+<header class="mb-6">
+  <div class="flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-800">Estrutura</h1>
+      <p class="mt-1 text-sm text-slate-500">
+        Líderes no seu escopo e lacunas de competências por área e cargo.
+      </p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      {% if ciclo_filtro %}
+        {% include "components/badge_status.html" with status="ativo" label=ciclo_filtro.nome extra_class="mt-1" %}
+      {% else %}
+        {% include "components/badge_status.html" with status="arquivado" label="Nenhum ciclo selecionado" extra_class="mt-1" %}
+      {% endif %}
+      {% url 'dashboard:adherence' as adherence_url %}
+      {% include "components/button.html" with label="Ver aderência" href=adherence_url variant="secondary" %}
+    </div>
+  </div>
+</header>
+
+<section class="mb-8" aria-labelledby="filtros-heading">
+  <div class="mb-3">
+    <h2 id="filtros-heading" class="text-lg font-medium text-slate-800">
+      Filtros
+    </h2>
+    <p class="mt-0.5 text-sm text-slate-500">
+      Ajuste ciclo, área e cargo — a visão atualiza ao trocar cada filtro.
     </p>
   </div>
-  {% url 'dashboard:adherence' as adherence_url %}
-  {% include "components/button.html" with label="Ver aderência" href=adherence_url variant="secondary" %}
-</div>
-
-<form method="get" class="mb-6 grid grid-cols-1 gap-3 sm:flex sm:flex-wrap sm:items-end" role="search" aria-label="Filtrar estrutura">
-  <div class="min-w-0 sm:min-w-[10rem]">
-    <label for="ciclo" class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Ciclo</label>
-    <select
-      id="ciclo"
-      name="ciclo"
-      class="form-control w-full"
-      onchange="this.form.submit()"
-    >
-      <option value="">Ciclo aberto{% if ciclo_aberto %} ({{ ciclo_aberto.nome }}){% else %} (nenhum){% endif %}</option>
-      {% for c in ciclos %}
-      <option value="{{ c.pk }}" {% if ciclo_filtro and ciclo_filtro.pk == c.pk %}selected{% endif %}>
-        {{ c.nome }} — {{ c.get_status_display }}
-      </option>
-      {% endfor %}
-    </select>
-  </div>
-  <div class="min-w-0 sm:min-w-[10rem]">
-    <label for="area" class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Área</label>
-    <select
-      id="area"
-      name="area"
-      class="form-control w-full"
-      onchange="this.form.submit()"
-    >
-      <option value="">Todas</option>
-      {% for a in areas %}
-      <option value="{{ a.pk }}" {% if filtro_area_id == a.pk %}selected{% endif %}>{{ a.nome }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  <div class="min-w-0 sm:min-w-[10rem]">
-    <label for="cargo" class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Cargo</label>
-    <select
-      id="cargo"
-      name="cargo"
-      class="form-control w-full"
-      onchange="this.form.submit()"
-    >
-      <option value="">Todos</option>
-      {% for c in cargos %}
-      <option value="{{ c.pk }}" {% if filtro_cargo_id == c.pk %}selected{% endif %}>{{ c.nome }}</option>
-      {% endfor %}
-    </select>
-  </div>
-</form>
+  <form method="get" class="grid grid-cols-1 gap-3 sm:flex sm:flex-wrap sm:items-end" role="search" aria-label="Filtrar estrutura">
+    <div class="min-w-0 sm:min-w-[10rem]">
+      <label for="ciclo" class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Ciclo</label>
+      <select
+        id="ciclo"
+        name="ciclo"
+        class="form-control w-full"
+        onchange="this.form.submit()"
+      >
+        <option value="">Ciclo aberto{% if ciclo_aberto %} ({{ ciclo_aberto.nome }}){% else %} (nenhum){% endif %}</option>
+        {% for c in ciclos %}
+        <option value="{{ c.pk }}" {% if ciclo_filtro and ciclo_filtro.pk == c.pk %}selected{% endif %}>
+          {{ c.nome }} — {{ c.get_status_display }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="min-w-0 sm:min-w-[10rem]">
+      <label for="area" class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Área</label>
+      <select
+        id="area"
+        name="area"
+        class="form-control w-full"
+        onchange="this.form.submit()"
+      >
+        <option value="">Todas</option>
+        {% for a in areas %}
+        <option value="{{ a.pk }}" {% if filtro_area_id == a.pk %}selected{% endif %}>{{ a.nome }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="min-w-0 sm:min-w-[10rem]">
+      <label for="cargo" class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Cargo</label>
+      <select
+        id="cargo"
+        name="cargo"
+        class="form-control w-full"
+        onchange="this.form.submit()"
+      >
+        <option value="">Todos</option>
+        {% for c in cargos %}
+        <option value="{{ c.pk }}" {% if filtro_cargo_id == c.pk %}selected{% endif %}>{{ c.nome }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </form>
+</section>
 
 <section class="mb-8" aria-labelledby="lideres-heading">
-  <h2 id="lideres-heading" class="mb-3 text-lg font-semibold text-slate-800">Líderes da estrutura</h2>
+  <div class="mb-3">
+    <h2 id="lideres-heading" class="text-lg font-medium text-slate-800">Líderes da estrutura</h2>
+    <p class="mt-0.5 text-sm text-slate-500">
+      Aderência por líder no escopo dos filtros atuais.
+    </p>
+  </div>
   <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
     <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
       <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
@@ -83,11 +106,11 @@
           </td>
           <td class="px-4 py-3 text-slate-600">{{ item.lider.area.nome|default:"—" }}</td>
           <td class="px-4 py-3 text-slate-600">{{ item.lider.cargo.nome|default:"—" }}</td>
-          <td class="px-4 py-3 text-slate-800">
+          <td class="px-4 py-3 font-semibold tabular-nums text-slate-800">
             {% if item.snapshot %}
               {{ item.snapshot.percentual }}%
             {% else %}
-              <span class="text-slate-400">—</span>
+              <span class="font-normal text-slate-400">—</span>
             {% endif %}
           </td>
         </tr>
@@ -104,12 +127,14 @@
 </section>
 
 <section class="mb-8" aria-labelledby="lacunas-area-heading">
-  <h2 id="lacunas-area-heading" class="mb-3 text-lg font-semibold text-slate-800">
-    Lacunas por área
-  </h2>
-  <p class="mb-3 text-sm text-slate-500">
-    Lacuna = nível esperado − nota do líder (valores positivos indicam abaixo do esperado).
-  </p>
+  <div class="mb-3">
+    <h2 id="lacunas-area-heading" class="text-lg font-medium text-slate-800">
+      Lacunas por área
+    </h2>
+    <p class="mt-0.5 text-sm text-slate-500">
+      Lacuna = nível esperado − nota do líder (valores positivos indicam abaixo do esperado).
+    </p>
+  </div>
   <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
     <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
       <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
@@ -125,14 +150,14 @@
       <tbody class="divide-y divide-slate-100">
         {% for row in lacunas_por_area %}
         <tr class="hover:bg-slate-50">
-          <td class="px-4 py-3 text-slate-800">{{ row.area_nome }}</td>
+          <td class="px-4 py-3 font-medium text-slate-800">{{ row.area_nome }}</td>
           <td class="px-4 py-3 text-slate-600">{{ row.competencia_nome }}</td>
-          <td class="px-4 py-3 text-slate-800">{{ row.media_nota|default:"—" }}</td>
-          <td class="px-4 py-3 text-slate-800">{{ row.media_esperado|default:"—" }}</td>
-          <td class="px-4 py-3 font-medium {% if row.media_lacuna and row.media_lacuna > 0 %}text-rose-700{% else %}text-slate-800{% endif %}">
+          <td class="px-4 py-3 tabular-nums text-slate-800">{{ row.media_nota|default:"—" }}</td>
+          <td class="px-4 py-3 tabular-nums text-slate-800">{{ row.media_esperado|default:"—" }}</td>
+          <td class="px-4 py-3 font-semibold tabular-nums {% if row.media_lacuna and row.media_lacuna > 0 %}text-rose-700{% else %}text-slate-800{% endif %}">
             {{ row.media_lacuna|default:"—" }}
           </td>
-          <td class="px-4 py-3 text-slate-600">{{ row.com_lacuna }}/{{ row.total }}</td>
+          <td class="px-4 py-3 tabular-nums text-slate-600">{{ row.com_lacuna }}/{{ row.total }}</td>
         </tr>
         {% empty %}
         <tr>
@@ -151,9 +176,14 @@
 </section>
 
 <section aria-labelledby="lacunas-cargo-heading">
-  <h2 id="lacunas-cargo-heading" class="mb-3 text-lg font-semibold text-slate-800">
-    Lacunas por cargo
-  </h2>
+  <div class="mb-3">
+    <h2 id="lacunas-cargo-heading" class="text-lg font-medium text-slate-800">
+      Lacunas por cargo
+    </h2>
+    <p class="mt-0.5 text-sm text-slate-500">
+      Mesmo critério de lacuna, agrupado por cargo.
+    </p>
+  </div>
   <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
     <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
       <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
@@ -169,14 +199,14 @@
       <tbody class="divide-y divide-slate-100">
         {% for row in lacunas_por_cargo %}
         <tr class="hover:bg-slate-50">
-          <td class="px-4 py-3 text-slate-800">{{ row.cargo_nome }}</td>
+          <td class="px-4 py-3 font-medium text-slate-800">{{ row.cargo_nome }}</td>
           <td class="px-4 py-3 text-slate-600">{{ row.competencia_nome }}</td>
-          <td class="px-4 py-3 text-slate-800">{{ row.media_nota|default:"—" }}</td>
-          <td class="px-4 py-3 text-slate-800">{{ row.media_esperado|default:"—" }}</td>
-          <td class="px-4 py-3 font-medium {% if row.media_lacuna and row.media_lacuna > 0 %}text-rose-700{% else %}text-slate-800{% endif %}">
+          <td class="px-4 py-3 tabular-nums text-slate-800">{{ row.media_nota|default:"—" }}</td>
+          <td class="px-4 py-3 tabular-nums text-slate-800">{{ row.media_esperado|default:"—" }}</td>
+          <td class="px-4 py-3 font-semibold tabular-nums {% if row.media_lacuna and row.media_lacuna > 0 %}text-rose-700{% else %}text-slate-800{% endif %}">
             {{ row.media_lacuna|default:"—" }}
           </td>
-          <td class="px-4 py-3 text-slate-600">{{ row.com_lacuna }}/{{ row.total }}</td>
+          <td class="px-4 py-3 tabular-nums text-slate-600">{{ row.com_lacuna }}/{{ row.total }}</td>
         </tr>
         {% empty %}
         <tr>
