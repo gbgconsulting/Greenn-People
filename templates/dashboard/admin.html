@@ -139,11 +139,13 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="5" class="px-4 py-8 text-center text-slate-500">
+          <td colspan="5" class="px-4 py-8">
             {% if ciclo_aberto %}
-              Ainda não há snapshots de aderência para o ciclo aberto.
+              {% url 'dashboard:adherence' as adherence_url %}
+              {% include "components/empty_state.html" with title="Sem snapshots de aderência" message="Ainda não há snapshots de aderência para o ciclo aberto. O job diário popula esta lista." cta_label="Ver aderência" cta_href=adherence_url %}
             {% else %}
-              Nenhum ciclo aberto no momento.
+              {% url 'cycles:ciclo_list' as ciclos_url %}
+              {% include "components/empty_state.html" with title="Sem ciclo aberto" message="Nenhum ciclo aberto no momento. Abra ou gerencie ciclos para acompanhar aderência da liderança." cta_label="Gerenciar ciclos" cta_href=ciclos_url %}
             {% endif %}
           </td>
         </tr>

@@ -116,8 +116,12 @@
 
       {% if not membros_resumo %}
       <tr>
-        <td colspan="6" class="px-4 py-8 text-center text-slate-500">
-          Nenhum colaborador no seu escopo no momento.
+        <td colspan="6" class="px-4 py-8">
+          {% if not ciclo_aberto %}
+            {% include "components/empty_state.html" with title="Sem colaboradores no escopo" message="Não há ciclo aberto e nenhum colaborador no seu escopo hierárquico no momento." %}
+          {% else %}
+            {% include "components/empty_state.html" with title="Sem colaboradores no escopo" message="Nenhum colaborador no seu escopo hierárquico no momento. Quando houver subordinados ativos, o status do ciclo aparece aqui." %}
+          {% endif %}
         </td>
       </tr>
       {% endif %}

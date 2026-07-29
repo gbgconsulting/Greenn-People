@@ -116,8 +116,8 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="4" class="px-4 py-8 text-center text-slate-500">
-            Nenhum líder no escopo para os filtros atuais.
+          <td colspan="4" class="px-4 py-8">
+            {% include "components/empty_state.html" with title="Sem líderes no escopo" message="Nenhum líder no escopo para os filtros atuais. Ajuste ciclo, área ou cargo acima." %}
           </td>
         </tr>
         {% endfor %}
@@ -161,11 +161,11 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="6" class="px-4 py-8 text-center text-slate-500">
+          <td colspan="6" class="px-4 py-8">
             {% if ciclo_filtro %}
-              Ainda não há notas de líder para agregar lacunas por área.
+              {% include "components/empty_state.html" with title="Sem lacunas por área" message="Ainda não há notas de líder para agregar lacunas por área neste ciclo." %}
             {% else %}
-              Selecione ou abra um ciclo para ver lacunas.
+              {% include "components/empty_state.html" with title="Ciclo necessário" message="Selecione ou abra um ciclo nos filtros acima para ver lacunas por área." %}
             {% endif %}
           </td>
         </tr>
@@ -210,11 +210,11 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="6" class="px-4 py-8 text-center text-slate-500">
+          <td colspan="6" class="px-4 py-8">
             {% if ciclo_filtro %}
-              Ainda não há notas de líder para agregar lacunas por cargo.
+              {% include "components/empty_state.html" with title="Sem lacunas por cargo" message="Ainda não há notas de líder para agregar lacunas por cargo neste ciclo." %}
             {% else %}
-              Selecione ou abra um ciclo para ver lacunas.
+              {% include "components/empty_state.html" with title="Ciclo necessário" message="Selecione ou abra um ciclo nos filtros acima para ver lacunas por cargo." %}
             {% endif %}
           </td>
         </tr>

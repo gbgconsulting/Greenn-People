@@ -125,23 +125,17 @@
   </p>
 </section>
 {% elif vinculo_pendente %}
-<div
-  class="mb-8 rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900"
-  role="status"
->
-  <div class="flex flex-wrap items-start gap-2">
-    {% include "components/badge_status.html" with status="pendente" label="Ação necessária" %}
-  </div>
-  <p class="mt-2 font-medium">Vínculo pendente</p>
-  <p class="mt-1 text-amber-800">
-    {% if not cargo %}
-      Seu perfil ainda não possui cargo definido. Peça ao administrador para
-      concluir o vínculo antes de visualizar o nível esperado.
-    {% else %}
-      Seu cargo ({{ cargo.nome }}) ainda não possui competências vinculadas.
-    {% endif %}
-  </p>
-</div>
+<section class="mb-8 rounded-xl border border-slate-200 bg-white px-4 py-8 shadow-sm" aria-labelledby="vinculo-pendente-heading">
+  <h2 id="vinculo-pendente-heading" class="sr-only">Níveis esperados</h2>
+  {% if not cargo %}
+    {% include "components/empty_state.html" with title="Vínculo pendente" message="Seu perfil ainda não possui cargo definido. Peça ao administrador para concluir o vínculo antes de visualizar o nível esperado." %}
+  {% else %}
+    <p class="mb-4 text-center text-sm text-slate-600">
+      Cargo: <span class="font-medium text-slate-800">{{ cargo.nome }}</span>
+    </p>
+    {% include "components/empty_state.html" with title="Vínculo pendente" message="Este cargo ainda não possui competências vinculadas. Peça ao administrador para concluir o vínculo." %}
+  {% endif %}
+</section>
 {% endif %}
 
 {% if classificacao %}
