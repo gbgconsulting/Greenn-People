@@ -1,0 +1,46 @@
+{% comment %}
+  Bloco reutilizável de gráfico (Chart.js + empty state).
+
+  Uso:
+    {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" %}
+
+  Com id no payload (script_id opcional):
+    {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao %}
+
+  Parâmetros:
+    chart       — payload dict (has_data, title, empty_message; id se script_id omitido)
+    script_id   — id de json_script / data-chart-payload (default: chart.id)
+    title       — sobrescreve chart.title
+    extra_class — classes extras no wrapper
+
+  Convenção DOM (dashboard_charts.js):
+    <canvas data-chart-payload="script-id"></canvas>
+    {{ chart|json_script:"script-id" }}
+{% endcomment %}
+{% with payload_id=script_id|default:chart.id chart_title=title|default:chart.title %}
+<figure class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm {{ extra_class }}"{% if payload_id %} aria-labelledby="{{ payload_id }}-heading"{% endif %}>
+  {% if chart_title %}
+  <h3 id="{{ payload_id }}-heading" class="text-lg font-medium text-slate-800">{{ chart_title }}</h3>
+  {% endif %}
+
+  {% if chart.has_data %}
+  <div class="mt-4 relative w-full min-h-[12rem]">
+    <canvas
+      data-chart-payload="{{ payload_id }}"
+      role="img"
+      {% if chart_title %}aria-label="{{ chart_title }}"{% endif %}
+    ></canvas>
+  </div>
+  {% else %}
+  <div class="mt-4 py-6">
+    {% with empty_msg=chart.empty_message|default:"Sem dados para exibir neste gráfico." %}
+      {% include "components/empty_state.html" with message=empty_msg only %}
+    {% endwith %}
+  </div>
+  {% endif %}
+
+  {% if chart and payload_id %}
+  {{ chart|json_script:payload_id }}
+  {% endif %}
+</figure>
+{% endwith %}

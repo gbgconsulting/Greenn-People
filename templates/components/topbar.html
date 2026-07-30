@@ -1,7 +1,8 @@
 {% comment %}
   Barra superior — menu mobile, identidade, contexto de ciclo, usuário e logout.
+  Experimento: ciclo como chip; logout via button outlined (Guia Medium/Outlined).
 {% endcomment %}
-<header class="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-slate-200 bg-white px-4 md:px-6">
+<header class="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-line bg-surface-card px-4 md:px-6">
   <div class="flex min-w-0 items-center gap-2 md:hidden">
     <button
       type="button"
@@ -15,16 +16,22 @@
         <path fill-rule="evenodd" d="M2 4.75A.75.75 0 0 1 2.75 4h14.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 4.75ZM2 10a.75.75 0 0 1 .75-.75h14.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 10Zm0 5.25a.75.75 0 0 1 .75-.75h14.5a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1-.75-.75Z" clip-rule="evenodd" />
       </svg>
     </button>
-    <a href="{% url 'dashboard:personal' %}" class="truncate bg-brand-gradient bg-clip-text text-base font-semibold text-transparent">
+    <a href="{% url 'dashboard:personal' %}" class="shell-brand truncate text-base">
       Greenn People
     </a>
   </div>
   {% if user.is_authenticated %}
     {% if ciclo_aberto %}
       <p
-        class="min-w-0 flex-1 truncate text-sm text-slate-600"
+        class="hidden min-w-0 flex-1 truncate sm:block"
         title="Ciclo: {{ ciclo_aberto.nome }}"
       >
+        <span class="inline-flex max-w-full items-center gap-2 rounded-lg border border-line bg-surface px-3 py-1.5 text-sm text-slate-600">
+          <span class="shrink-0 text-xs font-medium uppercase tracking-wide text-slate-400">Ciclo</span>
+          <span class="truncate font-medium text-slate-800">{{ ciclo_aberto.nome }}</span>
+        </span>
+      </p>
+      <p class="min-w-0 flex-1 truncate text-sm text-slate-600 sm:hidden" title="Ciclo: {{ ciclo_aberto.nome }}">
         <span class="text-slate-400">Ciclo</span>
         {{ ciclo_aberto.nome }}
       </p>
@@ -44,20 +51,11 @@
       </span>
       <form method="post" action="{% url 'accounts:logout' %}" class="inline">
         {% csrf_token %}
-        <button
-          type="submit"
-          class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 font-medium text-slate-700 transition-colors hover:bg-slate-50"
-        >
-          Sair
-        </button>
+        {% include "components/button.html" with label="Sair" variant="outlined" type="submit" extra_class="!h-9 px-3" %}
       </form>
     {% else %}
-      <a
-        href="{% url 'accounts:login' %}"
-        class="rounded-lg bg-brand-gradient px-3 py-1.5 font-medium text-white shadow-sm transition-colors hover:bg-brand-gradient-hover"
-      >
-        Entrar
-      </a>
+      {% url 'accounts:login' as login_url %}
+      {% include "components/button.html" with label="Entrar" variant="primary" href=login_url extra_class="!h-9 px-3" %}
     {% endif %}
   </div>
 </header>

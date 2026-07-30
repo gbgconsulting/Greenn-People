@@ -2,9 +2,13 @@
   Botão reutilizável.
   Uso: {% include "components/button.html" with label="Salvar" variant="primary" %}
 
+  Experimento (branch experiment/ds-figma-button-input):
+  Anatomia alinhada ao Guia Figma Verdee Buttons/Medium (~48px) + variantes
+  outlined / loading. Tokens e Freeze canônicos do People permanecem; Figma é só referência.
+
   Parâmetros:
     label       — texto do botão (obrigatório)
-    variant     — primary | secondary (default: primary)
+    variant     — primary | secondary | outlined | loading (default: primary)
     type        — submit | button | reset (default: button)
     href        — se definido, renderiza <a> em vez de <button>
     disabled    — se true, desabilita o controle
@@ -19,18 +23,20 @@
 {% if href %}
 <a
   href="{{ href }}"
-  class="{% if v == 'secondary' %}bg-white border border-slate-200 text-slate-700 hover:bg-slate-50{% else %}bg-brand-gradient hover:bg-brand-gradient-hover text-white shadow-sm{% endif %} inline-flex items-center justify-center font-medium rounded-lg px-4 py-2 transition-colors {% if disabled %}pointer-events-none opacity-50{% endif %} {{ extra_class }}"
-  {% if disabled %}aria-disabled="true" tabindex="-1"{% endif %}
+  class="{% if v == 'secondary' %}border border-slate-200 bg-white text-slate-700 hover:bg-slate-50{% elif v == 'outlined' %}border border-emerald-600 bg-transparent text-emerald-700 hover:bg-emerald-50{% else %}bg-brand-gradient hover:bg-brand-gradient-hover text-white shadow-sm{% endif %} inline-flex h-12 items-center justify-center gap-2 rounded-lg px-5 text-sm font-medium transition-colors {% if disabled or v == 'loading' %}pointer-events-none opacity-50{% endif %} {{ extra_class }}"
+  {% if disabled or v == 'loading' %}aria-disabled="true" tabindex="-1"{% endif %}
+  {% if v == 'loading' %}aria-busy="true"{% endif %}
   {% if hx_get %}hx-get="{{ hx_get }}" hx-target="{{ hx_target|default:'#modal-container' }}" hx-swap="{{ hx_swap|default:'innerHTML' }}" hx-indicator="{{ hx_indicator|default:'#htmx-indicator' }}"{% endif %}
   {% if attrs %}{{ attrs|safe }}{% endif %}
->{{ label }}</a>
+>{% if v == 'loading' %}<span class="inline-block h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true"></span>{% endif %}{{ label }}</a>
 {% else %}
 <button
   type="{{ type|default:'button' }}"
-  class="{% if v == 'secondary' %}bg-white border border-slate-200 text-slate-700 hover:bg-slate-50{% else %}bg-brand-gradient hover:bg-brand-gradient-hover text-white shadow-sm{% endif %} inline-flex items-center justify-center font-medium rounded-lg px-4 py-2 transition-colors disabled:cursor-not-allowed disabled:opacity-50 {{ extra_class }}"
-  {% if disabled %}disabled{% endif %}
+  class="{% if v == 'secondary' %}border border-slate-200 bg-white text-slate-700 hover:bg-slate-50{% elif v == 'outlined' %}border border-emerald-600 bg-transparent text-emerald-700 hover:bg-emerald-50{% else %}bg-brand-gradient hover:bg-brand-gradient-hover text-white shadow-sm{% endif %} inline-flex h-12 items-center justify-center gap-2 rounded-lg px-5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 {{ extra_class }}"
+  {% if disabled or v == 'loading' %}disabled{% endif %}
+  {% if v == 'loading' %}aria-busy="true"{% endif %}
   {% if hx_get %}hx-get="{{ hx_get }}" hx-target="{{ hx_target|default:'#modal-container' }}" hx-swap="{{ hx_swap|default:'innerHTML' }}" hx-indicator="{{ hx_indicator|default:'#htmx-indicator' }}"{% endif %}
   {% if attrs %}{{ attrs|safe }}{% endif %}
->{{ label }}</button>
+>{% if v == 'loading' %}<span class="inline-block h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true"></span>{% endif %}{{ label }}</button>
 {% endif %}
 {% endwith %}

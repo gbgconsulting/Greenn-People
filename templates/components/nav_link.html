@@ -1,0 +1,17 @@
+{% comment %}
+  Link de navegação do shell (sidebar / drawer).
+  Uso:
+    {% url 'cycles:ciclo_list' as u %}
+    {% include "components/nav_link.html" with href=u label="Ciclos" is_active=active_flag emphasis="1" %}
+
+  Parâmetros:
+    href       — URL (obrigatório)
+    label      — texto (obrigatório)
+    is_active  — truthy → aria-current + estilo ativo
+    emphasis   — truthy → destaque P1 (Ciclos / Aderência)
+{% endcomment %}
+<a
+  href="{{ href }}"
+  class="nav-link{% if emphasis %} nav-link--emphasis{% endif %}"
+  {% if is_active %}aria-current="page"{% endif %}
+>{{ label }}</a>

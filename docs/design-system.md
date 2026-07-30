@@ -19,6 +19,16 @@ Não criar `DESIGN.md` na raiz: a documentação de design deste projeto vive aq
 
 Este documento é a **fonte da verdade** de tokens e padrões de UI do Greenn People. Features seguintes — em especial **gráficos / visualizações no dashboard** e **9-box interativa** — devem **consumir** o conjunto documentado abaixo (e os includes em `templates/components/`), sem reabrir redesign de marca nem inventar ilhas de estilo.
 
+### Experimento Figma (branch `experiment/ds-figma-button-input`)
+
+Referência visual: [Verdee \| Guia de Estilo](https://www.figma.com/design/LqU1eWkoTW4tbSw9LqARHl/Verdee-%7C-Guia-de-Estilo--Copy---c%C3%B3pia-?node-id=0-1) — **não** é fonte da verdade e **não** reabre este Freeze até decisão explícita de produto.
+
+| Recurso do guia | Onde no código | Notas |
+|---|---|---|
+| Buttons/Medium (~48px) + Outlined / Loading | `button.html` (`primary` \| `secondary` \| `outlined` \| `loading`) | Tokens emerald/teal do People mantidos |
+| Input (~48px, hover de borda) | `input.html` + `.form-control` | Estados error/disabled preservados |
+| Anatomia de chrome (densidade / CTAs) | `sidebar.html`, `topbar.html`, `nav_link.html`, `.nav-link*` | Header marketing Verdee **não** portado; shell admin People permanece |
+
 ### Escopo congelado
 
 | Área | Onde está definido |
@@ -75,7 +85,8 @@ Superfície: `templates/components/nav_menu.html` (include em `sidebar.html` des
 
 Ordem vertical: **Colaborador** → **Líder** → **Gerente** → grupos Admin (se `user.is_admin`).
 
-Cabeçalhos de seção: `text-xs font-medium uppercase tracking-wide text-slate-400`.
+Cabeçalhos de seção: classe `.nav-section-label` (equiv. `text-xs font-medium uppercase tracking-wide text-slate-400`).
+Links: `templates/components/nav_link.html` + classes `.nav-link` / `.nav-link--emphasis`.
 
 ### Grupos Admin (`user.is_admin`)
 
@@ -120,14 +131,17 @@ Componente canônico: `templates/components/button.html`.
 |---|---|---|
 | `primary` (default) | Ação principal / CTA | `bg-brand-gradient hover:bg-brand-gradient-hover text-white shadow-sm` (equiv. hex: emerald-600→teal-500 / hover emerald-700→teal-600) |
 | `secondary` | Cancelar / ação secundária | `bg-white border border-slate-200 text-slate-700 hover:bg-slate-50` |
+| `outlined` (experimento) | Ação terciária / logout | `border border-emerald-600 bg-transparent text-emerald-700 hover:bg-emerald-50` |
+| `loading` (experimento) | Submit em andamento | Igual primary + spinner + `disabled` / `aria-busy` |
 
-Comum a ambos: `inline-flex items-center justify-center font-medium rounded-lg px-4 py-2 transition-colors`.
+Comum: `inline-flex h-12 items-center justify-center gap-2 font-medium rounded-lg px-5 text-sm transition-colors` (altura alinhada ao Buttons/Medium do guia).
 
 Parâmetros úteis: `label`, `variant`, `type`, `href` (renderiza `<a>`), `disabled`, `hx_get` / `hx_target` / `hx_swap` / `hx_indicator` (defaults para modal + `#htmx-indicator`), `attrs`, `extra_class`.
 
 ```html
 {% include "components/button.html" with label="Salvar" variant="primary" type="submit" %}
 {% include "components/button.html" with label="Cancelar" variant="secondary" %}
+{% include "components/button.html" with label="Sair" variant="outlined" type="submit" %}
 ```
 
 Não inventar ilhas de estilo de botão nas superfícies-piloto — preferir o include.
@@ -141,7 +155,7 @@ Componente canônico: `templates/components/input.html`.
 | Elemento | Classes / padrão |
 |---|---|
 | Label | `block text-sm font-medium text-slate-700 mb-1` |
-| Campo | `w-full rounded-lg border border-slate-200 px-3 py-2 text-sm` |
+| Campo | `h-12 w-full rounded-lg border border-slate-200 px-3 text-sm` (+ `hover:border-slate-300`) |
 | Foco (campo) | `focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent` (e `:focus-visible` global no CSS) |
 | Erro | `border-rose-300` + anel `focus:ring-rose-500`; mensagem `text-xs text-rose-600` com `role="alert"` |
 | Disabled | `disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500` |
@@ -249,6 +263,7 @@ Templates parciais em `templates/components/`:
 | `empty_state.html` | Lista/KPI vazio com CTA opcional |
 | `sidebar.html` | Menu lateral |
 | `nav_menu.html` | Itens de navegação (desktop + mobile) |
+| `nav_link.html` | Link canônico da nav (ativo / ênfase P1) |
 | `topbar.html` | Barra superior (ciclo, toggle mobile, logout) |
 | `htmx_indicator.html` | Indicador de carregamento anunciável |
 | `modal.html` | Container de dialog HTMX |
