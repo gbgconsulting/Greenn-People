@@ -33,7 +33,7 @@ Verificado em 2026-07-29 antes de qualquer polish de templates:
 
 ## Status de captura
 
-Baseline **before** capturado (viewport ~1280px) em 2026-07-29 — UI operacional atual. **After** por superfície, conforme polish.
+Baseline **before** capturado (viewport ~1280px) em 2026-07-29 — UI operacional atual. **After** por superfície, conforme polish (US1–US3). Revisão de fechamento T036 em 2026-07-30.
 
 | ID | Tela | Before | After | Notas de hierarquia/clareza |
 |---|---|---|---|---|
@@ -44,6 +44,18 @@ Baseline **before** capturado (viewport ~1280px) em 2026-07-29 — UI operaciona
 | 05 | Lista ciclos | ✓ `05-lista-ciclos-before.png` | ✓ `05-lista-ciclos-after.png` | Ver bullets US3 abaixo |
 | 06 | PDI detail | ✓ `06-pdi-detail-before.png` | ✓ `06-pdi-detail-after.png` | Ver bullets US3 abaixo |
 | 07 | Avaliações list | ✓ `07-avaliacoes-list-before.png` | ✓ `07-avaliacoes-list-after.png` | Ver bullets US3 abaixo |
+
+## Revisão de aceite (T036 · SC-003)
+
+Revisão guiada dos 7 pares (mesma viewport ~1280×900; bullets 1–3 por superfície abaixo).
+
+| Critério | Resultado |
+|---|---|
+| 5–8 pares before/after | **7/7** pares completos (PNG before + after + bullets) |
+| ≥1 dashboard | **Sim** — 02 (time) e 03 (pessoal) |
+| ≥1 autoatendimento | **Sim** — 06 (PDI) e 07 (avaliações); também 03 e 04 |
+| Clareza/hierarquia perceptível | **Sim** — nav agrupada (01); scan operacional (02–03); badges/empty/componentes (04–07) |
+| Escopo de evidência | Superfícies US1–US3; shell transversal US4/US5 documentado em contratos, sem exigir re-shot das 7 telas |
 
 ### 01 — Shell / nav Admin (after · US1)
 
@@ -95,7 +107,8 @@ Conta: `admin@test.greenn.com.br` · URL: `/pdi/3/` · viewport ~1280×900 · 20
 
 ### 07 — Avaliações list (after · US3)
 
-Conta: `admin@test.greenn.com.br` · URL: `/reviews/` · viewport ~1280×900 · 2026-07-30
+Conta: `admin@test.greenn.com.br` · URL: `/reviews/` · viewport ~1280×900 · 2026-07-30  
+(Before capturado como `colab@…` com 1 linha; after como admin no escopo amplo — polish de badge/hierarquia comparável)
 
 - Subtítulo com ciclo aberto em peso maior; lista em container bordered/shadow
 - Etapa como badge de status; colaborador com nome + e-mail tipograficamente hierárquicos
@@ -113,3 +126,15 @@ Conta: `admin@test.greenn.com.br` · 2026-07-30 · verificação via requests `H
 | Lista avaliações HTMX (`GET /reviews/?page=1`) | Fragmento com `#list-container` (sem `<html>` full page) | **ok** |
 
 Notas: paginação UI só renderiza se `num_pages > 1` (dados atuais ≤1 página); atributo `hx-target="#list-container"` permanece em `templates/components/pagination.html`. Sem regressão nos alvos HTMX pós-polish US3.
+
+## Checklist OUT (T038 · FR-017 / SC-007)
+
+Verificação em 2026-07-30 — nenhum item OUT entregue nesta feature.
+
+| Item OUT | Critério | Evidência / checagem | Resultado |
+|---|---|---|---|
+| Gráficos novos no dashboard | Sem libs de chart (Chart.js, Apex, Plotly, etc.); sem canvas/SVG de série; sem novos KPIs/métricas | Diff `development...HEAD` em `templates/` + `static/` sem arquivos/uso de chart; dashboards usam cards/badges existentes | **ok — zero** |
+| 9-box interativa | Sem drag-and-drop, drawer de edição ou interações avançadas na matriz | `templates/talent/matrix.html` permanece grade estática (copy explícita “sem arrastar ou drawer”); filtros GET only | **ok — zero** |
+| Dependência WIP Impeccable | Sem merge/cherry-pick/reaplicação do stash Impeccable | `stash@{0}: wip impeccable visual-regress` ainda só no stash; baseline T006 + Freeze em `docs/design-system.md` reafirmam não reaplicar | **ok — zero** |
+
+**SC-007**: escopo OUT verificado — nenhum gráfico novo, nenhuma 9-box interativa e nenhuma reintrodução do WIP Impeccable como dependência desta entrega.

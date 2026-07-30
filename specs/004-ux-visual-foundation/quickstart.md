@@ -61,9 +61,9 @@ evidence/before-after/
 
 ### Critérios de aceite da evidência
 
-- [ ] 5–8 pares before/after (este conjunto tem 7)
-- [ ] Inclui ≥1 dashboard (02 ou 03) e ≥1 autoatendimento (06 ou 07 ou 03)
-- [ ] Zero itens OUT na entrega (gráficos novos, 9-box interativa, Impeccable)
+- [x] 5–8 pares before/after (este conjunto tem 7) — revisado T036 · 2026-07-30
+- [x] Inclui ≥1 dashboard (02 ou 03) e ≥1 autoatendimento (06 ou 07 ou 03)
+- [x] Zero itens OUT na entrega (gráficos novos, 9-box interativa, Impeccable) — T038 · 2026-07-30 ([evidência](./evidence/before-after/README.md#checklist-out-t038--fr-017--sc-007))
 
 ## Validação por user story
 

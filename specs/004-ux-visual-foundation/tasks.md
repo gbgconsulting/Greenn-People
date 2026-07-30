@@ -149,11 +149,11 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/`, `tests/`
 
 ### Implementation for User Story 6
 
-- [ ] T034 [US6] Expandir `docs/design-system.md` com hierarquia do shell Admin, badges, empty states, KPI/cards, focus-visible e padrões de botão/form usados nos componentes
-- [ ] T035 [US6] Alinhar comentários/tokens em `static/src/input.css` com a doc na mesma entrega (evitar docs↔CSS divergentes)
-- [ ] T036 [US6] Completar/revisar todos os pares after + bullets objetivos em `specs/004-ux-visual-foundation/evidence/before-after/README.md` (7 pares; ≥1 dashboard + ≥1 autoatendimento)
-- [ ] T037 [US6] Declarar seção **Freeze** explícita em `docs/design-system.md` (fonte da verdade para features seguintes de gráficos / 9-box interativa)
-- [ ] T038 [US6] Checklist OUT em evidência/README ou nota na feature: zero gráficos novos, zero 9-box interativa, zero dependência Impeccable (FR-017 / SC-007)
+- [X] T034 [US6] Expandir `docs/design-system.md` com hierarquia do shell Admin, badges, empty states, KPI/cards, focus-visible e padrões de botão/form usados nos componentes
+- [X] T035 [US6] Alinhar comentários/tokens em `static/src/input.css` com a doc na mesma entrega (evitar docs↔CSS divergentes)
+- [X] T036 [US6] Completar/revisar todos os pares after + bullets objetivos em `specs/004-ux-visual-foundation/evidence/before-after/README.md` (7 pares; ≥1 dashboard + ≥1 autoatendimento)
+- [X] T037 [US6] Declarar seção **Freeze** explícita em `docs/design-system.md` (fonte da verdade para features seguintes de gráficos / 9-box interativa)
+- [X] T038 [US6] Checklist OUT em evidência/README ou nota na feature: zero gráficos novos, zero 9-box interativa, zero dependência Impeccable (FR-017 / SC-007)
 
 **Checkpoint**: Fundação documentada e congelada
 
