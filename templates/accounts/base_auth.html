@@ -11,7 +11,7 @@
   <div class="flex min-h-screen flex-col items-center justify-center px-4 py-10">
     <a
       href="{% url 'accounts:login' %}"
-      class="mb-8 bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-2xl font-semibold text-transparent"
+      class="mb-6 bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-2xl font-semibold text-transparent"
     >
       Greenn People
     </a>
@@ -33,9 +33,9 @@
       </div>
     {% endif %}
 
-    <div class="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+    <main class="w-full max-w-md rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
       {% block content %}{% endblock %}
-    </div>
+    </main>
   </div>
 </body>
 </html>

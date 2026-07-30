@@ -38,8 +38,8 @@ Baseline **before** capturado (viewport ~1280px) em 2026-07-29 — UI operaciona
 | ID | Tela | Before | After | Notas de hierarquia/clareza |
 |---|---|---|---|---|
 | 01 | Shell / nav Admin | ✓ `01-shell-admin-before.png` | ✓ `01-shell-admin-after.png` | Ver bullets US1 abaixo |
-| 02 | Dashboard time | ✓ `02-dashboard-team-before.png` | _pendente_ | Status no first viewport |
-| 03 | Dashboard pessoal | ✓ `03-dashboard-pessoal-before.png` | _pendente_ | Espelho de clareza (KPIs existentes) |
+| 02 | Dashboard time | ✓ `02-dashboard-team-before.png` | ✓ `02-dashboard-team-after.png` | Ver bullets US2 abaixo |
+| 03 | Dashboard pessoal | ✓ `03-dashboard-pessoal-before.png` | ✓ `03-dashboard-pessoal-after.png` | Ver bullets US2 abaixo |
 | 04 | Login | ✓ `04-login-before.png` | _pendente_ | Consistência tipografia/form |
 | 05 | Lista ciclos | ✓ `05-lista-ciclos-before.png` | _pendente_ | Hierarquia lista/empty |
 | 06 | PDI detail | ✓ `06-pdi-detail-before.png` | _pendente_ | Badges/ações/empty + HTMX |
@@ -52,3 +52,19 @@ Conta: `admin@test.greenn.com.br` · URL: `/dashboard/admin/` · viewport ~1280�
 - Lista flat **Administração** substituída por três grupos: **Governança** / **Cadastros** / **Sistema**
 - **Ciclos** no topo de Governança com `font-semibold` + `border-l-2 border-emerald-500` (peso maior que itens de Cadastros)
 - **Aderência** mantém o mesmo destaque P1 (seção Gerente quando o usuário também é manager; Governança no admin-only)
+
+### 02 — Dashboard time (after · US2)
+
+Conta: `lider@test.greenn.com.br` · URL: `/dashboard/team/` · viewport ~1280×900 · 2026-07-29
+
+- Badge do ciclo aberto alinhado ao título (antes só no subtítulo); seção **Status no ciclo** com hierarquia título + descrição
+- Colunas operacionais **Etapa** e **Nota líder** imediatamente após colaborador (antes intercaladas com Área/Cargo)
+- Etapa em badge de status; nome do colaborador com peso tipográfico maior na lista
+
+### 03 — Dashboard pessoal (after · US2)
+
+Conta: `colab@test.greenn.com.br` · URL: `/` · viewport ~1280×900 · 2026-07-29
+
+- Badge do ciclo no header + seção **Meu desempenho** explicitando KPIs no first viewport
+- Cards de **Nota atual** / **Nível esperado** com badges de origem/estado (ex.: Sem nota, Vínculo pendente)
+- Aviso amarelo de vínculo pendente substituído por `empty_state` acionável (orientação ao admin)

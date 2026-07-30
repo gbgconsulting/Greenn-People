@@ -75,7 +75,7 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/`, `tests/`
 - [X] T012 [P] [US2] Aplicar espelho de clareza (tipografia/espaçamento/badges existentes) em `templates/dashboard/personal.html`
 - [X] T013 [P] [US2] Polish leve de hierarquia (sem novos KPIs) em `templates/dashboard/admin.html` e `templates/dashboard/structure.html` (FR-002; fora do conjunto A de evidência se tempo limitado — clareza scoped)
 - [X] T014 [US2] Garantir empty states acionáveis via `templates/components/empty_state.html` onde listas/KPIs vazios já se aplicam nos dashboards-piloto (sem inventar dados)
-- [ ] T015 [US2] Capturar `02-dashboard-team-after.png` e `03-dashboard-pessoal-after.png` + bullets em `specs/004-ux-visual-foundation/evidence/before-after/README.md`
+- [X] T015 [US2] Capturar `02-dashboard-team-after.png` e `03-dashboard-pessoal-after.png` + bullets em `specs/004-ux-visual-foundation/evidence/before-after/README.md`
 
 **Checkpoint**: US2 independentemente aceitável no scan de liderança/colaborador
 
@@ -89,7 +89,7 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/`, `tests/`
 
 ### Implementation for User Story 3
 
-- [ ] T016 [P] [US3] Alinhar tipografia/espaçamento/form ao design system em `templates/accounts/login.html` (e `templates/accounts/base_auth.html` se necessário para consistência sem redesign de marca)
+- [X] T016 [P] [US3] Alinhar tipografia/espaçamento/form ao design system em `templates/accounts/login.html` (e `templates/accounts/base_auth.html` se necessário para consistência sem redesign de marca)
 - [ ] T017 [P] [US3] Polish hierarquia lista/empty em `templates/cycles/ciclo_list.html` e `templates/cycles/ciclo_list_partial.html` preservando `hx-target` / `#list-container` / paginação
 - [ ] T018 [P] [US3] Polish badges/ações/empty em `templates/pdi/pdi_detail.html` e partials (`templates/pdi/partials/`, `templates/pdi/acao_list_partial.html`) preservando `hx-target="#modal-container"` e indicadores
 - [ ] T019 [P] [US3] Polish scan/empty em `templates/reviews/avaliacao_list.html` e `templates/reviews/avaliacao_list_partial.html` preservando contratos HTMX de lista
