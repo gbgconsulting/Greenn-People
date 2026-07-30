@@ -63,6 +63,54 @@ def colors_for_keys(
     return result
 
 
+def _legend_items_single(
+    labels: Sequence[str],
+    values: Sequence[int | float | None],
+    colors: Sequence[str] | None = None,
+) -> list[dict[str, Any]]:
+    """Pares label/valor(/cor) para figcaption — texto além da cor (FR-007)."""
+    items: list[dict[str, Any]] = []
+    color_list = list(colors) if colors is not None else []
+    for index, label in enumerate(labels):
+        value = values[index] if index < len(values) else None
+        item: dict[str, Any] = {
+            'label': label,
+            'value': value,
+        }
+        if index < len(color_list):
+            item['color'] = color_list[index]
+        items.append(item)
+    return items
+
+
+def _legend_items_grouped(
+    labels: Sequence[str],
+    series: Sequence[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    """Linhas por categoria com partes nomeadas (esperado × nota) — FR-007."""
+    items: list[dict[str, Any]] = []
+    for index, label in enumerate(labels):
+        parts: list[dict[str, Any]] = []
+        for serie in series:
+            raw_values = serie.get('values') or []
+            part: dict[str, Any] = {
+                'label': serie.get('label') or serie.get('key') or '',
+                'value': raw_values[index] if index < len(raw_values) else None,
+            }
+            if serie.get('color'):
+                part['color'] = serie['color']
+            elif serie.get('key') in ('nivel_esperado', 'nota_atual'):
+                # Alinha ao init JS (GROUPED_DEFAULTS) para swatch no figcaption.
+                part['color'] = (
+                    '#64748b'
+                    if serie.get('key') == 'nivel_esperado'
+                    else STATUS_TRIAD_ALTA
+                )
+            parts.append(part)
+        items.append({'label': label, 'parts': parts})
+    return items
+
+
 def series_payload(
     *,
     chart_id: str,
@@ -93,6 +141,12 @@ def series_payload(
         'values': list(values) if resolved_has_data else [],
         'total': computed_total if resolved_has_data else 0,
         'empty_message': empty_message,
+        # Resumo textual espelhando faixas/séries (FR-007 / R4).
+        'legend_items': (
+            _legend_items_single(labels, values, colors)
+            if resolved_has_data
+            else []
+        ),
     }
     if keys is not None:
         payload['keys'] = list(keys) if resolved_has_data else []
@@ -166,6 +220,12 @@ def grouped_series_payload(
         'labels': list(labels) if resolved_has_data else [],
         'series': normalized_series,
         'empty_message': empty_message,
+        # Resumo textual por competência (FR-007 / R4) — não depende só da cor.
+        'legend_items': (
+            _legend_items_grouped(labels, normalized_series)
+            if resolved_has_data
+            else []
+        ),
     }
 
 

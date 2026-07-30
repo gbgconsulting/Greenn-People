@@ -60,6 +60,7 @@ Feature `005-dashboard-charts`: visualizações **consomem** Status Triad e comp
 | CDN | jsDelivr — `https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js` |
 | Init local | `static/js/dashboard_charts.js` |
 | Cores de série | Status Triad — alta `#059669` / média `#d97706` / baixa `#e11d48` + labels textuais |
+| Acessibilidade (FR-007) | Legenda Chart.js com texto; `figcaption`/`legend_items` com rótulo + valor (não só cor) |
 
 **Superfícies que carregam o script** (`{% block extra_js %}` da página — **nunca** em `templates/base.html`):
 

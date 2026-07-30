@@ -106,11 +106,11 @@ Monólito Django: `apps/dashboard/`, `templates/dashboard/`, `static/js/`, `docs
 
 **Purpose**: Validação ponta a ponta, a11y suficiente e guardrails finais
 
-- [ ] T024 Validar checklist [quickstart.md](./quickstart.md) (MVP admin + time + pessoal + SC-001–007) e anotar gaps se houver
-- [ ] T025 [P] Verificar viewport móvel (~375px): charts admin/time/pessoal consultáveis por scroll com rótulos legíveis (SC-006); ajustar só altura/grid mínima nos templates de dashboard se necessário — sem tocar shell/nav/topbar
-- [ ] T026 [P] Confirmar que `templates/base.html` **não** carrega Chart.js; páginas fora de admin/team/personal não incluem o script
-- [ ] T027 Garantir que séries/faixas têm legenda ou texto além da cor (Status Triad + labels) nos três painéis (FR-007)
-- [ ] T028 Revisar OUT: zero endpoints REST novos, zero migrations, structure sem chart, 9-box sem interação nova
+- [X] T024 Validar checklist [quickstart.md](./quickstart.md) (MVP admin + time + pessoal + SC-001–007) e anotar gaps se houver
+- [X] T025 [P] Verificar viewport móvel (~375px): charts admin/time/pessoal consultáveis por scroll com rótulos legíveis (SC-006); ajustar só altura/grid mínima nos templates de dashboard se necessário — sem tocar shell/nav/topbar
+- [X] T026 [P] Confirmar que `templates/base.html` **não** carrega Chart.js; páginas fora de admin/team/personal não incluem o script
+- [X] T027 Garantir que séries/faixas têm legenda ou texto além da cor (Status Triad + labels) nos três painéis (FR-007)
+- [X] T028 Revisar OUT: zero endpoints REST novos, zero migrations, structure sem chart, 9-box sem interação nova
 
 ---
 

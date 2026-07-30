@@ -79,7 +79,8 @@
       Distribuição de aderência e progresso das avaliações no ciclo.
     </p>
   </div>
-  <div class="grid gap-4 lg:grid-cols-2">
+  {# grid-cols-1 no mobile (~375px): charts empilhados, consultáveis por scroll (SC-006) #}
+  <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
     {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" %}
     {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" %}
   </div>

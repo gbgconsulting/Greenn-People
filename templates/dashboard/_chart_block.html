@@ -8,7 +8,7 @@
     {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao %}
 
   Parâmetros:
-    chart       — payload dict (has_data, title, empty_message; id se script_id omitido)
+    chart       — payload dict (has_data, title, empty_message, legend_items; id se script_id omitido)
     script_id   — id de json_script / data-chart-payload (default: chart.id)
     title       — sobrescreve chart.title
     extra_class — classes extras no wrapper
@@ -16,21 +16,68 @@
   Convenção DOM (dashboard_charts.js):
     <canvas data-chart-payload="script-id"></canvas>
     {{ chart|json_script:"script-id" }}
+
+  FR-007: figcaption com legend_items (label + valor + swatch) — informação além da cor.
 {% endcomment %}
 {% with payload_id=script_id|default:chart.id chart_title=title|default:chart.title %}
-<figure class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm {{ extra_class }}"{% if payload_id %} aria-labelledby="{{ payload_id }}-heading"{% endif %}>
+<figure class="min-w-0 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 {{ extra_class }}"{% if payload_id %} aria-labelledby="{{ payload_id }}-heading"{% endif %}>
   {% if chart_title %}
-  <h3 id="{{ payload_id }}-heading" class="text-lg font-medium text-slate-800">{{ chart_title }}</h3>
+  <h3 id="{{ payload_id }}-heading" class="text-base font-medium text-slate-800 sm:text-lg">{{ chart_title }}</h3>
   {% endif %}
 
   {% if chart.has_data %}
-  <div class="mt-4 relative w-full min-h-[12rem]">
+  <div class="dashboard-chart-canvas">
     <canvas
       data-chart-payload="{{ payload_id }}"
       role="img"
       {% if chart_title %}aria-label="{{ chart_title }}"{% endif %}
     ></canvas>
   </div>
+
+  {% if chart.legend_items %}
+  <figcaption class="mt-3 border-t border-slate-100 pt-3">
+    <p class="sr-only">Resumo textual das séries (além da cor):</p>
+    <ul class="flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-600" role="list">
+      {% for item in chart.legend_items %}
+        {% if item.parts %}
+        <li class="min-w-0 basis-full sm:basis-[calc(50%-0.5rem)]">
+          <span class="font-medium text-slate-800">{{ item.label }}</span>
+          <span class="mt-0.5 flex flex-wrap gap-x-3 gap-y-1">
+            {% for part in item.parts %}
+            <span class="inline-flex items-center gap-1.5">
+              {% if part.color %}
+              <span
+                class="inline-block size-2.5 shrink-0 rounded-sm"
+                style="background-color: {{ part.color }}"
+                aria-hidden="true"
+              ></span>
+              {% endif %}
+              <span>{{ part.label }}:
+                {% if part.value is None %}—{% else %}{{ part.value }}{% endif %}
+              </span>
+            </span>
+            {% endfor %}
+          </span>
+        </li>
+        {% else %}
+        <li class="inline-flex items-center gap-1.5">
+          {% if item.color %}
+          <span
+            class="inline-block size-2.5 shrink-0 rounded-sm"
+            style="background-color: {{ item.color }}"
+            aria-hidden="true"
+          ></span>
+          {% endif %}
+          <span>
+            <span class="font-medium text-slate-800">{{ item.label }}</span>:
+            {% if item.value is None %}—{% else %}{{ item.value }}{% endif %}
+          </span>
+        </li>
+        {% endif %}
+      {% endfor %}
+    </ul>
+  </figcaption>
+  {% endif %}
   {% else %}
   <div class="mt-4 py-6">
     {% with empty_msg=chart.empty_message|default:"Sem dados para exibir neste gráfico." %}

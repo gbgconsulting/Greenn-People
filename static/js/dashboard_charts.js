@@ -72,7 +72,73 @@
     return categoryLabel + ': ' + value;
   }
 
+  function isNarrowViewport() {
+    return (
+      typeof window !== 'undefined' &&
+      window.matchMedia &&
+      window.matchMedia('(max-width: 639px)').matches
+    );
+  }
+
+  function formatLegendValue(value) {
+    if (value === null || value === undefined) {
+      return '—';
+    }
+    return String(value);
+  }
+
+  /**
+   * Legenda Chart.js com texto + valor (FR-007): não depende só da cor.
+   * Doughnut/pie: um item por faixa (labels).
+   * Multi-série (grouped): um item por série.
+   * Barra única categórica: oculta (eixo + figcaption cobrem).
+   */
+  function legendLabelWithValue(chart) {
+    var data = chart.data || {};
+    var labels = data.labels || [];
+    var datasets = data.datasets || [];
+    var type = chart.config && chart.config.type;
+
+    if (type === 'doughnut' || type === 'pie') {
+      var ds = datasets[0] || {};
+      var values = ds.data || [];
+      var bg = ds.backgroundColor;
+      return labels.map(function (label, i) {
+        var fill = Array.isArray(bg) ? bg[i] : bg;
+        return {
+          text: label + ': ' + formatLegendValue(values[i]),
+          fillStyle: fill,
+          strokeStyle: fill,
+          hidden: false,
+          index: i,
+          datasetIndex: 0,
+        };
+      });
+    }
+
+    // Default Chart.js (séries agrupadas): label da série + sem forçar valor agregado.
+    var defaults =
+      Chart.defaults &&
+      Chart.defaults.plugins &&
+      Chart.defaults.plugins.legend &&
+      Chart.defaults.plugins.legend.labels &&
+      Chart.defaults.plugins.legend.labels.generateLabels;
+    if (typeof defaults === 'function') {
+      return defaults(chart);
+    }
+    return datasets.map(function (dataset, datasetIndex) {
+      return {
+        text: dataset.label || 'Série ' + (datasetIndex + 1),
+        fillStyle: dataset.backgroundColor,
+        strokeStyle: dataset.borderColor || dataset.backgroundColor,
+        hidden: !!dataset.hidden,
+        datasetIndex: datasetIndex,
+      };
+    });
+  }
+
   function basePlugins(showLegend) {
+    var narrow = isNarrowViewport();
     return {
       legend: {
         display: !!showLegend,
@@ -80,6 +146,10 @@
         labels: {
           usePointStyle: true,
           boxWidth: 10,
+          // Fonte legível em ~375px sem depender só da cor (FR-007 / SC-006).
+          font: { size: narrow ? 11 : 12 },
+          padding: narrow ? 8 : 12,
+          generateLabels: legendLabelWithValue,
         },
       },
       tooltip: {
@@ -91,15 +161,31 @@
     };
   }
 
-  function barScales() {
+  function barScales(horizontal) {
+    var narrow = isNarrowViewport();
+    var categoryTicks = {
+      autoSkip: false,
+      maxRotation: horizontal ? 0 : narrow ? 60 : 45,
+      minRotation: horizontal ? 0 : narrow ? 45 : 0,
+      font: { size: narrow ? 10 : 12 },
+    };
+    var valueTicks = {
+      beginAtZero: true,
+      ticks: {
+        precision: 0,
+        font: { size: narrow ? 10 : 12 },
+      },
+    };
+
+    if (horizontal) {
+      return {
+        x: valueTicks,
+        y: { ticks: categoryTicks },
+      };
+    }
     return {
-      x: {
-        ticks: { autoSkip: false, maxRotation: 45, minRotation: 0 },
-      },
-      y: {
-        beginAtZero: true,
-        ticks: { precision: 0 },
-      },
+      x: { ticks: categoryTicks },
+      y: valueTicks,
     };
   }
 
@@ -120,15 +206,19 @@
         skipNull: true,
       };
     });
+    // Gaps com vários nomes: eixo Y no mobile (~375px) mantém rótulos legíveis.
+    var horizontal = isNarrowViewport() && labels.length > 2;
 
     return {
       type: 'bar',
       data: { labels: labels, datasets: datasets },
       options: {
+        indexAxis: horizontal ? 'y' : 'x',
         responsive: true,
-        maintainAspectRatio: true,
+        // Altura vem de .dashboard-chart-canvas (SC-006).
+        maintainAspectRatio: false,
         plugins: basePlugins(true),
-        scales: barScales(),
+        scales: barScales(horizontal),
       },
     };
   }
@@ -140,6 +230,11 @@
     var colors =
       payload.colors && payload.colors.length ? payload.colors : STATUS_TRIAD;
     var isDoughnut = type === 'doughnut';
+    // Barra categórica: cores por faixa quando o payload traz triad/lista;
+    // legenda Chart.js oculta (eixo + figcaption). Doughnut: legenda com texto.
+    var perCategoryColors =
+      isDoughnut || (colors.length > 1 && colors.length >= labels.length);
+    var fill = perCategoryColors ? colors : colors[0] || STATUS_TRIAD[0];
 
     return {
       type: type,
@@ -149,16 +244,16 @@
           {
             label: payload.title || '',
             data: values,
-            backgroundColor: isDoughnut ? colors : colors[0] || STATUS_TRIAD[0],
-            borderColor: isDoughnut ? '#ffffff' : colors[0] || STATUS_TRIAD[0],
+            backgroundColor: fill,
+            borderColor: isDoughnut ? '#ffffff' : fill,
             borderWidth: isDoughnut ? 2 : 1,
           },
         ],
       },
       options: {
         responsive: true,
-        maintainAspectRatio: true,
-        plugins: basePlugins(true),
+        maintainAspectRatio: false,
+        plugins: basePlugins(isDoughnut),
         scales: isDoughnut ? undefined : barScales(),
       },
     };
