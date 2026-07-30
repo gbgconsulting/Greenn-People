@@ -3,16 +3,16 @@
 {% block title %}Ciclos — Greenn People{% endblock %}
 
 {% block content %}
-<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+<header class="mb-6 flex flex-wrap items-start justify-between gap-3">
   <div>
     <h1 class="text-2xl font-semibold text-slate-800">Ciclos de avaliação</h1>
-    <p class="mt-1 text-slate-500">
+    <p class="mt-1 text-sm text-slate-500">
       Crie, abra e encerre ciclos centralizados. Apenas um ciclo pode estar aberto por vez.
     </p>
   </div>
   {% url 'cycles:ciclo_create' as create_url %}
   {% include "components/button.html" with label="Novo ciclo" href=create_url variant="primary" %}
-</div>
+</header>
 
 {% include "cycles/ciclo_list_partial.html" %}
 {% endblock %}

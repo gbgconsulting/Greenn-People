@@ -2,9 +2,24 @@
 @config '../../tailwind.config.js';
 
 /*
- * Tokens alinhados a docs/design-system.md.
- * Utilitários de paleta: emerald/teal (primária), slate (neutros),
- * amber (alerta), rose (crítico).
+ * Tokens e base alinhados a docs/design-system.md (fonte documental canônica).
+ * Qualquer alteração de token/padrão aqui deve atualizar a doc na mesma entrega.
+ *
+ * Paleta (Tailwind / hex):
+ *   Primária ........ from-emerald-600 to-teal-500 (#059669 → #14b8a6)
+ *   Primária hover .. from-emerald-700 to-teal-600 (#047857 → #0d9488)
+ *   Surface ......... bg-slate-50 / --color-surface (#f8fafc)
+ *   Surface card .... bg-white / --color-surface-card (#ffffff)
+ *   Ink ............. text-slate-800 / --color-ink (#1e293b)
+ *   Ink muted ....... text-slate-500 / --color-ink-muted (#64748b)
+ *   Line ............ border-slate-200 / --color-line (#e2e8f0)
+ *   Sucesso/alto .... emerald-50 / emerald-600–700
+ *   Alerta/médio .... amber-50 / amber-600–700
+ *   Crítico/baixo ... rose-50 / rose-600–700
+ *
+ * Tipografia: Inter (--font-sans); body text-sm.
+ * Componentes CSS: .table-frame, .form-control (ver design-system.md).
+ * A11y: :focus-visible emerald + ring-offset-surface (US5 / a11y-shell).
  */
 @font-face {
   font-family: 'Inter';
@@ -18,14 +33,15 @@
   --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
 }
 
-/* Tokens semânticos sempre disponíveis (docs/design-system.md) */
+/* Tokens semânticos @theme static — espelham a tabela "Paleta de cores" da doc */
 @theme static {
-  --color-surface: #f8fafc;
-  --color-surface-card: #ffffff;
-  --color-ink: #1e293b;
-  --color-ink-muted: #64748b;
-  --color-line: #e2e8f0;
+  --color-surface: #f8fafc; /* fundo principal / bg-slate-50 */
+  --color-surface-card: #ffffff; /* cartões / bg-white */
+  --color-ink: #1e293b; /* texto principal / text-slate-800 */
+  --color-ink-muted: #64748b; /* texto secundário / text-slate-500 */
+  --color-line: #e2e8f0; /* bordas / border-slate-200 */
 
+  /* Gradiente primário (botão primary / CTAs) */
   --background-image-brand-gradient: linear-gradient(to right, #059669, #14b8a6);
   --background-image-brand-gradient-hover: linear-gradient(
     to right,
@@ -36,23 +52,51 @@
 
 @layer base {
   body {
-    @apply bg-slate-50 font-sans text-sm text-slate-800 antialiased;
+    @apply bg-surface font-sans text-sm text-ink antialiased;
   }
 
-  /* Selects/inputs nativos alinhados ao design system */
+  /* Selects/inputs nativos — mesmo anel emerald dos forms (design-system.md) */
   select:not([class*='rounded']) {
-    @apply rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500;
+    @apply rounded-lg border border-line bg-surface-card px-3 py-2 text-sm text-ink focus-visible:border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500;
+  }
+
+  /*
+   * Focus-visible (docs → Focus-visible e a11y mínima do shell):
+   * Links/botões: ring-2 ring-emerald-500 ring-offset-2 ring-offset-surface
+   * Campos: ring-2 ring-emerald-500 + border-transparent
+   * Preferir :focus-visible (não :focus agressivo).
+   * :where() mantém especificidade baixa para utilities sobrescreverem.
+   */
+  :where(
+    a,
+    button,
+    [role='button'],
+    input[type='button'],
+    input[type='submit'],
+    input[type='reset'],
+    summary,
+    [tabindex]:not([tabindex='-1']):not(input):not(select):not(textarea)
+  ):focus-visible {
+    @apply outline-none ring-2 ring-emerald-500 ring-offset-2 ring-offset-surface;
+  }
+
+  :where(
+    input:not([type='hidden']):not([type='button']):not([type='submit']):not([type='reset']),
+    select,
+    textarea
+  ):focus-visible {
+    @apply outline-none border-transparent ring-2 ring-emerald-500;
   }
 }
 
 @layer components {
-  /* Wrapper de tabela responsiva (listagens / dashboards) */
+  /* Listagens / dashboards — docs → KPI / cartões (.table-frame) */
   .table-frame {
-    @apply overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm;
+    @apply overflow-x-auto rounded-xl border border-line bg-surface-card shadow-sm;
   }
 
-  /* Controle de formulário / filtro */
+  /* Filtros/selects — docs → Inputs e formulários (.form-control) */
   .form-control {
-    @apply w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:w-auto;
+    @apply w-full rounded-lg border border-line bg-surface-card px-3 py-2 text-sm text-ink focus-visible:border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 sm:w-auto;
   }
 }

@@ -22,14 +22,20 @@
   {% block extra_head %}{% endblock %}
 </head>
 <body
-  class="min-h-screen bg-slate-50 font-sans text-sm text-slate-800 antialiased"
+  class="min-h-screen"
   hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
 >
+  <a
+    href="#main-content"
+    class="sr-only focus-visible:not-sr-only focus-visible:absolute focus-visible:left-4 focus-visible:top-4 focus-visible:z-50 focus-visible:rounded-lg focus-visible:border focus-visible:border-emerald-200 focus-visible:bg-white focus-visible:px-4 focus-visible:py-2 focus-visible:text-sm focus-visible:font-medium focus-visible:text-emerald-800 focus-visible:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+  >
+    Ir para o conteúdo
+  </a>
   <div class="flex min-h-screen">
     {% include "components/sidebar.html" %}
     <div class="flex min-w-0 flex-1 flex-col">
       {% include "components/topbar.html" %}
-      <main class="flex-1 p-4 md:p-6">
+      <main id="main-content" class="flex-1 p-4 md:p-6" tabindex="-1">
         {% if messages %}
           <div class="mb-4 space-y-2" id="django-messages" aria-live="polite">
             {% for message in messages %}
@@ -60,9 +66,21 @@
   ></div>
 
   <script>
-    document.body.addEventListener('htmx:configRequest', (e) => {
-      e.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
-    });
+    (function initHtmxIndicatorA11y() {
+      const sync = () => {
+        document.querySelectorAll('[data-htmx-indicator]').forEach((el) => {
+          const active =
+            el.classList.contains('htmx-request') || !!el.closest('.htmx-request');
+          el.setAttribute('aria-hidden', active ? 'false' : 'true');
+        });
+      };
+      document.body.addEventListener('htmx:beforeRequest', () => {
+        queueMicrotask(sync);
+      });
+      document.body.addEventListener('htmx:afterRequest', () => {
+        queueMicrotask(sync);
+      });
+    })();
 
     document.body.addEventListener('showMessage', (e) => {
       const detail = e.detail || {};

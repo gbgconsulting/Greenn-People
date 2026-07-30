@@ -50,14 +50,8 @@
     {% endif %}
   </div>
 
-  <div class="flex flex-wrap justify-end gap-2 pt-2">
-    <button
-      type="button"
-      class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 font-medium text-slate-700 transition-colors hover:bg-slate-50"
-      onclick="closeModal()"
-    >
-      Cancelar
-    </button>
+  <div class="flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4">
+    {% include "components/button.html" with label="Cancelar" type="button" variant="secondary" attrs='onclick="closeModal()"' %}
     {% include "components/button.html" with label="Salvar" type="submit" variant="primary" %}
   </div>
 </form>

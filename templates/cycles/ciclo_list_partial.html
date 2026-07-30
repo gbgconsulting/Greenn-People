@@ -1,5 +1,5 @@
 <div id="list-container">
-<div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+<div class="table-frame">
   <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
     <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
       <tr>
@@ -13,10 +13,15 @@
     </thead>
     <tbody class="divide-y divide-slate-100">
       {% for ciclo in ciclos %}
-      <tr class="hover:bg-slate-50" id="ciclo-row-{{ ciclo.pk }}">
-        <td class="px-4 py-3 font-medium text-slate-800">{{ ciclo.nome }}</td>
-        <td class="px-4 py-3 text-slate-600">{{ ciclo.data_inicio|date:"d/m/Y" }}</td>
-        <td class="px-4 py-3 text-slate-600">{{ ciclo.data_fim|date:"d/m/Y" }}</td>
+      <tr
+        class="{% if ciclo.status == 'aberto' %}border-l-4 border-l-emerald-500 bg-emerald-50/30 hover:bg-emerald-50/50{% else %}hover:bg-slate-50{% endif %}"
+        id="ciclo-row-{{ ciclo.pk }}"
+      >
+        <td class="px-4 py-3">
+          <p class="font-semibold text-slate-800">{{ ciclo.nome }}</p>
+        </td>
+        <td class="px-4 py-3 text-slate-600 tabular-nums">{{ ciclo.data_inicio|date:"d/m/Y" }}</td>
+        <td class="px-4 py-3 text-slate-600 tabular-nums">{{ ciclo.data_fim|date:"d/m/Y" }}</td>
         <td class="px-4 py-3">
           {% if ciclo.status == "aberto" %}
             {% include "components/badge_status.html" with status="ativo" label="Aberto" %}
@@ -24,39 +29,38 @@
             {% include "components/badge_status.html" with status="arquivado" label="Encerrado" %}
           {% endif %}
         </td>
-        <td class="px-4 py-3 text-slate-600">{{ ciclo.avaliacoes_count }}</td>
+        <td class="px-4 py-3 tabular-nums text-slate-600">{{ ciclo.avaliacoes_count }}</td>
         <td class="px-4 py-3 text-right">
-          <div class="flex flex-wrap items-center justify-end gap-2">
+          <div class="inline-flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
             {% if ciclo.status == "encerrado" %}
             <form method="post" action="{% url 'cycles:ciclo_open' ciclo.pk %}" class="inline">
               {% csrf_token %}
               <button
                 type="submit"
-                class="text-emerald-700 hover:text-emerald-800"
+                class="font-semibold text-emerald-700 hover:text-emerald-800"
               >Abrir</button>
             </form>
-            <span class="text-slate-300">|</span>
             {% else %}
             <form method="post" action="{% url 'cycles:ciclo_close' ciclo.pk %}" class="inline">
               {% csrf_token %}
               <button
                 type="submit"
-                class="text-amber-700 hover:text-amber-800"
+                class="font-semibold text-amber-700 hover:text-amber-800"
               >Encerrar</button>
             </form>
-            <span class="text-slate-300">|</span>
             {% endif %}
-            <a href="{% url 'cycles:objetivo_list' ciclo.pk %}" class="text-emerald-700 hover:text-emerald-800">Objetivos</a>
-            <span class="text-slate-300">|</span>
-            <a href="{% url 'cycles:ciclo_update' ciclo.pk %}" class="text-emerald-700 hover:text-emerald-800">Editar</a>
-            <span class="text-slate-300">|</span>
-            <a href="{% url 'cycles:ciclo_delete' ciclo.pk %}" class="text-rose-600 hover:text-rose-700">Excluir</a>
+            <a href="{% url 'cycles:objetivo_list' ciclo.pk %}" class="font-medium text-emerald-700 hover:text-emerald-800">Objetivos</a>
+            <a href="{% url 'cycles:ciclo_update' ciclo.pk %}" class="font-medium text-slate-600 hover:text-slate-800">Editar</a>
+            <a href="{% url 'cycles:ciclo_delete' ciclo.pk %}" class="font-medium text-rose-600 hover:text-rose-700">Excluir</a>
           </div>
         </td>
       </tr>
       {% empty %}
       <tr>
-        <td colspan="6" class="px-4 py-8 text-center text-slate-500">Nenhum ciclo cadastrado.</td>
+        <td colspan="6" class="px-4 py-8">
+          {% url 'cycles:ciclo_create' as create_url %}
+          {% include "components/empty_state.html" with title="Nenhum ciclo cadastrado" message="Crie o primeiro ciclo de avaliação para abrir o período operacional." cta_label="Novo ciclo" cta_href=create_url %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>

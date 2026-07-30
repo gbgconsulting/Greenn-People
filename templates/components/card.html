@@ -3,20 +3,32 @@
   Uso:
     {% include "components/card.html" with label="Aderência" value="86%" %}
     {% include "components/card.html" with title="Metas" body="Resumo do ciclo" %}
+    {% include "components/card.html" with label="Status" badge_status="ativo" badge_label="Aberto" %}
 
-  Parâmetros: label, title, value, body, extra_class, attrs
+  Parâmetros: label, title, value, body, badge_status, badge_label, extra_class, attrs
+  - Com value + badge_status: badge fica ao lado do label (KPI com origem/status).
+  - Sem value + badge_status: badge é o conteúdo principal (ex.: status do PDI).
 {% endcomment %}
 <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm {{ extra_class }}"{% if attrs %} {{ attrs|safe }}{% endif %}>
   {% if label %}
-  <p class="text-xs uppercase tracking-wide text-slate-500">{{ label }}</p>
+  <div class="flex flex-wrap items-center justify-between gap-2">
+    <p class="text-xs uppercase tracking-wide text-slate-500">{{ label }}</p>
+    {% if badge_status and value != '' %}
+      {% include "components/badge_status.html" with status=badge_status label=badge_label %}
+    {% endif %}
+  </div>
   {% endif %}
   {% if title %}
   <h3 class="text-lg font-medium text-slate-800 {% if label %}mt-1{% endif %}">{{ title }}</h3>
   {% endif %}
-  {% if value %}
-  <p class="text-2xl font-semibold text-slate-800 {% if label or title %}mt-1{% endif %}">{{ value }}</p>
+  {% if value != '' %}
+  <p class="text-2xl font-semibold tabular-nums text-slate-800 {% if label or title %}mt-1{% endif %}">{{ value }}</p>
+  {% elif badge_status %}
+  <div class="{% if label or title %}mt-2{% endif %}">
+    {% include "components/badge_status.html" with status=badge_status label=badge_label %}
+  </div>
   {% endif %}
   {% if body %}
-  <p class="text-sm text-slate-500 {% if label or title or value %}mt-2{% endif %}">{{ body }}</p>
+  <p class="text-sm text-slate-500 {% if label or title or value != '' or badge_status %}mt-2{% endif %}">{{ body }}</p>
   {% endif %}
 </div>
