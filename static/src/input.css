@@ -41,7 +41,33 @@
 
   /* Selects/inputs nativos alinhados ao design system */
   select:not([class*='rounded']) {
-    @apply rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500;
+    @apply rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus-visible:border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500;
+  }
+
+  /*
+   * Anel de foco teclado (US5 / a11y-shell): emerald + slate/surface.
+   * :focus-visible evita marcar clique de mouse de forma agressiva.
+   * :where() mantém especificidade baixa para utilities sobrescreverem.
+   */
+  :where(
+    a,
+    button,
+    [role='button'],
+    input[type='button'],
+    input[type='submit'],
+    input[type='reset'],
+    summary,
+    [tabindex]:not([tabindex='-1']):not(input):not(select):not(textarea)
+  ):focus-visible {
+    @apply outline-none ring-2 ring-emerald-500 ring-offset-2 ring-offset-surface;
+  }
+
+  :where(
+    input:not([type='hidden']):not([type='button']):not([type='submit']):not([type='reset']),
+    select,
+    textarea
+  ):focus-visible {
+    @apply outline-none border-transparent ring-2 ring-emerald-500;
   }
 }
 
@@ -53,6 +79,6 @@
 
   /* Controle de formulário / filtro */
   .form-control {
-    @apply w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:w-auto;
+    @apply w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus-visible:border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 sm:w-auto;
   }
 }

@@ -1,11 +1,21 @@
 /**
  * Acessibilidade básica de modal HTMX (#modal-container).
  * - Foco no primeiro controle ao abrir
+ * - Focus trap Tab / Shift+Tab enquanto aberto
  * - Escape fecha
  * - Restore de foco no trigger ao fechar
  */
 (function () {
   const CONTAINER_ID = 'modal-container';
+  const FOCUSABLE_SELECTOR = [
+    'a[href]',
+    'button:not([disabled])',
+    'textarea:not([disabled])',
+    'input:not([disabled]):not([type="hidden"])',
+    'select:not([disabled])',
+    '[tabindex]:not([tabindex="-1"])',
+  ].join(', ');
+
   let lastTrigger = null;
 
   function getContainer() {
@@ -20,6 +30,18 @@
 
   function isOpen() {
     return !!getDialog();
+  }
+
+  function isVisible(el) {
+    return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+  }
+
+  function getFocusable(dialog) {
+    return Array.from(dialog.querySelectorAll(FOCUSABLE_SELECTOR)).filter((el) => {
+      if (el.hasAttribute('disabled') || el.getAttribute('aria-hidden') === 'true') return false;
+      if (el.closest('[aria-hidden="true"]')) return false;
+      return isVisible(el);
+    });
   }
 
   function rememberTrigger(el) {
@@ -39,15 +61,44 @@
       return;
     }
 
-    const focusable = dialog.querySelector(
-      'button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'
-    );
-    if (focusable) {
-      focusable.focus();
+    const focusable = getFocusable(dialog);
+    if (focusable.length) {
+      focusable[0].focus();
       return;
     }
 
     dialog.focus();
+  }
+
+  function trapFocus(e) {
+    if (e.key !== 'Tab' || !isOpen()) return;
+
+    const dialog = getDialog();
+    if (!dialog) return;
+
+    const focusable = getFocusable(dialog);
+
+    if (focusable.length === 0) {
+      e.preventDefault();
+      if (typeof dialog.focus === 'function') dialog.focus();
+      return;
+    }
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const active = document.activeElement;
+    const outside = !dialog.contains(active);
+    const index = focusable.indexOf(active);
+
+    if (e.shiftKey) {
+      if (outside || index <= 0) {
+        e.preventDefault();
+        last.focus();
+      }
+    } else if (outside || index === -1 || index === focusable.length - 1) {
+      e.preventDefault();
+      first.focus();
+    }
   }
 
   function closeModal() {
@@ -87,9 +138,12 @@
   });
 
   document.addEventListener('keydown', (e) => {
-    if (e.key !== 'Escape' || !isOpen()) return;
-    e.preventDefault();
-    closeModal();
+    if (e.key === 'Escape' && isOpen()) {
+      e.preventDefault();
+      closeModal();
+      return;
+    }
+    trapFocus(e);
   });
 
   window.closeModal = closeModal;

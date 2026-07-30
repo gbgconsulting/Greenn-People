@@ -131,11 +131,11 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/`, `tests/`
 
 ### Implementation for User Story 5
 
-- [ ] T029 [US5] Adicionar skip link “Ir para o conteúdo” → `#main-content` no início do `body` e id no `<main>` em `templates/base.html` (visível no foco)
-- [ ] T030 [P] [US5] Marcar item ativo com `aria-current="page"` além das classes visuais em `templates/components/nav_menu.html`
-- [ ] T031 [P] [US5] Adicionar regras `:focus-visible` (anel coerente com tokens) em `static/src/input.css` e regenerar `static/css/tailwind.css`
-- [ ] T032 [US5] Implementar focus trap Tab/Shift+Tab no dialog aberto em `static/js/modal.js` (manter Escape + restore no trigger já existentes)
-- [ ] T033 [US5] Ajustar `templates/components/htmx_indicator.html` (e hook mínimo em `templates/base.html` se necessário) para estado “Carregando…” anunciável quando `.htmx-request` — não manter `aria-hidden="true"` permanente anulando `role="status"`
+- [X] T029 [US5] Adicionar skip link “Ir para o conteúdo” → `#main-content` no início do `body` e id no `<main>` em `templates/base.html` (visível no foco)
+- [X] T030 [P] [US5] Marcar item ativo com `aria-current="page"` além das classes visuais em `templates/components/nav_menu.html`
+- [X] T031 [P] [US5] Adicionar regras `:focus-visible` (anel coerente com tokens) em `static/src/input.css` e regenerar `static/css/tailwind.css`
+- [X] T032 [US5] Implementar focus trap Tab/Shift+Tab no dialog aberto em `static/js/modal.js` (manter Escape + restore no trigger já existentes)
+- [X] T033 [US5] Ajustar `templates/components/htmx_indicator.html` (e hook mínimo em `templates/base.html` se necessário) para estado “Carregando…” anunciável quando `.htmx-request` — não manter `aria-hidden="true"` permanente anulando `role="status"`
 
 **Checkpoint**: SC-004 checklist teclado passa
 

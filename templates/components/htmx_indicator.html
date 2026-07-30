@@ -7,7 +7,7 @@
   Uso contextual (próximo à ação):
     {% include "components/htmx_indicator.html" with indicator_id="htmx-ind-acao-12" variant="inline" %}
 
-  Nos elementos hx-*:
+    Nos elementos hx-*:
     hx-indicator="#htmx-indicator"
     (ou o id customizado)
 
@@ -15,6 +15,9 @@
     indicator_id — id do elemento (default: htmx-indicator)
     variant      — fixed | inline (default: fixed)
     label        — texto acessível (default: Carregando…)
+
+  A11y: aria-hidden inicia true (idle). O hook em base.html sincroniza
+  aria-hidden com .htmx-request para que role="status" anuncie o label.
 {% endcomment %}
 {% with ind_id=indicator_id|default:"htmx-indicator" v=variant|default:"fixed" %}
 <span
@@ -23,6 +26,7 @@
   role="status"
   aria-live="polite"
   aria-hidden="true"
+  data-htmx-indicator
 >
   <svg
     class="h-4 w-4 shrink-0 animate-spin text-emerald-600"
