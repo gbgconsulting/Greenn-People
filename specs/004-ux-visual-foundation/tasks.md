@@ -94,7 +94,7 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/`, `tests/`
 - [X] T018 [P] [US3] Polish badges/ações/empty em `templates/pdi/pdi_detail.html` e partials (`templates/pdi/partials/`, `templates/pdi/acao_list_partial.html`) preservando `hx-target="#modal-container"` e indicadores
 - [X] T019 [P] [US3] Polish scan/empty em `templates/reviews/avaliacao_list.html` e `templates/reviews/avaliacao_list_partial.html` preservando contratos HTMX de lista
 - [X] T020 [US3] Unificar uso de `templates/components/button.html`, `input.html`, `badge_status.html`, `empty_state.html`, `card.html` nas superfícies-piloto tocadas (evitar ilhas de estilo)
-- [ ] T021 [US3] Claridade de apresentação (sem interação nova) em `templates/talent/matrix.html` se tocado no escopo FR-002 — **não** adicionar drag/drawer/edição (FR-017)
+- [X] T021 [US3] Claridade de apresentação (sem interação nova) em `templates/talent/matrix.html` se tocado no escopo FR-002 — **não** adicionar drag/drawer/edição (FR-017)
 - [ ] T022 [US3] Smoke manual HTMX: abrir modal PDI + paginar/filtrar lista piloto → região esperada atualiza; anotar ok no README de evidência se houver dúvida
 - [ ] T023 [US3] Capturar after 04–07 (`04-login-after.png`, `05-lista-ciclos-after.png`, `06-pdi-detail-after.png`, `07-avaliacoes-list-after.png`) + bullets em `specs/004-ux-visual-foundation/evidence/before-after/README.md`
 
