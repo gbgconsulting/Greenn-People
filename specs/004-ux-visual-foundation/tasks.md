@@ -90,7 +90,7 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/`, `tests/`
 ### Implementation for User Story 3
 
 - [X] T016 [P] [US3] Alinhar tipografia/espaçamento/form ao design system em `templates/accounts/login.html` (e `templates/accounts/base_auth.html` se necessário para consistência sem redesign de marca)
-- [ ] T017 [P] [US3] Polish hierarquia lista/empty em `templates/cycles/ciclo_list.html` e `templates/cycles/ciclo_list_partial.html` preservando `hx-target` / `#list-container` / paginação
+- [X] T017 [P] [US3] Polish hierarquia lista/empty em `templates/cycles/ciclo_list.html` e `templates/cycles/ciclo_list_partial.html` preservando `hx-target` / `#list-container` / paginação
 - [ ] T018 [P] [US3] Polish badges/ações/empty em `templates/pdi/pdi_detail.html` e partials (`templates/pdi/partials/`, `templates/pdi/acao_list_partial.html`) preservando `hx-target="#modal-container"` e indicadores
 - [ ] T019 [P] [US3] Polish scan/empty em `templates/reviews/avaliacao_list.html` e `templates/reviews/avaliacao_list_partial.html` preservando contratos HTMX de lista
 - [ ] T020 [US3] Unificar uso de `templates/components/button.html`, `input.html`, `badge_status.html`, `empty_state.html`, `card.html` nas superfícies-piloto tocadas (evitar ilhas de estilo)
