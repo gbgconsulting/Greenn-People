@@ -112,10 +112,12 @@
         STATUS_TRIAD[index % STATUS_TRIAD.length];
       return {
         label: serie.label || serie.key || 'Série ' + (index + 1),
+        // null permanece null — Chart.js omite a barra (não inventa 0).
         data: (serie.values || []).map(asNullableNumber),
         backgroundColor: color,
         borderColor: color,
         borderWidth: 1,
+        skipNull: true,
       };
     });
 

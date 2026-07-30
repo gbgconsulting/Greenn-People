@@ -19,6 +19,7 @@ from apps.dashboard.chart_payloads import (
     aderencia_distribution_payload,
     categorical_counts_payload,
     empty_series_payload,
+    grouped_series_payload,
 )
 from apps.dashboard.models import AderenciaSnapshot
 from apps.dashboard.services.structure import (
@@ -59,7 +60,93 @@ class PersonalDashboardView(LoginRequiredMixin, TemplateView):
         context['classificacao'] = get_visible_classification_for_collaborator(
             self.request.user,
         )
+        context['chart_gaps_competencia'] = self._chart_gaps_competencia(context)
         return context
+
+    def _chart_gaps_competencia(self, fr005: dict) -> dict:
+        """Barras esperado × nota a partir de ``competencias_resumo`` (US3).
+
+        Empty honesto (has_data false + empty_state via _chart_block):
+        vínculo pendente / lista vazia / nenhuma nota comparável.
+        ``null`` em ``nota_atual`` permanece null — não vira 0 (FR-006 / T022).
+        """
+        title = 'Esperado × nota por competência'
+        # Mensagem canônica do contrato (cenário sem notas comparáveis).
+        empty_sem_notas = (
+            'Ainda não há notas por competência para exibir gaps.'
+        )
+
+        if fr005.get('vinculo_pendente'):
+            return grouped_series_payload(
+                chart_id='chart-gaps-competencia',
+                title=title,
+                labels=[],
+                series=[],
+                empty_message=(
+                    'Vínculo de cargo ou competências pendente — '
+                    'gaps não disponíveis.'
+                ),
+                has_data=False,
+            )
+
+        competencias: list[dict] = list(fr005.get('competencias_resumo') or [])
+        if not competencias:
+            return grouped_series_payload(
+                chart_id='chart-gaps-competencia',
+                title=title,
+                labels=[],
+                series=[],
+                empty_message=(
+                    'Não há competências vinculadas ao seu cargo '
+                    'para exibir gaps.'
+                ),
+                has_data=False,
+            )
+
+        # Sem nenhuma nota → empty honesto (não desenhar só níveis esperados).
+        if all(item.get('nota_atual') is None for item in competencias):
+            return grouped_series_payload(
+                chart_id='chart-gaps-competencia',
+                title=title,
+                labels=[],
+                series=[],
+                empty_message=empty_sem_notas,
+                has_data=False,
+            )
+
+        labels: list[str] = []
+        esperado_values: list[float | None] = []
+        nota_values: list[float | None] = []
+        for item in competencias:
+            competencia = item.get('competencia')
+            labels.append(
+                getattr(competencia, 'nome', '') if competencia is not None else '',
+            )
+            nivel = item.get('nivel_esperado')
+            esperado_values.append(float(nivel) if nivel is not None else None)
+            nota = item.get('nota_atual')
+            # null permanece null — não vira 0 inventado (FR-006 / contrato).
+            nota_values.append(float(nota) if nota is not None else None)
+
+        return grouped_series_payload(
+            chart_id='chart-gaps-competencia',
+            title=title,
+            labels=labels,
+            series=[
+                {
+                    'key': 'nivel_esperado',
+                    'label': 'Nível esperado',
+                    'values': esperado_values,
+                },
+                {
+                    'key': 'nota_atual',
+                    'label': 'Nota atual',
+                    'values': nota_values,
+                },
+            ],
+            empty_message=empty_sem_notas,
+            has_data=True,
+        )
 
 
 class TeamDashboardView(

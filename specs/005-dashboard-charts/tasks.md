@@ -92,11 +92,11 @@ Monólito Django: `apps/dashboard/`, `templates/dashboard/`, `static/js/`, `docs
 
 ### Implementation for User Story 3
 
-- [ ] T019 [US3] Implementar builder `chart_gaps_competencia` em `apps/dashboard/views.py` (`PersonalDashboardView.get_context_data`) a partir de `competencias_resumo` (`nivel_esperado` / `nota_atual`); `has_data: false` se vínculo pendente, lista vazia ou sem notas comparáveis — sem alterar `build_fr005_context` em `apps/reviews/services/evaluation.py` além do necessário para reexpor o já calculado
-- [ ] T020 [US3] Incluir chart grouped-bar em `templates/dashboard/personal.html` via `_chart_block.html` + `json_script`; **não** alterar regra `{% if classificacao %}` / `get_visible_classification_for_collaborator` (FR-009)
-- [ ] T021 [US3] Estender `{% block extra_js %}` de `templates/dashboard/personal.html` com Chart.js CDN + `dashboard_charts.js`
-- [ ] T022 [US3] Empty state PT-BR na área de gaps quando `has_data: false`; `null` em `nota_atual` não vira nota inventada
-- [ ] T023 [US3] Atualizar nota FR-013 em `docs/design-system.md` listando também `dashboard/personal.html`
+- [X] T019 [US3] Implementar builder `chart_gaps_competencia` em `apps/dashboard/views.py` (`PersonalDashboardView.get_context_data`) a partir de `competencias_resumo` (`nivel_esperado` / `nota_atual`); `has_data: false` se vínculo pendente, lista vazia ou sem notas comparáveis — sem alterar `build_fr005_context` em `apps/reviews/services/evaluation.py` além do necessário para reexpor o já calculado
+- [X] T020 [US3] Incluir chart grouped-bar em `templates/dashboard/personal.html` via `_chart_block.html` + `json_script`; **não** alterar regra `{% if classificacao %}` / `get_visible_classification_for_collaborator` (FR-009)
+- [X] T021 [US3] Estender `{% block extra_js %}` de `templates/dashboard/personal.html` com Chart.js CDN + `dashboard_charts.js`
+- [X] T022 [US3] Empty state PT-BR na área de gaps quando `has_data: false`; `null` em `nota_atual` não vira nota inventada
+- [X] T023 [US3] Atualizar nota FR-013 em `docs/design-system.md` listando também `dashboard/personal.html`
 
 **Checkpoint**: Três slices entregues e independentemente utilizáveis
 

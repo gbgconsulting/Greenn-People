@@ -125,6 +125,17 @@ def empty_series_payload(
     )
 
 
+def _nullable_number(value: Any) -> float | int | None:
+    """Preserva ``None`` como null JSON; não converte ausência em zero."""
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, (int, float)):
+        return value
+    return float(value)
+
+
 def grouped_series_payload(
     *,
     chart_id: str,
@@ -135,15 +146,25 @@ def grouped_series_payload(
     has_data: bool | None = None,
     chart_type: str = 'bar_grouped',
 ) -> dict[str, Any]:
-    """Monta payload multi-série (ex.: esperado × nota) no shape do contrato pessoal."""
+    """Monta payload multi-série (ex.: esperado × nota) no shape do contrato pessoal.
+
+    Valores ``None`` em ``series[].values`` permanecem null (não viram 0).
+    """
     resolved_has_data = bool(has_data) if has_data is not None else bool(labels)
+    normalized_series: list[dict[str, Any]] = []
+    if resolved_has_data:
+        for serie in series:
+            entry = dict(serie)
+            raw_values = entry.get('values') or []
+            entry['values'] = [_nullable_number(v) for v in raw_values]
+            normalized_series.append(entry)
     return {
         'id': chart_id,
         'type': chart_type,
         'has_data': resolved_has_data,
         'title': title,
         'labels': list(labels) if resolved_has_data else [],
-        'series': [dict(s) for s in series] if resolved_has_data else [],
+        'series': normalized_series,
         'empty_message': empty_message,
     }
 

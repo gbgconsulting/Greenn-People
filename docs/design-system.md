@@ -67,10 +67,9 @@ Feature `005-dashboard-charts`: visualizações **consomem** Status Triad e comp
 |---|---|---|
 | `templates/dashboard/admin.html` | `dashboard:admin` | 1 MVP |
 | `templates/dashboard/team.html` | `dashboard:team` | 2 |
+| `templates/dashboard/personal.html` | `dashboard:personal` (`/`) | 3 |
 
 **Fora do slice**: `dashboard:structure` (`StructureDashboardView` / `templates/dashboard/structure.html`) **não** carrega Chart.js nesta feature — métricas de aderência/lacunas de área-cargo ≠ distribuição de etapas do time.
-
-Slice pessoal (`templates/dashboard/personal.html`) entra na entrega seguinte; documentar aqui ao ativar o script nessa página.
 
 ## Paleta de cores
 
