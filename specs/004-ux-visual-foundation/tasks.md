@@ -110,7 +110,7 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/`, `tests/`
 
 ### Tests for User Story 4
 
-- [ ] T024 [P] [US4] Criar teste leve em `tests/test_topbar_ciclo_context.py`: context processor retorna ciclo quando `status=ABERTO` e ausente/None quando não há ciclo (reutilizar fixtures de `tests/conftest.py`)
+- [X] T024 [P] [US4] Criar teste leve em `tests/test_topbar_ciclo_context.py`: context processor retorna ciclo quando `status=ABERTO` e ausente/None quando não há ciclo (reutilizar fixtures de `tests/conftest.py`)
 
 ### Implementation for User Story 4
 
