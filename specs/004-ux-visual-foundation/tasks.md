@@ -114,10 +114,10 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/`, `tests/`
 
 ### Implementation for User Story 4
 
-- [ ] T025 [US4] Criar `apps/core/context_processors.py` com processor (ex.: `ciclo_aberto`) chamando `apps.goals.forms.get_open_ciclo` — só leitura; anônimo sem bloco de ciclo
-- [ ] T026 [US4] Registrar o processor em `TEMPLATES['OPTIONS']['context_processors']` em `config/settings/base.py`
-- [ ] T027 [US4] Renderizar contexto mínimo + fallback em `templates/components/topbar.html` (uma linha; truncar no mobile com `title` se preciso; sem filtros/listas/CTAs)
-- [ ] T028 [US4] Garantir que `tests/test_topbar_ciclo_context.py` passa (`pytest tests/test_topbar_ciclo_context.py`)
+- [X] T025 [US4] Criar `apps/core/context_processors.py` com processor (ex.: `ciclo_aberto`) chamando `apps.goals.forms.get_open_ciclo` — só leitura; anônimo sem bloco de ciclo
+- [X] T026 [US4] Registrar o processor em `TEMPLATES['OPTIONS']['context_processors']` em `config/settings/base.py`
+- [X] T027 [US4] Renderizar contexto mínimo + fallback em `templates/components/topbar.html` (uma linha; truncar no mobile com `title` se preciso; sem filtros/listas/CTAs)
+- [X] T028 [US4] Garantir que `tests/test_topbar_ciclo_context.py` passa (`pytest tests/test_topbar_ciclo_context.py`)
 
 **Checkpoint**: US4 independentemente aceitável em qualquer página autenticada com shell
 
