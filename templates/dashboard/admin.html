@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Painel admin — Greenn People{% endblock %}
 
@@ -69,6 +70,21 @@
   </div>
 </section>
 
+<section class="mb-8" aria-labelledby="visualizacoes-heading">
+  <div class="mb-3">
+    <h2 id="visualizacoes-heading" class="text-lg font-medium text-slate-800">
+      Visualizações
+    </h2>
+    <p class="mt-0.5 text-sm text-slate-500">
+      Distribuição de aderência e progresso das avaliações no ciclo.
+    </p>
+  </div>
+  <div class="grid gap-4 lg:grid-cols-2">
+    {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" %}
+    {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" %}
+  </div>
+</section>
+
 <section aria-labelledby="baixa-aderencia-heading">
   <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
     <div>
@@ -126,4 +142,9 @@
     </table>
   </div>
 </section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" defer></script>
+<script src="{% static 'js/dashboard_charts.js' %}" defer></script>
 {% endblock %}

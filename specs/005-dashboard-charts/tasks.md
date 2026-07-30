@@ -54,12 +54,12 @@ Monólito Django: `apps/dashboard/`, `templates/dashboard/`, `static/js/`, `docs
 
 ### Implementation for User Story 1
 
-- [ ] T007 [US1] Implementar builder `chart_aderencia_distribuicao` em `apps/dashboard/views.py` (`AdminDashboardView.get_context_data`): contar snapshots do mesmo ciclo de `_aderencia_resumo` / `_snapshots_destaque` via `aderencia_status()` existente (`alta`/`media`/`baixa`) — [contracts/admin-charts.md](./contracts/admin-charts.md)
-- [ ] T008 [US1] Implementar builder `chart_ciclo_progresso` em `apps/dashboard/views.py` (`AdminDashboardView`): `Count` por `Avaliacao.Etapa` no `ciclo_indicador` (preferência) ou fatias concluídas/pendentes alinhadas a `_avaliacoes_resumo` — mesmos totais dos cards
-- [ ] T009 [US1] Incluir os dois charts em `templates/dashboard/admin.html` via `_chart_block.html` + `{{ ...|json_script:"..." }}`; preservar renderização de `snapshots_destaque` (FR-003)
-- [ ] T010 [US1] Carregar Chart.js (CDN pinada) + `{% static 'js/dashboard_charts.js' %}` somente no `{% block extra_js %}` de `templates/dashboard/admin.html` — **não** alterar `templates/base.html` (FR-013)
-- [ ] T011 [US1] Garantir empty states honestos no admin (sem snapshot / sem avaliações / sem ciclo): `has_data: false` + mensagem PT-BR; canvas não inicializa com série fictícia (FR-006)
-- [ ] T012 [US1] Documentar lib + versão + superfície `dashboard/admin.html` em `docs/design-system.md` (nota de consumo Freeze; sem reabrir marca) — SC-007 MVP
+- [X] T007 [US1] Implementar builder `chart_aderencia_distribuicao` em `apps/dashboard/views.py` (`AdminDashboardView.get_context_data`): contar snapshots do mesmo ciclo de `_aderencia_resumo` / `_snapshots_destaque` via `aderencia_status()` existente (`alta`/`media`/`baixa`) — [contracts/admin-charts.md](./contracts/admin-charts.md)
+- [X] T008 [US1] Implementar builder `chart_ciclo_progresso` em `apps/dashboard/views.py` (`AdminDashboardView`): `Count` por `Avaliacao.Etapa` no `ciclo_indicador` (preferência) ou fatias concluídas/pendentes alinhadas a `_avaliacoes_resumo` — mesmos totais dos cards
+- [X] T009 [US1] Incluir os dois charts em `templates/dashboard/admin.html` via `_chart_block.html` + `{{ ...|json_script:"..." }}`; preservar renderização de `snapshots_destaque` (FR-003)
+- [X] T010 [US1] Carregar Chart.js (CDN pinada) + `{% static 'js/dashboard_charts.js' %}` somente no `{% block extra_js %}` de `templates/dashboard/admin.html` — **não** alterar `templates/base.html` (FR-013)
+- [X] T011 [US1] Garantir empty states honestos no admin (sem snapshot / sem avaliações / sem ciclo): `has_data: false` + mensagem PT-BR; canvas não inicializa com série fictícia (FR-006)
+- [X] T012 [US1] Documentar lib + versão + superfície `dashboard/admin.html` em `docs/design-system.md` (nota de consumo Freeze; sem reabrir marca) — SC-007 MVP
 
 **Checkpoint**: MVP demonstrável só com US1 (FR-012 slice 1)
 

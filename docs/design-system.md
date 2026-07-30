@@ -49,6 +49,26 @@ Evidência before/after das telas-piloto: `specs/004-ux-visual-foundation/eviden
 3. **Sem reabrir baseline** — não reaplicar WIP Impeccable nem redesenhar o chrome incumbente como pré-requisito de features de visualização.
 4. **Exceções** — só com decisão explícita de produto que atualize este Freeze (status + tabela) na mesma mudança.
 
+### Gráficos no dashboard (consumo · FR-013 / SC-007)
+
+Feature `005-dashboard-charts`: visualizações **consomem** Status Triad e componentes deste Freeze (`empty_state`, tipografia/espacial dos cards). **Não** reabre marca, shell, nav, topbar nem inventa ilha de estilo.
+
+| Campo | Valor |
+|---|---|
+| Lib | Chart.js |
+| Versão | **4.5.1** (UMD minificado) |
+| CDN | jsDelivr — `https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js` |
+| Init local | `static/js/dashboard_charts.js` |
+| Cores de série | Status Triad — alta `#059669` / média `#d97706` / baixa `#e11d48` + labels textuais |
+
+**Superfícies que carregam o script** (`{% block extra_js %}` da página — **nunca** em `templates/base.html`):
+
+| Template | Rota | Slice |
+|---|---|---|
+| `templates/dashboard/admin.html` | `dashboard:admin` | 1 MVP |
+
+Slices time (`team.html`) e pessoal (`personal.html`) entram nas entregas seguintes; documentar aqui ao ativar o script nessas páginas.
+
 ## Paleta de cores
 
 | Uso | Tailwind | Hex aproximado |

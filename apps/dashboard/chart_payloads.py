@@ -88,13 +88,14 @@ def series_payload(
         'type': chart_type,
         'has_data': resolved_has_data,
         'title': title,
-        'labels': list(labels),
+        # Sem série fictícia: labels/values vazios quando has_data é falso (FR-006).
+        'labels': list(labels) if resolved_has_data else [],
         'values': list(values) if resolved_has_data else [],
         'total': computed_total if resolved_has_data else 0,
         'empty_message': empty_message,
     }
     if keys is not None:
-        payload['keys'] = list(keys)
+        payload['keys'] = list(keys) if resolved_has_data else []
     if colors is not None:
         payload['colors'] = list(colors) if resolved_has_data else []
     return payload

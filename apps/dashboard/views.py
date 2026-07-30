@@ -13,6 +13,11 @@ from apps.core.mixins import (
     RequiresManagerOrAdminMixin,
 )
 from apps.cycles.models import Ciclo
+from apps.dashboard.chart_payloads import (
+    aderencia_distribution_payload,
+    categorical_counts_payload,
+    empty_series_payload,
+)
 from apps.dashboard.models import AderenciaSnapshot
 from apps.dashboard.services.structure import (
     gaps_by_area,
@@ -232,11 +237,14 @@ class AdminDashboardView(LoginRequiredMixin, RequiresAdminMixin, TemplateView):
         context['ciclo_indicador'] = ciclo_indicador
         context['ciclos_resumo'] = self._ciclos_resumo()
         context['avaliacoes_resumo'] = self._avaliacoes_resumo(ciclo_indicador)
-        context['aderencia_resumo'] = self._aderencia_resumo(
-            ciclo_aberto or ciclo_indicador,
+        ciclo_aderencia = ciclo_aberto or ciclo_indicador
+        context['aderencia_resumo'] = self._aderencia_resumo(ciclo_aderencia)
+        context['snapshots_destaque'] = self._snapshots_destaque(ciclo_aderencia)
+        context['chart_aderencia_distribuicao'] = (
+            self._chart_aderencia_distribuicao(ciclo_aderencia)
         )
-        context['snapshots_destaque'] = self._snapshots_destaque(
-            ciclo_aberto or ciclo_indicador,
+        context['chart_ciclo_progresso'] = self._chart_ciclo_progresso(
+            ciclo_indicador,
         )
         return context
 
@@ -326,3 +334,61 @@ class AdminDashboardView(LoginRequiredMixin, RequiresAdminMixin, TemplateView):
             }
             for snap in qs
         ]
+
+    def _chart_aderencia_distribuicao(self, ciclo: Ciclo | None) -> dict:
+        """Conta snapshots do ciclo por faixa via `aderencia_status` (contrato admin)."""
+        if ciclo is None:
+            # Sem ciclo: empty honesto — sem faixas zeradas inventadas (FR-006).
+            return empty_series_payload(
+                chart_id='chart-aderencia-distribuicao',
+                chart_type='doughnut_or_bar',
+                title='Distribuição de aderência',
+                empty_message=(
+                    'Não há ciclo disponível para exibir a distribuição '
+                    'de aderência.'
+                ),
+            )
+        status_keys = [
+            aderencia_status(percentual)
+            for percentual in AderenciaSnapshot.objects.filter(
+                ciclo=ciclo,
+            ).values_list('percentual', flat=True)
+        ]
+        # Zero snapshots → has_data false + empty_message PT-BR do helper.
+        return aderencia_distribution_payload(status_keys)
+
+    def _chart_ciclo_progresso(self, ciclo: Ciclo | None) -> dict:
+        """Conta avaliações do ciclo por `Avaliacao.Etapa` (contrato admin)."""
+        if ciclo is None:
+            # Sem ciclo: empty honesto — sem barras de etapa inventadas (FR-006).
+            return empty_series_payload(
+                chart_id='chart-ciclo-progresso',
+                chart_type='bar',
+                title='Progresso das avaliações no ciclo',
+                empty_message=(
+                    'Não há ciclo disponível para exibir o progresso '
+                    'das avaliações.'
+                ),
+            )
+        etapa_keys = [choice.value for choice in Avaliacao.Etapa]
+        labels_by_key = dict(Avaliacao.Etapa.choices)
+        key_counts = {
+            row['etapa']: int(row['total'])
+            for row in (
+                Avaliacao.objects.filter(ciclo=ciclo)
+                .values('etapa')
+                .annotate(total=Count('pk'))
+            )
+        }
+        # Zero avaliações → has_data false + mensagem PT-BR (sem série fictícia).
+        return categorical_counts_payload(
+            key_counts,
+            ordered_keys=etapa_keys,
+            labels_by_key=labels_by_key,
+            chart_id='chart-ciclo-progresso',
+            chart_type='bar',
+            title='Progresso das avaliações no ciclo',
+            empty_message=(
+                'Não há avaliações neste ciclo para exibir progresso.'
+            ),
+        )
