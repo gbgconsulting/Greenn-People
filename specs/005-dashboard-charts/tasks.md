@@ -73,12 +73,12 @@ Monólito Django: `apps/dashboard/`, `templates/dashboard/`, `static/js/`, `docs
 
 ### Implementation for User Story 2
 
-- [ ] T013 [US2] Implementar builder `chart_escopo_status` em `apps/dashboard/views.py` (`TeamDashboardView.get_context_data`): agregar etapas (+ bucket `sem_avaliacao`) sobre **todo** o queryset de `get_queryset()` / `get_visible_users` — **não** usar só `object_list` paginado ([research.md](./research.md) R2/R3)
-- [ ] T014 [US2] Incluir chart em `templates/dashboard/team.html` **fora** de `#list-container` / `templates/dashboard/team_list_partial.html`; preservar `hx-target` / `hx-swap` / ids HTMX existentes (FR-011)
-- [ ] T015 [US2] Estender `{% block extra_js %}` de `templates/dashboard/team.html` com Chart.js CDN + `dashboard_charts.js` (mesmo padrão do admin)
-- [ ] T016 [US2] Empty states do escopo (sem membros / sem ciclo / sem dados úteis) em `templates/dashboard/team.html` via payload `has_data: false` + `empty_state`
-- [ ] T017 [US2] Atualizar nota FR-013 em `docs/design-system.md` incluindo `dashboard/team.html`; confirmar `dashboard:structure` **fora** do slice (métrica ≠ etapa)
-- [ ] T018 [US2] Rodar regressão de escopo: `pytest tests/test_scope.py` (e correlatos de dashboard se existirem) — SC-004; smoke manual: paginar lista HTMX e confirmar chart estável
+- [X] T013 [US2] Implementar builder `chart_escopo_status` em `apps/dashboard/views.py` (`TeamDashboardView.get_context_data`): agregar etapas (+ bucket `sem_avaliacao`) sobre **todo** o queryset de `get_queryset()` / `get_visible_users` — **não** usar só `object_list` paginado ([research.md](./research.md) R2/R3)
+- [X] T014 [US2] Incluir chart em `templates/dashboard/team.html` **fora** de `#list-container` / `templates/dashboard/team_list_partial.html`; preservar `hx-target` / `hx-swap` / ids HTMX existentes (FR-011)
+- [X] T015 [US2] Estender `{% block extra_js %}` de `templates/dashboard/team.html` com Chart.js CDN + `dashboard_charts.js` (mesmo padrão do admin)
+- [X] T016 [US2] Empty states do escopo (sem membros / sem ciclo / sem dados úteis) em `templates/dashboard/team.html` via payload `has_data: false` + `empty_state`
+- [X] T017 [US2] Atualizar nota FR-013 em `docs/design-system.md` incluindo `dashboard/team.html`; confirmar `dashboard:structure` **fora** do slice (métrica ≠ etapa)
+- [X] T018 [US2] Rodar regressão de escopo: `pytest tests/test_scope.py` (e correlatos de dashboard se existirem) — SC-004; smoke manual: paginar lista HTMX e confirmar chart estável
 
 **Checkpoint**: US1 + US2 independentes; lista HTMX intacta
 

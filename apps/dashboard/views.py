@@ -14,6 +14,8 @@ from apps.core.mixins import (
 )
 from apps.cycles.models import Ciclo
 from apps.dashboard.chart_payloads import (
+    SEM_AVALIACAO_KEY,
+    SEM_AVALIACAO_LABEL,
     aderencia_distribution_payload,
     categorical_counts_payload,
     empty_series_payload,
@@ -104,7 +106,83 @@ class TeamDashboardView(
             }
             for membro in membros
         ]
+        # Agregação do chart usa o queryset completo (R2/R3) — não object_list.
+        context['chart_escopo_status'] = self._chart_escopo_status(ciclo)
         return context
+
+    def _chart_escopo_status(self, ciclo: Ciclo | None) -> dict:
+        """Conta etapas (+ sem_avaliacao) sobre todo get_visible_users do escopo.
+
+        Empty honesto (has_data false + empty_state via _chart_block):
+        sem ciclo / sem membros / sem avaliações úteis — sem série fictícia.
+        """
+        title = 'Status do escopo no ciclo'
+        etapa_keys = [choice.value for choice in Avaliacao.Etapa]
+        ordered_keys = [*etapa_keys, SEM_AVALIACAO_KEY]
+        labels_by_key = {
+            **dict(Avaliacao.Etapa.choices),
+            SEM_AVALIACAO_KEY: SEM_AVALIACAO_LABEL,
+        }
+
+        if ciclo is None:
+            # Sem ciclo: empty PT-BR — canvas não inicializa (FR-006 / T016).
+            return empty_series_payload(
+                chart_id='chart-escopo-status',
+                chart_type='bar',
+                title=title,
+                empty_message=(
+                    'Não há ciclo aberto para exibir o status do escopo.'
+                ),
+            )
+
+        # Universo = get_queryset() completo; nunca só a página HTMX (FR-011 / R2).
+        membro_ids = list(self.get_queryset().values_list('pk', flat=True))
+        if not membro_ids:
+            return empty_series_payload(
+                chart_id='chart-escopo-status',
+                chart_type='bar',
+                title=title,
+                empty_message=(
+                    'Não há colaboradores no seu escopo para exibir status.'
+                ),
+            )
+
+        etapa_por_usuario = dict(
+            Avaliacao.objects.filter(
+                ciclo=ciclo,
+                usuario_id__in=membro_ids,
+            ).values_list('usuario_id', 'etapa'),
+        )
+        if not etapa_por_usuario:
+            # Membros sem avaliação no ciclo → empty honesto (sem só “sem_avaliacao”).
+            return empty_series_payload(
+                chart_id='chart-escopo-status',
+                chart_type='bar',
+                title=title,
+                empty_message=(
+                    'Não há dados de ciclo no seu escopo para exibir.'
+                ),
+            )
+
+        key_counts = {key: 0 for key in ordered_keys}
+        for usuario_id in membro_ids:
+            etapa = etapa_por_usuario.get(usuario_id)
+            if etapa is None or etapa not in key_counts:
+                key_counts[SEM_AVALIACAO_KEY] += 1
+            else:
+                key_counts[etapa] += 1
+
+        return categorical_counts_payload(
+            key_counts,
+            ordered_keys=ordered_keys,
+            labels_by_key=labels_by_key,
+            chart_id='chart-escopo-status',
+            chart_type='bar',
+            title=title,
+            empty_message=(
+                'Não há dados de ciclo no seu escopo para exibir.'
+            ),
+        )
 
 
 class AdherenceListView(
