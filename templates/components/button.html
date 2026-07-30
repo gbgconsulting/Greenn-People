@@ -8,7 +8,11 @@
     type        — submit | button | reset (default: button)
     href        — se definido, renderiza <a> em vez de <button>
     disabled    — se true, desabilita o controle
-    attrs       — atributos HTML extras (ex. hx-get / hx-target); passar com |safe no caller se necessário
+    hx_get      — se definido, adiciona hx-get (e defaults de target/swap/indicator)
+    hx_target   — alvo HTMX (default: #modal-container quando hx_get)
+    hx_swap     — swap HTMX (default: innerHTML quando hx_get)
+    hx_indicator — indicador HTMX (default: #htmx-indicator quando hx_get)
+    attrs       — atributos HTML extras (ex. hx-post / onclick); passar com |safe no caller se necessário
     extra_class — classes Tailwind adicionais
 {% endcomment %}
 {% with v=variant|default:"primary" %}
@@ -17,6 +21,7 @@
   href="{{ href }}"
   class="{% if v == 'secondary' %}bg-white border border-slate-200 text-slate-700 hover:bg-slate-50{% else %}bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white shadow-sm{% endif %} inline-flex items-center justify-center font-medium rounded-lg px-4 py-2 transition-colors {% if disabled %}pointer-events-none opacity-50{% endif %} {{ extra_class }}"
   {% if disabled %}aria-disabled="true" tabindex="-1"{% endif %}
+  {% if hx_get %}hx-get="{{ hx_get }}" hx-target="{{ hx_target|default:'#modal-container' }}" hx-swap="{{ hx_swap|default:'innerHTML' }}" hx-indicator="{{ hx_indicator|default:'#htmx-indicator' }}"{% endif %}
   {% if attrs %}{{ attrs|safe }}{% endif %}
 >{{ label }}</a>
 {% else %}
@@ -24,6 +29,7 @@
   type="{{ type|default:'button' }}"
   class="{% if v == 'secondary' %}bg-white border border-slate-200 text-slate-700 hover:bg-slate-50{% else %}bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white shadow-sm{% endif %} inline-flex items-center justify-center font-medium rounded-lg px-4 py-2 transition-colors disabled:cursor-not-allowed disabled:opacity-50 {{ extra_class }}"
   {% if disabled %}disabled{% endif %}
+  {% if hx_get %}hx-get="{{ hx_get }}" hx-target="{{ hx_target|default:'#modal-container' }}" hx-swap="{{ hx_swap|default:'innerHTML' }}" hx-indicator="{{ hx_indicator|default:'#htmx-indicator' }}"{% endif %}
   {% if attrs %}{{ attrs|safe }}{% endif %}
 >{{ label }}</button>
 {% endif %}

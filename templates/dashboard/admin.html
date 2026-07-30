@@ -35,65 +35,37 @@
     </p>
   </div>
   <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p class="text-xs uppercase tracking-wide text-slate-500">Ciclos encerrados</p>
-      <p class="mt-2 text-3xl font-semibold tabular-nums text-slate-800">
-        {% if ciclos_resumo.percentual_encerrados is not None %}
-          {{ ciclos_resumo.percentual_encerrados }}%
-        {% else %}
-          —
-        {% endif %}
-      </p>
-      <p class="mt-2 text-sm text-slate-500">
-        {{ ciclos_resumo.encerrados }} de {{ ciclos_resumo.total }} ciclo{{ ciclos_resumo.total|pluralize }}
-        {% if ciclos_resumo.abertos %} · {{ ciclos_resumo.abertos }} aberto{{ ciclos_resumo.abertos|pluralize }}{% endif %}
-      </p>
-    </div>
+    {% if ciclos_resumo.percentual_encerrados is not None %}
+      {% with val=ciclos_resumo.percentual_encerrados|stringformat:"d"|add:"%" enc=ciclos_resumo.encerrados|stringformat:"d" tot=ciclos_resumo.total|stringformat:"d" %}
+      {% with body=enc|add:" de "|add:tot|add:" ciclo(s)" %}
+      {% include "components/card.html" with label="Ciclos encerrados" value=val body=body %}
+      {% endwith %}
+      {% endwith %}
+    {% else %}
+      {% include "components/card.html" with label="Ciclos encerrados" value="—" body="Nenhum ciclo cadastrado ainda." %}
+    {% endif %}
 
-    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p class="text-xs uppercase tracking-wide text-slate-500">Avaliações concluídas</p>
-      <p class="mt-2 text-3xl font-semibold tabular-nums text-slate-800">
-        {% if avaliacoes_resumo.percentual_concluidas is not None %}
-          {{ avaliacoes_resumo.percentual_concluidas }}%
-        {% else %}
-          —
-        {% endif %}
-      </p>
-      <p class="mt-2 text-sm text-slate-500">
-        {% if ciclo_indicador %}
-          {{ avaliacoes_resumo.concluidas }} de {{ avaliacoes_resumo.total }}
-          no ciclo {{ ciclo_indicador.nome }}
-          {% if ciclo_aberto %}(aberto){% else %}(encerrado){% endif %}
-          — feedback líder + ciência.
-        {% else %}
-          Abra um ciclo para acompanhar a conclusão.
-        {% endif %}
-      </p>
-    </div>
+    {% if avaliacoes_resumo.percentual_concluidas is not None %}
+      {% with val=avaliacoes_resumo.percentual_concluidas|stringformat:"d"|add:"%" %}
+      {% if ciclo_indicador %}
+        {% with body="No ciclo "|add:ciclo_indicador.nome|add:" — feedback líder + ciência." %}
+        {% include "components/card.html" with label="Avaliações concluídas" value=val body=body %}
+        {% endwith %}
+      {% else %}
+        {% include "components/card.html" with label="Avaliações concluídas" value=val body="Feedback líder + ciência." %}
+      {% endif %}
+      {% endwith %}
+    {% else %}
+      {% include "components/card.html" with label="Avaliações concluídas" value="—" body="Abra um ciclo para acompanhar a conclusão." %}
+    {% endif %}
 
-    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <p class="text-xs uppercase tracking-wide text-slate-500">Aderência média</p>
-        {% if aderencia_resumo.media is not None %}
-          {% include "components/badge_status.html" with status=aderencia_resumo.status %}
-        {% endif %}
-      </div>
-      <p class="mt-2 text-3xl font-semibold tabular-nums text-slate-800">
-        {% if aderencia_resumo.media is not None %}
-          {{ aderencia_resumo.media }}%
-        {% else %}
-          —
-        {% endif %}
-      </p>
-      <p class="mt-2 text-sm text-slate-500">
-        {% if aderencia_resumo.total_lideres %}
-          {{ aderencia_resumo.total_lideres }} líder{{ aderencia_resumo.total_lideres|pluralize:"es" }} com snapshot
-          (cálculo assíncrono).
-        {% else %}
-          Nenhum snapshot ainda — o job diário popula esta métrica.
-        {% endif %}
-      </p>
-    </div>
+    {% if aderencia_resumo.media is not None %}
+      {% with val=aderencia_resumo.media|stringformat:"d"|add:"%" %}
+      {% include "components/card.html" with label="Aderência média" value=val badge_status=aderencia_resumo.status body="Líderes com snapshot (cálculo assíncrono)." %}
+      {% endwith %}
+    {% else %}
+      {% include "components/card.html" with label="Aderência média" value="—" body="Nenhum snapshot ainda — o job diário popula esta métrica." %}
+    {% endif %}
   </div>
 </section>
 

@@ -31,15 +31,7 @@
     {% if cta_href %}
       {% include "components/button.html" with label=cta_label href=cta_href variant="primary" attrs=cta_attrs %}
     {% elif cta_hx_get %}
-      <button
-        type="button"
-        class="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-emerald-600 to-teal-500 px-4 py-2 font-medium text-white shadow-sm transition-colors hover:from-emerald-700 hover:to-teal-600"
-        hx-get="{{ cta_hx_get }}"
-        hx-target="{{ cta_hx_target|default:'#modal-container' }}"
-        hx-swap="{{ cta_hx_swap|default:'innerHTML' }}"
-        hx-indicator="#htmx-indicator"
-        {% if cta_attrs %}{{ cta_attrs|safe }}{% endif %}
-      >{{ cta_label }}</button>
+      {% include "components/button.html" with label=cta_label type="button" variant="primary" hx_get=cta_hx_get hx_target=cta_hx_target hx_swap=cta_hx_swap attrs=cta_attrs %}
     {% elif cta_attrs %}
       {% include "components/button.html" with label=cta_label type="button" variant="primary" attrs=cta_attrs %}
     {% endif %}

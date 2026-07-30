@@ -24,24 +24,12 @@
 <section class="mb-8" aria-labelledby="pdi-resumo-heading">
   <h2 id="pdi-resumo-heading" class="sr-only">Resumo do PDI</h2>
   <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Status</p>
-      <div class="mt-2">
-        {% include "components/badge_status.html" with status=pdi.status label=pdi.get_status_display %}
-      </div>
-    </div>
-    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Progresso</p>
-      <p class="mt-2 text-3xl font-semibold tabular-nums text-slate-800">{{ progresso }}%</p>
-    </div>
-    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Área</p>
-      <p class="mt-2 text-sm font-medium text-slate-800">{{ colaborador.area.nome|default:"—" }}</p>
-    </div>
-    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Cargo</p>
-      <p class="mt-2 text-sm font-medium text-slate-800">{{ colaborador.cargo.nome|default:"—" }}</p>
-    </div>
+    {% include "components/card.html" with label="Status" badge_status=pdi.status badge_label=pdi.get_status_display %}
+    {% with progresso_label=progresso|stringformat:"d"|add:"%" %}
+    {% include "components/card.html" with label="Progresso" value=progresso_label %}
+    {% endwith %}
+    {% include "components/card.html" with label="Área" title=colaborador.area.nome|default:"—" %}
+    {% include "components/card.html" with label="Cargo" title=colaborador.cargo.nome|default:"—" %}
   </div>
 </section>
 
@@ -51,16 +39,8 @@
       <h2 id="acoes-heading" class="text-lg font-medium text-slate-800">Ações de desenvolvimento</h2>
       <p class="mt-0.5 text-sm text-slate-500">Atualize status, prazos e responsáveis sem sair desta tela.</p>
     </div>
-    <button
-      type="button"
-      class="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-emerald-600 to-teal-500 px-4 py-2 font-medium text-white shadow-sm transition-colors hover:from-emerald-700 hover:to-teal-600"
-      hx-get="{% url 'pdi:action_create_modal' pdi.pk %}"
-      hx-target="#modal-container"
-      hx-swap="innerHTML"
-      hx-indicator="#htmx-indicator"
-    >
-      Nova ação
-    </button>
+    {% url 'pdi:action_create_modal' pdi.pk as acao_create_modal_url %}
+    {% include "components/button.html" with label="Nova ação" type="button" variant="primary" hx_get=acao_create_modal_url %}
   </div>
 
   <div id="acao-list" class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">

@@ -30,50 +30,31 @@
     </p>
   </div>
   <div class="grid gap-4 sm:grid-cols-2">
-    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <p class="text-xs uppercase tracking-wide text-slate-500">Nota atual</p>
+    {% if nota_atual is not None %}
+      {% with val=nota_atual %}
         {% if nota_atual_origem == "lider" %}
-          {% include "components/badge_status.html" with status="concluida" label="Nota do líder" %}
+          {% include "components/card.html" with label="Nota atual" value=val badge_status="concluida" badge_label="Nota do líder" body="Nota consolidada do líder." %}
         {% elif nota_atual_origem == "autoavaliacao" %}
-          {% include "components/badge_status.html" with status="em_andamento" label="Autoavaliação" %}
+          {% include "components/card.html" with label="Nota atual" value=val badge_status="em_andamento" badge_label="Autoavaliação" body="Referência da autoavaliação." %}
         {% else %}
-          {% include "components/badge_status.html" with status="arquivado" label="Sem nota" %}
+          {% include "components/card.html" with label="Nota atual" value=val badge_status="arquivado" badge_label="Sem nota" body="Ainda não há nota consolidada neste ciclo." %}
         {% endif %}
-      </div>
-      <p class="mt-2 text-3xl font-semibold tabular-nums text-slate-800">
-        {% if nota_atual is not None %}{{ nota_atual }}{% else %}—{% endif %}
-      </p>
-      <p class="mt-2 text-sm text-slate-500">
-        {% if nota_atual_origem == "lider" %}
-          Nota consolidada do líder{% if ciclo_aberto %} · {{ ciclo_aberto.nome }}{% endif %}
-        {% elif nota_atual_origem == "autoavaliacao" %}
-          Referência da autoavaliação{% if ciclo_aberto %} · {{ ciclo_aberto.nome }}{% endif %}
-        {% else %}
-          Ainda não há nota consolidada neste ciclo.
-        {% endif %}
-      </p>
-    </div>
-    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <p class="text-xs uppercase tracking-wide text-slate-500">Nível esperado</p>
-        {% if vinculo_pendente %}
-          {% include "components/badge_status.html" with status="pendente" label="Vínculo pendente" %}
-        {% else %}
-          {% include "components/badge_status.html" with status="ativo" label="Competências do cargo" %}
-        {% endif %}
-      </div>
-      <p class="mt-2 text-3xl font-semibold tabular-nums text-slate-800">
-        {% if vinculo_pendente %}—{% else %}{{ competencias_resumo|length }}{% endif %}
-      </p>
-      <p class="mt-2 text-sm text-slate-500">
-        {% if vinculo_pendente %}
-          Vínculo de cargo/competências pendente.
-        {% else %}
-          Competências do seu cargo com nível definido.
-        {% endif %}
-      </p>
-    </div>
+      {% endwith %}
+    {% elif nota_atual_origem == "lider" %}
+      {% include "components/card.html" with label="Nota atual" value="—" badge_status="concluida" badge_label="Nota do líder" body="Nota consolidada do líder." %}
+    {% elif nota_atual_origem == "autoavaliacao" %}
+      {% include "components/card.html" with label="Nota atual" value="—" badge_status="em_andamento" badge_label="Autoavaliação" body="Referência da autoavaliação." %}
+    {% else %}
+      {% include "components/card.html" with label="Nota atual" value="—" badge_status="arquivado" badge_label="Sem nota" body="Ainda não há nota consolidada neste ciclo." %}
+    {% endif %}
+
+    {% if vinculo_pendente %}
+      {% include "components/card.html" with label="Nível esperado" value="—" badge_status="pendente" badge_label="Vínculo pendente" body="Vínculo de cargo/competências pendente." %}
+    {% else %}
+      {% with val=competencias_resumo|length %}
+      {% include "components/card.html" with label="Nível esperado" value=val badge_status="ativo" badge_label="Competências do cargo" body="Competências do seu cargo com nível definido." %}
+      {% endwith %}
+    {% endif %}
   </div>
 </section>
 
