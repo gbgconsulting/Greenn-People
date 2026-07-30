@@ -38,7 +38,7 @@
       <select
         id="ciclo"
         name="ciclo"
-        class="form-control w-full"
+        class="form-control"
         onchange="this.form.submit()"
       >
         <option value="">Ciclo aberto{% if ciclo_aberto %} ({{ ciclo_aberto.nome }}){% else %} (nenhum){% endif %}</option>
@@ -54,7 +54,7 @@
       <select
         id="area"
         name="area"
-        class="form-control w-full"
+        class="form-control"
         onchange="this.form.submit()"
       >
         <option value="">Todas</option>
@@ -68,7 +68,7 @@
       <select
         id="cargo"
         name="cargo"
-        class="form-control w-full"
+        class="form-control"
         onchange="this.form.submit()"
       >
         <option value="">Todos</option>
@@ -87,7 +87,7 @@
       Aderência por líder no escopo dos filtros atuais.
     </p>
   </div>
-  <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+  <div class="table-frame">
     <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
       <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
         <tr>
@@ -135,7 +135,7 @@
       Lacuna = nível esperado − nota do líder (valores positivos indicam abaixo do esperado).
     </p>
   </div>
-  <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+  <div class="table-frame">
     <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
       <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
         <tr>
@@ -184,7 +184,7 @@
       Mesmo critério de lacuna, agrupado por cargo.
     </p>
   </div>
-  <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+  <div class="table-frame">
     <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
       <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
         <tr>

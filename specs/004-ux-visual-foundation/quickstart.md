@@ -111,8 +111,35 @@ Contrato: [a11y-shell.md](./contracts/a11y-shell.md).
 2. Confirmar evidências 01–07.
 3. Confirmar OUT ([spec](./spec.md) FR-017).
 
+## Registro T039 — validação guiada (2026-07-30)
+
+Percurso quickstart + checklist teclado; smoke HTTP no stack Docker (`web`) + inspeção de markup/contratos + `pytest tests/test_topbar_ciclo_context.py` (3 passed). Contas de evidência: `admin@` / `lider@` / `colab@test.greenn.com.br`.
+
+| Gate | Resultado | Evidência |
+|---|---|---|
+| **SC-001** (US1) | **PASS** | `/dashboard/admin/`: grupos Governança / Cadastros / Sistema; Ciclos antes de Cadastros com `font-semibold` + `border-emerald-500`; URLs `/cycles/` e aderência intactas |
+| **SC-002** (US2) | **PASS** | `/dashboard/team/` com seção **Status no ciclo**; `/` com **Meu desempenho** / KPIs existentes; after 02–03 |
+| **SC-003** (US6 evidência) | **PASS** | 7/7 pares before/after + bullets; ≥1 dashboard + ≥1 autoatendimento ([evidência](./evidence/before-after/README.md)) |
+| **SC-004** (US5 teclado) | **PASS** | Skip → `#main-content`; `aria-current="page"`; `:focus-visible` em `input.css`; `trapFocus` + Escape/restore em `modal.js`; indicador `role="status"` + hook `data-htmx-indicator` (não `aria-hidden` permanente) |
+| **SC-005** (US3 HTMX) | **PASS** | Fragmentos HTMX ciclos/reviews (`#list-container`, sem full page); modal PDI `hx-target="#modal-container"` / create → `#acao-list` |
+| **SC-006** (US6 Freeze) | **PASS** | `docs/design-system.md` seção **Freeze** (congelado) |
+| **SC-007** (OUT) | **PASS** | Zero chart libs em templates/`static/js`; matriz “Grade estática”; checklist OUT no README de evidência; stash Impeccable não aplicado |
+
+### Checklist teclado (marcação T039)
+
+| # | Checagem | Status |
+|---|---|---|
+| 1 | Skip link → `#main-content` | ✓ |
+| 2 | `aria-current="page"` no item ativo | ✓ |
+| 3 | Anel `:focus-visible` | ✓ (CSS + tokens) |
+| 4 | Focus trap Tab/Shift+Tab no dialog | ✓ (`modal.js`) |
+| 5 | Escape fecha + restore no trigger | ✓ |
+| 6 | “Carregando…” anunciável | ✓ |
+
+**Nota**: itens 3–5 do teclado validados por implementação + contrato (focus-visible / trap / Escape); smoke HTTP cobre presença no shell. Revisão visual humana no browser permanece opcional para anel de foco.
+
 ## Expected outcomes
 
-- Gates SC-001–SC-007 satisfeitos na revisão guiada.
-- Sem regressão HTMX nas telas-piloto tocadas (SC-005).
-- Documentação congelada antes de features de gráficos / 9-box interativa (SC-006).
+- Gates SC-001–SC-007 satisfeitos na revisão guiada. ✅ T039 · 2026-07-30
+- Sem regressão HTMX nas telas-piloto tocadas (SC-005). ✅
+- Documentação congelada antes de features de gráficos / 9-box interativa (SC-006). ✅

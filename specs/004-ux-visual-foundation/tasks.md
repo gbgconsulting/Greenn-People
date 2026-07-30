@@ -163,9 +163,9 @@ Monólito Django: `config/`, `apps/<domain>/`, `templates/`, `static/`, `tests/`
 
 **Purpose**: Validação guiada ponta a ponta e higiene final
 
-- [ ] T039 Percorrer validação por user story e checklist teclado em `specs/004-ux-visual-foundation/quickstart.md` (SC-001–SC-007)
-- [ ] T040 [P] Revisar que nenhuma migration/models novos foram introduzidos (`apps/**/migrations/`, models) e que escopo UI não alterou autorização (FR-014)
-- [ ] T041 Remover classes/markup morto introduzido só como experimento no polish dos templates-piloto tocados
+- [X] T039 Percorrer validação por user story e checklist teclado em `specs/004-ux-visual-foundation/quickstart.md` (SC-001–SC-007)
+- [X] T040 [P] Revisar que nenhuma migration/models novos foram introduzidos (`apps/**/migrations/`, models) e que escopo UI não alterou autorização (FR-014)
+- [X] T041 Remover classes/markup morto introduzido só como experimento no polish dos templates-piloto tocados
 
 ---
 

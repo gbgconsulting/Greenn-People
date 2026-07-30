@@ -19,7 +19,7 @@
 {% if href %}
 <a
   href="{{ href }}"
-  class="{% if v == 'secondary' %}bg-white border border-slate-200 text-slate-700 hover:bg-slate-50{% else %}bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white shadow-sm{% endif %} inline-flex items-center justify-center font-medium rounded-lg px-4 py-2 transition-colors {% if disabled %}pointer-events-none opacity-50{% endif %} {{ extra_class }}"
+  class="{% if v == 'secondary' %}bg-white border border-slate-200 text-slate-700 hover:bg-slate-50{% else %}bg-brand-gradient hover:bg-brand-gradient-hover text-white shadow-sm{% endif %} inline-flex items-center justify-center font-medium rounded-lg px-4 py-2 transition-colors {% if disabled %}pointer-events-none opacity-50{% endif %} {{ extra_class }}"
   {% if disabled %}aria-disabled="true" tabindex="-1"{% endif %}
   {% if hx_get %}hx-get="{{ hx_get }}" hx-target="{{ hx_target|default:'#modal-container' }}" hx-swap="{{ hx_swap|default:'innerHTML' }}" hx-indicator="{{ hx_indicator|default:'#htmx-indicator' }}"{% endif %}
   {% if attrs %}{{ attrs|safe }}{% endif %}
@@ -27,7 +27,7 @@
 {% else %}
 <button
   type="{{ type|default:'button' }}"
-  class="{% if v == 'secondary' %}bg-white border border-slate-200 text-slate-700 hover:bg-slate-50{% else %}bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white shadow-sm{% endif %} inline-flex items-center justify-center font-medium rounded-lg px-4 py-2 transition-colors disabled:cursor-not-allowed disabled:opacity-50 {{ extra_class }}"
+  class="{% if v == 'secondary' %}bg-white border border-slate-200 text-slate-700 hover:bg-slate-50{% else %}bg-brand-gradient hover:bg-brand-gradient-hover text-white shadow-sm{% endif %} inline-flex items-center justify-center font-medium rounded-lg px-4 py-2 transition-colors disabled:cursor-not-allowed disabled:opacity-50 {{ extra_class }}"
   {% if disabled %}disabled{% endif %}
   {% if hx_get %}hx-get="{{ hx_get }}" hx-target="{{ hx_target|default:'#modal-container' }}" hx-swap="{{ hx_swap|default:'innerHTML' }}" hx-indicator="{{ hx_indicator|default:'#htmx-indicator' }}"{% endif %}
   {% if attrs %}{{ attrs|safe }}{% endif %}

@@ -118,7 +118,7 @@ Componente canônico: `templates/components/button.html`.
 
 | Variante | Uso | Classes-base |
 |---|---|---|
-| `primary` (default) | Ação principal / CTA | `bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white shadow-sm` |
+| `primary` (default) | Ação principal / CTA | `bg-brand-gradient hover:bg-brand-gradient-hover text-white shadow-sm` (equiv. hex: emerald-600→teal-500 / hover emerald-700→teal-600) |
 | `secondary` | Cancelar / ação secundária | `bg-white border border-slate-200 text-slate-700 hover:bg-slate-50` |
 
 Comum a ambos: `inline-flex items-center justify-center font-medium rounded-lg px-4 py-2 transition-colors`.

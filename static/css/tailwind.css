@@ -978,10 +978,6 @@
   .underline {
     text-decoration-line: underline;
   }
-  .antialiased {
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
   .opacity-25 {
     opacity: 25%;
   }
@@ -1064,6 +1060,9 @@
     }
     .hover\:bg-slate-100:hover {
       background-color: var(--color-slate-100);
+    }
+    .hover\:bg-brand-gradient-hover:hover {
+      background-image: var(--background-image-brand-gradient-hover);
     }
     .hover\:\!from-rose-600:hover {
       --tw-gradient-from: var(--color-rose-600) !important;

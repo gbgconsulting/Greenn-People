@@ -15,10 +15,8 @@
       Acompanhe status, progresso e ações de desenvolvimento.
     </p>
   </div>
-  <div class="flex flex-wrap items-center gap-2">
-    {% url 'pdi:list' as list_url %}
-    {% include "components/button.html" with label="Voltar à lista" href=list_url variant="secondary" %}
-  </div>
+  {% url 'pdi:list' as list_url %}
+  {% include "components/button.html" with label="Voltar à lista" href=list_url variant="secondary" %}
 </header>
 
 <section class="mb-8" aria-labelledby="pdi-resumo-heading">
@@ -43,7 +41,7 @@
     {% include "components/button.html" with label="Nova ação" type="button" variant="primary" hx_get=acao_create_modal_url %}
   </div>
 
-  <div id="acao-list" class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+  <div id="acao-list" class="table-frame">
     {% include "pdi/acao_list_partial.html" %}
   </div>
 </section>

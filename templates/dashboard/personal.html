@@ -31,15 +31,13 @@
   </div>
   <div class="grid gap-4 sm:grid-cols-2">
     {% if nota_atual is not None %}
-      {% with val=nota_atual %}
-        {% if nota_atual_origem == "lider" %}
-          {% include "components/card.html" with label="Nota atual" value=val badge_status="concluida" badge_label="Nota do líder" body="Nota consolidada do líder." %}
-        {% elif nota_atual_origem == "autoavaliacao" %}
-          {% include "components/card.html" with label="Nota atual" value=val badge_status="em_andamento" badge_label="Autoavaliação" body="Referência da autoavaliação." %}
-        {% else %}
-          {% include "components/card.html" with label="Nota atual" value=val badge_status="arquivado" badge_label="Sem nota" body="Ainda não há nota consolidada neste ciclo." %}
-        {% endif %}
-      {% endwith %}
+      {% if nota_atual_origem == "lider" %}
+        {% include "components/card.html" with label="Nota atual" value=nota_atual badge_status="concluida" badge_label="Nota do líder" body="Nota consolidada do líder." %}
+      {% elif nota_atual_origem == "autoavaliacao" %}
+        {% include "components/card.html" with label="Nota atual" value=nota_atual badge_status="em_andamento" badge_label="Autoavaliação" body="Referência da autoavaliação." %}
+      {% else %}
+        {% include "components/card.html" with label="Nota atual" value=nota_atual badge_status="arquivado" badge_label="Sem nota" body="Ainda não há nota consolidada neste ciclo." %}
+      {% endif %}
     {% elif nota_atual_origem == "lider" %}
       {% include "components/card.html" with label="Nota atual" value="—" badge_status="concluida" badge_label="Nota do líder" body="Nota consolidada do líder." %}
     {% elif nota_atual_origem == "autoavaliacao" %}
@@ -51,9 +49,7 @@
     {% if vinculo_pendente %}
       {% include "components/card.html" with label="Nível esperado" value="—" badge_status="pendente" badge_label="Vínculo pendente" body="Vínculo de cargo/competências pendente." %}
     {% else %}
-      {% with val=competencias_resumo|length %}
-      {% include "components/card.html" with label="Nível esperado" value=val badge_status="ativo" badge_label="Competências do cargo" body="Competências do seu cargo com nível definido." %}
-      {% endwith %}
+      {% include "components/card.html" with label="Nível esperado" value=competencias_resumo|length badge_status="ativo" badge_label="Competências do cargo" body="Competências do seu cargo com nível definido." %}
     {% endif %}
   </div>
 </section>
@@ -73,7 +69,7 @@
     <p class="text-sm text-slate-500">Cargo: <span class="font-medium text-slate-700">{{ cargo.nome }}</span></p>
     {% endif %}
   </div>
-  <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+  <div class="table-frame">
     <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
       <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
         <tr>

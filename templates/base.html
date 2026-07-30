@@ -22,7 +22,7 @@
   {% block extra_head %}{% endblock %}
 </head>
 <body
-  class="min-h-screen bg-slate-50 font-sans text-sm text-slate-800 antialiased"
+  class="min-h-screen"
   hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
 >
   <a
@@ -66,10 +66,6 @@
   ></div>
 
   <script>
-    document.body.addEventListener('htmx:configRequest', (e) => {
-      e.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
-    });
-
     (function initHtmxIndicatorA11y() {
       const sync = () => {
         document.querySelectorAll('[data-htmx-indicator]').forEach((el) => {
