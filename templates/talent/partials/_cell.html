@@ -5,6 +5,7 @@
   Parâmetros:
   - cell: dict com desempenho, potencial, quadrante, label, itens
     (via apps.talent.services.matrix_layout.build_matriz_rows)
+  - oob: opcional — se True, emite hx-swap-oob="outerHTML" (refresh pós-save)
 
   id estável para refresh HTMX / DnD: #cell-{desempenho}-{potencial}
   Rótulos textuais de eixos e quadrante além da cor (a11y FR-011 / SC-006).
@@ -17,6 +18,7 @@
   data-quadrante="{{ cell.quadrante }}"
   role="group"
   aria-label="Desempenho {% if cell.desempenho == 3 %}Alto{% elif cell.desempenho == 2 %}Médio{% else %}Baixo{% endif %}, potencial {% if cell.potencial == 3 %}Alto{% elif cell.potencial == 2 %}Médio{% else %}Baixo{% endif %} — {{ cell.label }}"
+  {% if oob %}hx-swap-oob="outerHTML"{% endif %}
 >
   <header class="mb-2 space-y-0.5">
     <p class="text-[10px] font-medium uppercase tracking-wide text-slate-400">

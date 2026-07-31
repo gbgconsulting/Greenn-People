@@ -58,17 +58,17 @@ Monólito Django: `apps/talent/`, `templates/talent/`, `static/js/`, `docs/`, `t
 
 ### Tests for User Story 1 (AuthZ / SC-003)
 
-- [ ] T011 [P] [US1] Adicionar testes pytest de escrita admin-only + IDOR (gerente POST potencial/toggle → 403; admin OK) em `tests/test_talent_matrix_authz.py` (ou equivalente) cobrindo novos endpoints e `upsert_classification` / `toggle_classification_visibility`
+- [X] T011 [P] [US1] Adicionar testes pytest de escrita admin-only + IDOR (gerente POST potencial/toggle → 403; admin OK) em `tests/test_talent_matrix_authz.py` (ou equivalente) cobrindo novos endpoints e `upsert_classification` / `toggle_classification_visibility`
 
 ### Implementation for User Story 1
 
-- [ ] T012 [US1] Implementar partial `templates/talent/partials/_drawer.html` (write): identidade, área/cargo, desempenho (rótulo), select potencial 1–3, quadrante, badge Visível/Oculto, botões Salvar/Toggle via `templates/components/button.html` + `input`/`form-control`; link secundário “Abrir classificação clássica” → `talent:classify` (FR-013)
-- [ ] T013 [US1] Implementar view GET drawer em `apps/talent/views.py`: `RequiresManagerOrAdminMixin` + pessoa ∈ `get_visible_users`; retorna `_drawer.html` (modo write se `is_admin`); request não-HTMX → redirect `talent:matrix` ou 405 — [contracts/htmx-drawer-partials.md](./contracts/htmx-drawer-partials.md)
-- [ ] T014 [US1] Ligar abertura do drawer: cards em `_person_card.html` / `matrix.html` com `hx-get` → `#matrix-drawer` (`innerHTML`), propagando `ciclo` (e filtros relevantes) na query string
-- [ ] T015 [US1] Implementar POST salvar potencial HTMX em `apps/talent/views.py`: `RequiresAdminMixin` + `upsert_classification`; sucesso → partial drawer atualizado + refresh de células origem/destino (ou fragmento da grade) + `HX-Trigger` toast sucesso; erro validação/permissão → mensagem PT-BR sem sucesso silencioso (FR-005)
-- [ ] T016 [US1] Estender `ToggleVisibilityView` (ou action HTMX dedicada) em `apps/talent/views.py` para resposta HTMX usando `toggle_classification_visibility`: atualizar badge no drawer + card; manter redirect legado para request não-HTMX
-- [ ] T017 [US1] Garantir feedback honesto (loading via `#htmx-indicator` ou indicador local; erros PT-BR; estado anterior preservado em falha) na superfície drawer/grade em `templates/talent/` — SC-004
-- [ ] T018 [US1] Confirmar que `templates/talent/classify.html` + `ClassifyTalentView` permanecem intactos como fallback; caminho principal do admin = drawer (FR-013)
+- [X] T012 [US1] Implementar partial `templates/talent/partials/_drawer.html` (write): identidade, área/cargo, desempenho (rótulo), select potencial 1–3, quadrante, badge Visível/Oculto, botões Salvar/Toggle via `templates/components/button.html` + `input`/`form-control`; link secundário “Abrir classificação clássica” → `talent:classify` (FR-013)
+- [X] T013 [US1] Implementar view GET drawer em `apps/talent/views.py`: `RequiresManagerOrAdminMixin` + pessoa ∈ `get_visible_users`; retorna `_drawer.html` (modo write se `is_admin`); request não-HTMX → redirect `talent:matrix` ou 405 — [contracts/htmx-drawer-partials.md](./contracts/htmx-drawer-partials.md)
+- [X] T014 [US1] Ligar abertura do drawer: cards em `_person_card.html` / `matrix.html` com `hx-get` → `#matrix-drawer` (`innerHTML`), propagando `ciclo` (e filtros relevantes) na query string
+- [X] T015 [US1] Implementar POST salvar potencial HTMX em `apps/talent/views.py`: `RequiresAdminMixin` + `upsert_classification`; sucesso → partial drawer atualizado + refresh de células origem/destino (ou fragmento da grade) + `HX-Trigger` toast sucesso; erro validação/permissão → mensagem PT-BR sem sucesso silencioso (FR-005)
+- [X] T016 [US1] Estender `ToggleVisibilityView` (ou action HTMX dedicada) em `apps/talent/views.py` para resposta HTMX usando `toggle_classification_visibility`: atualizar badge no drawer + card; manter redirect legado para request não-HTMX
+- [X] T017 [US1] Garantir feedback honesto (loading via `#htmx-indicator` ou indicador local; erros PT-BR; estado anterior preservado em falha) na superfície drawer/grade em `templates/talent/` — SC-004
+- [X] T018 [US1] Confirmar que `templates/talent/classify.html` + `ClassifyTalentView` permanecem intactos como fallback; caminho principal do admin = drawer (FR-013)
 
 **Checkpoint**: MVP demonstrável só com US1 (FR-014 slice 1)
 

@@ -3,25 +3,39 @@
   Uso: {% include "talent/partials/_person_card.html" with item=item %}
 
   Parâmetros:
-  - item: ClassificacaoTalento (usuario, potencial, desempenho, visivel_ao_colaborador)
+  - item: ClassificacaoTalento (usuario, potencial, desempenho, ciclo, visivel_ao_colaborador)
+  - filtro_area_id / filtro_cargo_id: opcionais (contexto da matrix) — propagados no GET do drawer
 
   Data attrs (DnD futuro T020+): data-user-pk, data-potencial, data-desempenho
+  Abertura do drawer (T014): hx-get → #matrix-drawer (innerHTML), query ciclo (+ area/cargo).
+  Loading (T017): #htmx-indicator + #matrix-drawer-indicator (SC-004).
 {% endcomment %}
 <li
-  class="rounded-lg border border-slate-100 bg-slate-50/80 px-2.5 py-2 text-sm"
+  class="rounded-lg border border-slate-100 bg-slate-50/80 text-sm"
   data-user-pk="{{ item.usuario_id }}"
   data-potencial="{{ item.potencial }}"
   data-desempenho="{{ item.desempenho }}"
 >
-  <p class="font-medium text-slate-800">{{ item.usuario.nome|default:item.usuario.email }}</p>
-  {% if item.usuario.nome %}
-  <p class="mt-0.5 text-xs text-slate-500">{{ item.usuario.email }}</p>
-  {% endif %}
-  <div class="mt-2">
-    {% if item.visivel_ao_colaborador %}
-      {% include "components/badge_status.html" with status="ativo" label="Visível" %}
-    {% else %}
-      {% include "components/badge_status.html" with status="arquivado" label="Oculto" %}
+  <button
+    type="button"
+    class="w-full rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-slate-100/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1"
+    hx-get="{% url 'talent:matrix_drawer' item.usuario_id %}?ciclo={{ item.ciclo_id }}{% if filtro_area_id %}&area={{ filtro_area_id }}{% endif %}{% if filtro_cargo_id %}&cargo={{ filtro_cargo_id }}{% endif %}"
+    hx-target="#matrix-drawer"
+    hx-swap="innerHTML"
+    hx-indicator="#htmx-indicator, #matrix-drawer-indicator"
+    aria-controls="matrix-drawer"
+    aria-label="Abrir detalhe de {{ item.usuario.nome|default:item.usuario.email }}"
+  >
+    <p class="font-medium text-slate-800">{{ item.usuario.nome|default:item.usuario.email }}</p>
+    {% if item.usuario.nome %}
+    <p class="mt-0.5 text-xs text-slate-500">{{ item.usuario.email }}</p>
     {% endif %}
-  </div>
+    <div class="mt-2">
+      {% if item.visivel_ao_colaborador %}
+        {% include "components/badge_status.html" with status="ativo" label="Visível" %}
+      {% else %}
+        {% include "components/badge_status.html" with status="arquivado" label="Oculto" %}
+      {% endif %}
+    </div>
+  </button>
 </li>

@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+import json
+from collections.abc import Iterable
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import QuerySet
-from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import get_object_or_404
+from django.http import Http404, HttpResponse, HttpResponseRedirect
+from django.shortcuts import get_object_or_404, render
+from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
 from django.views import View
 from django.views.generic import FormView, ListView, TemplateView
@@ -34,6 +38,95 @@ from apps.talent.services.matrix_layout import (
     build_matriz_rows,
     potencial_labels,
 )
+
+
+def _parse_optional_int(raw: str | None) -> int | None:
+    if not raw:
+        return None
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return None
+
+
+def _matrix_classificacoes_qs(
+    viewer,
+    ciclo: Ciclo,
+    *,
+    area_id: int | None = None,
+    cargo_id: int | None = None,
+) -> QuerySet[ClassificacaoTalento]:
+    """Queryset da grade (ciclo + escopo + filtros área/cargo)."""
+    qs = ClassificacaoTalento.objects.select_related(
+        'usuario',
+        'usuario__area',
+        'usuario__cargo',
+        'ciclo',
+    ).filter(ciclo=ciclo)
+    visible = get_visible_users(viewer).filter(is_active=True)
+    qs = qs.filter(usuario__in=visible)
+    if area_id is not None:
+        qs = qs.filter(usuario__area_id=area_id)
+    if cargo_id is not None:
+        qs = qs.filter(usuario__cargo_id=cargo_id)
+    return qs.order_by('usuario__nome', 'usuario__email')
+
+
+def _find_cell(
+    classificacoes: Iterable[ClassificacaoTalento],
+    desempenho: int,
+    potencial: int,
+) -> dict | None:
+    for row in build_matriz_rows(classificacoes):
+        for cell in row['cells']:
+            if cell['desempenho'] == desempenho and cell['potencial'] == potencial:
+                return cell
+    return None
+
+
+def _hx_show_message(response: HttpResponse, message: str, *, level: str = 'success') -> HttpResponse:
+    response['HX-Trigger'] = json.dumps(
+        {'showMessage': {'message': message, 'level': level}},
+    )
+    return response
+
+
+def _render_matrix_cells_oob(
+    request,
+    *,
+    ciclo: Ciclo,
+    area_id: int | None,
+    cargo_id: int | None,
+    coords: set[tuple[int, int]],
+    cell_template: str = 'talent/partials/_cell.html',
+) -> str:
+    """Partial(s) de célula com ``hx-swap-oob`` para refresh pontual da grade."""
+    classificacoes = list(
+        _matrix_classificacoes_qs(
+            request.user,
+            ciclo,
+            area_id=area_id,
+            cargo_id=cargo_id,
+        ),
+    )
+    parts: list[str] = []
+    for desempenho, potencial in sorted(coords):
+        cell = _find_cell(classificacoes, desempenho, potencial)
+        if cell is None:
+            continue
+        parts.append(
+            render_to_string(
+                cell_template,
+                {
+                    'cell': cell,
+                    'oob': True,
+                    'filtro_area_id': area_id,
+                    'filtro_cargo_id': cargo_id,
+                },
+                request=request,
+            ),
+        )
+    return ''.join(parts)
 
 
 class MyClassificationView(LoginRequiredMixin, TemplateView):
@@ -104,11 +197,11 @@ class TalentMatrixView(LoginRequiredMixin, RequiresManagerOrAdminMixin, ListView
         visible = get_visible_users(self.request.user).filter(is_active=True)
         qs = qs.filter(usuario__in=visible)
 
-        area_id = self._parse_optional_int('area')
+        area_id = _parse_optional_int(self.request.GET.get('area'))
         if area_id is not None:
             qs = qs.filter(usuario__area_id=area_id)
 
-        cargo_id = self._parse_optional_int('cargo')
+        cargo_id = _parse_optional_int(self.request.GET.get('cargo'))
         if cargo_id is not None:
             qs = qs.filter(usuario__cargo_id=cargo_id)
 
@@ -117,8 +210,8 @@ class TalentMatrixView(LoginRequiredMixin, RequiresManagerOrAdminMixin, ListView
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         ciclo = self._resolve_ciclo()
-        area_id = self._parse_optional_int('area')
-        cargo_id = self._parse_optional_int('cargo')
+        area_id = _parse_optional_int(self.request.GET.get('area'))
+        cargo_id = _parse_optional_int(self.request.GET.get('cargo'))
 
         context['ciclo_filtro'] = ciclo
         context['ciclo_aberto'] = get_open_ciclo()
@@ -144,42 +237,237 @@ class TalentMatrixView(LoginRequiredMixin, RequiresManagerOrAdminMixin, ListView
                 return get_open_ciclo()
         return get_open_ciclo()
 
-    def _parse_optional_int(self, key: str) -> int | None:
-        raw = self.request.GET.get(key)
-        if not raw:
-            return None
-        try:
-            return int(raw)
-        except (TypeError, ValueError):
-            return None
-
 
 class MatrixDrawerView(LoginRequiredMixin, RequiresManagerOrAdminMixin, View):
-    """Stub HTMX: abre drawer in-matrix (implementação completa em US1 / T013)."""
+    """GET HTMX: drawer in-matrix (write se admin; read-only se gerente)."""
 
     http_method_names = ['get', 'head', 'options']
+    template_name = 'talent/partials/_drawer.html'
 
     def get(self, request, user_pk):
         if not is_htmx(request):
             return HttpResponseRedirect(reverse('talent:matrix'))
-        # Placeholder até T012/T013 preencherem ``_drawer.html``.
-        return HttpResponse(
-            (
-                f'<aside class="p-4 text-sm text-slate-500" data-user-pk="{user_pk}">'
-                'Drawer em construção.</aside>'
+
+        visible = get_visible_users(request.user).filter(is_active=True)
+        colaborador = get_object_or_404(visible, pk=user_pk)
+
+        ciclo = self._resolve_ciclo()
+        if ciclo is None:
+            raise Http404('Ciclo não encontrado.')
+
+        classificacao = get_object_or_404(
+            ClassificacaoTalento.objects.select_related(
+                'usuario',
+                'usuario__area',
+                'usuario__cargo',
+                'ciclo',
             ),
-            content_type='text/html; charset=utf-8',
+            usuario=colaborador,
+            ciclo=ciclo,
         )
+
+        return render(
+            request,
+            self.template_name,
+            {
+                'classificacao': classificacao,
+                'drawer_writable': bool(getattr(request.user, 'is_admin', False)),
+                'desempenho_label': NIVEL_LABEL[classificacao.desempenho],
+                'area': request.GET.get('area') or None,
+                'cargo': request.GET.get('cargo') or None,
+            },
+        )
+
+    def _resolve_ciclo(self) -> Ciclo | None:
+        ciclo_id = self.request.GET.get('ciclo')
+        if ciclo_id:
+            try:
+                return Ciclo.objects.filter(pk=int(ciclo_id)).first()
+            except (TypeError, ValueError):
+                return get_open_ciclo()
+        return get_open_ciclo()
 
 
 class MatrixPotencialView(LoginRequiredMixin, RequiresAdminMixin, View):
-    """Stub HTMX: salvar potencial via drawer (implementação em US1 / T015)."""
+    """POST: salvar potencial via drawer (HTMX) ou redirect legado."""
 
     http_method_names = ['post', 'options']
+    drawer_template = 'talent/partials/_drawer.html'
+    cell_template = 'talent/partials/_cell.html'
 
     def post(self, request, user_pk):
-        # Endpoint reservado; lógica em T015.
-        return HttpResponse(status=405)
+        ciclo = self._resolve_ciclo()
+        if ciclo is None:
+            raise Http404('Ciclo não encontrado.')
+
+        colaborador = get_object_or_404(
+            CustomUser.objects.select_related('area', 'cargo'),
+            pk=user_pk,
+        )
+        classificacao = get_object_or_404(
+            ClassificacaoTalento.objects.select_related(
+                'usuario',
+                'usuario__area',
+                'usuario__cargo',
+                'ciclo',
+            ),
+            usuario=colaborador,
+            ciclo=ciclo,
+        )
+
+        area_raw = request.POST.get('area') or None
+        cargo_raw = request.POST.get('cargo') or None
+        area_id = _parse_optional_int(area_raw)
+        cargo_id = _parse_optional_int(cargo_raw)
+        drawer_ctx_base = {
+            'drawer_writable': True,
+            'desempenho_label': NIVEL_LABEL[classificacao.desempenho],
+            'area': area_raw,
+            'cargo': cargo_raw,
+        }
+
+        potencial = _parse_optional_int(request.POST.get('potencial'))
+        if potencial not in (1, 2, 3):
+            erro = 'Potencial deve ser um inteiro entre 1 e 3.'
+            if is_htmx(request):
+                return self._drawer_error_response(
+                    request,
+                    classificacao,
+                    drawer_ctx_base,
+                    erro,
+                )
+            messages.error(request, erro)
+            return HttpResponseRedirect(
+                f"{reverse('talent:matrix')}?ciclo={ciclo.pk}",
+            )
+
+        old_desempenho = classificacao.desempenho
+        old_potencial = classificacao.potencial
+
+        try:
+            classificacao = upsert_classification(
+                usuario=colaborador,
+                ciclo=ciclo,
+                potencial=potencial,
+                admin=request.user,
+            )
+        except PermissionDenied as exc:
+            msg = str(exc) or 'Você não tem permissão para salvar o potencial.'
+            if is_htmx(request):
+                return self._drawer_error_response(
+                    request,
+                    classificacao,
+                    drawer_ctx_base,
+                    msg,
+                )
+            messages.error(request, msg)
+            return HttpResponseRedirect(
+                f"{reverse('talent:matrix')}?ciclo={ciclo.pk}",
+            )
+        except ValidationError as exc:
+            msg = '; '.join(exc.messages) if getattr(exc, 'messages', None) else str(exc)
+            if is_htmx(request):
+                return self._drawer_error_response(
+                    request,
+                    classificacao,
+                    drawer_ctx_base,
+                    msg,
+                )
+            messages.error(request, msg)
+            return HttpResponseRedirect(
+                f"{reverse('talent:matrix')}?ciclo={ciclo.pk}",
+            )
+
+        classificacao = (
+            ClassificacaoTalento.objects.select_related(
+                'usuario',
+                'usuario__area',
+                'usuario__cargo',
+                'ciclo',
+            ).get(pk=classificacao.pk)
+        )
+        success_msg = (
+            f'Potencial atualizado: {NIVEL_LABEL[classificacao.potencial]} '
+            f'({classificacao.get_quadrante_display()}).'
+        )
+
+        if not is_htmx(request):
+            messages.success(request, success_msg)
+            return HttpResponseRedirect(
+                f"{reverse('talent:matrix')}?ciclo={ciclo.pk}",
+            )
+
+        drawer_html = render_to_string(
+            self.drawer_template,
+            {
+                'classificacao': classificacao,
+                'drawer_writable': True,
+                'desempenho_label': NIVEL_LABEL[classificacao.desempenho],
+                'area': area_raw,
+                'cargo': cargo_raw,
+            },
+            request=request,
+        )
+
+        cells_html = self._render_cells_oob(
+            request,
+            ciclo=ciclo,
+            area_id=area_id,
+            cargo_id=cargo_id,
+            coords={
+                (old_desempenho, old_potencial),
+                (classificacao.desempenho, classificacao.potencial),
+            },
+        )
+        response = HttpResponse(drawer_html + cells_html)
+        return _hx_show_message(response, success_msg, level='success')
+
+    def _drawer_error_response(
+        self,
+        request,
+        classificacao: ClassificacaoTalento,
+        drawer_ctx_base: dict,
+        message: str,
+    ) -> HttpResponse:
+        """Re-renderiza o drawer com erro PT-BR; grade permanece intacta (FR-005)."""
+        html = render_to_string(
+            self.drawer_template,
+            {
+                **drawer_ctx_base,
+                'classificacao': classificacao,
+                'potencial_error': message,
+            },
+            request=request,
+        )
+        response = HttpResponse(html)
+        return _hx_show_message(response, message, level='error')
+
+    def _render_cells_oob(
+        self,
+        request,
+        *,
+        ciclo: Ciclo,
+        area_id: int | None,
+        cargo_id: int | None,
+        coords: set[tuple[int, int]],
+    ) -> str:
+        return _render_matrix_cells_oob(
+            request,
+            ciclo=ciclo,
+            area_id=area_id,
+            cargo_id=cargo_id,
+            coords=coords,
+            cell_template=self.cell_template,
+        )
+
+    def _resolve_ciclo(self) -> Ciclo | None:
+        ciclo_id = self.request.POST.get('ciclo_id') or self.request.POST.get('ciclo')
+        if ciclo_id:
+            try:
+                return Ciclo.objects.filter(pk=int(ciclo_id)).first()
+            except (TypeError, ValueError):
+                return None
+        return get_open_ciclo()
 
 
 class MatrixMoveView(LoginRequiredMixin, RequiresAdminMixin, View):
@@ -303,28 +591,96 @@ class ToggleVisibilityView(
     SingleObjectMixin,
     View,
 ):
-    """Alterna ``visivel_ao_colaborador`` (admin, RF-25)."""
+    """Alterna ``visivel_ao_colaborador`` (admin, RF-25).
+
+    HTMX (drawer): atualiza badge no drawer + card na célula (OOB) + toast.
+    Não-HTMX: redirect legado para a matriz (compat).
+    """
 
     model = ClassificacaoTalento
     http_method_names = ['post', 'options']
-    queryset = ClassificacaoTalento.objects.select_related('usuario', 'ciclo')
+    queryset = ClassificacaoTalento.objects.select_related(
+        'usuario',
+        'usuario__area',
+        'usuario__cargo',
+        'ciclo',
+    )
+    drawer_template = 'talent/partials/_drawer.html'
+    cell_template = 'talent/partials/_cell.html'
 
     def post(self, request, *args, **kwargs):
         classificacao = self.get_object()
-        classificacao = toggle_classification_visibility(classificacao, request.user)
+        area_raw = request.POST.get('area') or None
+        cargo_raw = request.POST.get('cargo') or None
+        area_id = _parse_optional_int(area_raw)
+        cargo_id = _parse_optional_int(cargo_raw)
+        drawer_ctx = {
+            'drawer_writable': True,
+            'desempenho_label': NIVEL_LABEL[classificacao.desempenho],
+            'area': area_raw,
+            'cargo': cargo_raw,
+        }
+
+        try:
+            classificacao = toggle_classification_visibility(
+                classificacao,
+                request.user,
+            )
+        except PermissionDenied as exc:
+            msg = (
+                str(exc)
+                or 'Você não tem permissão para alterar a visibilidade.'
+            )
+            if is_htmx(request):
+                # Re-renderiza drawer com estado anterior + toast erro (SC-004).
+                html = render_to_string(
+                    self.drawer_template,
+                    {**drawer_ctx, 'classificacao': classificacao},
+                    request=request,
+                )
+                response = HttpResponse(html)
+                return _hx_show_message(response, msg, level='error')
+            raise
+
+        classificacao = (
+            ClassificacaoTalento.objects.select_related(
+                'usuario',
+                'usuario__area',
+                'usuario__cargo',
+                'ciclo',
+            ).get(pk=classificacao.pk)
+        )
 
         nome = classificacao.usuario.nome or classificacao.usuario.email
         if classificacao.visivel_ao_colaborador:
-            messages.success(
-                request,
-                f'Classificação de {nome} liberada para o colaborador.',
-            )
+            success_msg = f'Classificação de {nome} liberada para o colaborador.'
         else:
-            messages.success(
-                request,
-                f'Classificação de {nome} ocultada do colaborador.',
+            success_msg = f'Classificação de {nome} ocultada do colaborador.'
+
+        if not is_htmx(request):
+            messages.success(request, success_msg)
+            return HttpResponseRedirect(
+                f"{reverse('talent:matrix')}?ciclo={classificacao.ciclo_id}",
             )
 
-        return HttpResponseRedirect(
-            f"{reverse('talent:matrix')}?ciclo={classificacao.ciclo_id}",
+        drawer_html = render_to_string(
+            self.drawer_template,
+            {
+                'classificacao': classificacao,
+                'drawer_writable': True,
+                'desempenho_label': NIVEL_LABEL[classificacao.desempenho],
+                'area': area_raw,
+                'cargo': cargo_raw,
+            },
+            request=request,
         )
+        cells_html = _render_matrix_cells_oob(
+            request,
+            ciclo=classificacao.ciclo,
+            area_id=area_id,
+            cargo_id=cargo_id,
+            coords={(classificacao.desempenho, classificacao.potencial)},
+            cell_template=self.cell_template,
+        )
+        response = HttpResponse(drawer_html + cells_html)
+        return _hx_show_message(response, success_msg, level='success')
