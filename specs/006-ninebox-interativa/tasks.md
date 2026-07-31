@@ -82,12 +82,12 @@ Monólito Django: `apps/talent/`, `templates/talent/`, `static/js/`, `docs/`, `t
 
 ### Implementation for User Story 2
 
-- [ ] T019 [US2] Implementar POST move em `apps/talent/views.py`: aceita `ciclo_id` + `potencial` (1–3); **ignora** desempenho da célula-alvo; chama `upsert_classification`; resposta posiciona card em `(desempenho_derivado, potencial_novo)`; noop se potencial inalterado; admin only — [contracts/drag-persist.md](./contracts/drag-persist.md)
-- [ ] T020 [US2] Implementar HTML5 DnD em `static/js/ninebox_matrix.js`: dragstart/drop entre células; POST move (HTMX ou fetch + CSRF); cancel Esc/fora da grade → zero POST + restore visual
-- [ ] T021 [US2] Aplicar política de snap: após drop, card termina em `(desempenho_derivado, P′)`; se célula sob cursor tinha desempenho diferente, feedback PT-BR explícito (“Só o potencial é alterado…”) via toast/`HX-Trigger` — research R4
-- [ ] T022 [US2] Em erro (403/400/rede/5xx): restaurar posição visual anterior + toast erro; **nunca** sucesso silencioso — SC-004
-- [ ] T023 [US2] Gates de UI: `draggable`/handles somente quando template renderiza `is_admin_viewer`; em `pointer: coarse` / viewport estreito desabilitar DnD e manter drawer como caminho completo (FR-010) em `static/js/ninebox_matrix.js` + `_person_card.html`
-- [ ] T024 [US2] Estender `tests/test_talent_matrix_authz.py` com casos move: não-admin 403; payload potencial-only não muta desempenho; snap coerente após POST admin
+- [X] T019 [US2] Implementar POST move em `apps/talent/views.py`: aceita `ciclo_id` + `potencial` (1–3); **ignora** desempenho da célula-alvo; chama `upsert_classification`; resposta posiciona card em `(desempenho_derivado, potencial_novo)`; noop se potencial inalterado; admin only — [contracts/drag-persist.md](./contracts/drag-persist.md)
+- [X] T020 [US2] Implementar HTML5 DnD em `static/js/ninebox_matrix.js`: dragstart/drop entre células; POST move (HTMX ou fetch + CSRF); cancel Esc/fora da grade → zero POST + restore visual
+- [X] T021 [US2] Aplicar política de snap: após drop, card termina em `(desempenho_derivado, P′)`; se célula sob cursor tinha desempenho diferente, feedback PT-BR explícito (“Só o potencial é alterado…”) via toast/`HX-Trigger` — research R4
+- [X] T022 [US2] Em erro (403/400/rede/5xx): restaurar posição visual anterior + toast erro; **nunca** sucesso silencioso — SC-004
+- [X] T023 [US2] Gates de UI: `draggable`/handles somente quando template renderiza `is_admin_viewer`; em `pointer: coarse` / viewport estreito desabilitar DnD e manter drawer como caminho completo (FR-010) em `static/js/ninebox_matrix.js` + `_person_card.html`
+- [X] T024 [US2] Estender `tests/test_talent_matrix_authz.py` com casos move: não-admin 403; payload potencial-only não muta desempenho; snap coerente após POST admin
 
 **Checkpoint**: US1 + US2 independentes; calibração por drag e por drawer
 

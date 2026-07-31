@@ -1,7 +1,10 @@
-"""T011: AuthZ/IDOR da matriz interativa — escrita admin-only (SC-003).
+"""T011/T019/T024: AuthZ/IDOR da matriz interativa — escrita admin-only (SC-003).
 
 Cobre serviços ``upsert_classification`` / ``toggle_classification_visibility``
-e endpoints POST ``matrix_potencial`` / ``toggle_visibility``.
+e endpoints POST ``matrix_potencial`` / ``matrix_move`` / ``toggle_visibility``.
+
+T024 (move): não-admin 403; payload potencial-only não muta desempenho;
+snap coerente em ``(desempenho_derivado, P′)`` após POST admin.
 """
 
 from __future__ import annotations
@@ -316,3 +319,156 @@ def test_toggle_visibility_post_admin_htmx_atualiza_drawer_e_card(
     trigger = json.loads(resp['HX-Trigger'])
     assert trigger['showMessage']['level'] == 'success'
     assert 'liberada' in trigger['showMessage']['message']
+
+
+# --- POST matrix_move (T019 / T024 / drag-persist) ---
+
+
+@pytest.mark.django_db
+def test_matrix_move_post_gerente_403(
+    classificacao,
+    colaborador,
+    ciclo_aberto,
+    gerente,
+):
+    """T024: não-admin (gerente) POST move → 403; classificação intacta."""
+    gerente_user, _mid, _leaf = gerente
+    client = Client()
+    client.force_login(gerente_user)
+
+    resp = client.post(
+        reverse('talent:matrix_move', kwargs={'user_pk': colaborador.pk}),
+        data={
+            'ciclo_id': ciclo_aberto.pk,
+            'potencial': 3,
+            'desempenho': 1,
+        },
+    )
+
+    assert resp.status_code == 403
+    classificacao.refresh_from_db()
+    assert classificacao.potencial == 2
+    assert classificacao.desempenho == 2
+
+
+@pytest.mark.django_db
+def test_matrix_move_post_admin_potencial_only_nao_muta_desempenho(
+    classificacao,
+    colaborador,
+    ciclo_aberto,
+    admin,
+):
+    """T024: payload potencial-only (sem desempenho) não pinta desempenho."""
+    before_desempenho = classificacao.desempenho
+    assert before_desempenho == 2
+
+    client = Client()
+    client.force_login(admin)
+
+    resp = client.post(
+        reverse('talent:matrix_move', kwargs={'user_pk': colaborador.pk}),
+        data={
+            'ciclo_id': ciclo_aberto.pk,
+            'potencial': 1,
+            # sem campo ``desempenho`` — contrato potencial-only
+        },
+        HTTP_HX_REQUEST='true',
+    )
+
+    assert resp.status_code == 200
+    classificacao.refresh_from_db()
+    assert classificacao.potencial == 1
+    assert classificacao.desempenho == before_desempenho
+    body = resp.content.decode()
+    assert 'hx-swap-oob' in body
+    assert 'cell-2-2' in body  # origem
+    assert 'cell-2-1' in body  # destino snap (desempenho derivado, P′)
+    trigger = json.loads(resp['HX-Trigger'])
+    assert trigger['showMessage']['level'] == 'success'
+    # Sem desempenho no payload → sem snap de linha → toast de sucesso padrão
+    assert 'Só o potencial é alterado' not in trigger['showMessage']['message']
+    assert 'Potencial atualizado' in trigger['showMessage']['message']
+
+
+@pytest.mark.django_db
+def test_matrix_move_post_admin_ignora_desempenho_e_snap_coerente(
+    classificacao,
+    colaborador,
+    ciclo_aberto,
+    admin,
+):
+    """T024: desempenho da célula-alvo ignorado; card em (D derivado, P′)."""
+    client = Client()
+    client.force_login(admin)
+
+    resp = client.post(
+        reverse('talent:matrix_move', kwargs={'user_pk': colaborador.pk}),
+        data={
+            'ciclo_id': ciclo_aberto.pk,
+            'potencial': 3,
+            'desempenho': 1,  # incompatível — servidor ignora para mutação
+        },
+        HTTP_HX_REQUEST='true',
+    )
+
+    assert resp.status_code == 200
+    classificacao.refresh_from_db()
+    assert classificacao.potencial == 3
+    assert classificacao.desempenho == 2  # derivado, não pintado
+    body = resp.content.decode()
+    assert 'hx-swap-oob' in body
+    assert 'cell-2-2' in body  # origem
+    assert 'cell-2-3' in body  # snap (desempenho 2, potencial 3)
+    assert 'cell-1-3' not in body  # nunca posiciona na linha pintada
+    trigger = json.loads(resp['HX-Trigger'])
+    assert trigger['showMessage']['level'] == 'success'
+    assert 'Só o potencial é alterado' in trigger['showMessage']['message']
+
+
+@pytest.mark.django_db
+def test_matrix_move_post_admin_noop_potencial_inalterado(
+    classificacao,
+    colaborador,
+    ciclo_aberto,
+    admin,
+):
+    """Mesmo potencial → noop (200, sem OOB, sem mutação material)."""
+    client = Client()
+    client.force_login(admin)
+
+    resp = client.post(
+        reverse('talent:matrix_move', kwargs={'user_pk': colaborador.pk}),
+        data={'ciclo_id': ciclo_aberto.pk, 'potencial': 2},
+        HTTP_HX_REQUEST='true',
+    )
+
+    assert resp.status_code == 200
+    assert 'hx-swap-oob' not in resp.content.decode()
+    classificacao.refresh_from_db()
+    assert classificacao.potencial == 2
+    trigger = json.loads(resp['HX-Trigger'])
+    assert 'inalterado' in trigger['showMessage']['message'].lower()
+
+
+@pytest.mark.django_db
+def test_matrix_move_post_potencial_invalido_400(
+    classificacao,
+    colaborador,
+    ciclo_aberto,
+    admin,
+):
+    """Potencial inválido → 400 + toast erro; zero mutação."""
+    client = Client()
+    client.force_login(admin)
+
+    resp = client.post(
+        reverse('talent:matrix_move', kwargs={'user_pk': colaborador.pk}),
+        data={'ciclo_id': ciclo_aberto.pk, 'potencial': 9},
+        HTTP_HX_REQUEST='true',
+    )
+
+    assert resp.status_code == 400
+    classificacao.refresh_from_db()
+    assert classificacao.potencial == 2
+    trigger = json.loads(resp['HX-Trigger'])
+    assert trigger['showMessage']['level'] == 'error'

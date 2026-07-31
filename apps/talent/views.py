@@ -122,6 +122,9 @@ def _render_matrix_cells_oob(
                     'oob': True,
                     'filtro_area_id': area_id,
                     'filtro_cargo_id': cargo_id,
+                    'is_admin_viewer': bool(
+                        getattr(request.user, 'is_admin', False),
+                    ),
                 },
                 request=request,
             ),
@@ -471,13 +474,161 @@ class MatrixPotencialView(LoginRequiredMixin, RequiresAdminMixin, View):
 
 
 class MatrixMoveView(LoginRequiredMixin, RequiresAdminMixin, View):
-    """Stub HTMX: persistir move DnD potencial-only (implementação em US2)."""
+    """POST: move DnD potencial-only; desempenho da célula-alvo é ignorado (R4/T021).
+
+    Card final via OOB em ``(desempenho_derivado, potencial_novo)``. Se o
+    payload trouxer ``desempenho`` da célula sob o cursor ≠ derivado →
+    ``SNAP_MSG`` no ``HX-Trigger`` (feedback PT-BR explícito).
+    """
 
     http_method_names = ['post', 'options']
+    cell_template = 'talent/partials/_cell.html'
+    # research R4 / T021 — toast quando houve snap de linha.
+    SNAP_MSG = (
+        'Só o potencial é alterado por arraste; '
+        'o desempenho continua derivado da nota do líder.'
+    )
 
     def post(self, request, user_pk):
-        # Endpoint reservado; lógica em US2.
-        return HttpResponse(status=405)
+        ciclo = self._resolve_ciclo()
+        if ciclo is None:
+            raise Http404('Ciclo não encontrado.')
+
+        colaborador = get_object_or_404(
+            CustomUser.objects.select_related('area', 'cargo'),
+            pk=user_pk,
+        )
+        classificacao = get_object_or_404(
+            ClassificacaoTalento.objects.select_related(
+                'usuario',
+                'usuario__area',
+                'usuario__cargo',
+                'ciclo',
+            ),
+            usuario=colaborador,
+            ciclo=ciclo,
+        )
+
+        area_id = _parse_optional_int(request.POST.get('area'))
+        cargo_id = _parse_optional_int(request.POST.get('cargo'))
+        # ``desempenho`` da célula-alvo pode vir no payload (debug/UI); NÃO muta.
+        target_desempenho = _parse_optional_int(request.POST.get('desempenho'))
+
+        potencial = _parse_optional_int(request.POST.get('potencial'))
+        if potencial not in (1, 2, 3):
+            return self._error_response(
+                request,
+                'Potencial deve ser um inteiro entre 1 e 3.',
+                status=400,
+            )
+
+        old_desempenho = classificacao.desempenho
+        old_potencial = classificacao.potencial
+
+        # Noop: potencial inalterado → sem write material.
+        if potencial == old_potencial:
+            soft_msg = (
+                f'Potencial inalterado: {NIVEL_LABEL[old_potencial]}.'
+            )
+            if not is_htmx(request):
+                messages.info(request, soft_msg)
+                return HttpResponseRedirect(
+                    f"{reverse('talent:matrix')}?ciclo={ciclo.pk}",
+                )
+            response = HttpResponse(status=200)
+            return _hx_show_message(response, soft_msg, level='success')
+
+        try:
+            classificacao = upsert_classification(
+                usuario=colaborador,
+                ciclo=ciclo,
+                potencial=potencial,
+                admin=request.user,
+            )
+        except PermissionDenied as exc:
+            msg = str(exc) or 'Você não tem permissão para mover a classificação.'
+            return self._error_response(request, msg, status=403)
+        except ValidationError as exc:
+            msg = (
+                '; '.join(exc.messages)
+                if getattr(exc, 'messages', None)
+                else str(exc)
+            )
+            return self._error_response(request, msg, status=400)
+
+        classificacao = (
+            ClassificacaoTalento.objects.select_related(
+                'usuario',
+                'usuario__area',
+                'usuario__cargo',
+                'ciclo',
+            ).get(pk=classificacao.pk)
+        )
+
+        snapped = (
+            target_desempenho is not None
+            and target_desempenho != classificacao.desempenho
+        )
+        if snapped:
+            success_msg = self.SNAP_MSG
+        else:
+            success_msg = (
+                f'Potencial atualizado: {NIVEL_LABEL[classificacao.potencial]} '
+                f'({classificacao.get_quadrante_display()}).'
+            )
+
+        if not is_htmx(request):
+            messages.success(request, success_msg)
+            return HttpResponseRedirect(
+                f"{reverse('talent:matrix')}?ciclo={ciclo.pk}",
+            )
+
+        # Card na célula (desempenho_derivado, potencial_novo) via OOB.
+        cells_html = _render_matrix_cells_oob(
+            request,
+            ciclo=ciclo,
+            area_id=area_id,
+            cargo_id=cargo_id,
+            coords={
+                (old_desempenho, old_potencial),
+                (classificacao.desempenho, classificacao.potencial),
+            },
+            cell_template=self.cell_template,
+        )
+        response = HttpResponse(cells_html)
+        return _hx_show_message(response, success_msg, level='success')
+
+    def _error_response(
+        self,
+        request,
+        message: str,
+        *,
+        status: int,
+    ) -> HttpResponse:
+        """Erro PT-BR; HTMX → toast; não-HTMX → redirect (grade intacta)."""
+        if is_htmx(request):
+            response = HttpResponse(status=status)
+            return _hx_show_message(response, message, level='error')
+        messages.error(request, message)
+        ciclo_id = (
+            request.POST.get('ciclo_id')
+            or request.POST.get('ciclo')
+            or ''
+        )
+        if ciclo_id:
+            return HttpResponseRedirect(
+                f"{reverse('talent:matrix')}?ciclo={ciclo_id}",
+            )
+        return HttpResponseRedirect(reverse('talent:matrix'))
+
+    def _resolve_ciclo(self) -> Ciclo | None:
+        ciclo_id = self.request.POST.get('ciclo_id') or self.request.POST.get('ciclo')
+        if ciclo_id:
+            try:
+                return Ciclo.objects.filter(pk=int(ciclo_id)).first()
+            except (TypeError, ValueError):
+                return None
+        return get_open_ciclo()
 
 
 class ClassifyTalentView(LoginRequiredMixin, RequiresAdminMixin, FormView):
