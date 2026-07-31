@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-from collections import defaultdict
-
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import QuerySet
-from django.http import HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse, reverse_lazy
 from django.views import View
@@ -17,6 +15,7 @@ from django.views.generic.detail import SingleObjectMixin
 
 from apps.accounts.models import CustomUser
 from apps.accounts.services.scope import get_visible_users
+from apps.core.htmx import is_htmx
 from apps.core.mixins import RequiresAdminMixin, RequiresManagerOrAdminMixin
 from apps.cycles.models import Ciclo
 from apps.goals.forms import get_open_ciclo
@@ -27,24 +26,14 @@ from apps.talent.models import ClassificacaoTalento
 from apps.talent.services.classification import (
     derive_desempenho,
     get_visible_classification_for_collaborator,
+    toggle_classification_visibility,
     upsert_classification,
 )
-
-# Ordem visual da matriz: desempenho alto no topo, potencial crescente à direita.
-_DESEMPENHO_ROWS = (3, 2, 1)
-_POTENCIAL_COLS = (1, 2, 3)
-_NIVEL_LABEL = {1: 'Baixo', 2: 'Médio', 3: 'Alto'}
-_QUADRANTE_MEMBER = {
-    (3, 1): 'ALTO_BAIXO',
-    (3, 2): 'ALTO_MEDIO',
-    (3, 3): 'ALTO_ALTO',
-    (2, 1): 'MEDIO_BAIXO',
-    (2, 2): 'MEDIO_MEDIO',
-    (2, 3): 'MEDIO_ALTO',
-    (1, 1): 'BAIXO_BAIXO',
-    (1, 2): 'BAIXO_MEDIO',
-    (1, 3): 'BAIXO_ALTO',
-}
+from apps.talent.services.matrix_layout import (
+    NIVEL_LABEL,
+    build_matriz_rows,
+    potencial_labels,
+)
 
 
 class MyClassificationView(LoginRequiredMixin, TemplateView):
@@ -74,10 +63,10 @@ class MyClassificationView(LoginRequiredMixin, TemplateView):
         context['classificacao'] = classificacao
         context['classificacao_oculta'] = oculto
         context['desempenho_label'] = (
-            _NIVEL_LABEL[classificacao.desempenho] if classificacao else None
+            NIVEL_LABEL[classificacao.desempenho] if classificacao else None
         )
         context['potencial_label'] = (
-            _NIVEL_LABEL[classificacao.potencial] if classificacao else None
+            NIVEL_LABEL[classificacao.potencial] if classificacao else None
         )
         return context
 
@@ -131,33 +120,6 @@ class TalentMatrixView(LoginRequiredMixin, RequiresManagerOrAdminMixin, ListView
         area_id = self._parse_optional_int('area')
         cargo_id = self._parse_optional_int('cargo')
 
-        by_quadrante: dict[str, list[ClassificacaoTalento]] = defaultdict(list)
-        for item in context['object_list']:
-            by_quadrante[item.quadrante].append(item)
-
-        rows = []
-        for desempenho in _DESEMPENHO_ROWS:
-            cells = []
-            for potencial in _POTENCIAL_COLS:
-                member_name = _QUADRANTE_MEMBER[(desempenho, potencial)]
-                quadrante = ClassificacaoTalento.Quadrante[member_name]
-                cells.append(
-                    {
-                        'desempenho': desempenho,
-                        'potencial': potencial,
-                        'quadrante': quadrante.value,
-                        'label': quadrante.label,
-                        'itens': by_quadrante.get(quadrante.value, []),
-                    },
-                )
-            rows.append(
-                {
-                    'desempenho': desempenho,
-                    'desempenho_label': _NIVEL_LABEL[desempenho],
-                    'cells': cells,
-                },
-            )
-
         context['ciclo_filtro'] = ciclo
         context['ciclo_aberto'] = get_open_ciclo()
         context['ciclos'] = Ciclo.objects.order_by('-data_inicio', 'nome')
@@ -165,8 +127,8 @@ class TalentMatrixView(LoginRequiredMixin, RequiresManagerOrAdminMixin, ListView
         context['cargos'] = Cargo.objects.filter(is_active=True).order_by('nivel', 'nome')
         context['filtro_area_id'] = area_id
         context['filtro_cargo_id'] = cargo_id
-        context['matriz_rows'] = rows
-        context['potencial_labels'] = [_NIVEL_LABEL[p] for p in _POTENCIAL_COLS]
+        context['matriz_rows'] = build_matriz_rows(context['object_list'])
+        context['potencial_labels'] = potencial_labels()
         context['total_classificados'] = len(context['object_list'])
         context['is_admin_viewer'] = bool(
             getattr(self.request.user, 'is_admin', False),
@@ -190,6 +152,44 @@ class TalentMatrixView(LoginRequiredMixin, RequiresManagerOrAdminMixin, ListView
             return int(raw)
         except (TypeError, ValueError):
             return None
+
+
+class MatrixDrawerView(LoginRequiredMixin, RequiresManagerOrAdminMixin, View):
+    """Stub HTMX: abre drawer in-matrix (implementação completa em US1 / T013)."""
+
+    http_method_names = ['get', 'head', 'options']
+
+    def get(self, request, user_pk):
+        if not is_htmx(request):
+            return HttpResponseRedirect(reverse('talent:matrix'))
+        # Placeholder até T012/T013 preencherem ``_drawer.html``.
+        return HttpResponse(
+            (
+                f'<aside class="p-4 text-sm text-slate-500" data-user-pk="{user_pk}">'
+                'Drawer em construção.</aside>'
+            ),
+            content_type='text/html; charset=utf-8',
+        )
+
+
+class MatrixPotencialView(LoginRequiredMixin, RequiresAdminMixin, View):
+    """Stub HTMX: salvar potencial via drawer (implementação em US1 / T015)."""
+
+    http_method_names = ['post', 'options']
+
+    def post(self, request, user_pk):
+        # Endpoint reservado; lógica em T015.
+        return HttpResponse(status=405)
+
+
+class MatrixMoveView(LoginRequiredMixin, RequiresAdminMixin, View):
+    """Stub HTMX: persistir move DnD potencial-only (implementação em US2)."""
+
+    http_method_names = ['post', 'options']
+
+    def post(self, request, user_pk):
+        # Endpoint reservado; lógica em US2.
+        return HttpResponse(status=405)
 
 
 class ClassifyTalentView(LoginRequiredMixin, RequiresAdminMixin, FormView):
@@ -267,8 +267,8 @@ class ClassifyTalentView(LoginRequiredMixin, RequiresAdminMixin, FormView):
         messages.success(
             self.request,
             (
-                f'Classificação salva: desempenho {_NIVEL_LABEL[classificacao.desempenho]}, '
-                f'potencial {_NIVEL_LABEL[classificacao.potencial]} '
+                f'Classificação salva: desempenho {NIVEL_LABEL[classificacao.desempenho]}, '
+                f'potencial {NIVEL_LABEL[classificacao.potencial]} '
                 f'({classificacao.get_quadrante_display()}).'
             ),
         )
@@ -292,7 +292,7 @@ class ClassifyTalentView(LoginRequiredMixin, RequiresAdminMixin, FormView):
         return {
             'disponivel': True,
             'nivel': nivel,
-            'label': _NIVEL_LABEL[nivel],
+            'label': NIVEL_LABEL[nivel],
             'nota_final_lider': avaliacao.nota_final_lider,
         }
 
@@ -311,8 +311,7 @@ class ToggleVisibilityView(
 
     def post(self, request, *args, **kwargs):
         classificacao = self.get_object()
-        classificacao.visivel_ao_colaborador = not classificacao.visivel_ao_colaborador
-        classificacao.save(update_fields=['visivel_ao_colaborador', 'updated_at'])
+        classificacao = toggle_classification_visibility(classificacao, request.user)
 
         nome = classificacao.usuario.nome or classificacao.usuario.email
         if classificacao.visivel_ao_colaborador:

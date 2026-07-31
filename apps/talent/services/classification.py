@@ -105,6 +105,30 @@ def upsert_classification(
     return classificacao
 
 
+def toggle_classification_visibility(
+    classificacao: ClassificacaoTalento,
+    admin: CustomUser,
+) -> ClassificacaoTalento:
+    """Inverte ``visivel_ao_colaborador`` (RF-25). Admin only.
+
+    Não altera potencial, desempenho nem quadrante. O ator admin é atribuído
+    via ``audit_actor`` para o histórico append-only.
+
+    Raises:
+        PermissionDenied: se ``admin`` não for administrador.
+    """
+    if not getattr(admin, 'is_admin', False):
+        raise PermissionDenied(
+            'Apenas administradores podem alterar a visibilidade da classificação.',
+        )
+
+    with transaction.atomic():
+        with audit_actor(admin):
+            classificacao.visivel_ao_colaborador = not classificacao.visivel_ao_colaborador
+            classificacao.save(update_fields=['visivel_ao_colaborador', 'updated_at'])
+    return classificacao
+
+
 def get_visible_classification_for_collaborator(
     usuario: CustomUser,
     ciclo=None,

@@ -1,0 +1,27 @@
+{% comment %}
+  Card de pessoa na célula da matriz 9-box.
+  Uso: {% include "talent/partials/_person_card.html" with item=item %}
+
+  Parâmetros:
+  - item: ClassificacaoTalento (usuario, potencial, desempenho, visivel_ao_colaborador)
+
+  Data attrs (DnD futuro T020+): data-user-pk, data-potencial, data-desempenho
+{% endcomment %}
+<li
+  class="rounded-lg border border-slate-100 bg-slate-50/80 px-2.5 py-2 text-sm"
+  data-user-pk="{{ item.usuario_id }}"
+  data-potencial="{{ item.potencial }}"
+  data-desempenho="{{ item.desempenho }}"
+>
+  <p class="font-medium text-slate-800">{{ item.usuario.nome|default:item.usuario.email }}</p>
+  {% if item.usuario.nome %}
+  <p class="mt-0.5 text-xs text-slate-500">{{ item.usuario.email }}</p>
+  {% endif %}
+  <div class="mt-2">
+    {% if item.visivel_ao_colaborador %}
+      {% include "components/badge_status.html" with status="ativo" label="Visível" %}
+    {% else %}
+      {% include "components/badge_status.html" with status="arquivado" label="Oculto" %}
+    {% endif %}
+  </div>
+</li>

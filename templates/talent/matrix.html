@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Matriz de talentos — Greenn People{% endblock %}
 
@@ -91,77 +92,54 @@
       Grade 9-box
     </h2>
     <p class="mt-0.5 text-sm text-slate-500">
-      Desempenho nas linhas (alto no topo); potencial nas colunas (crescente à direita). Grade estática — sem arrastar ou drawer.
+      Desempenho nas linhas (alto no topo); potencial nas colunas (crescente à direita).
     </p>
   </div>
 
-  <div class="table-frame p-3 sm:p-4">
-    <div class="inline-grid min-w-full gap-0" style="grid-template-columns: 5.5rem repeat(3, minmax(10rem, 1fr));">
-      {# Cabeçalho: eixo potencial #}
-      <div class="p-2" aria-hidden="true"></div>
-      {% for label in potencial_labels %}
-      <div class="border-b border-slate-200 px-2 py-2 text-center text-xs font-medium uppercase tracking-wide text-slate-500">
-        Potencial {{ label }}
-      </div>
-      {% endfor %}
-
-      {% for row in matriz_rows %}
-      <div class="flex items-center justify-end border-r border-slate-200 pr-3 text-xs font-medium uppercase tracking-wide text-slate-500">
-        <span class="max-w-[4.5rem] text-right leading-tight">Desemp. {{ row.desempenho_label }}</span>
-      </div>
-      {% for cell in row.cells %}
-      <div
-        class="min-h-[8rem] border border-slate-100 p-3 {% if cell.desempenho == 3 and cell.potencial == 3 %}bg-emerald-50/70{% elif cell.desempenho == 1 and cell.potencial == 1 %}bg-rose-50/50{% else %}bg-white{% endif %}"
-        aria-label="{{ cell.label }}"
-      >
-        <p class="mb-2 text-[10px] font-medium uppercase tracking-wide text-slate-400">{{ cell.label }}</p>
-        <ul class="space-y-2">
-          {% for item in cell.itens %}
-          <li class="rounded-lg border border-slate-100 bg-slate-50/80 px-2.5 py-2 text-sm">
-            <p class="font-medium text-slate-800">{{ item.usuario.nome|default:item.usuario.email }}</p>
-            <p class="mt-0.5 text-xs text-slate-500">
-              {{ item.usuario.area.nome|default:"—" }}
-              · {{ item.usuario.cargo.nome|default:"—" }}
-            </p>
-            {% if is_admin_viewer %}
-            <div class="mt-2 flex flex-wrap items-center gap-2 text-xs">
-              {% if item.visivel_ao_colaborador %}
-                {% include "components/badge_status.html" with status="ativo" label="Visível" %}
-              {% else %}
-                {% include "components/badge_status.html" with status="arquivado" label="Oculto" %}
-              {% endif %}
-              <a
-                href="{% url 'talent:classify' item.usuario_id %}"
-                class="font-medium text-emerald-700 hover:text-emerald-800"
-              >Editar</a>
-              <form method="post" action="{% url 'talent:toggle_visibility' item.pk %}" class="inline">
-                {% csrf_token %}
-                <button
-                  type="submit"
-                  class="font-medium text-slate-600 hover:text-slate-800"
-                  title="{% if item.visivel_ao_colaborador %}Ocultar do colaborador{% else %}Liberar ao colaborador{% endif %}"
-                >
-                  {% if item.visivel_ao_colaborador %}Ocultar{% else %}Liberar{% endif %}
-                </button>
-              </form>
-            </div>
-            {% endif %}
-          </li>
-          {% empty %}
-          <li class="text-xs text-slate-400">—</li>
+  <div class="flex flex-col gap-4 xl:flex-row xl:items-start">
+    <div class="min-w-0 flex-1">
+      <div class="table-frame p-3 sm:p-4">
+        <div class="inline-grid min-w-full gap-0" style="grid-template-columns: 5.5rem repeat(3, minmax(10rem, 1fr));">
+          {# Cabeçalho: eixo potencial #}
+          <div class="p-2" aria-hidden="true"></div>
+          {% for label in potencial_labels %}
+          <div class="border-b border-slate-200 px-2 py-2 text-center text-xs font-medium uppercase tracking-wide text-slate-500">
+            Potencial {{ label }}
+          </div>
           {% endfor %}
-        </ul>
-      </div>
-      {% endfor %}
-      {% endfor %}
-    </div>
-  </div>
 
-  {% if total_classificados == 0 %}
-  <div class="mt-4 rounded-xl border border-slate-200 bg-white px-4 py-8 shadow-sm">
-    {% include "components/empty_state.html" with title="Nenhuma classificação no escopo" message="Não há classificações para os filtros selecionados. Ajuste ciclo, área ou cargo acima." %}
+          {% for row in matriz_rows %}
+          <div class="flex items-center justify-end border-r border-slate-200 pr-3 text-xs font-medium uppercase tracking-wide text-slate-500">
+            <span class="max-w-[4.5rem] text-right leading-tight">Desemp. {{ row.desempenho_label }}</span>
+          </div>
+          {% for cell in row.cells %}
+            {% include "talent/partials/_cell.html" with cell=cell %}
+          {% endfor %}
+          {% endfor %}
+        </div>
+      </div>
+
+      {% if total_classificados == 0 %}
+      <div class="mt-4 rounded-xl border border-slate-200 bg-white px-4 py-8 shadow-sm">
+        {% include "components/empty_state.html" with title="Nenhuma classificação no escopo" message="Não há classificações para os filtros selecionados. Ajuste ciclo, área ou cargo acima." %}
+      </div>
+      {% endif %}
+    </div>
+
+    {# Shell do drawer in-matrix — conteúdo HTMX chega em US1 (T012–T014) #}
+    <aside
+      id="matrix-drawer"
+      class="w-full shrink-0 rounded-xl border border-slate-200 bg-white p-4 shadow-sm xl:sticky xl:top-4 xl:w-80"
+      aria-live="polite"
+      aria-label="Detalhe da classificação"
+    >
+      {% include "components/empty_state.html" with title="Detalhe" message="Selecione uma pessoa na grade para inspecionar a classificação." %}
+    </aside>
   </div>
-  {% endif %}
 </section>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/ninebox_matrix.js' %}" defer></script>
 {% endblock %}
