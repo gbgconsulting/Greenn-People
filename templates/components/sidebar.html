@@ -2,18 +2,20 @@
   Menu lateral desktop + drawer mobile.
   Paths alinhados a contracts/routes-contract.md.
   Propriedades is_leader / is_manager / is_admin vêm do CustomUser (T016).
+  Experimento: chrome alinhado ao guia (marca, densidade) — IA People intacta.
 {% endcomment %}
 {% with path=request.path %}
 <aside
-  class="hidden w-64 shrink-0 border-r border-slate-200 bg-white md:flex md:flex-col"
+  class="hidden w-64 shrink-0 border-r border-line bg-surface-card md:flex md:flex-col"
   aria-label="Navegação principal"
 >
-  <div class="border-b border-slate-200 px-4 py-5">
-    <a href="{% url 'dashboard:personal' %}" class="bg-brand-gradient bg-clip-text text-lg font-semibold text-transparent">
+  <div class="flex items-center gap-3 border-b border-line px-4 py-5">
+    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-gradient text-sm font-bold text-white shadow-sm" aria-hidden="true">G</span>
+    <a href="{% url 'dashboard:personal' %}" class="shell-brand">
       Greenn People
     </a>
   </div>
-  <nav class="flex-1 space-y-6 overflow-y-auto p-3" aria-label="Menu">
+  <nav class="flex-1 space-y-5 overflow-y-auto p-3" aria-label="Menu">
     {% include "components/nav_menu.html" %}
   </nav>
 </aside>
@@ -27,14 +29,17 @@
 ></div>
 <aside
   id="mobile-nav"
-  class="fixed inset-y-0 left-0 z-50 flex w-[min(18rem,100vw)] -translate-x-full flex-col border-r border-slate-200 bg-white shadow-lg transition-transform duration-200 ease-out md:hidden"
+  class="fixed inset-y-0 left-0 z-50 flex w-[min(18rem,100vw)] -translate-x-full flex-col border-r border-line bg-surface-card shadow-lg transition-transform duration-200 ease-out md:hidden"
   aria-label="Navegação mobile"
   aria-hidden="true"
 >
-  <div class="flex items-center justify-between border-b border-slate-200 px-4 py-4">
-    <a href="{% url 'dashboard:personal' %}" class="bg-brand-gradient bg-clip-text text-lg font-semibold text-transparent">
-      Greenn People
-    </a>
+  <div class="flex items-center justify-between gap-3 border-b border-line px-4 py-4">
+    <div class="flex min-w-0 items-center gap-3">
+      <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-gradient text-sm font-bold text-white shadow-sm" aria-hidden="true">G</span>
+      <a href="{% url 'dashboard:personal' %}" class="shell-brand truncate">
+        Greenn People
+      </a>
+    </div>
     <button
       type="button"
       class="rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
@@ -46,7 +51,7 @@
       </svg>
     </button>
   </div>
-  <nav class="flex-1 space-y-6 overflow-y-auto p-3" aria-label="Menu mobile">
+  <nav class="flex-1 space-y-5 overflow-y-auto p-3" aria-label="Menu mobile">
     {% include "components/nav_menu.html" %}
   </nav>
 </aside>

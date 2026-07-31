@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Meu painel — Greenn People{% endblock %}
 
@@ -52,6 +53,18 @@
       {% include "components/card.html" with label="Nível esperado" value=competencias_resumo|length badge_status="ativo" badge_label="Competências do cargo" body="Competências do seu cargo com nível definido." %}
     {% endif %}
   </div>
+</section>
+
+<section class="mb-8 min-w-0" aria-labelledby="gaps-visualizacoes-heading">
+  <div class="mb-3">
+    <h2 id="gaps-visualizacoes-heading" class="text-lg font-medium text-slate-800">
+      Visualizações
+    </h2>
+    <p class="mt-0.5 text-sm text-slate-500">
+      Comparativo gráfico de nível esperado versus nota por competência.
+    </p>
+  </div>
+  {% include "dashboard/_chart_block.html" with chart=chart_gaps_competencia script_id="chart-gaps-competencia" %}
 </section>
 
 {% if not vinculo_pendente and competencias_resumo %}
@@ -175,4 +188,9 @@
     </dl>
   </div>
 </section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" defer></script>
+<script src="{% static 'js/dashboard_charts.js' %}" defer></script>
 {% endblock %}

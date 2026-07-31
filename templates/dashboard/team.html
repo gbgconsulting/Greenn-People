@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Painel do time — Greenn People{% endblock %}
 
@@ -19,6 +20,18 @@
   </div>
 </header>
 
+<section class="mb-8 min-w-0" aria-labelledby="team-visualizacoes-heading">
+  <div class="mb-3">
+    <h2 id="team-visualizacoes-heading" class="text-lg font-medium text-slate-800">
+      Visualizações
+    </h2>
+    <p class="mt-0.5 text-sm text-slate-500">
+      Distribuição de etapas no escopo completo do ciclo.
+    </p>
+  </div>
+  {% include "dashboard/_chart_block.html" with chart=chart_escopo_status script_id="chart-escopo-status" %}
+</section>
+
 <section aria-labelledby="team-status-heading">
   <div class="mb-3">
     <h2 id="team-status-heading" class="text-lg font-medium text-slate-800">
@@ -30,4 +43,9 @@
   </div>
   {% include "dashboard/team_list_partial.html" %}
 </section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" defer></script>
+<script src="{% static 'js/dashboard_charts.js' %}" defer></script>
 {% endblock %}
