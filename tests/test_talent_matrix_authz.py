@@ -1,4 +1,4 @@
-"""T011/T019/T024/T025/T029: AuthZ/IDOR da matriz interativa — escrita admin-only (SC-003).
+"""T011/T019/T024/T025/T029/T031: AuthZ/IDOR da matriz interativa — escrita admin-only (SC-003).
 
 Cobre serviços ``upsert_classification`` / ``toggle_classification_visibility``
 e endpoints POST ``matrix_potencial`` / ``matrix_move`` / ``toggle_visibility``.
@@ -11,6 +11,10 @@ POST direto de gerente continua 403 (FR-006/008).
 
 T029 (escopo): queryset matriz / GET drawer via ``get_visible_users``;
 gerente não vê fora do escopo; líder puro 403 na matriz (research R8).
+
+T031 (SC-007): gate colaborador / ``visivel_ao_colaborador`` default False;
+``/talent/mine/`` via ``get_visible_classification_for_collaborator`` sem vazamento;
+fórmulas ``derive_desempenho`` / ``calculate_quadrante`` intactas.
 """
 
 from __future__ import annotations
@@ -27,6 +31,9 @@ from django.utils import timezone
 from apps.accounts.models import CustomUser
 from apps.talent.models import ClassificacaoTalento
 from apps.talent.services.classification import (
+    calculate_quadrante,
+    derive_desempenho,
+    get_visible_classification_for_collaborator,
     toggle_classification_visibility,
     upsert_classification,
 )
@@ -666,3 +673,150 @@ def test_matrix_drawer_get_gerente_fora_do_escopo_404(
         HTTP_HX_REQUEST='true',
     )
     assert resp.status_code == 404
+
+
+# --- T031: gate colaborador + fórmulas intactas (SC-007 / FR-009) ---
+
+
+@pytest.mark.django_db
+def test_visivel_ao_colaborador_default_false_no_model_e_upsert(
+    classificacao,
+    colaborador,
+    ciclo_aberto,
+    admin,
+    avaliacao,
+):
+    """T031: default restritivo; upsert não libera visibilidade por padrão."""
+    field = ClassificacaoTalento._meta.get_field('visivel_ao_colaborador')
+    assert field.default is False
+    assert classificacao.visivel_ao_colaborador is False
+
+    # Remove classificação pré-existente e recria via upsert (caminho create)
+    ClassificacaoTalento.objects.filter(
+        usuario=colaborador,
+        ciclo=ciclo_aberto,
+    ).delete()
+    avaliacao.nota_final_lider = Decimal('0.50')
+    avaliacao.save(update_fields=['nota_final_lider', 'updated_at'])
+
+    created = upsert_classification(
+        usuario=colaborador,
+        ciclo=ciclo_aberto,
+        potencial=2,
+        admin=admin,
+    )
+    assert created.visivel_ao_colaborador is False
+
+
+@pytest.mark.django_db
+def test_get_visible_classification_respeita_flag(
+    classificacao,
+    colaborador,
+    ciclo_aberto,
+):
+    """T031: serviço de mine só retorna registro quando liberado."""
+    assert classificacao.visivel_ao_colaborador is False
+    assert (
+        get_visible_classification_for_collaborator(
+            colaborador,
+            ciclo=ciclo_aberto,
+        )
+        is None
+    )
+
+    classificacao.visivel_ao_colaborador = True
+    classificacao.save(update_fields=['visivel_ao_colaborador', 'updated_at'])
+    visible = get_visible_classification_for_collaborator(
+        colaborador,
+        ciclo=ciclo_aberto,
+    )
+    assert visible is not None
+    assert visible.pk == classificacao.pk
+
+
+@pytest.mark.django_db
+def test_talent_mine_oculto_nao_vaza_ninebox(
+    classificacao,
+    colaborador,
+    ciclo_aberto,
+):
+    """T031: ``/talent/mine/`` sem vazamento de desempenho/potencial/quadrante."""
+    assert classificacao.visivel_ao_colaborador is False
+
+    client = Client()
+    client.force_login(colaborador)
+    resp = client.get(
+        reverse('talent:mine'),
+        data={'ciclo': ciclo_aberto.pk},
+    )
+    assert resp.status_code == 200
+    assert resp.context['classificacao'] is None
+    assert resp.context['classificacao_oculta'] is True
+
+    body = resp.content.decode().lower()
+    assert 'não liberada' in body or 'nao liberada' in body or 'ainda não liberou' in body
+    # Sem cards de resultado (template só os renderiza se ``classificacao``)
+    assert 'resultado da classificação' not in body
+    assert 'matriz 9-box' not in body
+    assert 'nível 2 de 3' not in body
+    assert 'nivel 2 de 3' not in body
+
+
+@pytest.mark.django_db
+def test_talent_mine_liberado_mostra_classificacao(
+    classificacao,
+    colaborador,
+    ciclo_aberto,
+):
+    """T031: após liberação, mine mostra 9-box do próprio colaborador."""
+    classificacao.visivel_ao_colaborador = True
+    classificacao.save(update_fields=['visivel_ao_colaborador', 'updated_at'])
+
+    client = Client()
+    client.force_login(colaborador)
+    resp = client.get(
+        reverse('talent:mine'),
+        data={'ciclo': ciclo_aberto.pk},
+    )
+    assert resp.status_code == 200
+    assert resp.context['classificacao'] is not None
+    body = resp.content.decode().lower()
+    assert 'nível 2 de 3' in body or 'nivel 2 de 3' in body
+    assert 'matriz 9-box' in body
+
+
+@pytest.mark.django_db
+def test_colaborador_sem_acesso_util_a_matriz(colaborador):
+    """T031: colaborador puro não usa a matriz (RequiresManagerOrAdmin)."""
+    client = Client()
+    client.force_login(colaborador)
+    resp = client.get(reverse('talent:matrix'))
+    assert resp.status_code == 403
+
+
+def test_derive_desempenho_limites_contrato():
+    """T031: limiares 0.33 / 0.66 intactos (calculation-contract / SC-007)."""
+    assert derive_desempenho(Decimal('0.00')) == 1
+    assert derive_desempenho(Decimal('0.32')) == 1
+    assert derive_desempenho(Decimal('0.33')) == 2
+    assert derive_desempenho(Decimal('0.50')) == 2
+    assert derive_desempenho(Decimal('0.66')) == 2
+    assert derive_desempenho(Decimal('0.67')) == 3
+    assert derive_desempenho(Decimal('1.00')) == 3
+
+
+def test_calculate_quadrante_tabela_9_box():
+    """T031: rótulos desempenho_potencial intactos (calculation-contract)."""
+    esperado = {
+        (1, 1): 'baixo_baixo',
+        (1, 2): 'baixo_medio',
+        (1, 3): 'baixo_alto',
+        (2, 1): 'medio_baixo',
+        (2, 2): 'medio_medio',
+        (2, 3): 'medio_alto',
+        (3, 1): 'alto_baixo',
+        (3, 2): 'alto_medio',
+        (3, 3): 'alto_alto',
+    }
+    for (desempenho, potencial), label in esperado.items():
+        assert calculate_quadrante(desempenho, potencial) == label

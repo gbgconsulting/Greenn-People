@@ -115,10 +115,10 @@ Monólito Django: `apps/talent/`, `templates/talent/`, `static/js/`, `docs/`, `t
 
 **Purpose**: Documentação Freeze mínima, regressões e validação quickstart
 
-- [ ] T030 [P] Documentar padrão mínimo de drawer lateral (se canônico) e superfície `talent/matrix.html` + `ninebox_matrix.js` em `docs/design-system.md` — sem redesenhar marca/shell (FR-012 / research R10)
-- [ ] T031 Confirmar gate colaborador intacto: default `visivel_ao_colaborador=False`; `/talent/mine/` via `get_visible_classification_for_collaborator` sem vazamento; fórmulas `derive_desempenho` / `calculate_quadrante` em `apps/talent/services/classification.py` **inalteradas** (SC-007)
-- [ ] T032 [P] Rodar regressão `scripts/validate_t070.py` (líder puro 403 na matriz) e `pytest tests/test_talent_matrix_authz.py` (+ correlatos de escopo se existirem) — SC-003
-- [ ] T033 Executar validação guiada [quickstart.md](./quickstart.md) slices 1–3 + checklist SC-001–007
+- [X] T030 [P] Documentar padrão mínimo de drawer lateral (se canônico) e superfície `talent/matrix.html` + `ninebox_matrix.js` em `docs/design-system.md` — sem redesenhar marca/shell (FR-012 / research R10)
+- [X] T031 Confirmar gate colaborador intacto: default `visivel_ao_colaborador=False`; `/talent/mine/` via `get_visible_classification_for_collaborator` sem vazamento; fórmulas `derive_desempenho` / `calculate_quadrante` em `apps/talent/services/classification.py` **inalteradas** (SC-007)
+- [X] T032 [P] Rodar regressão `scripts/validate_t070.py` (líder puro 403 na matriz) e `pytest tests/test_talent_matrix_authz.py` (+ correlatos de escopo se existirem) — SC-003
+- [X] T033 Executar validação guiada [quickstart.md](./quickstart.md) slices 1–3 + checklist SC-001–007
 
 ---
 

@@ -83,6 +83,26 @@ python manage.py runserver
 | **SC-006** | Teclado + rótulos além da cor | Slice 3 |
 | **SC-007** | Fórmulas + gate visibilidade | Regressão 4–5 |
 
+### Validação T033 (2026-08-05)
+
+| Camada | Resultado |
+|---|---|
+| `pytest tests/test_talent_matrix_authz.py` (Docker) | **29 passed** |
+| `scripts/validate_t070.py` (Docker, `PYTHONPATH=/app`) | **47 PASS / 0 FAIL** (incl. C5.3b líder puro 403) |
+| Inspeção de código vs slices | Endpoints/partials/JS presentes; formulários/fórmulas intactos |
+
+| SC | Status T033 | Evidência / gap |
+|---|---|---|
+| SC-001 | **PASS** (HTTP + contratos) | Drawer write admin, potencial HTMX, toggle HTMX, inválido sem mutação, gerente read-only; tempo ≤1 min / “sem reload” = residual browser |
+| SC-002 | **PASS** (HTTP + snap) | Move potencial-only + snap coerente nos testes; ≥3 moves live + fail-rede visual = residual browser |
+| SC-003 | **PASS** | AuthZ/IDOR/escopo/líder 403 cobertos por pytest + T070 |
+| SC-004 | **PASS** (parcial auto) | Potencial inválido + POST erro preservam estado no backend; revert DnD em rede/5xx = JS (residual smoke) |
+| SC-005 | **PASS** (código) | Gates `pointer: coarse` / viewport estreito em `ninebox_matrix.js`; smoke touch residual |
+| SC-006 | **PASS** (código + partial) | Escape/focus trap no JS; rótulos em `_cell.html`; smoke teclado residual |
+| SC-007 | **PASS** | Default oculto, `mine` gate, `derive_desempenho`/`calculate_quadrante` nos testes |
+
+**Residual browser (opcional smoke):** Slice 1 passos 1–3 toast/no-reload; Slice 2.3–2.5 drag fail/mobile; Slice 3.3–3.4 empty vs loading + teclado.
+
 ---
 
 ## OUT (não validar como entrega)
