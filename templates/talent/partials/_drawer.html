@@ -1,0 +1,196 @@
+{% comment %}
+  Drawer in-matrix da classificação 9-box (US1 write / US3 read-only).
+
+  Parâmetros:
+  - classificacao: ClassificacaoTalento (usuario, ciclo, desempenho, potencial,
+    quadrante, visivel_ao_colaborador) — select_related usuario__area/cargo
+  - drawer_writable: bool — True = admin (select + Salvar/Toggle); False = read-only
+  - desempenho_label: opcional (Baixo|Médio|Alto); fallback por desempenho 1–3
+  - potencial_label: opcional (Baixo|Médio|Alto); fallback por potencial 1–3
+  - potencial_error: opcional — mensagem PT-BR de validação no select
+  - area / cargo: query string opcional para coerência de refresh (T015+)
+
+  Controles HTMX (write): POST potencial → #matrix-drawer; toggle → #matrix-drawer.
+  Loading: #htmx-indicator + #matrix-drawer-indicator (fora do swap); erros PT-BR
+  via potencial_error / HX-Trigger; falha 4xx/5xx não apaga o drawer (ninebox_matrix.js).
+  Link secundário classify: somente no modo write (FR-013; ClassifyTalentView = admin).
+  A11y (T027): role=dialog aria-modal; Fechar + Escape; foco/trap via ninebox_matrix.js.
+{% endcomment %}
+{% with usuario=classificacao.usuario ciclo=classificacao.ciclo %}
+<section
+  class="space-y-4"
+  role="dialog"
+  aria-modal="true"
+  tabindex="-1"
+  data-user-pk="{{ usuario.pk }}"
+  data-ciclo-id="{{ ciclo.pk }}"
+  data-drawer-writable="{% if drawer_writable %}true{% else %}false{% endif %}"
+  data-drawer-mode="{% if drawer_writable %}write{% else %}read{% endif %}"
+  aria-labelledby="matrix-drawer-heading"
+  {% if not drawer_writable %}aria-readonly="true"{% endif %}
+>
+  <header class="flex items-start justify-between gap-3">
+    <div class="min-w-0 flex-1">
+      <h3
+        id="matrix-drawer-heading"
+        class="text-base font-semibold text-slate-800"
+        tabindex="-1"
+      >
+        {{ usuario.nome|default:usuario.email }}
+      </h3>
+      {% if usuario.nome %}
+      <p class="mt-0.5 text-sm text-slate-500">{{ usuario.email }}</p>
+      {% endif %}
+      <p class="mt-2 text-sm text-slate-600">
+        <span class="font-medium text-slate-700">Área:</span>
+        {{ usuario.area.nome|default:"—" }}
+        ·
+        <span class="font-medium text-slate-700">Cargo:</span>
+        {{ usuario.cargo.nome|default:"—" }}
+      </p>
+      <p class="mt-1 text-xs text-slate-500">
+        Ciclo <span class="font-medium text-slate-600">{{ ciclo.nome }}</span>
+      </p>
+      {% if not drawer_writable %}
+      <p class="mt-2 text-xs text-slate-500" data-drawer-readonly-hint>
+        Somente leitura — potencial e visibilidade só podem ser alterados por admin.
+      </p>
+      {% endif %}
+    </div>
+    <button
+      type="button"
+      class="shrink-0 rounded-md px-2 py-1 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+      data-drawer-close
+    >
+      Fechar
+    </button>
+  </header>
+
+  <dl class="grid grid-cols-1 gap-3 text-sm">
+    <div>
+      <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Desempenho</dt>
+      <dd class="mt-0.5 font-medium text-slate-800">
+        {% if desempenho_label %}
+          {{ desempenho_label }}
+        {% elif classificacao.desempenho == 3 %}
+          Alto
+        {% elif classificacao.desempenho == 2 %}
+          Médio
+        {% else %}
+          Baixo
+        {% endif %}
+        <span class="font-normal text-slate-500">(nível {{ classificacao.desempenho }})</span>
+      </dd>
+    </div>
+    {% if not drawer_writable %}
+    <div>
+      <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Potencial</dt>
+      <dd class="mt-0.5 font-medium text-slate-800" data-drawer-potencial-readonly>
+        {% if potencial_label %}
+          {{ potencial_label }}
+        {% elif classificacao.potencial == 3 %}
+          Alto
+        {% elif classificacao.potencial == 2 %}
+          Médio
+        {% else %}
+          Baixo
+        {% endif %}
+        <span class="font-normal text-slate-500">(nível {{ classificacao.potencial }})</span>
+      </dd>
+    </div>
+    {% endif %}
+    <div>
+      <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Quadrante</dt>
+      <dd class="mt-0.5 font-medium text-slate-800">{{ classificacao.get_quadrante_display }}</dd>
+    </div>
+    <div>
+      <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Visibilidade</dt>
+      <dd class="mt-1" id="drawer-visibility-badge">
+        {% if classificacao.visivel_ao_colaborador %}
+          {% include "components/badge_status.html" with status="ativo" label="Visível" %}
+        {% else %}
+          {% include "components/badge_status.html" with status="arquivado" label="Oculto" %}
+        {% endif %}
+      </dd>
+    </div>
+  </dl>
+
+  {% if drawer_writable %}
+  <form
+    method="post"
+    action="{% url 'talent:matrix_potencial' usuario.pk %}"
+    hx-post="{% url 'talent:matrix_potencial' usuario.pk %}"
+    hx-target="#matrix-drawer"
+    hx-swap="innerHTML"
+    hx-indicator="#htmx-indicator, #matrix-drawer-indicator"
+    hx-disabled-elt="find button[type='submit']"
+    novalidate
+    class="space-y-4 border-t border-slate-100 pt-4"
+    data-drawer-potencial-form
+  >
+    {% csrf_token %}
+    <input type="hidden" name="ciclo_id" value="{{ ciclo.pk }}" />
+    {% if area %}<input type="hidden" name="area" value="{{ area }}" />{% endif %}
+    {% if cargo %}<input type="hidden" name="cargo" value="{{ cargo }}" />{% endif %}
+
+    <div>
+      <label for="drawer-potencial" class="mb-1.5 block text-sm font-medium text-slate-700">
+        Potencial
+      </label>
+      <select
+        id="drawer-potencial"
+        name="potencial"
+        class="form-control"
+        required
+        aria-invalid="{% if potencial_error %}true{% else %}false{% endif %}"
+        {% if potencial_error %}aria-describedby="drawer-potencial-error"{% endif %}
+      >
+        <option value="1" {% if classificacao.potencial == 1 %}selected{% endif %}>1 — Baixo</option>
+        <option value="2" {% if classificacao.potencial == 2 %}selected{% endif %}>2 — Médio</option>
+        <option value="3" {% if classificacao.potencial == 3 %}selected{% endif %}>3 — Alto</option>
+      </select>
+      {% if potencial_error %}
+      <p id="drawer-potencial-error" class="mt-1.5 text-xs text-rose-600" role="alert">{{ potencial_error }}</p>
+      {% else %}
+      <p class="mt-1.5 text-xs text-slate-500">Somente o potencial é editável; o desempenho permanece derivado da nota do líder.</p>
+      {% endif %}
+    </div>
+
+    <div class="flex flex-wrap gap-2">
+      {% include "components/button.html" with label="Salvar" type="submit" variant="primary" extra_class="flex-1 sm:flex-none" %}
+    </div>
+  </form>
+
+  <form
+    method="post"
+    action="{% url 'talent:toggle_visibility' classificacao.pk %}"
+    hx-post="{% url 'talent:toggle_visibility' classificacao.pk %}"
+    hx-target="#matrix-drawer"
+    hx-swap="innerHTML"
+    hx-indicator="#htmx-indicator, #matrix-drawer-indicator"
+    hx-disabled-elt="find button[type='submit']"
+    class="border-t border-slate-100 pt-4"
+    data-drawer-visibility-form
+  >
+    {% csrf_token %}
+    {% if area %}<input type="hidden" name="area" value="{{ area }}" />{% endif %}
+    {% if cargo %}<input type="hidden" name="cargo" value="{{ cargo }}" />{% endif %}
+    {% if classificacao.visivel_ao_colaborador %}
+      {% include "components/button.html" with label="Ocultar" type="submit" variant="secondary" extra_class="w-full sm:w-auto" %}
+    {% else %}
+      {% include "components/button.html" with label="Liberar" type="submit" variant="outlined" extra_class="w-full sm:w-auto" %}
+    {% endif %}
+  </form>
+
+  <p class="border-t border-slate-100 pt-4 text-sm">
+    <a
+      href="{% url 'talent:classify' usuario.pk %}"
+      class="font-medium text-emerald-700 underline-offset-2 hover:underline"
+      data-drawer-classify-fallback
+    >
+      Abrir classificação clássica
+    </a>
+  </p>
+  {% endif %}
+</section>
+{% endwith %}

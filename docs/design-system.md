@@ -72,6 +72,53 @@ Feature `005-dashboard-charts`: visualizações **consomem** Status Triad e comp
 
 **Fora do slice**: `dashboard:structure` (`StructureDashboardView` / `templates/dashboard/structure.html`) **não** carrega Chart.js nesta feature — métricas de aderência/lacunas de área-cargo ≠ distribuição de etapas do time.
 
+### Matriz 9-box interativa (consumo · FR-012 / research R10)
+
+Feature `006-ninebox-interativa`: a matriz **consome** tokens e componentes deste Freeze (`button`, `badge_status`, `empty_state`, `input` / `.form-control`, `htmx_indicator`). **Não** reabre marca, shell, nav, topbar nem inventa ilha de estilo.
+
+| Campo | Valor |
+|---|---|
+| Template | `templates/talent/matrix.html` |
+| Rota | `talent:matrix` |
+| Grade | Partials `_cell.html` / `_person_card.html` (ids `#cell-{desempenho}-{potencial}`) |
+| Drawer (conteúdo) | `templates/talent/partials/_drawer.html` via HTMX → `#matrix-drawer` |
+| Init local | `static/js/ninebox_matrix.js` — HTML5 DnD + a11y do drawer (espelha `modal.js`) |
+| Lib DnD / SPA | Nenhuma (HTML5 nativo; sem SortableJS / Chart.js / DRF) |
+
+**Superfície que carrega o script** (`{% block extra_js %}` da página — **nunca** em `templates/base.html`):
+
+| Template | Rota | Script |
+|---|---|---|
+| `templates/talent/matrix.html` | `talent:matrix` | `static/js/ninebox_matrix.js` |
+
+**Convenção DOM** (coordenada com o JS):
+
+| Id / data | Papel |
+|---|---|
+| `#matrix-results` | Região com `aria-busy`; loading ≠ empty definitivo |
+| `#ninebox-matrix` | Grade; `data-ciclo-id` / `data-admin` / `data-move-url-template` |
+| `#ninebox-matrix-empty` | Empty Freeze quando zero classificados no filtro/escopo |
+| `#matrix-drawer` | Target HTMX (`innerHTML`) do painel lateral |
+| `#matrix-drawer-indicator` / `#matrix-loading-indicator` | Indicadores **fora** do swap target |
+| `[data-user-pk]` | Cards; células `#cell-{D}-{P}` |
+
+#### Padrão mínimo — drawer lateral in-matrix
+
+Nesta entrega o drawer **não** é componente Freeze compartilhado (`templates/components/drawer.html`). É shell de domínio em `talent` (research R10). Se/quando promover a canônico, preservar este mínimo:
+
+| Aspecto | Padrão |
+|---|---|
+| Layout | Painel lateral sticky (`xl:w-80`) ao lado da grade — **não** reusar `#modal-container` / `modal.html` (shell centrado) |
+| Abertura / escrita | HTMX: `hx-get` / `hx-post` → `#matrix-drawer`; partials HTML; toasts via `HX-Trigger` → `showMessage` |
+| Componentes | `button`, `badge_status`, `empty_state` (placeholder idle), `input` / `.form-control`, `htmx_indicator` |
+| Modos | Write (`drawer_writable`) só admin; read-only para gerente — sem inventar controles paralelos |
+| A11y | `role="dialog"` + `aria-modal`; foco ao abrir; focus trap Tab; Escape fecha; restore no card trigger (paridade com modal) |
+| Loading / empty | `aria-busy` + indicador local ≠ empty definitivo de filtro; idle do drawer = “Selecione uma pessoa…” |
+| Mobile / drag | Em `pointer: coarse` / viewport estreito: sem DnD; calibração completa via drawer (FR-010) |
+| Fallback | Link secundário → `talent:classify` (FR-013); página clássica intacta |
+
+**Fora**: redesenhar sidebar/topbar/marca; Impeccable; promover `drawer.html` canônico sem decisão de produto; JSON/SPA para o painel.
+
 ## Paleta de cores
 
 | Uso | Tailwind | Hex aproximado |
@@ -255,6 +302,7 @@ Definido em `static/src/input.css` (`@layer base`) e contrato `a11y-shell.md`.
 | Inputs / select / textarea | `:focus-visible` → `ring-2 ring-emerald-500` + `border-transparent` |
 | Skip link | “Ir para o conteúdo” → `#main-content` no início do `body` (`base.html`); visível no foco |
 | Modal | Focus trap Tab/Shift+Tab em `static/js/modal.js`; Escape + restore no trigger |
+| Drawer in-matrix (9-box) | Mesmo contrato de foco/trap/Escape em `static/js/ninebox_matrix.js` sobre `#matrix-drawer` — ver seção **Matriz 9-box interativa** |
 | HTMX | `#htmx-indicator` com `role="status"` e “Carregando…” anunciável em `.htmx-request` — não `aria-hidden="true"` permanente |
 
 Preferir `:focus-visible` (não `:focus` agressivo) para não marcar clique de mouse.

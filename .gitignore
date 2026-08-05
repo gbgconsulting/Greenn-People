@@ -51,3 +51,8 @@ tailwindcss.exe
 *.log
 core_settings.py
 staticfiles/
+
+# BeeBase (AppImage local + runtime extraído p/ Ubuntu 22.04)
+BeeBase_*.AppImage
+BeeBase.sh
+.beebase-runtime/

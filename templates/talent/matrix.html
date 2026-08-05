@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Matriz de talentos — Greenn People{% endblock %}
 
@@ -31,14 +32,21 @@
       Ajuste ciclo, área e cargo — a matriz atualiza ao trocar cada filtro.
     </p>
   </div>
-  <form method="get" class="grid grid-cols-1 gap-3 sm:flex sm:flex-wrap sm:items-end" role="search" aria-label="Filtrar matriz de talentos">
+  <form
+    id="matrix-filters"
+    method="get"
+    class="grid grid-cols-1 gap-3 sm:flex sm:flex-wrap sm:items-end"
+    role="search"
+    aria-label="Filtrar matriz de talentos"
+    data-matrix-filters
+  >
     <div class="min-w-0 sm:min-w-[10rem]">
       <label for="ciclo" class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Ciclo</label>
       <select
         id="ciclo"
         name="ciclo"
         class="form-control"
-        onchange="this.form.submit()"
+        onchange="this.form.requestSubmit()"
       >
         <option value="">Ciclo aberto{% if ciclo_aberto %} ({{ ciclo_aberto.nome }}){% else %} (nenhum){% endif %}</option>
         {% for c in ciclos %}
@@ -54,7 +62,7 @@
         id="area"
         name="area"
         class="form-control"
-        onchange="this.form.submit()"
+        onchange="this.form.requestSubmit()"
       >
         <option value="">Todas</option>
         {% for a in areas %}
@@ -68,7 +76,7 @@
         id="cargo"
         name="cargo"
         class="form-control"
-        onchange="this.form.submit()"
+        onchange="this.form.requestSubmit()"
       >
         <option value="">Todos</option>
         {% for c in cargos %}
@@ -91,77 +99,91 @@
       Grade 9-box
     </h2>
     <p class="mt-0.5 text-sm text-slate-500">
-      Desempenho nas linhas (alto no topo); potencial nas colunas (crescente à direita). Grade estática — sem arrastar ou drawer.
+      Desempenho nas linhas (alto no topo); potencial nas colunas (crescente à direita).
     </p>
   </div>
 
-  <div class="table-frame p-3 sm:p-4">
-    <div class="inline-grid min-w-full gap-0" style="grid-template-columns: 5.5rem repeat(3, minmax(10rem, 1fr));">
-      {# Cabeçalho: eixo potencial #}
-      <div class="p-2" aria-hidden="true"></div>
-      {% for label in potencial_labels %}
-      <div class="border-b border-slate-200 px-2 py-2 text-center text-xs font-medium uppercase tracking-wide text-slate-500">
-        Potencial {{ label }}
+  <div class="flex flex-col gap-4 xl:flex-row xl:items-start">
+    {# Região de resultados: loading (aria-busy) ≠ empty definitivo (FR-005 / T026) #}
+    <div
+      id="matrix-results"
+      class="relative min-w-0 flex-1"
+      aria-busy="false"
+      data-matrix-results
+    >
+      <div class="pointer-events-none absolute right-3 top-3 z-10">
+        {% include "components/htmx_indicator.html" with indicator_id="matrix-loading-indicator" variant="inline" label="Atualizando matriz…" %}
       </div>
-      {% endfor %}
 
-      {% for row in matriz_rows %}
-      <div class="flex items-center justify-end border-r border-slate-200 pr-3 text-xs font-medium uppercase tracking-wide text-slate-500">
-        <span class="max-w-[4.5rem] text-right leading-tight">Desemp. {{ row.desempenho_label }}</span>
-      </div>
-      {% for cell in row.cells %}
+      {% if total_classificados == 0 %}
+      {# Empty definitivo: Freeze empty_state — sem grade vazia enganosa #}
       <div
-        class="min-h-[8rem] border border-slate-100 p-3 {% if cell.desempenho == 3 and cell.potencial == 3 %}bg-emerald-50/70{% elif cell.desempenho == 1 and cell.potencial == 1 %}bg-rose-50/50{% else %}bg-white{% endif %}"
-        aria-label="{{ cell.label }}"
+        id="ninebox-matrix-empty"
+        class="table-frame px-4 py-10"
+        data-matrix-state="empty"
+        role="status"
       >
-        <p class="mb-2 text-[10px] font-medium uppercase tracking-wide text-slate-400">{{ cell.label }}</p>
-        <ul class="space-y-2">
-          {% for item in cell.itens %}
-          <li class="rounded-lg border border-slate-100 bg-slate-50/80 px-2.5 py-2 text-sm">
-            <p class="font-medium text-slate-800">{{ item.usuario.nome|default:item.usuario.email }}</p>
-            <p class="mt-0.5 text-xs text-slate-500">
-              {{ item.usuario.area.nome|default:"—" }}
-              · {{ item.usuario.cargo.nome|default:"—" }}
-            </p>
-            {% if is_admin_viewer %}
-            <div class="mt-2 flex flex-wrap items-center gap-2 text-xs">
-              {% if item.visivel_ao_colaborador %}
-                {% include "components/badge_status.html" with status="ativo" label="Visível" %}
-              {% else %}
-                {% include "components/badge_status.html" with status="arquivado" label="Oculto" %}
-              {% endif %}
-              <a
-                href="{% url 'talent:classify' item.usuario_id %}"
-                class="font-medium text-emerald-700 hover:text-emerald-800"
-              >Editar</a>
-              <form method="post" action="{% url 'talent:toggle_visibility' item.pk %}" class="inline">
-                {% csrf_token %}
-                <button
-                  type="submit"
-                  class="font-medium text-slate-600 hover:text-slate-800"
-                  title="{% if item.visivel_ao_colaborador %}Ocultar do colaborador{% else %}Liberar ao colaborador{% endif %}"
-                >
-                  {% if item.visivel_ao_colaborador %}Ocultar{% else %}Liberar{% endif %}
-                </button>
-              </form>
-            </div>
-            {% endif %}
-          </li>
-          {% empty %}
-          <li class="text-xs text-slate-400">—</li>
-          {% endfor %}
-        </ul>
+        {% include "components/empty_state.html" with title="Nenhuma classificação no escopo" message="Não há classificações para os filtros selecionados. Ajuste ciclo, área ou cargo acima." %}
       </div>
-      {% endfor %}
-      {% endfor %}
-    </div>
-  </div>
+      {% else %}
+      <div
+        id="ninebox-matrix"
+        class="table-frame p-3 sm:p-4 transition-opacity"
+        data-matrix-state="ready"
+        data-ciclo-id="{{ ciclo_filtro.pk }}"
+        data-area-id="{{ filtro_area_id|default_if_none:'' }}"
+        data-cargo-id="{{ filtro_cargo_id|default_if_none:'' }}"
+        data-admin="{% if is_admin_viewer %}1{% else %}0{% endif %}"
+        data-move-url-template="{% url 'talent:matrix_move' 999999999 %}"
+      >
+        <div class="inline-grid min-w-full gap-0" style="grid-template-columns: 5.5rem repeat(3, minmax(10rem, 1fr));">
+          {# Cabeçalho: eixo potencial (rótulo textual além da cor — SC-006 / T028) #}
+          <div class="p-2" aria-hidden="true"></div>
+          {% for label in potencial_labels %}
+          <div class="border-b border-slate-200 px-2 py-2 text-center text-xs font-medium uppercase tracking-wide text-slate-500">
+            Potencial {{ label }}
+          </div>
+          {% endfor %}
 
-  {% if total_classificados == 0 %}
-  <div class="mt-4 rounded-xl border border-slate-200 bg-white px-4 py-8 shadow-sm">
-    {% include "components/empty_state.html" with title="Nenhuma classificação no escopo" message="Não há classificações para os filtros selecionados. Ajuste ciclo, área ou cargo acima." %}
+          {% for row in matriz_rows %}
+          <div class="flex items-center justify-end border-r border-slate-200 pr-3 text-xs font-medium uppercase tracking-wide text-slate-500">
+            <span class="max-w-[4.5rem] text-right leading-tight">Desempenho {{ row.desempenho_label }}</span>
+          </div>
+          {% for cell in row.cells %}
+            {% include "talent/partials/_cell.html" with cell=cell %}
+          {% endfor %}
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    {# Shell do drawer: indicador local fora do swap target (SC-004 / T017) #}
+    <aside
+      class="relative w-full shrink-0 rounded-xl border border-slate-200 bg-white p-4 shadow-sm xl:sticky xl:top-4 xl:w-80"
+      aria-label="Detalhe da classificação"
+    >
+      <div class="pointer-events-none absolute right-3 top-3 z-10">
+        {% include "components/htmx_indicator.html" with indicator_id="matrix-drawer-indicator" variant="inline" label="Atualizando…" %}
+      </div>
+      <div
+        id="matrix-drawer"
+        class="transition-opacity"
+        aria-live="polite"
+        aria-busy="false"
+        data-drawer-state="idle"
+      >
+        {# Placeholder idle — NÃO é empty definitivo de filtro/escopo #}
+        <div data-drawer-placeholder="idle">
+          {% include "components/empty_state.html" with title="Detalhe" message="Selecione uma pessoa na grade para inspecionar a classificação." %}
+        </div>
+      </div>
+    </aside>
   </div>
-  {% endif %}
 </section>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/ninebox_matrix.js' %}" defer></script>
 {% endblock %}

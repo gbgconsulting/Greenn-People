@@ -1,0 +1,42 @@
+{% comment %}
+  Célula da grade 9-box (desempenho × potencial).
+  Uso: {% include "talent/partials/_cell.html" with cell=cell %}
+
+  Parâmetros:
+  - cell: dict com desempenho, potencial, quadrante, label, itens
+    (via apps.talent.services.matrix_layout.build_matriz_rows)
+  - oob: opcional — se True, emite hx-swap-oob="outerHTML" (refresh pós-save)
+
+  id estável para refresh HTMX / DnD: #cell-{desempenho}-{potencial}
+  Rótulos textuais de eixos e quadrante além da cor (a11y FR-011 / SC-006).
+{% endcomment %}
+<div
+  id="cell-{{ cell.desempenho }}-{{ cell.potencial }}"
+  class="min-h-[8rem] border border-slate-100 p-3 {% if cell.desempenho == 3 and cell.potencial == 3 %}bg-emerald-50/70{% elif cell.desempenho == 1 and cell.potencial == 1 %}bg-rose-50/50{% else %}bg-white{% endif %}"
+  data-desempenho="{{ cell.desempenho }}"
+  data-potencial="{{ cell.potencial }}"
+  data-quadrante="{{ cell.quadrante }}"
+  role="group"
+  aria-label="Desempenho {% if cell.desempenho == 3 %}Alto{% elif cell.desempenho == 2 %}Médio{% else %}Baixo{% endif %}, potencial {% if cell.potencial == 3 %}Alto{% elif cell.potencial == 2 %}Médio{% else %}Baixo{% endif %} — {{ cell.label }}"
+  {% if oob %}hx-swap-oob="outerHTML"{% endif %}
+>
+  {# Rótulos além da cor (FR-011 / SC-006 / T028): quadrante + eixos por extenso #}
+  <header class="mb-2 space-y-0.5">
+    <p class="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+      Quadrante {{ cell.label }}
+    </p>
+    <p class="text-[10px] leading-tight text-slate-500">
+      Desempenho
+      {% if cell.desempenho == 3 %}Alto{% elif cell.desempenho == 2 %}Médio{% else %}Baixo{% endif %}
+      · Potencial
+      {% if cell.potencial == 3 %}Alto{% elif cell.potencial == 2 %}Médio{% else %}Baixo{% endif %}
+    </p>
+  </header>
+  <ul class="space-y-2" aria-label="Pessoas nesta célula">
+    {% for item in cell.itens %}
+      {% include "talent/partials/_person_card.html" with item=item %}
+    {% empty %}
+      <li class="text-xs text-slate-400">—</li>
+    {% endfor %}
+  </ul>
+</div>
