@@ -11,19 +11,39 @@
   - Server: draggable + data-dnd-capable só se is_admin_viewer (não-admin: zero handles).
   - Client (ninebox_matrix.js): em pointer:coarse / viewport ≤767px desliga DnD
     (draggable=false); drawer permanece caminho completo de calibração.
+  A11y handle (T028 / SC-006): nome acessível “Arrastar … para alterar potencial”
+    quando DnD ativo; hide via JS no mobile/coarse.
   Abertura do drawer (T014): hx-get → #matrix-drawer (innerHTML), query ciclo (+ area/cargo).
   Loading (T017): #htmx-indicator + #matrix-drawer-indicator (SC-004).
 {% endcomment %}
 <li
-  class="rounded-lg border border-slate-100 bg-slate-50/80 text-sm{% if is_admin_viewer %} cursor-grab active:cursor-grabbing{% endif %}"
+  class="relative rounded-lg border border-slate-100 bg-slate-50/80 text-sm{% if is_admin_viewer %} cursor-grab active:cursor-grabbing{% endif %}"
   data-user-pk="{{ item.usuario_id }}"
   data-potencial="{{ item.potencial }}"
   data-desempenho="{{ item.desempenho }}"
-  {% if is_admin_viewer %}draggable="true" data-dnd-capable="1"{% endif %}
+  {% if is_admin_viewer %}draggable="true" data-dnd-capable="1" aria-grabbed="false"{% endif %}
 >
+  {% if is_admin_viewer %}
+  {# Handle/nome acessível do arraste (contrato a11y); ausente em não-admin; JS esconde no mobile #}
+  <span
+    class="ninebox-dnd-handle pointer-events-none absolute right-1.5 top-1.5 flex items-center gap-0.5 text-slate-400"
+    data-dnd-handle
+    title="Arrastar para alterar potencial"
+  >
+    <span class="sr-only">Arrastar {{ item.usuario.nome|default:item.usuario.email }} para alterar potencial</span>
+    <svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false">
+      <circle cx="5" cy="4" r="1.25" />
+      <circle cx="11" cy="4" r="1.25" />
+      <circle cx="5" cy="8" r="1.25" />
+      <circle cx="11" cy="8" r="1.25" />
+      <circle cx="5" cy="12" r="1.25" />
+      <circle cx="11" cy="12" r="1.25" />
+    </svg>
+  </span>
+  {% endif %}
   <button
     type="button"
-    class="w-full rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-slate-100/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1"
+    class="w-full rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-slate-100/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1{% if is_admin_viewer %} pr-7{% endif %}"
     hx-get="{% url 'talent:matrix_drawer' item.usuario_id %}?ciclo={{ item.ciclo_id }}{% if filtro_area_id %}&area={{ filtro_area_id }}{% endif %}{% if filtro_cargo_id %}&cargo={{ filtro_cargo_id }}{% endif %}"
     hx-target="#matrix-drawer"
     hx-swap="innerHTML"

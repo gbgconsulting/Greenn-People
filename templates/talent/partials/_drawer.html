@@ -6,39 +6,64 @@
     quadrante, visivel_ao_colaborador) — select_related usuario__area/cargo
   - drawer_writable: bool — True = admin (select + Salvar/Toggle); False = read-only
   - desempenho_label: opcional (Baixo|Médio|Alto); fallback por desempenho 1–3
+  - potencial_label: opcional (Baixo|Médio|Alto); fallback por potencial 1–3
   - potencial_error: opcional — mensagem PT-BR de validação no select
   - area / cargo: query string opcional para coerência de refresh (T015+)
 
   Controles HTMX (write): POST potencial → #matrix-drawer; toggle → #matrix-drawer.
   Loading: #htmx-indicator + #matrix-drawer-indicator (fora do swap); erros PT-BR
   via potencial_error / HX-Trigger; falha 4xx/5xx não apaga o drawer (ninebox_matrix.js).
-  Link secundário: classify full-page (FR-013).
+  Link secundário classify: somente no modo write (FR-013; ClassifyTalentView = admin).
+  A11y (T027): role=dialog aria-modal; Fechar + Escape; foco/trap via ninebox_matrix.js.
 {% endcomment %}
 {% with usuario=classificacao.usuario ciclo=classificacao.ciclo %}
 <section
   class="space-y-4"
+  role="dialog"
+  aria-modal="true"
+  tabindex="-1"
   data-user-pk="{{ usuario.pk }}"
   data-ciclo-id="{{ ciclo.pk }}"
   data-drawer-writable="{% if drawer_writable %}true{% else %}false{% endif %}"
+  data-drawer-mode="{% if drawer_writable %}write{% else %}read{% endif %}"
   aria-labelledby="matrix-drawer-heading"
+  {% if not drawer_writable %}aria-readonly="true"{% endif %}
 >
-  <header>
-    <h3 id="matrix-drawer-heading" class="text-base font-semibold text-slate-800">
-      {{ usuario.nome|default:usuario.email }}
-    </h3>
-    {% if usuario.nome %}
-    <p class="mt-0.5 text-sm text-slate-500">{{ usuario.email }}</p>
-    {% endif %}
-    <p class="mt-2 text-sm text-slate-600">
-      <span class="font-medium text-slate-700">Área:</span>
-      {{ usuario.area.nome|default:"—" }}
-      ·
-      <span class="font-medium text-slate-700">Cargo:</span>
-      {{ usuario.cargo.nome|default:"—" }}
-    </p>
-    <p class="mt-1 text-xs text-slate-500">
-      Ciclo <span class="font-medium text-slate-600">{{ ciclo.nome }}</span>
-    </p>
+  <header class="flex items-start justify-between gap-3">
+    <div class="min-w-0 flex-1">
+      <h3
+        id="matrix-drawer-heading"
+        class="text-base font-semibold text-slate-800"
+        tabindex="-1"
+      >
+        {{ usuario.nome|default:usuario.email }}
+      </h3>
+      {% if usuario.nome %}
+      <p class="mt-0.5 text-sm text-slate-500">{{ usuario.email }}</p>
+      {% endif %}
+      <p class="mt-2 text-sm text-slate-600">
+        <span class="font-medium text-slate-700">Área:</span>
+        {{ usuario.area.nome|default:"—" }}
+        ·
+        <span class="font-medium text-slate-700">Cargo:</span>
+        {{ usuario.cargo.nome|default:"—" }}
+      </p>
+      <p class="mt-1 text-xs text-slate-500">
+        Ciclo <span class="font-medium text-slate-600">{{ ciclo.nome }}</span>
+      </p>
+      {% if not drawer_writable %}
+      <p class="mt-2 text-xs text-slate-500" data-drawer-readonly-hint>
+        Somente leitura — potencial e visibilidade só podem ser alterados por admin.
+      </p>
+      {% endif %}
+    </div>
+    <button
+      type="button"
+      class="shrink-0 rounded-md px-2 py-1 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+      data-drawer-close
+    >
+      Fechar
+    </button>
   </header>
 
   <dl class="grid grid-cols-1 gap-3 text-sm">
@@ -57,6 +82,23 @@
         <span class="font-normal text-slate-500">(nível {{ classificacao.desempenho }})</span>
       </dd>
     </div>
+    {% if not drawer_writable %}
+    <div>
+      <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Potencial</dt>
+      <dd class="mt-0.5 font-medium text-slate-800" data-drawer-potencial-readonly>
+        {% if potencial_label %}
+          {{ potencial_label }}
+        {% elif classificacao.potencial == 3 %}
+          Alto
+        {% elif classificacao.potencial == 2 %}
+          Médio
+        {% else %}
+          Baixo
+        {% endif %}
+        <span class="font-normal text-slate-500">(nível {{ classificacao.potencial }})</span>
+      </dd>
+    </div>
+    {% endif %}
     <div>
       <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Quadrante</dt>
       <dd class="mt-0.5 font-medium text-slate-800">{{ classificacao.get_quadrante_display }}</dd>
@@ -84,6 +126,7 @@
     hx-disabled-elt="find button[type='submit']"
     novalidate
     class="space-y-4 border-t border-slate-100 pt-4"
+    data-drawer-potencial-form
   >
     {% csrf_token %}
     <input type="hidden" name="ciclo_id" value="{{ ciclo.pk }}" />
@@ -127,6 +170,7 @@
     hx-indicator="#htmx-indicator, #matrix-drawer-indicator"
     hx-disabled-elt="find button[type='submit']"
     class="border-t border-slate-100 pt-4"
+    data-drawer-visibility-form
   >
     {% csrf_token %}
     {% if area %}<input type="hidden" name="area" value="{{ area }}" />{% endif %}
@@ -137,23 +181,16 @@
       {% include "components/button.html" with label="Liberar" type="submit" variant="outlined" extra_class="w-full sm:w-auto" %}
     {% endif %}
   </form>
-  {% else %}
-  <div class="border-t border-slate-100 pt-4 text-sm">
-    <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Potencial</p>
-    <p class="mt-0.5 font-medium text-slate-800">
-      {% if classificacao.potencial == 3 %}Alto{% elif classificacao.potencial == 2 %}Médio{% else %}Baixo{% endif %}
-      <span class="font-normal text-slate-500">(nível {{ classificacao.potencial }})</span>
-    </p>
-  </div>
-  {% endif %}
 
   <p class="border-t border-slate-100 pt-4 text-sm">
     <a
       href="{% url 'talent:classify' usuario.pk %}"
       class="font-medium text-emerald-700 underline-offset-2 hover:underline"
+      data-drawer-classify-fallback
     >
       Abrir classificação clássica
     </a>
   </p>
+  {% endif %}
 </section>
 {% endwith %}

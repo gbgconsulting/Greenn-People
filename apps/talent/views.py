@@ -185,30 +185,16 @@ class TalentMatrixView(LoginRequiredMixin, RequiresManagerOrAdminMixin, ListView
     paginate_by = None  # grade completa; filtros reduzem o conjunto
 
     def get_queryset(self) -> QuerySet[ClassificacaoTalento]:
-        qs = ClassificacaoTalento.objects.select_related(
-            'usuario',
-            'usuario__area',
-            'usuario__cargo',
-            'ciclo',
-        ).order_by('usuario__nome', 'usuario__email')
-
+        # Única fonte de escopo: usuario__in=get_visible_users (authz-scope / T029).
         ciclo = self._resolve_ciclo()
         if ciclo is None:
-            return qs.none()
-        qs = qs.filter(ciclo=ciclo)
-
-        visible = get_visible_users(self.request.user).filter(is_active=True)
-        qs = qs.filter(usuario__in=visible)
-
-        area_id = _parse_optional_int(self.request.GET.get('area'))
-        if area_id is not None:
-            qs = qs.filter(usuario__area_id=area_id)
-
-        cargo_id = _parse_optional_int(self.request.GET.get('cargo'))
-        if cargo_id is not None:
-            qs = qs.filter(usuario__cargo_id=cargo_id)
-
-        return qs
+            return ClassificacaoTalento.objects.none()
+        return _matrix_classificacoes_qs(
+            self.request.user,
+            ciclo,
+            area_id=_parse_optional_int(self.request.GET.get('area')),
+            cargo_id=_parse_optional_int(self.request.GET.get('cargo')),
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -269,13 +255,15 @@ class MatrixDrawerView(LoginRequiredMixin, RequiresManagerOrAdminMixin, View):
             ciclo=ciclo,
         )
 
+        drawer_writable = bool(getattr(request.user, 'is_admin', False))
         return render(
             request,
             self.template_name,
             {
                 'classificacao': classificacao,
-                'drawer_writable': bool(getattr(request.user, 'is_admin', False)),
+                'drawer_writable': drawer_writable,
                 'desempenho_label': NIVEL_LABEL[classificacao.desempenho],
+                'potencial_label': NIVEL_LABEL[classificacao.potencial],
                 'area': request.GET.get('area') or None,
                 'cargo': request.GET.get('cargo') or None,
             },

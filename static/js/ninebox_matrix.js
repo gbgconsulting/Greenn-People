@@ -6,12 +6,18 @@
  * T020: DnD dragstart/drop + POST move; Esc/fora → zero POST + restore visual.
  * T021: snap R4 — card em (desempenho_derivado, P′); toast se linha incompatível.
  * T022: erro 403/400/rede/5xx → restore posição + toast; nunca sucesso silencioso.
- * Gates mobile (T023); a11y drawer: T027.
+ * T026: empty definitivo (#ninebox-matrix-empty) ≠ loading (aria-busy + indicador).
+ * T027: a11y drawer — foco ao abrir, focus trap, Escape fecha, restore no trigger
+ *   (espelha static/js/modal.js).
+ * T028: rótulos além da cor nas células; handles DnD com nome acessível
+ *   (escondidos em coarse/narrow — FR-010).
  *
  * Convenção DOM:
+ *   #matrix-results — região com aria-busy; loading ≠ empty
  *   #ninebox-matrix — grade com data-ciclo-id / data-move-url-template / data-admin
+ *   #ninebox-matrix-empty — empty Freeze quando zero classificados
  *   #matrix-drawer — painel lateral HTMX (swap target)
- *   #matrix-drawer-indicator — indicador local (fora do swap)
+ *   #matrix-drawer-indicator / #matrix-loading-indicator — fora do swap
  *   [data-user-pk] nos cards; células #cell-{desempenho}-{potencial}
  */
 (function () {
@@ -19,6 +25,9 @@
 
   var DRAWER_ID = 'matrix-drawer';
   var MATRIX_ID = 'ninebox-matrix';
+  var MATRIX_RESULTS_ID = 'matrix-results';
+  var MATRIX_LOADING_ID = 'matrix-loading-indicator';
+  var FILTERS_ID = 'matrix-filters';
   /** Touch / coarse pointer — DnD inadequado (FR-010 / research R5). */
   var MQ_POINTER_COARSE = '(pointer: coarse)';
   /** Viewport estreito (abaixo do breakpoint md Tailwind). */
@@ -27,6 +36,20 @@
     'Não foi possível completar a ação. Verifique a conexão e tente novamente.';
   var MSG_PERMISSAO = 'Você não tem permissão para esta ação.';
   var MSG_SERVIDOR = 'Ocorreu um erro no servidor. Tente novamente.';
+  /** Controles focáveis no drawer (mesmo conjunto de modal.js). */
+  var FOCUSABLE_SELECTOR = [
+    'a[href]',
+    'button:not([disabled])',
+    'textarea:not([disabled])',
+    'input:not([disabled]):not([type="hidden"])',
+    'select:not([disabled])',
+    '[tabindex]:not([tabindex="-1"])',
+  ].join(', ');
+
+  /** HTML do placeholder idle — capturado no init para restore no Escape/Fechar. */
+  var drawerIdleHtml = null;
+  /** Trigger (card/button) que abriu o drawer — restore de foco ao fechar. */
+  var drawerLastTrigger = null;
 
   function getDrawer() {
     return document.getElementById(DRAWER_ID);
@@ -34,6 +57,49 @@
 
   function getMatrixRoot() {
     return document.getElementById(MATRIX_ID);
+  }
+
+  function getMatrixResults() {
+    return document.getElementById(MATRIX_RESULTS_ID);
+  }
+
+  /**
+   * Loading honesto da região da grade (T026 / FR-005):
+   * preserva conteúdo atual (grade ou empty anterior); NÃO troca por empty definitivo.
+   */
+  function setMatrixResultsBusy(busy) {
+    var region = getMatrixResults();
+    if (!region) {
+      return;
+    }
+    region.setAttribute('aria-busy', busy ? 'true' : 'false');
+    region.classList.toggle('htmx-request', !!busy);
+    var matrix = getMatrixRoot();
+    if (matrix) {
+      matrix.classList.toggle('opacity-60', !!busy);
+    }
+    var empty = region.querySelector('[data-matrix-state="empty"]');
+    if (empty) {
+      // Empty definitivo só anuncia quando não estamos em loading.
+      empty.setAttribute('aria-hidden', busy ? 'true' : 'false');
+    }
+    var ind = document.getElementById(MATRIX_LOADING_ID);
+    if (ind) {
+      ind.setAttribute('aria-hidden', busy ? 'false' : 'true');
+    }
+  }
+
+  function resolveDrawerState(drawer) {
+    if (!drawer) {
+      return 'idle';
+    }
+    if (drawer.getAttribute('aria-busy') === 'true') {
+      return 'loading';
+    }
+    if (drawer.querySelector('[data-drawer-placeholder="idle"]')) {
+      return 'idle';
+    }
+    return 'open';
   }
 
   function isMatrixSwapTarget(el) {
@@ -69,6 +135,11 @@
     drawer.setAttribute('aria-busy', busy ? 'true' : 'false');
     drawer.classList.toggle('opacity-60', !!busy);
     drawer.classList.toggle('pointer-events-none', !!busy);
+    // loading ≠ empty definitivo (placeholder idle permanece no DOM até o swap)
+    drawer.setAttribute(
+      'data-drawer-state',
+      busy ? 'loading' : resolveDrawerState(drawer),
+    );
   }
 
   function showToast(message, level) {
@@ -131,6 +202,8 @@
   /**
    * Aplica gates client-side: só cards com data-dnd-capable (admin no template)
    * ficam draggable, e só quando o ambiente permite DnD.
+   * T028: handles [data-dnd-handle] + aria-grabbed só quando DnD ativo;
+   * ausentes/ocultos no mobile (contrato a11y-matrix-drawer).
    */
   function applyDragGates(root) {
     root = root || getMatrixRoot();
@@ -143,13 +216,26 @@
 
     root.querySelectorAll('[data-user-pk]').forEach(function (card) {
       var capable = card.getAttribute('data-dnd-capable') === '1';
+      var handle = card.querySelector('[data-dnd-handle]');
       if (!capable || disabled) {
         card.setAttribute('draggable', 'false');
         card.classList.remove('cursor-grab', 'active:cursor-grabbing');
+        card.removeAttribute('aria-grabbed');
+        if (handle) {
+          handle.setAttribute('aria-hidden', 'true');
+          handle.setAttribute('hidden', '');
+        }
         return;
       }
       card.setAttribute('draggable', 'true');
       card.classList.add('cursor-grab', 'active:cursor-grabbing');
+      if (!card.hasAttribute('aria-grabbed')) {
+        card.setAttribute('aria-grabbed', 'false');
+      }
+      if (handle) {
+        handle.removeAttribute('aria-hidden');
+        handle.removeAttribute('hidden');
+      }
     });
   }
 
@@ -239,7 +325,15 @@
         return;
       }
       card.classList.remove('opacity-40');
-      card.removeAttribute('aria-grabbed');
+      // Idle grabbable → false; applyDragGates remove o attr se DnD desligado.
+      if (
+        card.getAttribute('data-dnd-capable') === '1' &&
+        card.getAttribute('draggable') === 'true'
+      ) {
+        card.setAttribute('aria-grabbed', 'false');
+      } else {
+        card.removeAttribute('aria-grabbed');
+      }
       card.removeAttribute('aria-busy');
     }
 
@@ -564,13 +658,13 @@
   }
 
   /**
-   * Feedback honesto HTMX no drawer/grade (SC-004 / FR-005):
-   * - aria-busy + indicadores durante request
+   * Feedback honesto HTMX no drawer/grade (SC-004 / FR-005 / T026):
+   * - aria-busy + indicadores durante request (≠ empty definitivo)
    * - não swapear HTML de erro 4xx/5xx no drawer (estado anterior permanece)
    * - toast PT-BR se a resposta não trouxe HX-Trigger showMessage
    */
   function initHonestFeedback() {
-    if (!getDrawer()) {
+    if (!getDrawer() && !getMatrixResults()) {
       return;
     }
 
@@ -586,6 +680,26 @@
         return;
       }
       setDrawerBusy(false);
+    });
+
+    document.body.addEventListener('htmx:afterSwap', function (evt) {
+      var detail = evt.detail || {};
+      if (!isMatrixSwapTarget(detail.target)) {
+        return;
+      }
+      var drawer = getDrawer();
+      if (!drawer) {
+        return;
+      }
+      // Conteúdo já trocado; loading ainda pode estar ativo até afterRequest.
+      if (drawer.getAttribute('aria-busy') === 'true') {
+        drawer.setAttribute('data-drawer-state', 'loading');
+        return;
+      }
+      drawer.setAttribute(
+        'data-drawer-state',
+        drawer.querySelector('[data-drawer-placeholder="idle"]') ? 'idle' : 'open',
+      );
     });
 
     document.body.addEventListener('htmx:beforeSwap', function (evt) {
@@ -623,19 +737,230 @@
   }
 
   /**
-   * Inicializa foco / Escape / restore no drawer (#matrix-drawer).
-   * Implementação completa em T027 (espelhar static/js/modal.js).
+   * Filtros GET: ao mudar/submeter, marca loading na região — não apresenta empty
+   * definitivo até a nova página (T026 / quickstart slice 3).
+   * Usa change + submit: requestSubmit dispara submit; form.submit() legado não.
    */
-  function initDrawer() {
-    if (!getDrawer()) {
+  function initFilterHonestLoading() {
+    var form = document.getElementById(FILTERS_ID);
+    if (!form || !getMatrixResults()) {
       return;
     }
-    // stub a11y — focus on open, focus trap, Escape close, restore trigger focus
+    function markLoading() {
+      setMatrixResultsBusy(true);
+    }
+    form.addEventListener('change', markLoading);
+    form.addEventListener('submit', markLoading);
+  }
+
+  /**
+   * A11y do drawer (#matrix-drawer) — espelha static/js/modal.js (T027 / FR-011):
+   * - Foco no primeiro controle (ou heading) ao abrir via HTMX
+   * - Focus trap Tab / Shift+Tab enquanto aberto
+   * - Escape / botão Fechar fecham e restauram foco no card trigger
+   * - Swap de save/toggle dentro do drawer NÃO sobrescreve o trigger
+   */
+  function initDrawer() {
+    var drawer = getDrawer();
+    if (!drawer) {
+      return;
+    }
+
+    if (drawer.querySelector('[data-drawer-placeholder="idle"]')) {
+      drawerIdleHtml = drawer.innerHTML;
+    }
+
+    function getDialog() {
+      var el = getDrawer();
+      if (!el) {
+        return null;
+      }
+      return el.querySelector('[role="dialog"][aria-modal="true"]');
+    }
+
+    function isDrawerOpen() {
+      return !!getDialog();
+    }
+
+    function isVisible(el) {
+      return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+    }
+
+    function getFocusable(dialog) {
+      return Array.prototype.slice
+        .call(dialog.querySelectorAll(FOCUSABLE_SELECTOR))
+        .filter(function (el) {
+          if (el.hasAttribute('disabled') || el.getAttribute('aria-hidden') === 'true') {
+            return false;
+          }
+          if (el.closest('[aria-hidden="true"]')) {
+            return false;
+          }
+          return isVisible(el);
+        });
+    }
+
+    function rememberTrigger(el) {
+      if (!el || el.nodeType !== 1) {
+        return;
+      }
+      var panel = getDrawer();
+      // Save/toggle HTMX dentro do drawer não deve trocar o restore target.
+      if (panel && panel.contains(el)) {
+        return;
+      }
+      drawerLastTrigger =
+        el.closest('button, a, [href], [tabindex]') || el;
+    }
+
+    function focusInitial() {
+      var dialog = getDialog();
+      if (!dialog) {
+        return;
+      }
+
+      var preferred = dialog.querySelector(
+        'input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled])',
+      );
+      if (preferred) {
+        preferred.focus();
+        return;
+      }
+
+      var focusable = getFocusable(dialog);
+      if (focusable.length) {
+        focusable[0].focus();
+        return;
+      }
+
+      var heading = dialog.querySelector('#matrix-drawer-heading');
+      if (heading && typeof heading.focus === 'function') {
+        heading.focus();
+        return;
+      }
+
+      if (typeof dialog.focus === 'function') {
+        dialog.focus();
+      }
+    }
+
+    function trapFocus(e) {
+      if (e.key !== 'Tab' || !isDrawerOpen()) {
+        return;
+      }
+
+      var dialog = getDialog();
+      if (!dialog) {
+        return;
+      }
+
+      var focusable = getFocusable(dialog);
+
+      if (focusable.length === 0) {
+        e.preventDefault();
+        if (typeof dialog.focus === 'function') {
+          dialog.focus();
+        }
+        return;
+      }
+
+      var first = focusable[0];
+      var last = focusable[focusable.length - 1];
+      var active = document.activeElement;
+      var outside = !dialog.contains(active);
+      var index = focusable.indexOf(active);
+
+      if (e.shiftKey) {
+        if (outside || index <= 0) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else if (outside || index === -1 || index === focusable.length - 1) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+
+    function closeDrawer() {
+      var panel = getDrawer();
+      if (!panel) {
+        return;
+      }
+
+      var hadDialog = isDrawerOpen();
+      if (drawerIdleHtml != null) {
+        panel.innerHTML = drawerIdleHtml;
+      } else {
+        panel.innerHTML = '';
+      }
+      panel.setAttribute('aria-busy', 'false');
+      panel.setAttribute('data-drawer-state', 'idle');
+      panel.classList.remove('opacity-60', 'pointer-events-none');
+
+      if (hadDialog && drawerLastTrigger && typeof drawerLastTrigger.focus === 'function') {
+        try {
+          drawerLastTrigger.focus();
+        } catch (err) {
+          /* elemento removido do DOM (ex.: OOB move) */
+        }
+      }
+      drawerLastTrigger = null;
+    }
+
+    function isDragInProgress() {
+      var matrix = getMatrixRoot();
+      return !!(matrix && matrix.querySelector('[aria-grabbed="true"]'));
+    }
+
+    document.body.addEventListener('htmx:beforeRequest', function (e) {
+      var detail = e.detail || {};
+      var target = detail.target;
+      if (target && target.id === DRAWER_ID) {
+        rememberTrigger(detail.elt);
+      }
+    });
+
+    document.body.addEventListener('htmx:afterSwap', function (e) {
+      var detail = e.detail || {};
+      var target = detail.target;
+      if (target && target.id === DRAWER_ID && isDrawerOpen()) {
+        requestAnimationFrame(focusInitial);
+      }
+    });
+
+    document.body.addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-drawer-close]');
+      if (!btn) {
+        return;
+      }
+      var panel = getDrawer();
+      if (!panel || !panel.contains(btn)) {
+        return;
+      }
+      e.preventDefault();
+      closeDrawer();
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && isDrawerOpen()) {
+        // DnD ativo: deixa o handler de drag cancelar o arraste (zero POST).
+        if (isDragInProgress()) {
+          return;
+        }
+        e.preventDefault();
+        closeDrawer();
+        return;
+      }
+      trapFocus(e);
+    });
+
+    window.closeMatrixDrawer = closeDrawer;
   }
 
   function init() {
     initDrawer();
     initHonestFeedback();
+    initFilterHonestLoading();
     // T023: gates antes dos listeners — strip draggable em coarse/narrow.
     applyDragGates();
     // Sempre registra DnD se admin; gates bloqueiam dragstart / strip attrs.

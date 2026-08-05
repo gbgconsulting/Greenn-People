@@ -20,14 +20,15 @@
   aria-label="Desempenho {% if cell.desempenho == 3 %}Alto{% elif cell.desempenho == 2 %}Médio{% else %}Baixo{% endif %}, potencial {% if cell.potencial == 3 %}Alto{% elif cell.potencial == 2 %}Médio{% else %}Baixo{% endif %} — {{ cell.label }}"
   {% if oob %}hx-swap-oob="outerHTML"{% endif %}
 >
+  {# Rótulos além da cor (FR-011 / SC-006 / T028): quadrante + eixos por extenso #}
   <header class="mb-2 space-y-0.5">
     <p class="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-      {{ cell.label }}
+      Quadrante {{ cell.label }}
     </p>
     <p class="text-[10px] leading-tight text-slate-500">
-      Desemp.
+      Desempenho
       {% if cell.desempenho == 3 %}Alto{% elif cell.desempenho == 2 %}Médio{% else %}Baixo{% endif %}
-      · Pot.
+      · Potencial
       {% if cell.potencial == 3 %}Alto{% elif cell.potencial == 2 %}Médio{% else %}Baixo{% endif %}
     </p>
   </header>

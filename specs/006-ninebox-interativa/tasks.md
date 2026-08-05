@@ -101,11 +101,11 @@ Monólito Django: `apps/talent/`, `templates/talent/`, `static/js/`, `docs/`, `t
 
 ### Implementation for User Story 3
 
-- [ ] T025 [US3] Completar modo read-only em `templates/talent/partials/_drawer.html` + GET drawer: gerente vê identidade/desempenho/potencial/quadrante **sem** controles de salvar/toggle; POST direto continua 403 no backend (FR-006/008)
-- [ ] T026 [US3] Empty/loading honestos em `templates/talent/matrix.html`: `templates/components/empty_state.html` quando zero classificados no filtro/escopo; indicador HTMX/`aria-busy` não confundido com empty definitivo (FR-005)
-- [ ] T027 [US3] Implementar a11y do drawer em `static/js/ninebox_matrix.js` (espelhar padrões de `static/js/modal.js`): foco ao abrir, focus trap, Escape fecha, restore foco no card trigger — [contracts/a11y-matrix-drawer.md](./contracts/a11y-matrix-drawer.md)
-- [ ] T028 [US3] Garantir rótulos textuais de eixos/quadrante em `_cell.html` / grade (já stubados na fundação) e nomes acessíveis em handles de drag quando presentes — SC-006
-- [ ] T029 [US3] Verificar queryset da matriz e GET drawer: apenas `usuario__in=get_visible_users`; gerente não vê fora do escopo; líder puro continua 403 na matriz (research R8) — [contracts/authz-scope.md](./contracts/authz-scope.md)
+- [X] T025 [US3] Completar modo read-only em `templates/talent/partials/_drawer.html` + GET drawer: gerente vê identidade/desempenho/potencial/quadrante **sem** controles de salvar/toggle; POST direto continua 403 no backend (FR-006/008)
+- [X] T026 [US3] Empty/loading honestos em `templates/talent/matrix.html`: `templates/components/empty_state.html` quando zero classificados no filtro/escopo; indicador HTMX/`aria-busy` não confundido com empty definitivo (FR-005)
+- [X] T027 [US3] Implementar a11y do drawer em `static/js/ninebox_matrix.js` (espelhar padrões de `static/js/modal.js`): foco ao abrir, focus trap, Escape fecha, restore foco no card trigger — [contracts/a11y-matrix-drawer.md](./contracts/a11y-matrix-drawer.md)
+- [X] T028 [US3] Garantir rótulos textuais de eixos/quadrante em `_cell.html` / grade (já stubados na fundação) e nomes acessíveis em handles de drag quando presentes — SC-006
+- [X] T029 [US3] Verificar queryset da matriz e GET drawer: apenas `usuario__in=get_visible_users`; gerente não vê fora do escopo; líder puro continua 403 na matriz (research R8) — [contracts/authz-scope.md](./contracts/authz-scope.md)
 
 **Checkpoint**: Todas as user stories independentemente funcionais
 

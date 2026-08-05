@@ -32,14 +32,21 @@
       Ajuste ciclo, área e cargo — a matriz atualiza ao trocar cada filtro.
     </p>
   </div>
-  <form method="get" class="grid grid-cols-1 gap-3 sm:flex sm:flex-wrap sm:items-end" role="search" aria-label="Filtrar matriz de talentos">
+  <form
+    id="matrix-filters"
+    method="get"
+    class="grid grid-cols-1 gap-3 sm:flex sm:flex-wrap sm:items-end"
+    role="search"
+    aria-label="Filtrar matriz de talentos"
+    data-matrix-filters
+  >
     <div class="min-w-0 sm:min-w-[10rem]">
       <label for="ciclo" class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Ciclo</label>
       <select
         id="ciclo"
         name="ciclo"
         class="form-control"
-        onchange="this.form.submit()"
+        onchange="this.form.requestSubmit()"
       >
         <option value="">Ciclo aberto{% if ciclo_aberto %} ({{ ciclo_aberto.nome }}){% else %} (nenhum){% endif %}</option>
         {% for c in ciclos %}
@@ -55,7 +62,7 @@
         id="area"
         name="area"
         class="form-control"
-        onchange="this.form.submit()"
+        onchange="this.form.requestSubmit()"
       >
         <option value="">Todas</option>
         {% for a in areas %}
@@ -69,7 +76,7 @@
         id="cargo"
         name="cargo"
         class="form-control"
-        onchange="this.form.submit()"
+        onchange="this.form.requestSubmit()"
       >
         <option value="">Todos</option>
         {% for c in cargos %}
@@ -97,10 +104,32 @@
   </div>
 
   <div class="flex flex-col gap-4 xl:flex-row xl:items-start">
-    <div class="min-w-0 flex-1">
+    {# Região de resultados: loading (aria-busy) ≠ empty definitivo (FR-005 / T026) #}
+    <div
+      id="matrix-results"
+      class="relative min-w-0 flex-1"
+      aria-busy="false"
+      data-matrix-results
+    >
+      <div class="pointer-events-none absolute right-3 top-3 z-10">
+        {% include "components/htmx_indicator.html" with indicator_id="matrix-loading-indicator" variant="inline" label="Atualizando matriz…" %}
+      </div>
+
+      {% if total_classificados == 0 %}
+      {# Empty definitivo: Freeze empty_state — sem grade vazia enganosa #}
+      <div
+        id="ninebox-matrix-empty"
+        class="table-frame px-4 py-10"
+        data-matrix-state="empty"
+        role="status"
+      >
+        {% include "components/empty_state.html" with title="Nenhuma classificação no escopo" message="Não há classificações para os filtros selecionados. Ajuste ciclo, área ou cargo acima." %}
+      </div>
+      {% else %}
       <div
         id="ninebox-matrix"
-        class="table-frame p-3 sm:p-4"
+        class="table-frame p-3 sm:p-4 transition-opacity"
+        data-matrix-state="ready"
         data-ciclo-id="{{ ciclo_filtro.pk }}"
         data-area-id="{{ filtro_area_id|default_if_none:'' }}"
         data-cargo-id="{{ filtro_cargo_id|default_if_none:'' }}"
@@ -108,7 +137,7 @@
         data-move-url-template="{% url 'talent:matrix_move' 999999999 %}"
       >
         <div class="inline-grid min-w-full gap-0" style="grid-template-columns: 5.5rem repeat(3, minmax(10rem, 1fr));">
-          {# Cabeçalho: eixo potencial #}
+          {# Cabeçalho: eixo potencial (rótulo textual além da cor — SC-006 / T028) #}
           <div class="p-2" aria-hidden="true"></div>
           {% for label in potencial_labels %}
           <div class="border-b border-slate-200 px-2 py-2 text-center text-xs font-medium uppercase tracking-wide text-slate-500">
@@ -118,18 +147,13 @@
 
           {% for row in matriz_rows %}
           <div class="flex items-center justify-end border-r border-slate-200 pr-3 text-xs font-medium uppercase tracking-wide text-slate-500">
-            <span class="max-w-[4.5rem] text-right leading-tight">Desemp. {{ row.desempenho_label }}</span>
+            <span class="max-w-[4.5rem] text-right leading-tight">Desempenho {{ row.desempenho_label }}</span>
           </div>
           {% for cell in row.cells %}
             {% include "talent/partials/_cell.html" with cell=cell %}
           {% endfor %}
           {% endfor %}
         </div>
-      </div>
-
-      {% if total_classificados == 0 %}
-      <div class="mt-4 rounded-xl border border-slate-200 bg-white px-4 py-8 shadow-sm">
-        {% include "components/empty_state.html" with title="Nenhuma classificação no escopo" message="Não há classificações para os filtros selecionados. Ajuste ciclo, área ou cargo acima." %}
       </div>
       {% endif %}
     </div>
@@ -147,8 +171,12 @@
         class="transition-opacity"
         aria-live="polite"
         aria-busy="false"
+        data-drawer-state="idle"
       >
-        {% include "components/empty_state.html" with title="Detalhe" message="Selecione uma pessoa na grade para inspecionar a classificação." %}
+        {# Placeholder idle — NÃO é empty definitivo de filtro/escopo #}
+        <div data-drawer-placeholder="idle">
+          {% include "components/empty_state.html" with title="Detalhe" message="Selecione uma pessoa na grade para inspecionar a classificação." %}
+        </div>
       </div>
     </aside>
   </div>

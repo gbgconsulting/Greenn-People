@@ -1,10 +1,16 @@
-"""T011/T019/T024: AuthZ/IDOR da matriz interativa — escrita admin-only (SC-003).
+"""T011/T019/T024/T025/T029: AuthZ/IDOR da matriz interativa — escrita admin-only (SC-003).
 
 Cobre serviços ``upsert_classification`` / ``toggle_classification_visibility``
 e endpoints POST ``matrix_potencial`` / ``matrix_move`` / ``toggle_visibility``.
 
 T024 (move): não-admin 403; payload potencial-only não muta desempenho;
 snap coerente em ``(desempenho_derivado, P′)`` após POST admin.
+
+T025 (drawer GET): gerente read-only sem controles de save/toggle; admin write;
+POST direto de gerente continua 403 (FR-006/008).
+
+T029 (escopo): queryset matriz / GET drawer via ``get_visible_users``;
+gerente não vê fora do escopo; líder puro 403 na matriz (research R8).
 """
 
 from __future__ import annotations
@@ -472,3 +478,191 @@ def test_matrix_move_post_potencial_invalido_400(
     assert classificacao.potencial == 2
     trigger = json.loads(resp['HX-Trigger'])
     assert trigger['showMessage']['level'] == 'error'
+
+
+# --- T025: GET drawer write (admin) vs read-only (gerente) ---
+
+
+@pytest.mark.django_db
+def test_matrix_drawer_get_admin_write_controls(
+    classificacao,
+    colaborador,
+    ciclo_aberto,
+    admin,
+):
+    """Admin HTMX GET drawer → modo write com Salvar/toggle e fallback classify."""
+    client = Client()
+    client.force_login(admin)
+
+    resp = client.get(
+        reverse('talent:matrix_drawer', kwargs={'user_pk': colaborador.pk}),
+        data={'ciclo': ciclo_aberto.pk},
+        HTTP_HX_REQUEST='true',
+    )
+
+    assert resp.status_code == 200
+    body = resp.content.decode()
+    assert 'data-drawer-mode="write"' in body
+    assert 'data-drawer-writable="true"' in body
+    assert 'data-drawer-potencial-form' in body
+    assert 'data-drawer-visibility-form' in body
+    assert 'Salvar' in body
+    assert 'Liberar' in body or 'Ocultar' in body
+    assert 'data-drawer-classify-fallback' in body
+    assert 'data-drawer-potencial-readonly' not in body
+    assert 'data-drawer-readonly-hint' not in body
+
+
+@pytest.mark.django_db
+def test_matrix_drawer_get_gerente_readonly_sem_controles(
+    ciclo_aberto,
+    gerente,
+):
+    """Gerente HTMX GET drawer no escopo → read-only; sem save/toggle/classify."""
+    gerente_user, _mid, leaf = gerente
+    ClassificacaoTalento.objects.create(
+        usuario=leaf,
+        ciclo=ciclo_aberto,
+        desempenho=2,
+        potencial=3,
+        quadrante=ClassificacaoTalento.Quadrante.MEDIO_ALTO,
+        visivel_ao_colaborador=False,
+    )
+
+    client = Client()
+    client.force_login(gerente_user)
+
+    resp = client.get(
+        reverse('talent:matrix_drawer', kwargs={'user_pk': leaf.pk}),
+        data={'ciclo': ciclo_aberto.pk},
+        HTTP_HX_REQUEST='true',
+    )
+
+    assert resp.status_code == 200
+    body = resp.content.decode()
+    assert 'data-drawer-mode="read"' in body
+    assert 'data-drawer-writable="false"' in body
+    assert 'aria-readonly="true"' in body
+    assert 'data-drawer-readonly-hint' in body
+    assert 'data-drawer-potencial-readonly' in body
+    assert 'Alto' in body  # potencial_label
+    assert leaf.nome in body or leaf.email in body
+    assert 'data-drawer-potencial-form' not in body
+    assert 'data-drawer-visibility-form' not in body
+    assert 'data-drawer-classify-fallback' not in body
+    assert 'name="potencial"' not in body
+    assert '>Salvar<' not in body
+    assert '>Liberar<' not in body
+    assert '>Ocultar<' not in body
+
+
+# --- T029: escopo get_visible_users + líder puro 403 (authz-scope / R8) ---
+
+
+@pytest.mark.django_db
+def test_matrix_get_lider_puro_403(lider, colaborador):
+    """T029 / R8: líder puro (is_leader, not is_manager) → 403 na matriz."""
+    assert lider.is_leader
+    assert not lider.is_manager
+    assert not lider.is_admin
+    # colaborador garante hierarquia de liderados diretos
+    assert colaborador.line_manager_id == lider.pk
+
+    client = Client()
+    client.force_login(lider)
+    resp = client.get(reverse('talent:matrix'))
+    assert resp.status_code == 403
+
+
+@pytest.mark.django_db
+def test_matrix_drawer_get_lider_puro_403(lider, colaborador, classificacao, ciclo_aberto):
+    """T029 / R8: líder puro também é barrado no GET drawer (mesmo mixin)."""
+    assert lider.is_leader
+    assert not lider.is_manager
+
+    client = Client()
+    client.force_login(lider)
+    resp = client.get(
+        reverse('talent:matrix_drawer', kwargs={'user_pk': colaborador.pk}),
+        data={'ciclo': ciclo_aberto.pk},
+        HTTP_HX_REQUEST='true',
+    )
+    assert resp.status_code == 403
+
+
+@pytest.mark.django_db
+def test_matrix_get_gerente_nao_ve_fora_do_escopo(
+    ciclo_aberto,
+    gerente,
+    classificacao,
+    colaborador,
+    area,
+    cargo_colab,
+):
+    """T029: grade só lista ``usuario__in=get_visible_users``; outsider oculto."""
+    from apps.talent.views import _matrix_classificacoes_qs
+
+    gerente_user, _mid, leaf = gerente
+    ClassificacaoTalento.objects.create(
+        usuario=leaf,
+        ciclo=ciclo_aberto,
+        desempenho=1,
+        potencial=1,
+        quadrante=ClassificacaoTalento.Quadrante.BAIXO_BAIXO,
+        visivel_ao_colaborador=False,
+    )
+    outsider = CustomUser.objects.create_user(
+        email='outsider.matrix@test.greenn.com.br',
+        password=DEFAULT_PASSWORD,
+        nome='Outsider Matrix Escopo',
+        cargo=cargo_colab,
+        area=area,
+        line_manager=None,
+        email_confirmado_em=timezone.now(),
+    )
+    ClassificacaoTalento.objects.create(
+        usuario=outsider,
+        ciclo=ciclo_aberto,
+        desempenho=3,
+        potencial=3,
+        quadrante=ClassificacaoTalento.Quadrante.ALTO_ALTO,
+        visivel_ao_colaborador=False,
+    )
+
+    qs = _matrix_classificacoes_qs(gerente_user, ciclo_aberto)
+    visible_user_pks = set(qs.values_list('usuario_id', flat=True))
+    assert leaf.pk in visible_user_pks
+    assert outsider.pk not in visible_user_pks
+    assert colaborador.pk not in visible_user_pks  # sob outro ramo (lider/admin)
+
+    client = Client()
+    client.force_login(gerente_user)
+    resp = client.get(reverse('talent:matrix'), data={'ciclo': ciclo_aberto.pk})
+    assert resp.status_code == 200
+    body = resp.content.decode()
+    assert leaf.email in body or leaf.nome in body
+    assert outsider.email not in body
+    assert 'Outsider Matrix Escopo' not in body
+    assert colaborador.email not in body
+
+
+@pytest.mark.django_db
+def test_matrix_drawer_get_gerente_fora_do_escopo_404(
+    ciclo_aberto,
+    gerente,
+    classificacao,
+    colaborador,
+):
+    """T029: drawer GET com pessoa fora do escopo → 404 (sem vazar existência)."""
+    gerente_user, _mid, _leaf = gerente
+    # ``classificacao`` pertence a ``colaborador`` (ramo admin→lider), fora do gerente
+    assert colaborador.pk != _leaf.pk
+
+    client = Client()
+    client.force_login(gerente_user)
+    resp = client.get(
+        reverse('talent:matrix_drawer', kwargs={'user_pk': colaborador.pk}),
+        data={'ciclo': ciclo_aberto.pk},
+        HTTP_HX_REQUEST='true',
+    )
+    assert resp.status_code == 404
