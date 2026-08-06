@@ -135,12 +135,12 @@ Monólito Django na raiz: `templates/`, `static/`, `docs/`, `apps/` (última all
 
 ### Implementation for User Story 5
 
-- [ ] T038 [US5] Fechar status **Freeze v2** em `docs/design-system.md` cobrindo tipografia, botões, cards/KPI, charts polish e ninebox polish (SC-004; contracts/freeze-v2.md) — dualidade alinhada a `static/src/input.css` e components tocados
-- [ ] T039 [US5] Capturar `NN-<slug>-after.png` dos mesmos 5–8 pilotos em `specs/007-design-system-v2/evidence/before-after/`
-- [ ] T040 [P] [US5] Capturar `login-unchanged-after.png` em `specs/007-design-system-v2/evidence/before-after/` e confirmar indistinguível do before
-- [ ] T041 [US5] Preencher checklist OUT em `specs/007-design-system-v2/contracts/out-checklist.md` (OUT-LOGIN-*, OUT-005-*, OUT-006-*, OUT-NO-*, OUT-FREEZE-V2, OUT-EVIDENCE) com métodos e evidências
-- [ ] T042 [US5] Revisar scan guiado (SC-001/SC-005): ≥5 superfícies com melhoria perceptível; tipografia citada em ≥3; atualizar notas no README de `specs/007-design-system-v2/evidence/before-after/` se útil
-- [ ] T043 [US5] Scan final de escopo: sem libs front novas; sem rotas/models/migrations; `templates/accounts/*` intocados; grupos nav Governança/Cadastros/Sistema intactos
+- [X] T038 [US5] Fechar status **Freeze v2** em `docs/design-system.md` cobrindo tipografia, botões, cards/KPI, charts polish e ninebox polish (SC-004; contracts/freeze-v2.md) — dualidade alinhada a `static/src/input.css` e components tocados
+- [X] T039 [US5] Capturar `NN-<slug>-after.png` dos mesmos 5–8 pilotos em `specs/007-design-system-v2/evidence/before-after/`
+- [X] T040 [P] [US5] Capturar `login-unchanged-after.png` em `specs/007-design-system-v2/evidence/before-after/` e confirmar indistinguível do before
+- [X] T041 [US5] Preencher checklist OUT em `specs/007-design-system-v2/contracts/out-checklist.md` (OUT-LOGIN-*, OUT-005-*, OUT-006-*, OUT-NO-*, OUT-FREEZE-V2, OUT-EVIDENCE) com métodos e evidências
+- [X] T042 [US5] Revisar scan guiado (SC-001/SC-005): ≥5 superfícies com melhoria perceptível; tipografia citada em ≥3; atualizar notas no README de `specs/007-design-system-v2/evidence/before-after/` se útil
+- [X] T043 [US5] Scan final de escopo: sem libs front novas; sem rotas/models/migrations; `templates/accounts/*` intocados; grupos nav Governança/Cadastros/Sistema intactos
 
 **Checkpoint**: Feature aceitável formalmente — Freeze v2 + evidência + OUT
 

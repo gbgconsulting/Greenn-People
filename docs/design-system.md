@@ -15,9 +15,21 @@ Não criar `DESIGN.md` na raiz: a documentação de design deste projeto vive aq
 
 ## Freeze
 
-**Status:** Draft → caminho para **Freeze v2** (feature `007-design-system-v2`). Tipografia v2, componentes US2 (botões, KPI/cards, table-frame, empty), **charts polish** (US3) e **ninebox polish** (US4) já documentados; fechamento formal (status **Freeze v2**) fica para T038 após evidência before/after + checklist OUT. Baseline congelado de `004-ux-visual-foundation` permanece até esse fechamento.
+**Status:** **Freeze v2** (feature `007-design-system-v2` · FR-009 / SC-004). Substitui o congelamento de `004-ux-visual-foundation` para as decisões listadas abaixo. Twin técnico: `static/src/input.css` (+ components/templates/JS tocados na mesma entrega).
 
-Este documento é a **fonte da verdade** de tokens e padrões de UI do Greenn People. O v2 **reabre** tipografia e acabamento visual no app autenticado com decisão explícita desta feature; login/`base_auth` ficam **fora** (isolamento). Demais superfícies devem **consumir** o conjunto documentado (e os includes em `templates/components/`), sem inventar ilhas de estilo.
+Este documento é a **fonte da verdade** de tokens e padrões de UI do Greenn People. O v2 **reabriu** tipografia e acabamento visual no app autenticado com decisão explícita da feature 007; login/`base_auth` ficam **fora** (isolamento). Demais superfícies devem **consumir** o conjunto documentado (e os includes em `templates/components/`), sem inventar ilhas de estilo.
+
+### Cobertura Freeze v2
+
+| Área | Contrato |
+|---|---|
+| Tipografia | Display (**Fraunces**) + UI (**Source Sans 3**) no app autenticado (`.app-shell`); Inter permanece default global / auth (`--font-sans` intocado) — seção **Tipografia** |
+| Botões | Ritmo/pesos/hover/focus refinados; mesmas variantes semânticas (`primary` \| `secondary` \| `outlined` \| `loading`) — seção **Botões (DS v2)** |
+| Cards / KPI / table-frame / empty | Densidade/hierarquia v2; composição limpa (sem sombra excessiva) — seções **KPI / cartões**, **Table-frame**, **Empty states** |
+| Charts polish | Options Chart.js + CSS/markup do bloco; sem novas métricas/libs — seção **Charts polish (DS v2)** |
+| Ninebox polish | Visual-only (grade, cards, drawer domínio, drag/ARIA); contratos 006 intactos — seção **Ninebox polish (DS v2)** |
+| Shell | Estrutura IA Governança/Cadastros/Sistema **inalterada**; densidade/tipo no chrome opcional (fora do fechamento obrigatório) |
+| Auth | Login / `base_auth` **OUT** desta feature — isolamento documentado; `--font-sans` / `body { font-sans }` não mudam |
 
 ### Experimento Figma (branch `experiment/ds-figma-button-input`)
 
@@ -37,19 +49,19 @@ Referência visual: [Verdee \| Guia de Estilo](https://www.figma.com/design/LqU1
 | Tipografia | Seção Tipografia (v2: Fraunces display + Source Sans 3 UI sob `.app-shell`; Inter global/auth; escala e pesos documentados) |
 | Shell Admin (Governança / Cadastros / Sistema) + destaque Ciclos/Aderência | Seção Shell |
 | Topbar (ciclo aberto / fallback) | Seção Shell / Topbar |
-| Botões, inputs, badges, empty states, KPI/cards, table-frame | Seções US2 (v2) + componentes; inputs/badges baseline |
+| Botões, inputs, badges, empty states, KPI/cards, table-frame | Seções DS v2 acima + componentes; inputs baseline; badges Status Triad intacto |
 | Charts polish (options Chart.js + bloco CSS/markup) | Seção **Charts polish (DS v2)**; contrato consumo 005 abaixo |
 | Ninebox polish (grade, cards, drawer domínio, drag/empty) | Seção **Ninebox polish (DS v2)**; contrato consumo 006 abaixo |
 | Focus-visible, skip link, modal trap, indicador HTMX | Seção Focus-visible e a11y |
 
-Evidência before/after das telas-piloto: `specs/004-ux-visual-foundation/evidence/before-after/`.
+Evidência before/after das telas-piloto v2: `specs/007-design-system-v2/evidence/before-after/` (baseline 004 permanece em `specs/004-ux-visual-foundation/evidence/before-after/`).
 
 ### Regras após o freeze
 
 1. **Consumir, não reinventar** — novos gráficos, matriz 9-box e demais telas reutilizam tokens, hierarquia tipográfica/espacial e componentes canônicos deste doc.
 2. **Doc ↔ CSS juntos** — mudança de token ou padrão atualiza `docs/design-system.md` e `static/src/input.css` (e components afetados) na mesma entrega.
-3. **Sem reabrir baseline** — não reaplicar WIP Impeccable nem redesenhar o chrome incumbente como pré-requisito de features de visualização.
-4. **Exceções** — só com decisão explícita de produto que atualize este Freeze (status + tabela) na mesma mudança.
+3. **Sem reabrir Freeze v2** — não reinventar tipografia display/UI, variantes de botão, chrome de KPI/table-frame/empty, charts polish ou ninebox polish fora deste contrato; não reaplicar WIP Impeccable nem redesenhar o chrome de navegação como pré-requisito de features de visualização.
+4. **Exceções** — só com decisão explícita de produto que atualize este Freeze (status + tabela de cobertura) na mesma mudança.
 
 ### Gráficos no dashboard (consumo · FR-013 / SC-007)
 
@@ -140,7 +152,7 @@ Tokens semânticos em `static/src/input.css` (`@theme static`): `--color-surface
 
 ## Tipografia
 
-**Status (007):** Escala tipográfica v2 **completa** (famílias, tokens, pesos, usos display vs UI) alinhada a `static/src/input.css`. Componentes US2 (botões, KPI/cards, table-frame, empty), **charts polish** (US3) e **ninebox polish** (US4) documentados abaixo. Status geral do documento permanece Draft → Freeze v2 até T038 (evidência + checklist OUT).
+**Status:** Parte do **Freeze v2**. Escala tipográfica completa (famílias, tokens, pesos, usos display vs UI) alinhada a `static/src/input.css`.
 
 Twin CSS obrigatório: `@font-face` + `@theme` (`--font-sans` / `--font-display` / `--font-ui`) + seletor `.app-shell` em `static/src/input.css`. Utilitários Tailwind: `font-sans`, `font-display`, `font-ui`.
 
@@ -275,7 +287,7 @@ Classes visuais **e** `aria-current="page"` no link correspondente a `request.pa
 
 ## Botões (DS v2)
 
-**Status (007 / US2):** Ritmo, pesos, hover/focus refinados. Variantes semânticas **inalteradas** (`primary` \| `secondary` \| `outlined` \| `loading`) — sem novas variantes de negócio.
+**Status:** Parte do **Freeze v2**. Ritmo, pesos, hover/focus refinados. Variantes semânticas **inalteradas** (`primary` \| `secondary` \| `outlined` \| `loading`) — sem novas variantes de negócio.
 
 Componente canônico: `templates/components/button.html`.
 
@@ -339,7 +351,7 @@ Utilitário CSS `.form-control` em `input.css` para filtros/selects alinhados ao
 
 Componente: `templates/components/badge_status.html`.
 
-**Status (007 / US2):** Tipografia/densidade UI (`font-ui text-xs … leading-none tracking-tight`); **Status Triad hex/semântica intactos**.
+**Status:** Parte do **Freeze v2**. Tipografia/densidade UI (`font-ui text-xs … leading-none tracking-tight`); **Status Triad hex/semântica intactos**.
 
 Forma: `inline-flex items-center rounded-md px-2 py-0.5 font-ui text-xs font-medium leading-none tracking-tight`.
 
@@ -356,7 +368,7 @@ Forma: `inline-flex items-center rounded-md px-2 py-0.5 font-ui text-xs font-med
 
 ## Empty states (DS v2)
 
-**Status (007 / US2):** Acabamento honest/acionável — tipografia display + UI, ritmo vertical; **sem** chrome de card. Dados vazios continuam honestos (padrão 004/005); sem inventar conteúdo.
+**Status:** Parte do **Freeze v2**. Acabamento honest/acionável — tipografia display + UI, ritmo vertical; **sem** chrome de card. Dados vazios continuam honestos (padrão 004/005); sem inventar conteúdo.
 
 Componente: `templates/components/empty_state.html`.
 
@@ -379,7 +391,7 @@ Preferir empty acionável onde a lista/KPI já tem ação de domínio (criar met
 
 ## KPI / cartões (DS v2)
 
-**Status (007 / US2):** Densidade e hierarquia KPI refinadas; preferir **composição limpa** a cardificar excessivamente (sem sombra no frame).
+**Status:** Parte do **Freeze v2**. Densidade e hierarquia KPI refinadas; preferir **composição limpa** a cardificar excessivamente (sem sombra no frame).
 
 Componente: `templates/components/card.html`.
 
@@ -406,7 +418,7 @@ Dashboards piloto (`admin` / `team` / `personal`) consomem este include; não ma
 
 ## Table-frame (DS v2)
 
-**Status (007 / US2):** Chrome leve (borda + surface, **sem** sombra) + densidade anatômica nos filhos `table`/`th`/`td`. Twin CSS em `static/src/input.css` (`@layer components`).
+**Status:** Parte do **Freeze v2**. Chrome leve (borda + surface, **sem** sombra) + densidade anatômica nos filhos `table`/`th`/`td`. Twin CSS em `static/src/input.css` (`@layer components`).
 
 ### Wrapper
 
@@ -436,7 +448,7 @@ Piloto: listas `templates/cycles/ciclo_list.html` / `ciclo_list_partial.html` (e
 
 ## Charts polish (DS v2)
 
-**Status (007 / US3):** Acabamento visual dos gráficos já existentes (feature `005`). **Só** options Chart.js, CSS de altura/ritmo e markup do bloco — **sem** novas métricas, endpoints, libs ou mudanças de shape JSON. Contrato: `specs/007-design-system-v2/contracts/chart-visual-polish.md`.
+**Status:** Parte do **Freeze v2**. Acabamento visual dos gráficos já existentes (feature `005`). **Só** options Chart.js, CSS de altura/ritmo e markup do bloco — **sem** novas métricas, endpoints, libs ou mudanças de shape JSON. Contrato: `specs/007-design-system-v2/contracts/chart-visual-polish.md`.
 
 ### Artefatos
 
@@ -505,7 +517,7 @@ Pilotos: `templates/dashboard/{admin,team,personal}.html` via `_chart_block.html
 
 ## Ninebox polish (DS v2)
 
-**Status (007 / US4):** Acabamento visual da matriz 9-box já existente (feature `006`). **Só** tipografia/densidade/bordas/estados visuais em templates `talent` + feedback drag/ARIA de suporte em `ninebox_matrix.js` — **sem** alterar AuthZ, fórmulas, política drag=potencial-only, endpoints JSON, handlers de POST nem contratos HTMX (`hx-*` / targets / URLs). Contrato: `specs/007-design-system-v2/contracts/ninebox-visual-only.md`.
+**Status:** Parte do **Freeze v2**. Acabamento visual da matriz 9-box já existente (feature `006`). **Só** tipografia/densidade/bordas/estados visuais em templates `talent` + feedback drag/ARIA de suporte em `ninebox_matrix.js` — **sem** alterar AuthZ, fórmulas, política drag=potencial-only, endpoints JSON, handlers de POST nem contratos HTMX (`hx-*` / targets / URLs). Contrato: `specs/007-design-system-v2/contracts/ninebox-visual-only.md`.
 
 ### Artefatos
 
