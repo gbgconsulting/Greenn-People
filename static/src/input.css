@@ -120,9 +120,38 @@
 }
 
 @layer components {
-  /* Listagens / dashboards — docs → KPI / cartões (.table-frame) */
+  /*
+   * Table-frame (DS v2) — listagens / dashboards.
+   * Chrome leve: borda + surface, sem sombra (alinha a card KPI; evita “cardificar”).
+   * Densidade anatômica nos filhos table/th/td; hover genérico só em linhas sem
+   * ênfase de status (templates podem sobrescrever com utilitários).
+   */
   .table-frame {
-    @apply overflow-x-auto rounded-xl border border-line bg-surface-card shadow-sm;
+    @apply overflow-x-auto rounded-xl border border-line bg-surface-card;
+  }
+
+  .table-frame table {
+    @apply min-w-full divide-y divide-line text-left text-sm text-ink;
+  }
+
+  .table-frame thead {
+    @apply bg-slate-50/80 text-xs uppercase tracking-wide text-ink-muted;
+  }
+
+  .table-frame th {
+    @apply px-4 py-2.5 font-medium;
+  }
+
+  .table-frame tbody {
+    @apply divide-y divide-slate-100;
+  }
+
+  .table-frame td {
+    @apply px-4 py-2.5 align-middle;
+  }
+
+  .table-frame tbody tr:hover {
+    @apply bg-slate-50;
   }
 
   /* Filtros/selects — docs → Inputs e formulários (.form-control)

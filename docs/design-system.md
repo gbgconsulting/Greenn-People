@@ -15,7 +15,7 @@ Não criar `DESIGN.md` na raiz: a documentação de design deste projeto vive aq
 
 ## Freeze
 
-**Status:** Draft → caminho para **Freeze v2** (feature `007-design-system-v2`). Baseline congelado permanece o de `004-ux-visual-foundation` (SC-006) até o fechamento formal do v2 (tipografia + botões/KPI/charts/ninebox polish + evidência).
+**Status:** Draft → caminho para **Freeze v2** (feature `007-design-system-v2`). Tipografia v2 e componentes US2 (botões, KPI/cards, table-frame, empty) já documentados; fechamento formal (status **Freeze v2**) fica para T038 após charts/ninebox polish + evidência. Baseline congelado de `004-ux-visual-foundation` permanece até esse fechamento.
 
 Este documento é a **fonte da verdade** de tokens e padrões de UI do Greenn People. O v2 **reabre** tipografia e acabamento visual no app autenticado com decisão explícita desta feature; login/`base_auth` ficam **fora** (isolamento). Demais superfícies devem **consumir** o conjunto documentado (e os includes em `templates/components/`), sem inventar ilhas de estilo.
 
@@ -37,7 +37,7 @@ Referência visual: [Verdee \| Guia de Estilo](https://www.figma.com/design/LqU1
 | Tipografia | Seção Tipografia (v2: Fraunces display + Source Sans 3 UI sob `.app-shell`; Inter global/auth; escala e pesos documentados) |
 | Shell Admin (Governança / Cadastros / Sistema) + destaque Ciclos/Aderência | Seção Shell |
 | Topbar (ciclo aberto / fallback) | Seção Shell / Topbar |
-| Botões, inputs, badges, empty states, KPI/cards, tabelas | Seções e componentes correspondentes |
+| Botões, inputs, badges, empty states, KPI/cards, table-frame | Seções US2 (v2) + componentes; inputs/badges baseline |
 | Focus-visible, skip link, modal trap, indicador HTMX | Seção Focus-visible e a11y |
 
 Evidência before/after das telas-piloto: `specs/004-ux-visual-foundation/evidence/before-after/`.
@@ -138,7 +138,7 @@ Tokens semânticos em `static/src/input.css` (`@theme static`): `--color-surface
 
 ## Tipografia
 
-**Status (007):** Escala tipográfica v2 **completa** (famílias, tokens, pesos, usos display vs UI) alinhada a `static/src/input.css`. Status geral do documento permanece Draft → Freeze v2 até T038 (botões/KPI/charts/ninebox + evidência).
+**Status (007):** Escala tipográfica v2 **completa** (famílias, tokens, pesos, usos display vs UI) alinhada a `static/src/input.css`. Componentes US2 (botões, KPI/cards, table-frame, empty) documentados abaixo. Status geral do documento permanece Draft → Freeze v2 até T038 (charts/ninebox polish + evidência).
 
 Twin CSS obrigatório: `@font-face` + `@theme` (`--font-sans` / `--font-display` / `--font-ui`) + seletor `.app-shell` em `static/src/input.css`. Utilitários Tailwind: `font-sans`, `font-display`, `font-ui`.
 
@@ -271,20 +271,36 @@ Classes visuais **e** `aria-current="page"` no link correspondente a `request.pa
 
 ---
 
-## Botões
+## Botões (DS v2)
+
+**Status (007 / US2):** Ritmo, pesos, hover/focus refinados. Variantes semânticas **inalteradas** (`primary` \| `secondary` \| `outlined` \| `loading`) — sem novas variantes de negócio.
 
 Componente canônico: `templates/components/button.html`.
 
-| Variante | Uso | Classes-base |
-|---|---|---|
-| `primary` (default) | Ação principal / CTA | `bg-brand-gradient hover:bg-brand-gradient-hover text-white shadow-sm` (equiv. hex: emerald-600→teal-500 / hover emerald-700→teal-600) |
-| `secondary` | Cancelar / ação secundária | `bg-white border border-slate-200 text-slate-700 hover:bg-slate-50` |
-| `outlined` (experimento) | Ação terciária / logout | `border border-emerald-600 bg-transparent text-emerald-700 hover:bg-emerald-50` |
-| `loading` (experimento) | Submit em andamento | Igual primary + spinner + `disabled` / `aria-busy` |
+### Anatomia comum
 
-Comum: `inline-flex h-12 items-center justify-center gap-2 font-medium rounded-lg px-5 text-sm transition-colors` (altura alinhada ao Buttons/Medium do guia).
+| Aspecto | Padrão v2 |
+|---|---|
+| Altura / padding | Buttons/Medium: `h-12` + `px-5` + `rounded-lg` + `gap-2` |
+| Tipografia | `font-ui text-sm tracking-tight` (Source Sans 3 sob `.app-shell`) |
+| Transição | `transition-colors` |
+| Focus | `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface` |
+| Disabled / loading | Opacidade 50% + `disabled` / `aria-busy` / `pointer-events-none` (âncora) |
 
-Parâmetros úteis: `label`, `variant`, `type`, `href` (renderiza `<a>`), `disabled`, `hx_get` / `hx_target` / `hx_swap` / `hx_indicator` (defaults para modal + `#htmx-indicator`), `attrs`, `extra_class`.
+### Variantes
+
+| Variante | Uso | Pesos / chrome | Hover |
+|---|---|---|---|
+| `primary` (default) | CTA / ação principal | `font-semibold` + `bg-brand-gradient` + `text-white` + `shadow-sm` | `hover:bg-brand-gradient-hover` + `hover:shadow` |
+| `secondary` | Cancelar / ação secundária | `font-medium` + `bg-white` + `border border-slate-200` + `text-slate-700` | `hover:border-slate-300` + `hover:bg-slate-100` |
+| `outlined` | Terciária / logout | `font-medium` + `border border-emerald-600` + `bg-transparent` + `text-emerald-700` | `hover:border-emerald-700` + `hover:bg-emerald-50` + `hover:text-emerald-800` |
+| `loading` | Submit em andamento | Igual **primary** + spinner (`h-4 w-4` border branco) | Bloqueado (`disabled` / `aria-busy="true"`) |
+
+Primary usa **semibold**; secondary/outlined usam **medium** — hierarquia de peso sem trocar a semântica da variante.
+
+### Parâmetros
+
+`label`, `variant`, `type`, `href` (renderiza `<a>`), `disabled`, `hx_get` / `hx_target` / `hx_swap` / `hx_indicator` (defaults para modal + `#htmx-indicator`), `attrs`, `extra_class`.
 
 ```html
 {% include "components/button.html" with label="Salvar" variant="primary" type="submit" %}
@@ -292,7 +308,7 @@ Parâmetros úteis: `label`, `variant`, `type`, `href` (renderiza `<a>`), `disab
 {% include "components/button.html" with label="Sair" variant="outlined" type="submit" %}
 ```
 
-Não inventar ilhas de estilo de botão nas superfícies-piloto — preferir o include.
+**Não** inventar ilhas de estilo de botão nas superfícies-piloto — preferir o include. **Não** adicionar variantes de negócio novas nesta feature.
 
 ---
 
@@ -321,7 +337,9 @@ Utilitário CSS `.form-control` em `input.css` para filtros/selects alinhados ao
 
 Componente: `templates/components/badge_status.html`.
 
-Forma: `inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium`.
+**Status (007 / US2):** Tipografia/densidade UI (`font-ui text-xs … leading-none tracking-tight`); **Status Triad hex/semântica intactos**.
+
+Forma: `inline-flex items-center rounded-md px-2 py-0.5 font-ui text-xs font-medium leading-none tracking-tight`.
 
 | Semântica | Status aceitos | Classes |
 |---|---|---|
@@ -334,39 +352,83 @@ Forma: `inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium`.
 
 ---
 
-## Empty states
+## Empty states (DS v2)
+
+**Status (007 / US2):** Acabamento honest/acionável — tipografia display + UI, ritmo vertical; **sem** chrome de card. Dados vazios continuam honestos (padrão 004/005); sem inventar conteúdo.
 
 Componente: `templates/components/empty_state.html`.
 
-- Container: `flex flex-col items-center justify-center gap-3 text-center` com `role="status"`.
-- Título opcional: `text-sm font-medium text-slate-800`.
-- Mensagem: `text-sm text-slate-500` (obrigatória).
-- CTA opcional via `cta_label` + `cta_href` **ou** `cta_hx_get` (botão primary do componente `button.html`); o caller decide permissão — o empty state não autoriza.
+| Aspecto | Padrão v2 |
+|---|---|
+| Container | `flex flex-col items-center justify-center px-4 py-8 text-center` + `role="status"` |
+| Headline (`title`, opcional) | `font-display text-base font-medium tracking-tight text-slate-800` |
+| Mensagem (`message`, obrigatória) | `max-w-sm font-ui text-sm leading-relaxed text-slate-500` (+ `mt-1.5` se houver título) |
+| CTA | `mt-5` + botão **primary** via `button.html` quando o caller passa `cta_label` |
 
-Preferir empty states acionáveis onde a lista/KPI vazio já tem ação de domínio (ex.: criar meta/ação), sem inventar dados.
+CTA: `cta_href` (link) **ou** `cta_hx_get` (HTMX → modal por default) **ou** `cta_attrs` só. O caller decide permissão — o empty **não** autoriza.
+
+```html
+{% include "components/empty_state.html" with title="Sem metas" message="Nenhuma meta cadastrada neste ciclo." cta_label="Nova meta" cta_href=create_url %}
+```
+
+Preferir empty acionável onde a lista/KPI já tem ação de domínio (criar meta/ação); polish visual **não** altera `has_data` nem payloads.
 
 ---
 
-## KPI / cartões
+## KPI / cartões (DS v2)
+
+**Status (007 / US2):** Densidade e hierarquia KPI refinadas; preferir **composição limpa** a cardificar excessivamente (sem sombra no frame).
 
 Componente: `templates/components/card.html`.
 
-| Aspecto | Padrão |
+| Aspecto | Padrão v2 |
 |---|---|
-| Container | `rounded-xl border border-slate-200 bg-white p-5 shadow-sm` |
+| Container | `rounded-xl border border-line bg-surface-card p-4` — **sem** `shadow-sm` |
 | Label KPI | `text-xs uppercase tracking-wide text-slate-500` (UI) |
-| Valor | `font-display text-2xl font-semibold tabular-nums text-slate-800` |
+| Valor | `font-display text-2xl font-semibold tabular-nums tracking-tight text-slate-800` |
 | Título de bloco | `font-display text-lg font-medium text-slate-800` |
-| Body auxiliar | `text-sm text-slate-500` (UI sob `.app-shell`) |
+| Body auxiliar | `text-sm leading-snug text-slate-500` (UI sob `.app-shell`) |
 | Badge no KPI | `badge_status` + `badge_label` ao lado do label (com `value`) ou como conteúdo principal |
 
-Grid típico first viewport: `grid grid-cols-1 md:grid-cols-3 gap-4` com cards KPI — **sem** novos gráficos, métricas ou queries agregadas; só hierarquia tipográfica/espacial dos dados já expostos.
+Tokens de surface (`border-line` / `bg-surface-card`) alinhados a `@theme` em `input.css` — equivalentes a slate-200 / white.
+
+Grid típico first viewport: `grid grid-cols-1 md:grid-cols-3 gap-4` com cards KPI — **sem** novos gráficos, métricas ou queries; só hierarquia tipográfica/espacial dos dados já expostos.
 
 ```html
 {% include "components/card.html" with label="Aderência" value="86%" badge_status="alta" %}
 ```
 
-Listagens usam `.table-frame` (`overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm`).
+Dashboards piloto (`admin` / `team` / `personal`) consomem este include; não marcar KPIs com classes de card ad hoc.
+
+---
+
+## Table-frame (DS v2)
+
+**Status (007 / US2):** Chrome leve (borda + surface, **sem** sombra) + densidade anatômica nos filhos `table`/`th`/`td`. Twin CSS em `static/src/input.css` (`@layer components`).
+
+### Wrapper
+
+| Classe | Contrato |
+|---|---|
+| `.table-frame` | `overflow-x-auto rounded-xl border border-line bg-surface-card` |
+
+### Anatomia (filhos)
+
+| Seletor | Padrão |
+|---|---|
+| `.table-frame table` | `min-w-full divide-y divide-line text-left text-sm text-ink` |
+| `.table-frame thead` | `bg-slate-50/80 text-xs uppercase tracking-wide text-ink-muted` |
+| `.table-frame th` / `td` | `px-4 py-2.5`; `th` com `font-medium`; `td` com `align-middle` |
+| `.table-frame tbody` | `divide-y divide-slate-100` |
+| `.table-frame tbody tr:hover` | `bg-slate-50` (templates com ênfase de status podem sobrescrever) |
+
+```html
+<div class="table-frame">
+  <table>…</table>
+</div>
+```
+
+Piloto: listas `templates/cycles/ciclo_list.html` / `ciclo_list_partial.html` (e demais listagens que já usam `.table-frame`). **Não** envolver cada célula em card; o frame é o único chrome de lista.
 
 ---
 

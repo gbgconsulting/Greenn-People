@@ -1,43 +1,43 @@
 <div id="list-container">
 <div class="table-frame">
-  <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
-    <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+  <table>
+    <thead>
       <tr>
-        <th class="px-4 py-3 font-medium">Colaborador</th>
-        <th class="px-4 py-3 font-medium">Etapa</th>
-        <th class="px-4 py-3 font-medium">Nota líder</th>
-        <th class="px-4 py-3 font-medium">Área</th>
-        <th class="px-4 py-3 font-medium">Cargo</th>
-        <th class="px-4 py-3 font-medium text-right">Ações</th>
+        <th>Colaborador</th>
+        <th>Etapa</th>
+        <th>Nota líder</th>
+        <th>Área</th>
+        <th>Cargo</th>
+        <th class="text-right">Ações</th>
       </tr>
     </thead>
-    <tbody class="divide-y divide-slate-100">
+    <tbody>
       {# Ação da liderança primeiro (mesmos dados; sem query nova) #}
       {% for item in membros_resumo %}
         {% if item.avaliacao %}
           {% if item.avaliacao.etapa == "avaliacao" or item.avaliacao.etapa == "aprovacao_metas" or item.avaliacao.etapa == "aprovacao_resultados" %}
         <tr class="border-l-4 border-l-amber-400 bg-amber-50/40 hover:bg-amber-50/70">
-          <td class="px-4 py-3">
-            <p class="font-semibold text-slate-800">{{ item.usuario.nome|default:item.usuario.email }}</p>
+          <td>
+            <p class="font-medium text-slate-800">{{ item.usuario.nome|default:item.usuario.email }}</p>
             <p class="text-xs text-slate-500">{{ item.usuario.email }}</p>
           </td>
-          <td class="px-4 py-3">
+          <td>
             {% if item.avaliacao.etapa == "avaliacao" %}
               {% include "components/badge_status.html" with status="pendente" label=item.avaliacao.get_etapa_display %}
             {% else %}
               {% include "components/badge_status.html" with status="media" label=item.avaliacao.get_etapa_display %}
             {% endif %}
           </td>
-          <td class="px-4 py-3">
+          <td>
             {% if item.avaliacao.nota_final_lider is not None %}
-              <span class="text-lg font-semibold tabular-nums text-slate-800">{{ item.avaliacao.nota_final_lider }}</span>
+              <span class="font-semibold tabular-nums text-slate-800">{{ item.avaliacao.nota_final_lider }}</span>
             {% else %}
               <span class="text-slate-400">—</span>
             {% endif %}
           </td>
-          <td class="px-4 py-3 text-slate-500">{{ item.usuario.area.nome|default:"—" }}</td>
-          <td class="px-4 py-3 text-slate-500">{{ item.usuario.cargo.nome|default:"—" }}</td>
-          <td class="px-4 py-3 text-right">
+          <td class="text-slate-500">{{ item.usuario.area.nome|default:"—" }}</td>
+          <td class="text-slate-500">{{ item.usuario.cargo.nome|default:"—" }}</td>
+          <td class="text-right">
             <div class="inline-flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
               {% if item.avaliacao.etapa == "avaliacao" %}
               <a
@@ -63,42 +63,42 @@
       {# Demais no escopo #}
       {% for item in membros_resumo %}
         {% if not item.avaliacao %}
-        <tr class="hover:bg-slate-50">
-          <td class="px-4 py-3">
-            <p class="font-semibold text-slate-800">{{ item.usuario.nome|default:item.usuario.email }}</p>
+        <tr>
+          <td>
+            <p class="font-medium text-slate-800">{{ item.usuario.nome|default:item.usuario.email }}</p>
             <p class="text-xs text-slate-500">{{ item.usuario.email }}</p>
           </td>
-          <td class="px-4 py-3">
+          <td>
             {% include "components/badge_status.html" with status="arquivado" label="Sem avaliação" %}
           </td>
-          <td class="px-4 py-3"><span class="text-slate-400">—</span></td>
-          <td class="px-4 py-3 text-slate-500">{{ item.usuario.area.nome|default:"—" }}</td>
-          <td class="px-4 py-3 text-slate-500">{{ item.usuario.cargo.nome|default:"—" }}</td>
-          <td class="px-4 py-3 text-right"><span class="text-slate-400">—</span></td>
+          <td><span class="text-slate-400">—</span></td>
+          <td class="text-slate-500">{{ item.usuario.area.nome|default:"—" }}</td>
+          <td class="text-slate-500">{{ item.usuario.cargo.nome|default:"—" }}</td>
+          <td class="text-right"><span class="text-slate-400">—</span></td>
         </tr>
         {% elif item.avaliacao.etapa != "avaliacao" and item.avaliacao.etapa != "aprovacao_metas" and item.avaliacao.etapa != "aprovacao_resultados" %}
-        <tr class="hover:bg-slate-50">
-          <td class="px-4 py-3">
-            <p class="font-semibold text-slate-800">{{ item.usuario.nome|default:item.usuario.email }}</p>
+        <tr>
+          <td>
+            <p class="font-medium text-slate-800">{{ item.usuario.nome|default:item.usuario.email }}</p>
             <p class="text-xs text-slate-500">{{ item.usuario.email }}</p>
           </td>
-          <td class="px-4 py-3">
+          <td>
             {% if item.avaliacao.etapa == "feedback" %}
               {% include "components/badge_status.html" with status="concluida" label=item.avaliacao.get_etapa_display %}
             {% else %}
               {% include "components/badge_status.html" with status="em_andamento" label=item.avaliacao.get_etapa_display %}
             {% endif %}
           </td>
-          <td class="px-4 py-3">
+          <td>
             {% if item.avaliacao.nota_final_lider is not None %}
-              <span class="text-lg font-semibold tabular-nums text-slate-800">{{ item.avaliacao.nota_final_lider }}</span>
+              <span class="font-semibold tabular-nums text-slate-800">{{ item.avaliacao.nota_final_lider }}</span>
             {% else %}
               <span class="text-slate-400">—</span>
             {% endif %}
           </td>
-          <td class="px-4 py-3 text-slate-500">{{ item.usuario.area.nome|default:"—" }}</td>
-          <td class="px-4 py-3 text-slate-500">{{ item.usuario.cargo.nome|default:"—" }}</td>
-          <td class="px-4 py-3 text-right">
+          <td class="text-slate-500">{{ item.usuario.area.nome|default:"—" }}</td>
+          <td class="text-slate-500">{{ item.usuario.cargo.nome|default:"—" }}</td>
+          <td class="text-right">
             <div class="inline-flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
               <a
                 href="{% url 'reviews:detail' item.avaliacao.pk %}"
@@ -116,7 +116,7 @@
 
       {% if not membros_resumo %}
       <tr>
-        <td colspan="6" class="px-4 py-8">
+        <td colspan="6" class="!py-8">
           {% if not ciclo_aberto %}
             {% include "components/empty_state.html" with title="Sem colaboradores no escopo" message="Não há ciclo aberto e nenhum colaborador no seu escopo hierárquico no momento." %}
           {% else %}

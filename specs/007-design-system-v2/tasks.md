@@ -77,14 +77,14 @@ Monólito Django na raiz: `templates/`, `static/`, `docs/`, `apps/` (última all
 
 ### Implementation for User Story 2
 
-- [ ] T019 [P] [US2] Refinar ritmo, pesos, hover/focus das variantes existentes em `templates/components/button.html` (primary/secondary/outlined/loading — sem novas variantes de negócio)
-- [ ] T020 [P] [US2] Refinar densidade/hierarquia KPI em `templates/components/card.html` (evitar cardificar excessivamente)
-- [ ] T021 [P] [US2] Refinar acabamento visual honest/acionável em `templates/components/empty_state.html`
-- [ ] T022 [P] [US2] Ajustar tipografia/densidade visual em `templates/components/badge_status.html` se necessário ao DS v2 (Status Triad hex intacto)
-- [ ] T023 [US2] Adicionar/refinar padrões **table-frame** (densidade, bordas, sombra mínima se preciso) em `static/src/input.css` e aplicá-los nas listas piloto `templates/cycles/ciclo_list.html` / `templates/cycles/ciclo_list_partial.html` (e `templates/reviews/avaliacao_list.html` se no conjunto de evidência)
-- [ ] T024 [US2] Garantir composição KPI/listas nos dashboards piloto (`templates/dashboard/admin.html`, `team.html`, `personal.html`) alinhada ao v2 sem markup de negócio novo
-- [ ] T025 [US2] Documentar botões, cards/KPI, table-frame e empty no Freeze em `docs/design-system.md`
-- [ ] T026 [US2] Rebuild `static/css/tailwind.css` após classes novas e validar US2 via quickstart §2
+- [X] T019 [P] [US2] Refinar ritmo, pesos, hover/focus das variantes existentes em `templates/components/button.html` (primary/secondary/outlined/loading — sem novas variantes de negócio)
+- [X] T020 [P] [US2] Refinar densidade/hierarquia KPI em `templates/components/card.html` (evitar cardificar excessivamente)
+- [X] T021 [P] [US2] Refinar acabamento visual honest/acionável em `templates/components/empty_state.html`
+- [X] T022 [P] [US2] Ajustar tipografia/densidade visual em `templates/components/badge_status.html` se necessário ao DS v2 (Status Triad hex intacto)
+- [X] T023 [US2] Adicionar/refinar padrões **table-frame** (densidade, bordas, sombra mínima se preciso) em `static/src/input.css` e aplicá-los nas listas piloto `templates/cycles/ciclo_list.html` / `templates/cycles/ciclo_list_partial.html` (e `templates/reviews/avaliacao_list.html` se no conjunto de evidência)
+- [X] T024 [US2] Garantir composição KPI/listas nos dashboards piloto (`templates/dashboard/admin.html`, `team.html`, `personal.html`) alinhada ao v2 sem markup de negócio novo
+- [X] T025 [US2] Documentar botões, cards/KPI, table-frame e empty no Freeze em `docs/design-system.md`
+- [X] T026 [US2] Rebuild `static/css/tailwind.css` após classes novas e validar US2 via quickstart §2
 
 **Checkpoint**: US1 + US2 independentes — componentes refinados e documentados
 
