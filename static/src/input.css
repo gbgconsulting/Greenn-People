@@ -190,27 +190,28 @@
   }
 
   /*
-   * Canvas de gráfico (005-dashboard-charts / SC-006):
+   * Canvas de gráfico (005-dashboard-charts / SC-006 + 007 US3 T029):
    * altura fixa legível em viewport ~375px; Chart.js com maintainAspectRatio: false.
+   * Ritmo v2: espaço título→plot um pouco maior; bump sutil 15.5 / 17 / 19 rem.
    * Não altera shell/nav/topbar — só o bloco do gráfico.
    */
   .dashboard-chart-canvas {
-    @apply relative mt-4 w-full min-w-0;
-    height: 15rem; /* 240px — rótulos + legenda consultáveis no mobile */
-    min-height: 15rem;
+    @apply relative mt-5 w-full min-w-0;
+    height: 15.5rem; /* ~248px — rótulos + legenda consultáveis no mobile */
+    min-height: 15.5rem;
   }
 
   @media (min-width: 640px) {
     .dashboard-chart-canvas {
-      height: 16rem;
-      min-height: 16rem;
+      height: 17rem;
+      min-height: 17rem;
     }
   }
 
   @media (min-width: 1024px) {
     .dashboard-chart-canvas {
-      height: 18rem;
-      min-height: 18rem;
+      height: 19rem;
+      min-height: 19rem;
     }
   }
 }

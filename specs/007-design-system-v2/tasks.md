@@ -98,11 +98,11 @@ Monólito Django na raiz: `templates/`, `static/`, `docs/`, `apps/` (última all
 
 ### Implementation for User Story 3
 
-- [ ] T027 [US3] Refinar options visuais apenas em `static/js/dashboard_charts.js` (font family/size/weight eixos/legendas/tooltips apontando stack UI; grid sutil; `borderRadius`/`maxBarThickness`/cutout; tooltip chrome) — **sem** alterar shape JSON nem CDN Chart.js 4.5.1
-- [ ] T028 [P] [US3] Refinar markup visual do bloco (padding, radius, tipografia título/figcaption) em `templates/dashboard/_chart_block.html`
-- [ ] T029 [P] [US3] Ajustar altura/ritmo `.dashboard-chart-canvas` (e classes do bloco se preciso) em `static/src/input.css`
-- [ ] T030 [US3] Documentar seção **charts polish** em `docs/design-system.md` (options/CSS; sem novas métricas/libs)
-- [ ] T031 [US3] Rebuild `static/css/tailwind.css` se CSS mudou; smoke quickstart §3 + confirmar diff vazio de negócio em `apps/dashboard/chart_payloads.py`, views e `apps/dashboard/urls.py`
+- [X] T027 [US3] Refinar options visuais apenas em `static/js/dashboard_charts.js` (font family/size/weight eixos/legendas/tooltips apontando stack UI; grid sutil; `borderRadius`/`maxBarThickness`/cutout; tooltip chrome) — **sem** alterar shape JSON nem CDN Chart.js 4.5.1
+- [X] T028 [P] [US3] Refinar markup visual do bloco (padding, radius, tipografia título/figcaption) em `templates/dashboard/_chart_block.html`
+- [X] T029 [P] [US3] Ajustar altura/ritmo `.dashboard-chart-canvas` (e classes do bloco se preciso) em `static/src/input.css`
+- [X] T030 [US3] Documentar seção **charts polish** em `docs/design-system.md` (options/CSS; sem novas métricas/libs)
+- [X] T031 [US3] Rebuild `static/css/tailwind.css` se CSS mudou; smoke quickstart §3 + confirmar diff vazio de negócio em `apps/dashboard/chart_payloads.py`, views e `apps/dashboard/urls.py`
 
 **Checkpoint**: Charts visualmente alinhados ao v2; contrato 005 preservado
 

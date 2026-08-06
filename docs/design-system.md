@@ -15,7 +15,7 @@ Não criar `DESIGN.md` na raiz: a documentação de design deste projeto vive aq
 
 ## Freeze
 
-**Status:** Draft → caminho para **Freeze v2** (feature `007-design-system-v2`). Tipografia v2 e componentes US2 (botões, KPI/cards, table-frame, empty) já documentados; fechamento formal (status **Freeze v2**) fica para T038 após charts/ninebox polish + evidência. Baseline congelado de `004-ux-visual-foundation` permanece até esse fechamento.
+**Status:** Draft → caminho para **Freeze v2** (feature `007-design-system-v2`). Tipografia v2, componentes US2 (botões, KPI/cards, table-frame, empty) e **charts polish** (US3) já documentados; fechamento formal (status **Freeze v2**) fica para T038 após ninebox polish + evidência. Baseline congelado de `004-ux-visual-foundation` permanece até esse fechamento.
 
 Este documento é a **fonte da verdade** de tokens e padrões de UI do Greenn People. O v2 **reabre** tipografia e acabamento visual no app autenticado com decisão explícita desta feature; login/`base_auth` ficam **fora** (isolamento). Demais superfícies devem **consumir** o conjunto documentado (e os includes em `templates/components/`), sem inventar ilhas de estilo.
 
@@ -38,6 +38,7 @@ Referência visual: [Verdee \| Guia de Estilo](https://www.figma.com/design/LqU1
 | Shell Admin (Governança / Cadastros / Sistema) + destaque Ciclos/Aderência | Seção Shell |
 | Topbar (ciclo aberto / fallback) | Seção Shell / Topbar |
 | Botões, inputs, badges, empty states, KPI/cards, table-frame | Seções US2 (v2) + componentes; inputs/badges baseline |
+| Charts polish (options Chart.js + bloco CSS/markup) | Seção **Charts polish (DS v2)**; contrato consumo 005 abaixo |
 | Focus-visible, skip link, modal trap, indicador HTMX | Seção Focus-visible e a11y |
 
 Evidência before/after das telas-piloto: `specs/004-ux-visual-foundation/evidence/before-after/`.
@@ -51,7 +52,7 @@ Evidência before/after das telas-piloto: `specs/004-ux-visual-foundation/eviden
 
 ### Gráficos no dashboard (consumo · FR-013 / SC-007)
 
-Feature `005-dashboard-charts`: visualizações **consomem** Status Triad e componentes deste Freeze (`empty_state`, tipografia/espacial dos cards). **Não** reabre marca, shell, nav, topbar nem inventa ilha de estilo.
+Feature `005-dashboard-charts`: visualizações **consomem** Status Triad e componentes deste Freeze (`empty_state`, tipografia/espacial dos cards). **Não** reabre marca, shell, nav, topbar nem inventa ilha de estilo. Acabamento visual v2 (eixos, tooltips, altura do bloco): ver seção **Charts polish (DS v2)**.
 
 | Campo | Valor |
 |---|---|
@@ -138,7 +139,7 @@ Tokens semânticos em `static/src/input.css` (`@theme static`): `--color-surface
 
 ## Tipografia
 
-**Status (007):** Escala tipográfica v2 **completa** (famílias, tokens, pesos, usos display vs UI) alinhada a `static/src/input.css`. Componentes US2 (botões, KPI/cards, table-frame, empty) documentados abaixo. Status geral do documento permanece Draft → Freeze v2 até T038 (charts/ninebox polish + evidência).
+**Status (007):** Escala tipográfica v2 **completa** (famílias, tokens, pesos, usos display vs UI) alinhada a `static/src/input.css`. Componentes US2 (botões, KPI/cards, table-frame, empty) e **charts polish** (US3) documentados abaixo. Status geral do documento permanece Draft → Freeze v2 até T038 (ninebox polish + evidência).
 
 Twin CSS obrigatório: `@font-face` + `@theme` (`--font-sans` / `--font-display` / `--font-ui`) + seletor `.app-shell` em `static/src/input.css`. Utilitários Tailwind: `font-sans`, `font-display`, `font-ui`.
 
@@ -429,6 +430,75 @@ Dashboards piloto (`admin` / `team` / `personal`) consomem este include; não ma
 ```
 
 Piloto: listas `templates/cycles/ciclo_list.html` / `ciclo_list_partial.html` (e demais listagens que já usam `.table-frame`). **Não** envolver cada célula em card; o frame é o único chrome de lista.
+
+---
+
+## Charts polish (DS v2)
+
+**Status (007 / US3):** Acabamento visual dos gráficos já existentes (feature `005`). **Só** options Chart.js, CSS de altura/ritmo e markup do bloco — **sem** novas métricas, endpoints, libs ou mudanças de shape JSON. Contrato: `specs/007-design-system-v2/contracts/chart-visual-polish.md`.
+
+### Artefatos
+
+| Camada | Path | Papel |
+|---|---|---|
+| Options Chart.js | `static/js/dashboard_charts.js` | Fonte UI, grid, radius/thickness, cutout, tooltip chrome, legend padding |
+| Altura / ritmo | `static/src/input.css` (`.dashboard-chart-canvas`) | Altura fixa responsiva; Chart.js com `maintainAspectRatio: false` |
+| Markup do bloco | `templates/dashboard/_chart_block.html` | Frame, título, canvas, figcaption, empty |
+| Empty visual | `templates/components/empty_state.html` | Acabamento v2 quando `has_data` é falso |
+
+### Bloco (`_chart_block.html`)
+
+Frame alinhado a KPI/card (composição limpa, **sem** sombra):
+
+| Aspecto | Padrão v2 |
+|---|---|
+| Container (`<figure>`) | `rounded-xl border border-line bg-surface-card p-4 sm:p-5` |
+| Título | `font-display text-lg font-medium tracking-tight text-slate-800` (`h3`) |
+| Canvas wrapper | `.dashboard-chart-canvas` (ver CSS abaixo) |
+| Figcaption | `mt-4 border-t border-line pt-3.5`; lista `text-sm leading-snug text-slate-600` com rótulo **+** valor (e swatch `aria-hidden` opcional) |
+| Empty | Ritmo `mt-3 py-4 sm:py-5` + include `empty_state` com `chart.empty_message` — **sem** séries inventadas |
+
+```html
+{% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" %}
+```
+
+### Altura CSS (`.dashboard-chart-canvas`)
+
+| Viewport | `height` / `min-height` |
+|---|---|
+| default (abaixo de 640px) | `15.5rem` (~248px) |
+| `sm` (≥ 640px) | `17rem` |
+| `lg` (≥ 1024px) | `19rem` |
+
+Também: `relative mt-5 w-full min-w-0`. Rótulos e legenda devem permanecer consultáveis em ~375px.
+
+### Options Chart.js (só visual)
+
+Constantes espelham tokens de `input.css` (`--font-ui`, ink-muted, line) — **não** alteram Status Triad de negócio (`#059669` / `#d97706` / `#e11d48`).
+
+| Aspecto | Valor / comportamento |
+|---|---|
+| Família | Source Sans 3 (`FONT_UI`) — eixos, legenda, tooltips |
+| Ticks / labels | `color` ink-muted `#64748b`; size 12 (10–11 no mobile) |
+| Legenda | `position: bottom`; `usePointStyle`; padding 14 (10 no mobile); weight `500`; texto + valor (FR-007) |
+| Grid (eixo de valor) | `#e2e8f0`, `lineWidth: 1`, sem ticks; eixo de categoria sem grid |
+| Bordas de escala | ocultas |
+| Barras | `borderRadius: 6`, `maxBarThickness: 40`, `borderWidth: 0` |
+| Doughnut | `cutout: '68%'`, borda branca 2px entre fatias |
+| Tooltip | fundo ink `#1e293b`, `cornerRadius: 8`, borda sutil, title semibold / body regular |
+| Responsivo | `responsive: true` + `maintainAspectRatio: false` (altura no CSS); barras agrupadas podem virar `indexAxis: 'y'` em viewport estreito (max-width 639px) com mais de 2 labels |
+
+### Intocado (regressão 005)
+
+| Item | Regra |
+|---|---|
+| Shape JSON | `has_data`, `labels`, `values`, `series`, `colors`, `legend_items`, `type` |
+| Negócio | `apps/dashboard/chart_payloads.py`, views e `apps/dashboard/urls.py` sem mudança de contrato |
+| Lib | Chart.js **4.5.1** CDN — sem lib nova, sem plugin npm |
+| Script load | Só admin / team / personal em `extra_js` — **nunca** em `base.html` |
+| Empty | `has_data !== true` → sem Chart; empty honesto |
+
+Pilotos: `templates/dashboard/{admin,team,personal}.html` via `_chart_block.html`.
 
 ---
 
