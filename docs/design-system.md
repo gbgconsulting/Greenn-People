@@ -34,7 +34,7 @@ Referência visual: [Verdee \| Guia de Estilo](https://www.figma.com/design/LqU1
 | Área | Onde está definido |
 |---|---|
 | Paleta e tokens semânticos | Seção Paleta + `@theme` em `static/src/input.css` |
-| Tipografia | Seção Tipografia (v2 Draft: Fraunces display + Source Sans 3 UI sob `.app-shell`; Inter global/auth) |
+| Tipografia | Seção Tipografia (v2: Fraunces display + Source Sans 3 UI sob `.app-shell`; Inter global/auth; escala e pesos documentados) |
 | Shell Admin (Governança / Cadastros / Sistema) + destaque Ciclos/Aderência | Seção Shell |
 | Topbar (ciclo aberto / fallback) | Seção Shell / Topbar |
 | Botões, inputs, badges, empty states, KPI/cards, tabelas | Seções e componentes correspondentes |
@@ -138,7 +138,9 @@ Tokens semânticos em `static/src/input.css` (`@theme static`): `--color-surface
 
 ## Tipografia
 
-**Status (007):** Draft v2 — tokens e isolamento já em `static/src/input.css` / `templates/base.html`; escala tipográfica e usos display vs UI completam-se nas stories US1/T017 → Freeze v2.
+**Status (007):** Escala tipográfica v2 **completa** (famílias, tokens, pesos, usos display vs UI) alinhada a `static/src/input.css`. Status geral do documento permanece Draft → Freeze v2 até T038 (botões/KPI/charts/ninebox + evidência).
+
+Twin CSS obrigatório: `@font-face` + `@theme` (`--font-sans` / `--font-display` / `--font-ui`) + seletor `.app-shell` em `static/src/input.css`. Utilitários Tailwind: `font-sans`, `font-display`, `font-ui`.
 
 ### Famílias (self-hosted, `font-display: swap`)
 
@@ -148,21 +150,78 @@ Tokens semânticos em `static/src/input.css` (`@theme static`): `--color-surface
 | Display (autenticado) | **Fraunces** | `--font-display` / `font-display` | Títulos de página, headlines de KPI e ênfase tipográfica nas superfícies piloto | `static/fonts/FrauncesVariable.woff2` |
 | UI (autenticado) | **Source Sans 3** | `--font-ui` / `font-ui` | Corpo, controles e chrome sob `.app-shell` | `static/fonts/SourceSans3Variable.woff2` |
 
+As três faces são variáveis (range `font-weight: 100 900` no `@font-face`); na UI usamos só os pesos da tabela abaixo.
+
+### Tokens CSS (contrato)
+
+| Token | Valor (`@theme`) | Utilitário | Pode mudar nesta feature? |
+|---|---|---|---|
+| `--font-sans` | `Inter, ui-sans-serif, system-ui, sans-serif` | `font-sans` | **Não** — protege login/`base_auth` |
+| `--font-display` | `Fraunces, ui-serif, Georgia, 'Times New Roman', serif` | `font-display` | Sim (só display autenticado) |
+| `--font-ui` | `'Source Sans 3', ui-sans-serif, system-ui, sans-serif` | `font-ui` | Sim (default sob `.app-shell`) |
+
+`body` continua com `@apply … font-sans text-sm …`. Em templates autenticados, **não** substituir Inter global por Fraunces/Source Sans fora de `font-display` / `.app-shell`.
+
 ### Isolamento `.app-shell`
 
 1. `templates/base.html` aplica `class="app-shell"` no `<body>` **apenas** do shell autenticado.
-2. Em CSS: `.app-shell { font-family: var(--font-ui); }` — default tipográfico UI no app logado.
+2. Em CSS: `.app-shell { font-family: var(--font-ui); }` — default tipográfico UI no app logado (herança = Source Sans 3; `font-ui` explícito só quando precisar forçar a família).
 3. `--font-sans` e `@apply font-sans` no `body` global **não mudam** (contrato auth: login continua Inter).
 4. `templates/accounts/base_auth.html` / `login.html` **não** recebem `app-shell` e **não** entram no diff desta feature.
 
-### Hierarquia (baseline 004; usos display v2 nas telas piloto)
+### Quando usar Display vs UI
 
-- `font-display` + `text-2xl font-semibold` — títulos de página / headlines de KPI (autenticado)
-- `text-lg font-medium` — títulos de cartão
-- `text-sm` — corpo (sob `.app-shell` = Source Sans 3; fora = Inter)
-- `text-xs text-slate-500` — auxiliar / labels de KPI (`uppercase tracking-wide`)
+| Papel | Família | Aplicar | Não usar em |
+|---|---|---|---|
+| **Display** | Fraunces via `font-display` | `h1` de página; títulos de seção (`h2`); valor numérico de KPI; ênfase tipográfica de um dado-chave (ex.: quadrante) | Corpo de texto, labels, tabelas, botões, inputs, nav, badges, empty copy |
+| **UI** | Source Sans 3 via `.app-shell` (herança) ou `font-ui` | Corpo, subtítulos de apoio, labels, thead, controles, chrome, links de ação | Títulos que precisam de ênfase display (aí combina `font-display` + tamanho/peso) |
+| **Global / auth** | Inter via `font-sans` | Login, `base_auth`, qualquer superfície **sem** `.app-shell` | App autenticado (já coberto por `.app-shell`) |
 
-Escala de pesos e pares display/UI canônicos: ver fechamento Freeze v2 (T017 / T038). Twin CSS: `@theme` + `@font-face` em `static/src/input.css`.
+Regra prática: sob `.app-shell`, o default já é UI; **adicione** `font-display` só onde a hierarquia visual precisar de Fraunces.
+
+### Escala tipográfica (tamanho × peso × família)
+
+| Nível | Classes canônicas | Família efetiva | Uso |
+|---|---|---|---|
+| Página (H1) | `font-display text-2xl font-semibold text-slate-800` | Fraunces | Título principal da tela (`h1`) |
+| Seção / cartão (H2) | `font-display text-lg font-medium text-slate-800` | Fraunces | Cabeçalho de bloco / seção |
+| KPI valor | `font-display text-2xl font-semibold tabular-nums text-slate-800` | Fraunces | Número destaque do card KPI |
+| Ênfase display menor | `font-display text-lg font-semibold` (+ cor do contexto) | Fraunces | Dado-chave curto (ex. nome de ciclo na lista, rótulo de quadrante) |
+| Corpo | `text-sm` (+ `text-slate-500` ou `text-slate-600` conforme hierarquia) | Source Sans 3 (`.app-shell`) / Inter (auth) | Parágrafos, descrições sob o título |
+| Label de formulário / meta | `text-sm font-medium text-slate-700` | UI | Labels de campo |
+| Auxiliar / KPI label | `text-xs uppercase tracking-wide text-slate-500` | UI | Rótulos curtos acima do valor KPI |
+| Meta / dt | `text-xs font-medium uppercase tracking-wide text-slate-400` | UI | Definições de perfil, legendas sutis |
+| Thead / tabular | `text-xs uppercase tracking-wide text-slate-500` + células `text-sm` | UI | Cabeçalhos e corpo de tabela |
+| Ênfase em UI | `font-medium` ou `font-semibold` (sem `font-display`) | UI | Nomes em linha, % em tabela, links de ação |
+
+### Pesos canônicos
+
+| Peso | Classe | Onde |
+|---|---|---|
+| Regular (400) | (default) | Corpo `text-sm`, textos auxiliares |
+| Medium (500) | `font-medium` | Títulos de seção display, labels, thead, links de ação, nav ativa padrão |
+| Semibold (600) | `font-semibold` | H1 de página, valor KPI, ênfase display menor, % / nomes fortes em tabela |
+| Bold (700+) | — | **Evitar** na UI autenticada v2; não faz parte da escala canônica |
+
+Variáveis WOFF2 cobrem 100–900; a escala de produto restringe-se a **regular / medium / semibold**.
+
+### Referência rápida (cópias prontas)
+
+```html
+<!-- Página -->
+<h1 class="font-display text-2xl font-semibold text-slate-800">…</h1>
+<p class="mt-1 text-sm text-slate-500">…</p>
+
+<!-- Seção -->
+<h2 class="font-display text-lg font-medium text-slate-800">…</h2>
+<p class="mt-0.5 text-sm text-slate-500">…</p>
+
+<!-- KPI (card) -->
+<p class="text-xs uppercase tracking-wide text-slate-500">…</p>
+<p class="font-display text-2xl font-semibold tabular-nums text-slate-800">…</p>
+```
+
+Pilotos US1 alinhados a esta escala: `templates/dashboard/{admin,team,personal}.html`, `templates/cycles/ciclo_list.html` (+ partial), `templates/pdi/{pdi_detail,pdi_form}.html`, `templates/components/card.html` (valor KPI).
 
 ---
 
@@ -295,10 +354,10 @@ Componente: `templates/components/card.html`.
 | Aspecto | Padrão |
 |---|---|
 | Container | `rounded-xl border border-slate-200 bg-white p-5 shadow-sm` |
-| Label KPI | `text-xs uppercase tracking-wide text-slate-500` |
-| Valor | `text-2xl font-semibold tabular-nums text-slate-800` |
-| Título de bloco | `text-lg font-medium text-slate-800` |
-| Body auxiliar | `text-sm text-slate-500` |
+| Label KPI | `text-xs uppercase tracking-wide text-slate-500` (UI) |
+| Valor | `font-display text-2xl font-semibold tabular-nums text-slate-800` |
+| Título de bloco | `font-display text-lg font-medium text-slate-800` |
+| Body auxiliar | `text-sm text-slate-500` (UI sob `.app-shell`) |
 | Badge no KPI | `badge_status` + `badge_label` ao lado do label (com `value`) ou como conteúdo principal |
 
 Grid típico first viewport: `grid grid-cols-1 md:grid-cols-3 gap-4` com cards KPI — **sem** novos gráficos, métricas ou queries agregadas; só hierarquia tipográfica/espacial dos dados já expostos.

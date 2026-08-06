@@ -35,6 +35,8 @@ Qualquer “fix” visual de login nesta feature = **falha de aceite**, não tra
 
 **T011 (2026-08-06)**: `git diff` auth vazio vs HEAD; login sem `app-shell`; `body` permanece `font-sans`/Inter; `.app-shell` apenas em `templates/base.html`. Evidência: [evidence/before-after/README.md](../evidence/before-after/README.md#verificação-de-isolamento-auth-t011--2026-08-06).
 
+**T018 (2026-08-06)**: revalidação US1 (quickstart §1) — admin/team/lista com hierarquia `font-display` + `.app-shell`; login sem vazamento v2; diff auth continua vazio. Evidência: [evidence/before-after/README.md](../evidence/before-after/README.md#validação-us1--quickstart-1-t018--2026-08-06).
+
 ## Anti-padrões (proibidos)
 
 - Alterar `--font-sans` para Source Sans 3 / Fraunces  

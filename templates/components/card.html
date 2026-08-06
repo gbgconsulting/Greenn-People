@@ -22,7 +22,7 @@
   <h3 class="text-lg font-medium text-slate-800 {% if label %}mt-1{% endif %}">{{ title }}</h3>
   {% endif %}
   {% if value != '' %}
-  <p class="text-2xl font-semibold tabular-nums text-slate-800 {% if label or title %}mt-1{% endif %}">{{ value }}</p>
+  <p class="font-display text-2xl font-semibold tabular-nums text-slate-800 {% if label or title %}mt-1{% endif %}">{{ value }}</p>
   {% elif badge_status %}
   <div class="{% if label or title %}mt-2{% endif %}">
     {% include "components/badge_status.html" with status=badge_status label=badge_label %}

@@ -66,6 +66,20 @@ Baseline **before** capturado em 2026-08-06 · viewport **1280×900** · stack D
 | Tipografia efetiva | ✓ Inter via `--font-sans` + `body { font-family: var(--font-sans) }`; v2 só sob `.app-shell` em `base.html` |
 | OUT checklist | `OUT-LOGIN-DIFF` + `OUT-AUTH-ISOLATION` ✅; visual after ainda em T040 |
 
+## Validação US1 — quickstart §1 (T018) — 2026-08-06
+
+Stack Docker local; markup via `Client.force_login` (sem alterar senhas seed).
+
+| # | Passo (quickstart §1) | Resultado |
+|---|---|---|
+| 1 | Dashboard admin — hierarquia display vs UI | ✓ PASS · `font-display` em h1 + 3/3 h2; corpo sob `.app-shell` (Source Sans 3); `font-display` count=7 |
+| 2 | Team + lista ciclos — mesma hierarquia | ✓ PASS · team h1+2/2 h2 display; cycles h1 display + ênfases; ambos com `app-shell` |
+| 3 | `/accounts/login/` visual/markup isolado | ✓ PASS · body sem `app-shell`; sem `font-display`/`font-ui` no HTML; HTTP 200 |
+| 4 | `git diff` auth templates | ✓ PASS · working tree + staged = 0 bytes |
+| 5 | Tipografia efetiva no login | ✓ PASS · `body { font-family: var(--font-sans) }` = Inter; `.app-shell` / `--font-display` só no app autenticado |
+
+**Conclusão T018:** US1 aceite via quickstart §1 — tipografia v2 nos pilotos autenticados; auth intacto. Pares `*-after.png` / `login-unchanged-after.png` ficam para T039/T040 (US5).
+
 ## Confirmação de scaffold (T001)
 
 Verificado em 2026-08-06:

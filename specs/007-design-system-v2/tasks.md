@@ -57,13 +57,13 @@ Monólito Django na raiz: `templates/`, `static/`, `docs/`, `apps/` (última all
 
 ### Implementation for User Story 1
 
-- [ ] T012 [P] [US1] Aplicar `font-display` em títulos de página / headlines de KPI em `templates/dashboard/admin.html`
-- [ ] T013 [P] [US1] Aplicar tipografia v2 (display títulos / UI corpo) em `templates/dashboard/team.html`
-- [ ] T014 [P] [US1] Aplicar tipografia v2 em `templates/dashboard/personal.html`
-- [ ] T015 [P] [US1] Aplicar tipografia v2 em títulos/labels de `templates/cycles/ciclo_list.html` e `templates/cycles/ciclo_list_partial.html`
-- [ ] T016 [P] [US1] Aplicar tipografia v2 em `templates/pdi/pdi_detail.html` e/ou `templates/pdi/pdi_form.html`
-- [ ] T017 [US1] Completar documentação da escala tipográfica (pesos, usos display vs UI, tokens) em `docs/design-system.md` alinhada a `static/src/input.css`
-- [ ] T018 [US1] Validar US1 via quickstart §1 (admin + team + lista + login inalterado + diff auth vazio)
+- [X] T012 [P] [US1] Aplicar `font-display` em títulos de página / headlines de KPI em `templates/dashboard/admin.html`
+- [X] T013 [P] [US1] Aplicar tipografia v2 (display títulos / UI corpo) em `templates/dashboard/team.html`
+- [X] T014 [P] [US1] Aplicar tipografia v2 em `templates/dashboard/personal.html`
+- [X] T015 [P] [US1] Aplicar tipografia v2 em títulos/labels de `templates/cycles/ciclo_list.html` e `templates/cycles/ciclo_list_partial.html`
+- [X] T016 [P] [US1] Aplicar tipografia v2 em `templates/pdi/pdi_detail.html` e/ou `templates/pdi/pdi_form.html`
+- [X] T017 [US1] Completar documentação da escala tipográfica (pesos, usos display vs UI, tokens) em `docs/design-system.md` alinhada a `static/src/input.css`
+- [X] T018 [US1] Validar US1 via quickstart §1 (admin + team + lista + login inalterado + diff auth vazio)
 
 **Checkpoint**: US1 testável de forma independente — tipografia v2 no autenticado, auth isolado
 
