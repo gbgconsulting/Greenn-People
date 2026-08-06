@@ -15,9 +15,9 @@ Não criar `DESIGN.md` na raiz: a documentação de design deste projeto vive aq
 
 ## Freeze
 
-**Status:** congelado (feature `004-ux-visual-foundation` · SC-006).
+**Status:** Draft → caminho para **Freeze v2** (feature `007-design-system-v2`). Baseline congelado permanece o de `004-ux-visual-foundation` (SC-006) até o fechamento formal do v2 (tipografia + botões/KPI/charts/ninebox polish + evidência).
 
-Este documento é a **fonte da verdade** de tokens e padrões de UI do Greenn People. Features seguintes — em especial **gráficos / visualizações no dashboard** e **9-box interativa** — devem **consumir** o conjunto documentado abaixo (e os includes em `templates/components/`), sem reabrir redesign de marca nem inventar ilhas de estilo.
+Este documento é a **fonte da verdade** de tokens e padrões de UI do Greenn People. O v2 **reabre** tipografia e acabamento visual no app autenticado com decisão explícita desta feature; login/`base_auth` ficam **fora** (isolamento). Demais superfícies devem **consumir** o conjunto documentado (e os includes em `templates/components/`), sem inventar ilhas de estilo.
 
 ### Experimento Figma (branch `experiment/ds-figma-button-input`)
 
@@ -34,7 +34,7 @@ Referência visual: [Verdee \| Guia de Estilo](https://www.figma.com/design/LqU1
 | Área | Onde está definido |
 |---|---|
 | Paleta e tokens semânticos | Seção Paleta + `@theme` em `static/src/input.css` |
-| Tipografia | Seção Tipografia (`font-sans` / Inter) |
+| Tipografia | Seção Tipografia (v2 Draft: Fraunces display + Source Sans 3 UI sob `.app-shell`; Inter global/auth) |
 | Shell Admin (Governança / Cadastros / Sistema) + destaque Ciclos/Aderência | Seção Shell |
 | Topbar (ciclo aberto / fallback) | Seção Shell / Topbar |
 | Botões, inputs, badges, empty states, KPI/cards, tabelas | Seções e componentes correspondentes |
@@ -138,12 +138,31 @@ Tokens semânticos em `static/src/input.css` (`@theme static`): `--color-surface
 
 ## Tipografia
 
-- **Fonte:** Inter (Google Fonts, carregada localmente para evitar dependência externa em runtime) — `--font-sans` / `font-sans`.
-- **Hierarquia:**
-  - `text-2xl font-semibold` — títulos de página / valores KPI
-  - `text-lg font-medium` — títulos de cartão
-  - `text-sm` — corpo (default em `body`)
-  - `text-xs text-slate-500` — auxiliar / labels de KPI (`uppercase tracking-wide`)
+**Status (007):** Draft v2 — tokens e isolamento já em `static/src/input.css` / `templates/base.html`; escala tipográfica e usos display vs UI completam-se nas stories US1/T017 → Freeze v2.
+
+### Famílias (self-hosted, `font-display: swap`)
+
+| Papel | Família | Token / utilitário | Onde vive | Arquivo |
+|---|---|---|---|---|
+| Global / auth (inalterado) | **Inter** | `--font-sans` / `font-sans` | `body` global; login e `base_auth` (sem `.app-shell`) | `static/fonts/InterVariable.woff2` |
+| Display (autenticado) | **Fraunces** | `--font-display` / `font-display` | Títulos de página, headlines de KPI e ênfase tipográfica nas superfícies piloto | `static/fonts/FrauncesVariable.woff2` |
+| UI (autenticado) | **Source Sans 3** | `--font-ui` / `font-ui` | Corpo, controles e chrome sob `.app-shell` | `static/fonts/SourceSans3Variable.woff2` |
+
+### Isolamento `.app-shell`
+
+1. `templates/base.html` aplica `class="app-shell"` no `<body>` **apenas** do shell autenticado.
+2. Em CSS: `.app-shell { font-family: var(--font-ui); }` — default tipográfico UI no app logado.
+3. `--font-sans` e `@apply font-sans` no `body` global **não mudam** (contrato auth: login continua Inter).
+4. `templates/accounts/base_auth.html` / `login.html` **não** recebem `app-shell` e **não** entram no diff desta feature.
+
+### Hierarquia (baseline 004; usos display v2 nas telas piloto)
+
+- `font-display` + `text-2xl font-semibold` — títulos de página / headlines de KPI (autenticado)
+- `text-lg font-medium` — títulos de cartão
+- `text-sm` — corpo (sob `.app-shell` = Source Sans 3; fora = Inter)
+- `text-xs text-slate-500` — auxiliar / labels de KPI (`uppercase tracking-wide`)
+
+Escala de pesos e pares display/UI canônicos: ver fechamento Freeze v2 (T017 / T038). Twin CSS: `@theme` + `@font-face` em `static/src/input.css`.
 
 ---
 
@@ -364,4 +383,4 @@ Templates customizados (`404.html`, `403.html`) seguindo a identidade visual do 
 - Sidebar fixa no desktop (`md+`); no mobile, drawer com overlay aberto pelo botão do topbar.
 - Tabelas em wrappers com `overflow-x-auto` / `.table-frame` para scroll horizontal sem quebrar o layout.
 - Filtros em `grid-cols-1` no mobile e `flex-wrap` a partir de `sm`.
-- Fonte Inter auto-hospedada em `static/fonts/InterVariable.woff2` (sem CDN em runtime).
+- Fontes auto-hospedadas em `static/fonts/` (Inter, Fraunces, Source Sans 3 — sem CDN em runtime); tipografia v2 escopada em `.app-shell` (ver Tipografia).

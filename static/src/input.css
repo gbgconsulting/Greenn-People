@@ -17,7 +17,10 @@
  *   Alerta/médio .... amber-50 / amber-600–700
  *   Crítico/baixo ... rose-50 / rose-600–700
  *
- * Tipografia: Inter (--font-sans); body text-sm.
+ * Tipografia:
+ *   Inter (--font-sans) — default global / body / auth (NÃO alterar).
+ *   Fraunces (--font-display / font-display) — títulos autenticados.
+ *   Source Sans 3 (--font-ui / font-ui) — UI autenticada sob .app-shell.
  * Componentes CSS: .table-frame, .form-control (ver design-system.md).
  * A11y: :focus-visible emerald + ring-offset-surface (US5 / a11y-shell).
  */
@@ -29,8 +32,27 @@
   src: url('../fonts/InterVariable.woff2') format('woff2');
 }
 
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../fonts/FrauncesVariable.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Source Sans 3';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../fonts/SourceSans3Variable.woff2') format('woff2');
+}
+
 @theme {
   --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+  /* v2 autenticado — utilitários font-display / font-ui; body permanece font-sans */
+  --font-display: Fraunces, ui-serif, Georgia, 'Times New Roman', serif;
+  --font-ui: 'Source Sans 3', ui-sans-serif, system-ui, sans-serif;
 }
 
 /* Tokens semânticos @theme static — espelham a tabela "Paleta de cores" da doc */
@@ -53,6 +75,14 @@
 @layer base {
   body {
     @apply bg-surface font-sans text-sm text-ink antialiased;
+  }
+
+  /*
+   * Tipografia UI v2 — só no shell autenticado (classe em templates/base.html).
+   * Login/base_auth NÃO têm .app-shell → continuam com Inter via body font-sans.
+   */
+  .app-shell {
+    font-family: var(--font-ui);
   }
 
   /* Selects/inputs nativos — mesmo anel emerald dos forms (design-system.md) */

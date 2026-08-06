@@ -87,6 +87,8 @@
     --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     --default-font-family: var(--font-sans);
     --default-mono-font-family: var(--font-mono);
+    --font-display: Fraunces, ui-serif, Georgia, 'Times New Roman', serif;
+    --font-ui: 'Source Sans 3', ui-sans-serif, system-ui, sans-serif;
     --color-surface: #f8fafc;
     --color-surface-card: #ffffff;
     --color-ink: #1e293b;
@@ -296,6 +298,9 @@
   .top-0 {
     top: 0px;
   }
+  .top-1\.5 {
+    top: calc(var(--spacing) * 1.5);
+  }
   .top-1\/2 {
     top: calc(1 / 2 * 100%);
   }
@@ -304,6 +309,9 @@
   }
   .top-6 {
     top: calc(var(--spacing) * 6);
+  }
+  .right-1\.5 {
+    right: calc(var(--spacing) * 1.5);
   }
   .right-3 {
     right: calc(var(--spacing) * 3);
@@ -450,6 +458,9 @@
   .\!h-9 {
     height: calc(var(--spacing) * 9) !important;
   }
+  .h-3\.5 {
+    height: calc(var(--spacing) * 3.5);
+  }
   .h-4 {
     height: calc(var(--spacing) * 4);
   }
@@ -482,6 +493,9 @@
   }
   .min-h-screen {
     min-height: 100vh;
+  }
+  .w-3\.5 {
+    width: calc(var(--spacing) * 3.5);
   }
   .w-4 {
     width: calc(var(--spacing) * 4);
@@ -1011,6 +1025,9 @@
   .pr-3 {
     padding-right: calc(var(--spacing) * 3);
   }
+  .pr-7 {
+    padding-right: calc(var(--spacing) * 7);
+  }
   .pr-11 {
     padding-right: calc(var(--spacing) * 11);
   }
@@ -1029,11 +1046,17 @@
   .align-top {
     vertical-align: top;
   }
+  .font-display {
+    font-family: var(--font-display);
+  }
   .font-mono {
     font-family: var(--font-mono);
   }
   .font-sans {
     font-family: var(--font-sans);
+  }
+  .font-ui {
+    font-family: var(--font-ui);
   }
   .text-2xl {
     font-size: var(--text-2xl);
@@ -1233,6 +1256,10 @@
   }
   .opacity-75 {
     opacity: 75%;
+  }
+  .shadow {
+    --tw-shadow: 0 1px 3px 0 var(--tw-shadow-color, rgb(0 0 0 / 0.1)), 0 1px 2px -1px var(--tw-shadow-color, rgb(0 0 0 / 0.1));
+    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
   }
   .shadow-lg {
     --tw-shadow: 0 10px 15px -3px var(--tw-shadow-color, rgb(0 0 0 / 0.1)), 0 4px 6px -4px var(--tw-shadow-color, rgb(0 0 0 / 0.1));
@@ -1708,6 +1735,20 @@
   font-display: swap;
   src: url('../fonts/InterVariable.woff2') format('woff2');
 }
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../fonts/FrauncesVariable.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Source Sans 3';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../fonts/SourceSans3Variable.woff2') format('woff2');
+}
 @layer base {
   body {
     background-color: var(--color-surface);
@@ -1717,6 +1758,9 @@
     color: var(--color-ink);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+  .app-shell {
+    font-family: var(--font-ui);
   }
   select:not([class*='rounded']) {
     border-radius: var(--radius-lg);
