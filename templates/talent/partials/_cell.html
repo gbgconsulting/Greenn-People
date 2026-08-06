@@ -1,5 +1,6 @@
 {% comment %}
-  Célula da grade 9-box (desempenho × potencial).
+  Célula da grade 9-box (desempenho × potencial) — polish visual DS v2 / US4.
+
   Uso: {% include "talent/partials/_cell.html" with cell=cell %}
 
   Parâmetros:
@@ -9,10 +10,13 @@
 
   id estável para refresh HTMX / DnD: #cell-{desempenho}-{potencial}
   Rótulos textuais de eixos e quadrante além da cor (a11y FR-011 / SC-006).
+
+  Anatomia v2: bordas via border-t/border-l (grade externa em matrix.html);
+  tipografia display no rótulo de quadrante; densidade p-2.5; empty honesto.
 {% endcomment %}
 <div
   id="cell-{{ cell.desempenho }}-{{ cell.potencial }}"
-  class="min-h-[8rem] border border-slate-100 p-3 {% if cell.desempenho == 3 and cell.potencial == 3 %}bg-emerald-50/70{% elif cell.desempenho == 1 and cell.potencial == 1 %}bg-rose-50/50{% else %}bg-white{% endif %}"
+  class="min-h-[7.5rem] border-t border-l border-line p-2.5 sm:min-h-[8rem] sm:p-3 {% if cell.desempenho == 3 and cell.potencial == 3 %}bg-emerald-50/60{% elif cell.desempenho == 1 and cell.potencial == 1 %}bg-rose-50/40{% else %}bg-surface-card{% endif %}"
   data-desempenho="{{ cell.desempenho }}"
   data-potencial="{{ cell.potencial }}"
   data-quadrante="{{ cell.quadrante }}"
@@ -20,23 +24,40 @@
   aria-label="Desempenho {% if cell.desempenho == 3 %}Alto{% elif cell.desempenho == 2 %}Médio{% else %}Baixo{% endif %}, potencial {% if cell.potencial == 3 %}Alto{% elif cell.potencial == 2 %}Médio{% else %}Baixo{% endif %} — {{ cell.label }}"
   {% if oob %}hx-swap-oob="outerHTML"{% endif %}
 >
-  {# Rótulos além da cor (FR-011 / SC-006 / T028): quadrante + eixos por extenso #}
+  {# Rótulos além da cor (FR-011 / SC-006): quadrante em display + eixos por extenso #}
   <header class="mb-2 space-y-0.5">
-    <p class="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-      Quadrante {{ cell.label }}
+    <p class="font-display text-xs font-medium tracking-tight text-slate-700">
+      <span class="sr-only">Quadrante </span>{{ cell.label }}
     </p>
-    <p class="text-[10px] leading-tight text-slate-500">
+    <p class="text-[10px] leading-tight text-ink-muted">
       Desempenho
       {% if cell.desempenho == 3 %}Alto{% elif cell.desempenho == 2 %}Médio{% else %}Baixo{% endif %}
       · Potencial
       {% if cell.potencial == 3 %}Alto{% elif cell.potencial == 2 %}Médio{% else %}Baixo{% endif %}
     </p>
   </header>
-  <ul class="space-y-2" aria-label="Pessoas nesta célula">
+  <ul class="space-y-1.5" aria-label="Pessoas nesta célula">
     {% for item in cell.itens %}
       {% include "talent/partials/_person_card.html" with item=item %}
     {% empty %}
-      <li class="text-xs text-slate-400">—</li>
+      <li
+        class="flex flex-col items-center justify-center gap-1 rounded-md bg-slate-50/60 px-2 py-3 text-center"
+        aria-hidden="true"
+      >
+        <svg
+          class="h-3.5 w-3.5 text-slate-300"
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.25"
+          stroke-dasharray="2 1.5"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <rect x="2.5" y="2.5" width="11" height="11" rx="2" />
+        </svg>
+        <span class="text-[10px] font-medium uppercase tracking-wide text-ink-muted/80">Vazio</span>
+      </li>
     {% endfor %}
   </ul>
 </div>

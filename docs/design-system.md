@@ -15,7 +15,7 @@ Não criar `DESIGN.md` na raiz: a documentação de design deste projeto vive aq
 
 ## Freeze
 
-**Status:** Draft → caminho para **Freeze v2** (feature `007-design-system-v2`). Tipografia v2, componentes US2 (botões, KPI/cards, table-frame, empty) e **charts polish** (US3) já documentados; fechamento formal (status **Freeze v2**) fica para T038 após ninebox polish + evidência. Baseline congelado de `004-ux-visual-foundation` permanece até esse fechamento.
+**Status:** Draft → caminho para **Freeze v2** (feature `007-design-system-v2`). Tipografia v2, componentes US2 (botões, KPI/cards, table-frame, empty), **charts polish** (US3) e **ninebox polish** (US4) já documentados; fechamento formal (status **Freeze v2**) fica para T038 após evidência before/after + checklist OUT. Baseline congelado de `004-ux-visual-foundation` permanece até esse fechamento.
 
 Este documento é a **fonte da verdade** de tokens e padrões de UI do Greenn People. O v2 **reabre** tipografia e acabamento visual no app autenticado com decisão explícita desta feature; login/`base_auth` ficam **fora** (isolamento). Demais superfícies devem **consumir** o conjunto documentado (e os includes em `templates/components/`), sem inventar ilhas de estilo.
 
@@ -39,6 +39,7 @@ Referência visual: [Verdee \| Guia de Estilo](https://www.figma.com/design/LqU1
 | Topbar (ciclo aberto / fallback) | Seção Shell / Topbar |
 | Botões, inputs, badges, empty states, KPI/cards, table-frame | Seções US2 (v2) + componentes; inputs/badges baseline |
 | Charts polish (options Chart.js + bloco CSS/markup) | Seção **Charts polish (DS v2)**; contrato consumo 005 abaixo |
+| Ninebox polish (grade, cards, drawer domínio, drag/empty) | Seção **Ninebox polish (DS v2)**; contrato consumo 006 abaixo |
 | Focus-visible, skip link, modal trap, indicador HTMX | Seção Focus-visible e a11y |
 
 Evidência before/after das telas-piloto: `specs/004-ux-visual-foundation/evidence/before-after/`.
@@ -75,7 +76,7 @@ Feature `005-dashboard-charts`: visualizações **consomem** Status Triad e comp
 
 ### Matriz 9-box interativa (consumo · FR-012 / research R10)
 
-Feature `006-ninebox-interativa`: a matriz **consome** tokens e componentes deste Freeze (`button`, `badge_status`, `empty_state`, `input` / `.form-control`, `htmx_indicator`). **Não** reabre marca, shell, nav, topbar nem inventa ilha de estilo.
+Feature `006-ninebox-interativa`: a matriz **consome** tokens e componentes deste Freeze (`button`, `badge_status`, `empty_state`, `input` / `.form-control`, `htmx_indicator`). **Não** reabre marca, shell, nav, topbar nem inventa ilha de estilo. Acabamento visual v2 (grade, person cards, drawer de domínio, drag/empty): ver seção **Ninebox polish (DS v2)**.
 
 | Campo | Valor |
 |---|---|
@@ -139,7 +140,7 @@ Tokens semânticos em `static/src/input.css` (`@theme static`): `--color-surface
 
 ## Tipografia
 
-**Status (007):** Escala tipográfica v2 **completa** (famílias, tokens, pesos, usos display vs UI) alinhada a `static/src/input.css`. Componentes US2 (botões, KPI/cards, table-frame, empty) e **charts polish** (US3) documentados abaixo. Status geral do documento permanece Draft → Freeze v2 até T038 (ninebox polish + evidência).
+**Status (007):** Escala tipográfica v2 **completa** (famílias, tokens, pesos, usos display vs UI) alinhada a `static/src/input.css`. Componentes US2 (botões, KPI/cards, table-frame, empty), **charts polish** (US3) e **ninebox polish** (US4) documentados abaixo. Status geral do documento permanece Draft → Freeze v2 até T038 (evidência + checklist OUT).
 
 Twin CSS obrigatório: `@font-face` + `@theme` (`--font-sans` / `--font-display` / `--font-ui`) + seletor `.app-shell` em `static/src/input.css`. Utilitários Tailwind: `font-sans`, `font-display`, `font-ui`.
 
@@ -502,6 +503,85 @@ Pilotos: `templates/dashboard/{admin,team,personal}.html` via `_chart_block.html
 
 ---
 
+## Ninebox polish (DS v2)
+
+**Status (007 / US4):** Acabamento visual da matriz 9-box já existente (feature `006`). **Só** tipografia/densidade/bordas/estados visuais em templates `talent` + feedback drag/ARIA de suporte em `ninebox_matrix.js` — **sem** alterar AuthZ, fórmulas, política drag=potencial-only, endpoints JSON, handlers de POST nem contratos HTMX (`hx-*` / targets / URLs). Contrato: `specs/007-design-system-v2/contracts/ninebox-visual-only.md`.
+
+### Artefatos
+
+| Camada | Path | Papel |
+|---|---|---|
+| Página / grade | `templates/talent/matrix.html` | Títulos display, filtros, frame `table-frame`, empty, shell do drawer |
+| Células | `templates/talent/partials/_cell.html` | Densidade, bordas de grade, tipografia de quadrante, empty de célula |
+| Person cards | `templates/talent/partials/_person_card.html` | Chrome leve, hover/focus, handle DnD visual |
+| Drawer domínio | `templates/talent/partials/_drawer.html` | Tipografia/densidade/separadores; **hx-* intactos** |
+| Feedback drag / ARIA | `static/js/ninebox_matrix.js` | opacity/ring/cursor + live region; sem mudança de regra de negócio |
+| Empty visual | `templates/components/empty_state.html` | Empty honesto (ciclo, filtro, idle drawer) com acabamento v2 |
+
+Drawer permanece **domínio `talent`** — **não** criar `templates/components/drawer.html` canônico nesta feature.
+
+### Grade (`matrix.html` + `_cell.html`)
+
+| Aspecto | Padrão v2 |
+|---|---|
+| Títulos de página / seção | `font-display` + `tracking-tight`; corpo/meta em `text-sm` / `text-ink-muted` |
+| Labels de filtro | `text-xs font-medium uppercase tracking-wide text-ink-muted` + `.form-control` |
+| Container da grade | `#ninebox-matrix` com `table-frame p-2.5 sm:p-3.5` |
+| Grid interno | `rounded-lg border border-line`; eixos em `uppercase tracking-wide text-ink-muted` |
+| Célula | `min-h-[7.5rem] sm:min-h-[8rem]`; `p-2.5 sm:p-3`; bordas `border-t border-l border-line` |
+| Rótulo de quadrante | `font-display text-xs font-medium tracking-tight` + eixo por extenso (além da cor) |
+| Tint semântico leve | `bg-emerald-50/60` (3×3) / `bg-rose-50/40` (1×1); demais `bg-surface-card` |
+| Célula vazia | Placeholder dashed + “Vazio” (`aria-hidden`) — **não** fingir pessoas |
+| Empty de escopo | `#ninebox-matrix-empty` + `empty_state` (loading/`aria-busy` ≠ empty definitivo) |
+
+### Person cards (`_person_card.html`)
+
+| Aspecto | Padrão v2 |
+|---|---|
+| Chrome | `rounded-md border border-line bg-surface-card` — **sem** sombra |
+| Densidade | Botão `px-2.5 py-2`; nome `font-medium tracking-tight text-ink`; email `text-xs text-ink-muted` |
+| Hover / focus | `hover:bg-slate-50`; `focus-visible:ring-2 focus-visible:ring-emerald-500` + offset surface |
+| DnD (admin + ponteiro fino) | `cursor-grab` / `active:cursor-grabbing`; handle `ninebox-dnd-handle` com nome acessível |
+| Gates | Server: `draggable` só admin; client: desliga em `pointer: coarse` / viewport estreito — drawer continua caminho completo |
+
+### Drawer de domínio (`_drawer.html` + shell em `matrix.html`)
+
+| Aspecto | Padrão v2 |
+|---|---|
+| Shell lateral | `rounded-lg border border-line bg-surface-card p-4`; sticky `xl:w-80` |
+| Heading | `font-display text-lg font-medium tracking-tight text-ink` |
+| Meta (área/cargo/ciclo) | Labels uppercase muted + valores `font-medium`; separadores `border-t border-line` |
+| Hint read-only | `rounded-md border border-line bg-slate-50/80` — texto, sem novos controles |
+| Controles | Continua consumindo `button`, `badge_status`, `.form-control`, `htmx_indicator` |
+| Contrato HTMX | Targets `#matrix-drawer`, URLs drawer/move/toggle e partials **inalterados** |
+
+### Feedback de drag (`ninebox_matrix.js`)
+
+Tokens espelham o shell (emerald focus / amber alerta Status Triad) — **não** mudam política potencial-only nem o body do POST.
+
+| Estado | Classes / comportamento |
+|---|---|
+| Card em arraste | `opacity-60 ring-2 ring-emerald-500 ring-offset-1 ring-offset-surface cursor-grabbing` |
+| Drop válido (mesma linha desempenho) | `ring-2 ring-emerald-500 ring-inset bg-emerald-50/40` |
+| Snap / alerta visual | `ring-2 ring-amber-500 ring-inset bg-amber-50/40` |
+| POST pendente | `opacity-50` + `aria-busy` no card |
+| Cancel (Esc / fora) | Restore visual; **zero POST** |
+| ARIA suporte | Live region `#ninebox-drag-status` (`aria-live="polite"`); `aria-grabbed` nos cards com DnD |
+
+### Intocado (regressão 006)
+
+| Item | Regra |
+|---|---|
+| Drag persist | POST só `potencial`; desempenho ignorado na gravação; snap; cancel = zero POST; sem SortableJS |
+| AuthZ / escopo | Admin write; gerente RO; líder 403; `get_visible_users`; IDOR 403 |
+| HTMX drawer | Targets `#matrix-drawer`, URLs e partials HTML; filtros ciclo/área/cargo |
+| A11y drawer | Focus trap, Escape, restore; loading ≠ empty; alternativa drawer ao drag |
+| Drawer canônico | **Não** promover `templates/components/drawer.html` nesta feature |
+
+Piloto: `templates/talent/matrix.html` (+ partials) com `static/js/ninebox_matrix.js` em `extra_js` — **nunca** em `base.html`.
+
+---
+
 ## Focus-visible e a11y mínima do shell
 
 Definido em `static/src/input.css` (`@layer base`) e contrato `a11y-shell.md`.
@@ -512,7 +592,7 @@ Definido em `static/src/input.css` (`@layer base`) e contrato `a11y-shell.md`.
 | Inputs / select / textarea | `:focus-visible` → `ring-2 ring-emerald-500` + `border-transparent` |
 | Skip link | “Ir para o conteúdo” → `#main-content` no início do `body` (`base.html`); visível no foco |
 | Modal | Focus trap Tab/Shift+Tab em `static/js/modal.js`; Escape + restore no trigger |
-| Drawer in-matrix (9-box) | Mesmo contrato de foco/trap/Escape em `static/js/ninebox_matrix.js` sobre `#matrix-drawer` — ver seção **Matriz 9-box interativa** |
+| Drawer in-matrix (9-box) | Mesmo contrato de foco/trap/Escape em `static/js/ninebox_matrix.js` sobre `#matrix-drawer` — ver **Matriz 9-box interativa** + **Ninebox polish (DS v2)** |
 | HTMX | `#htmx-indicator` com `role="status"` e “Carregando…” anunciável em `.htmx-request` — não `aria-hidden="true"` permanente |
 
 Preferir `:focus-visible` (não `:focus` agressivo) para não marcar clique de mouse.

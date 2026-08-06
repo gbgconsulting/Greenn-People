@@ -116,12 +116,12 @@ Monólito Django na raiz: `templates/`, `static/`, `docs/`, `apps/` (última all
 
 ### Implementation for User Story 4
 
-- [ ] T032 [P] [US4] Refinar tipografia/densidade/bordas/empty da grade em `templates/talent/matrix.html` e `templates/talent/partials/_cell.html`
-- [ ] T033 [P] [US4] Refinar person cards (classes/estados visuais) em `templates/talent/partials/_person_card.html`
-- [ ] T034 [P] [US4] Refinar shell visual do drawer de domínio em `templates/talent/partials/_drawer.html` **sem** alterar atributos `hx-*` / targets `/ URLs de negócio
-- [ ] T035 [US4] Refinar feedback visual de drag (opacity/ring/cursor) e ARIA de suporte em `static/js/ninebox_matrix.js` **sem** mudar handlers de POST, política potencial-only nem contratos 006
-- [ ] T036 [US4] Documentar seção **ninebox polish** (visual-only; contratos 006 intactos) em `docs/design-system.md`
-- [ ] T037 [US4] Validar US4 via quickstart §4; confirmar ausência de `templates/components/drawer.html` canônico novo e zero mudança em AuthZ/fórmulas
+- [X] T032 [P] [US4] Refinar tipografia/densidade/bordas/empty da grade em `templates/talent/matrix.html` e `templates/talent/partials/_cell.html`
+- [X] T033 [P] [US4] Refinar person cards (classes/estados visuais) em `templates/talent/partials/_person_card.html`
+- [X] T034 [P] [US4] Refinar shell visual do drawer de domínio em `templates/talent/partials/_drawer.html` **sem** alterar atributos `hx-*` / targets `/ URLs de negócio
+- [X] T035 [US4] Refinar feedback visual de drag (opacity/ring/cursor) e ARIA de suporte em `static/js/ninebox_matrix.js` **sem** mudar handlers de POST, política potencial-only nem contratos 006
+- [X] T036 [US4] Documentar seção **ninebox polish** (visual-only; contratos 006 intactos) em `docs/design-system.md`
+- [X] T037 [US4] Validar US4 via quickstart §4; confirmar ausência de `templates/components/drawer.html` canônico novo e zero mudança em AuthZ/fórmulas
 
 **Checkpoint**: Matriz polida; denylist 006 respeitada
 
