@@ -53,12 +53,24 @@ Baseline **before** capturado em 2026-08-06 · viewport **1280×900** · stack D
 | 05 lista-ciclos | ✓ T002 `05-…-before.png` | ✓ T039 `05-…-after.png` | Conta admin · `/cycles/` |
 | 06 pdi-detail | ✓ T002 `06-…-before.png` | ✓ T039 `06-…-after.png` | Conta admin · `/pdi/9/` |
 | 07 avaliacoes-list (opc.) | ☐ | ☐ | Não incluído no conjunto T002 |
-| 08 shell-chrome (opc.) | ☐ | ☐ | Só se shell leve for feito (T044) |
+| 08 shell-chrome (opc.) | ✓ T044 `08-…-before.png` | ✓ T044 `08-…-after.png` | Conta admin · `/` · densidade/tipo sidebar+topbar; IA nav intacta |
 | Login isolamento | ✓ T003 `login-unchanged-before.png` | ✓ T040 `login-unchanged-after.png` | **Não** conta para SC-001 · `/accounts/login/` · viewport 1280×900 · **indistinguível** (SHA256 idêntico) |
 
 ### After (T039) — 2026-08-06
 
 Pós-polish Design System v2 · viewport **1280×900** · Docker local · mesmas contas/rotas do before · seed `scripts/seed_evidence_007.py` (idempotente; PDI `/pdi/9/`).
+
+### Shell chrome (T044) — 2026-08-06
+
+Piloto opcional `08-shell-chrome` após polish de densidade/tipografia em `sidebar.html` / `topbar.html` (+ `.shell-brand` / `.nav-link*` em `input.css`).
+
+| Checagem | Resultado |
+|---|---|
+| Viewport / rota | **1280×900** · admin · `/` (chrome sidebar + topbar) |
+| Before → After | `08-shell-chrome-before.png` → `08-shell-chrome-after.png` |
+| Tipografia marca | `.shell-brand` → **Fraunces** (`font-display`) |
+| Densidade | Sidebar `w-60` + padding compacto; topbar `h-14`; chip ciclo densificado |
+| FR-008 / IA nav | `nav_menu.html` **0 bytes** diff; grupos Governança / Cadastros / Sistema presentes |
 
 ### Login unchanged after (T040) — 2026-08-06
 
@@ -122,6 +134,23 @@ Baseline feature: merge `006-ninebox-interativa` (`cdded62`) → `HEAD` + workin
 **Notas:** `tailwind.config.js` (+1 content glob `./static/js/**/*.js`) não adiciona plugin/lib. Artefatos `specs/007-design-system-v2/**`, `scripts/seed_evidence_007.py` e PNGs de evidência estão fora do código de produto. OUT-NO-DEPS / OUT-NO-ROUTES / OUT-NO-NAV-IA / OUT-LOGIN-DIFF reconfirmados — ver `contracts/out-checklist.md`.
 
 **Conclusão T043:** escopo da feature **dentro** da allowlist; denylist de produto/auth/nav IA intacta.
+
+## Validação completa quickstart §1–6 (T045) — 2026-08-07
+
+Rebuild final: `./bin/tailwindcss -i static/src/input.css -o static/css/tailwind.css --minify` → `static/css/tailwind.css` (inclui utilitários `w-60` / `h-14` do shell T044).
+
+Stack Docker indisponível neste ambiente; aceite T045 = rebuild + revalidação estática/diffs dos passos do quickstart (smoke HTTP vivo já coberto em T018/T026/T031/T037/T041).
+
+| Seção | Resultado | Evidência |
+|---|---|---|
+| §1 Tipografia + auth | ✓ PASS | `app-shell` só em `base.html`; accounts sem a classe; `font-display` nos pilotos admin/team/personal/ciclos/pdi; Inter via `body`/`--font-sans`; `git diff` auth **0** |
+| §2 Components | ✓ PASS | button primary/secondary/outlined/loading; card/empty/badge; `table-frame` em CSS + `ciclo_list_partial` / dashboards / PDI |
+| §3 Charts + 005 | ✓ PASS | Chart.js **4.5.1**; `_chart_block` + `.dashboard-chart-canvas`; `has_data` no JS; diff `apps/dashboard` payloads/urls/views **0** |
+| §4 Ninebox + 006 | ✓ PASS | templates talent + `ninebox_matrix.js`; drawer com `hx-*`; sem `components/drawer.html`; diff talent views/urls/services **0** |
+| §5 before/after | ✓ PASS | pares `01`–`06` + `08` shell; login SHA256 idêntico (`05193c9e…bd3dc`); SC-001/SC-005 (T042) |
+| §6 Freeze + OUT | ✓ PASS | `docs/design-system.md` **Freeze v2**; OUT **17/17** ✅; `nav_menu` **0**; `apps/` **0**; sem `package.json` |
+
+**Conclusão T045:** rebuild final aplicado; quickstart §1–6 revalidado — pronto para T046 (fecho denylist/aceite).
 
 ## Verificação de isolamento auth (T011) — 2026-08-06
 

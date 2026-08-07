@@ -50,3 +50,24 @@ Itens críticos devem estar ✅.
 | OUT-EVIDENCE | 5–8 before/after autenticados (sem login como “melhoria”) | pasta evidence | ✅ **6** pares autenticados `01`–`06` (`*-before.png` + `*-after.png`); login só `login-unchanged-*` (isolamento, fora do SC-001) — ver `evidence/before-after/README.md` |
 
 **Aceite US5 (OUT)**: todos os itens críticos ✅ (T041). Scan guiado SC-001/SC-005 ✅ (T042). Scan final de escopo ✅ (T043) — OUT-NO-* / accounts / nav IA reconfirmados; ver `evidence/before-after/README.md` § T043.
+
+---
+
+## Aceite final / denylist (T046)
+
+**Data**: 2026-08-07 · **Baseline**: `cdded62` (merge 006) → `HEAD` + working tree allowlisted
+
+| Checagem | Comando / escopo | Resultado |
+|---|---|---|
+| Auth templates | `git diff cdded62..HEAD -- templates/accounts/base_auth.html templates/accounts/login.html` (+ `templates/accounts/`) | **0 bytes** (HEAD e working tree) |
+| Services | `apps/**/services*` | **sem diff** |
+| Models | `apps/**/models.py`, `apps/**/models/**` | **sem diff** |
+| Migrations | `**/migrations/**` | **sem diff** |
+| Negócio 005 | `apps/dashboard/{chart_payloads,urls,views}.py` | **0 bytes** |
+| Negócio 006 | `apps/talent/{views,urls}.py` | **0 bytes** |
+| Nav IA | `templates/components/nav_menu.html` | **0 bytes** |
+| Interseção denylist vs paths alterados (delta + WT) | grep `accounts/` / `services` / `models` / `migrations` | **(none)** |
+
+**Working tree allowlisted remanescente** (não denylist): `docs/design-system.md`, `static/src/input.css`, `static/css/tailwind.css`, `templates/components/{sidebar,topbar}.html`, evidência `08-shell-chrome-*`, specs — coerente com T044/T045.
+
+**Fechamento**: T046 ✅ — denylist limpa; OUT crítico permanece 100% ✅; feature `007-design-system-v2` aceitável formalmente (Freeze v2 + evidência + isolamento auth + zero diff de negócio na denylist).

@@ -150,9 +150,9 @@ Monólito Django na raiz: `templates/`, `static/`, `docs/`, `apps/` (última all
 
 **Purpose**: Shell leve opcional + validação ponta a ponta (não bloqueia MVP US1)
 
-- [ ] T044 [P] Opcional após US1–US4: densidade/tipografia apenas em `templates/components/sidebar.html` e `templates/components/topbar.html` sob `.app-shell` — **sem** redesign de IA nav (FR-008); se feito, incluir piloto 08 shell-chrome na evidência
-- [ ] T045 Rebuild final `static/css/tailwind.css` e executar validação completa de `specs/007-design-system-v2/quickstart.md` (seções 1–6)
-- [ ] T046 Confirmar ausência de diffs em paths denylist (`templates/accounts/base_auth.html`, `templates/accounts/login.html`, `apps/*/services`, models, migrations) e fechar notas de aceite no checklist OUT
+- [X] T044 [P] Opcional após US1–US4: densidade/tipografia apenas em `templates/components/sidebar.html` e `templates/components/topbar.html` sob `.app-shell` — **sem** redesign de IA nav (FR-008); se feito, incluir piloto 08 shell-chrome na evidência
+- [X] T045 Rebuild final `static/css/tailwind.css` e executar validação completa de `specs/007-design-system-v2/quickstart.md` (seções 1–6)
+- [X] T046 Confirmar ausência de diffs em paths denylist (`templates/accounts/base_auth.html`, `templates/accounts/login.html`, `apps/*/services`, models, migrations) e fechar notas de aceite no checklist OUT
 
 ---
 

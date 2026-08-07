@@ -131,4 +131,6 @@ git diff -- templates/accounts/base_auth.html templates/accounts/login.html
 git diff -- 'apps/*/services*' '**/migrations/**' 'apps/*/models.py'
 ```
 
+**T046 (2026-08-07)**: verificação contra baseline `cdded62` + working tree — auth, services, models, migrations, views/urls 005–006 e `nav_menu.html` = **0 bytes**; notas de aceite em [out-checklist.md § Aceite final / denylist](./out-checklist.md#aceite-final--denylist-t046).
+
 Se um arquivo necessário **não** estiver na allowlist, **parar** e atualizar plan/research/contrato antes de editar — não “esticar” escopo ad hoc.

@@ -28,7 +28,7 @@ Este documento é a **fonte da verdade** de tokens e padrões de UI do Greenn Pe
 | Cards / KPI / table-frame / empty | Densidade/hierarquia v2; composição limpa (sem sombra excessiva) — seções **KPI / cartões**, **Table-frame**, **Empty states** |
 | Charts polish | Options Chart.js + CSS/markup do bloco; sem novas métricas/libs — seção **Charts polish (DS v2)** |
 | Ninebox polish | Visual-only (grade, cards, drawer domínio, drag/ARIA); contratos 006 intactos — seção **Ninebox polish (DS v2)** |
-| Shell | Estrutura IA Governança/Cadastros/Sistema **inalterada**; densidade/tipo no chrome opcional (fora do fechamento obrigatório) |
+| Shell | Estrutura IA Governança/Cadastros/Sistema **inalterada**; densidade/tipografia no chrome (`sidebar` / `topbar` / `.shell-brand` / `.nav-link*`) sob `.app-shell` (T044) |
 | Auth | Login / `base_auth` **OUT** desta feature — isolamento documentado; `--font-sans` / `body { font-sans }` não mudam |
 
 ### Experimento Figma (branch `experiment/ds-figma-button-input`)
@@ -282,6 +282,13 @@ Classes visuais **e** `aria-current="page"` no link correspondente a `request.pa
 - Uma linha: contexto de ciclo aberto (`ciclo_aberto.nome`) ou fallback “Sem ciclo aberto”; truncar no mobile com `title`.
 - Sem filtros, listas ou CTAs novos de ciclo.
 - Usuário + logout à direita; toggle do drawer no mobile.
+- Densidade v2 (T044): altura `h-14`; chip de ciclo com `tracking-tight` / label `uppercase tracking-wider`; tipografia UI herdada de `.app-shell`.
+
+### Chrome / marca (T044)
+
+- `.shell-brand`: `font-display` + gradiente de marca (sidebar desktop/mobile + topbar mobile).
+- Sidebar: largura `w-60`, header e nav com padding mais compacto; **sem** reordenar grupos nem itens (`nav_menu.html` intacto — FR-008).
+- Links: `.nav-link` / `.nav-section-label` com tracking e `py` ligeiramente mais densos; ênfase P1 e `aria-current` preservados.
 
 ---
 

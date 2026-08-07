@@ -161,16 +161,15 @@
   }
 
   /*
-   * Shell nav — experiment/ds-figma-button-input
-   * Hierarquia Governança/Cadastros preservada; anatomia alinhada ao guia
-   * (alvo de clique confortável, ênfase P1 via marker).
+   * Shell nav — densidade/tipografia v2 (T044); IA Governança/Cadastros/Sistema intacta.
+   * Alvos de clique confortáveis; ênfase P1 via marker.
    */
   .nav-section-label {
-    @apply mb-1.5 px-3 text-xs font-medium uppercase tracking-wide text-slate-400;
+    @apply mb-1 px-3 text-[0.6875rem] font-medium uppercase tracking-wider text-slate-400;
   }
 
   .nav-link {
-    @apply block rounded-lg px-3 py-2.5 text-sm text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-800;
+    @apply block rounded-lg px-3 py-2 text-sm tracking-tight text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-800;
   }
 
   .nav-link[aria-current='page'] {
@@ -185,8 +184,9 @@
     @apply bg-emerald-50 text-emerald-800;
   }
 
+  /* Marca do chrome autenticado — display + tracking; só sob .app-shell (sidebar/topbar). */
   .shell-brand {
-    @apply bg-brand-gradient bg-clip-text text-lg font-semibold tracking-tight text-transparent;
+    @apply bg-brand-gradient bg-clip-text font-display text-base font-semibold tracking-tight text-transparent;
   }
 
   /*
