@@ -11,6 +11,8 @@
  *   (espelha static/js/modal.js).
  * T028: rótulos além da cor nas células; handles DnD com nome acessível
  *   (escondidos em coarse/narrow — FR-010).
+ * T035 (007): polish visual drag (opacity/ring/cursor DS v2) + live region
+ *   de suporte — sem mudar POST / potencial-only / handlers 006.
  *
  * Convenção DOM:
  *   #matrix-results — região com aria-busy; loading ≠ empty
@@ -36,6 +38,15 @@
     'Não foi possível completar a ação. Verifique a conexão e tente novamente.';
   var MSG_PERMISSAO = 'Você não tem permissão para esta ação.';
   var MSG_SERVIDOR = 'Ocorreu um erro no servidor. Tente novamente.';
+  /** Anúncios ARIA do drag (live region #ninebox-drag-status) — T035. */
+  var MSG_DRAG_START =
+    'Arrastando pessoa. Solte em outra coluna de potencial.';
+  var MSG_DROP_COMPAT =
+    'Célula compatível. Solte para alterar o potencial.';
+  var MSG_DROP_SNAP =
+    'Só o potencial será alterado; o desempenho permanece o derivado.';
+  var MSG_MOVE_PENDING = 'Salvando nova posição…';
+  var DRAG_STATUS_ID = 'ninebox-drag-status';
   /** Controles focáveis no drawer (mesmo conjunto de modal.js). */
   var FOCUSABLE_SELECTOR = [
     'a[href]',
@@ -274,11 +285,77 @@
      * @type {{card: Element, userPk: string, potencial: string, desempenho: string, originCell: Element|null}|null}
      */
     var pendingMove = null;
-    /** Highlight quando a linha do drop = desempenho derivado. */
-    var DROP_HL = 'ring-2 ring-emerald-400 ring-inset';
+    /** Última célula anunciada (evita spam no dragover). */
+    var lastAnnounceCellId = null;
+    /**
+     * T035 — tokens DS v2 (focus ring emerald / Status Triad amber alerta).
+     * Highlight quando a linha do drop = desempenho derivado.
+     */
+    var DROP_HL = 'ring-2 ring-emerald-500 ring-inset bg-emerald-50/40';
     /** Highlight quando haverá snap de linha (só potencial muda). */
-    var SNAP_HL = 'ring-2 ring-amber-400 ring-inset';
-    var ALL_HL = (DROP_HL + ' ' + SNAP_HL).split(/\s+/);
+    var SNAP_HL = 'ring-2 ring-amber-500 ring-inset bg-amber-50/40';
+    /** Card em arraste: opacity + ring shell + cursor grabbing. */
+    var DRAG_CARD =
+      'opacity-60 ring-2 ring-emerald-500 ring-offset-1 ring-offset-surface cursor-grabbing select-none';
+    /** Card com POST move em voo. */
+    var PENDING_CARD = 'opacity-50';
+    var ALL_HL = [];
+    (DROP_HL + ' ' + SNAP_HL)
+      .split(/\s+/)
+      .forEach(function (cls) {
+        if (cls && ALL_HL.indexOf(cls) === -1) {
+          ALL_HL.push(cls);
+        }
+      });
+
+    function addClassTokens(el, tokens) {
+      if (!el || !tokens) {
+        return;
+      }
+      tokens.split(/\s+/).forEach(function (cls) {
+        if (cls) {
+          el.classList.add(cls);
+        }
+      });
+    }
+
+    function removeClassTokens(el, tokens) {
+      if (!el || !tokens) {
+        return;
+      }
+      tokens.split(/\s+/).forEach(function (cls) {
+        if (cls) {
+          el.classList.remove(cls);
+        }
+      });
+    }
+
+    function ensureDragStatus() {
+      var el = document.getElementById(DRAG_STATUS_ID);
+      if (el) {
+        return el;
+      }
+      el = document.createElement('div');
+      el.id = DRAG_STATUS_ID;
+      el.className = 'sr-only';
+      el.setAttribute('role', 'status');
+      el.setAttribute('aria-live', 'polite');
+      el.setAttribute('aria-atomic', 'true');
+      var host = getMatrixResults() || root.parentElement || document.body;
+      host.appendChild(el);
+      return el;
+    }
+
+    function announceDrag(message) {
+      var el = ensureDragStatus();
+      el.textContent = '';
+      if (!message) {
+        return;
+      }
+      window.requestAnimationFrame(function () {
+        el.textContent = message;
+      });
+    }
 
     function clearDropHighlight() {
       root.querySelectorAll('[id^="cell-"]').forEach(function (cell) {
@@ -286,7 +363,9 @@
           cell.classList.remove(cls);
         });
         cell.removeAttribute('data-drop-snap');
+        cell.removeAttribute('data-drop-target');
       });
+      lastAnnounceCellId = null;
     }
 
     function willSnapToCell(cell) {
@@ -307,16 +386,19 @@
         cell.classList.remove(cls);
       });
       cell.removeAttribute('data-drop-snap');
+      cell.removeAttribute('data-drop-target');
       if (!on) {
         return;
       }
       var snap = willSnapToCell(cell);
-      var classes = (snap ? SNAP_HL : DROP_HL).split(/\s+/);
-      classes.forEach(function (cls) {
-        cell.classList.add(cls);
-      });
+      addClassTokens(cell, snap ? SNAP_HL : DROP_HL);
+      cell.setAttribute('data-drop-target', '1');
       if (snap) {
         cell.setAttribute('data-drop-snap', '1');
+      }
+      if (cell.id && cell.id !== lastAnnounceCellId) {
+        lastAnnounceCellId = cell.id;
+        announceDrag(snap ? MSG_DROP_SNAP : MSG_DROP_COMPAT);
       }
     }
 
@@ -324,7 +406,7 @@
       if (!card) {
         return;
       }
-      card.classList.remove('opacity-40');
+      removeClassTokens(card, DRAG_CARD + ' ' + PENDING_CARD + ' opacity-40');
       // Idle grabbable → false; applyDragGates remove o attr se DnD desligado.
       if (
         card.getAttribute('data-dnd-capable') === '1' &&
@@ -341,10 +423,12 @@
       if (!card) {
         return;
       }
-      card.classList.toggle('opacity-40', !!on);
+      removeClassTokens(card, DRAG_CARD + ' opacity-40');
       if (on) {
+        addClassTokens(card, PENDING_CARD);
         card.setAttribute('aria-busy', 'true');
       } else {
+        removeClassTokens(card, PENDING_CARD);
         card.removeAttribute('aria-busy');
       }
     }
@@ -391,6 +475,7 @@
       var state = pendingMove;
       pendingMove = null;
       restoreCardToOrigin(state);
+      announceDrag('');
       if (triggerAlreadyHasMessage(xhr)) {
         return;
       }
@@ -404,6 +489,7 @@
       }
       // OOB substitui células; limpa só o estado em voo (card antigo some do DOM).
       pendingMove = null;
+      announceDrag('');
     }
 
     function isMoveRequestEvent(evt) {
@@ -430,6 +516,7 @@
       dragState.cancelled = true;
       resetDragVisual(dragState.card);
       clearDropHighlight();
+      announceDrag('');
     }
 
     /** Encerra drag em curso (gate mobile / media change) sem POST. */
@@ -440,6 +527,7 @@
       resetDragVisual(dragState.card);
       clearDropHighlight();
       dragState = null;
+      announceDrag('');
     }
 
     function postMove(userPk, potencial, desempenhoCelulaAlvo) {
@@ -497,8 +585,9 @@
         cancelled: false,
       };
 
-      card.classList.add('opacity-40');
+      addClassTokens(card, DRAG_CARD);
       card.setAttribute('aria-grabbed', 'true');
+      announceDrag(MSG_DRAG_START);
 
       if (evt.dataTransfer) {
         evt.dataTransfer.effectAllowed = 'move';
@@ -559,6 +648,7 @@
       if (String(targetPotencial) === String(dragState.potencial)) {
         resetDragVisual(card);
         dragState = null;
+        announceDrag('');
         return;
       }
 
@@ -573,6 +663,7 @@
       };
       card.removeAttribute('aria-grabbed');
       setPendingVisual(card, true);
+      announceDrag(MSG_MOVE_PENDING);
       postMove(userPk, targetPotencial, targetDesempenho);
       dragState = null;
     });
@@ -585,6 +676,7 @@
       // Esc, drop fora da grade, ou cancel → card permanece na origem (sem POST).
       resetDragVisual(dragState.card);
       dragState = null;
+      announceDrag('');
     });
 
     document.addEventListener('keydown', function (evt) {

@@ -7,7 +7,7 @@
 <header class="mb-6">
   <div class="flex flex-wrap items-start justify-between gap-3">
     <div>
-      <h1 class="text-2xl font-semibold text-slate-800">Painel administrativo</h1>
+      <h1 class="font-display text-2xl font-semibold text-slate-800">Painel administrativo</h1>
       <p class="mt-1 text-sm text-slate-500">
         Conclusão de ciclos e aderência da liderança — o que importa no first viewport.
       </p>
@@ -28,7 +28,7 @@
 
 <section class="mb-8" aria-labelledby="indicadores-heading">
   <div class="mb-3">
-    <h2 id="indicadores-heading" class="text-lg font-medium text-slate-800">
+    <h2 id="indicadores-heading" class="font-display text-lg font-medium text-slate-800">
       Indicadores de governança
     </h2>
     <p class="mt-0.5 text-sm text-slate-500">
@@ -72,7 +72,7 @@
 
 <section class="mb-8" aria-labelledby="visualizacoes-heading">
   <div class="mb-3">
-    <h2 id="visualizacoes-heading" class="text-lg font-medium text-slate-800">
+    <h2 id="visualizacoes-heading" class="font-display text-lg font-medium text-slate-800">
       Visualizações
     </h2>
     <p class="mt-0.5 text-sm text-slate-500">
@@ -89,7 +89,7 @@
 <section aria-labelledby="baixa-aderencia-heading">
   <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
     <div>
-      <h2 id="baixa-aderencia-heading" class="text-lg font-medium text-slate-800">
+      <h2 id="baixa-aderencia-heading" class="font-display text-lg font-medium text-slate-800">
         Líderes com menor aderência
       </h2>
       <p class="mt-0.5 text-sm text-slate-500">
@@ -102,33 +102,33 @@
   </div>
 
   <div class="table-frame">
-    <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
-      <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+    <table>
+      <thead>
         <tr>
-          <th class="px-4 py-3 font-medium">Líder</th>
-          <th class="px-4 py-3 font-medium">Área</th>
-          <th class="px-4 py-3 font-medium">Percentual</th>
-          <th class="px-4 py-3 font-medium">Status</th>
-          <th class="px-4 py-3 font-medium">Calculado em</th>
+          <th>Líder</th>
+          <th>Área</th>
+          <th>Percentual</th>
+          <th>Status</th>
+          <th>Calculado em</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-slate-100">
+      <tbody>
         {% for item in snapshots_destaque %}
-        <tr class="hover:bg-slate-50">
-          <td class="px-4 py-3">
+        <tr>
+          <td>
             <p class="font-medium text-slate-800">{{ item.snapshot.lider.nome|default:item.snapshot.lider.email }}</p>
             <p class="text-xs text-slate-500">{{ item.snapshot.lider.email }}</p>
           </td>
-          <td class="px-4 py-3 text-slate-600">{{ item.snapshot.lider.area.nome|default:"—" }}</td>
-          <td class="px-4 py-3 font-semibold tabular-nums text-slate-800">{{ item.snapshot.percentual }}%</td>
-          <td class="px-4 py-3">
+          <td class="text-slate-600">{{ item.snapshot.lider.area.nome|default:"—" }}</td>
+          <td class="font-semibold tabular-nums text-slate-800">{{ item.snapshot.percentual }}%</td>
+          <td>
             {% include "components/badge_status.html" with status=item.status %}
           </td>
-          <td class="px-4 py-3 text-slate-600">{{ item.snapshot.calculado_em|date:"d/m/Y H:i" }}</td>
+          <td class="tabular-nums text-slate-600">{{ item.snapshot.calculado_em|date:"d/m/Y H:i" }}</td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="5" class="px-4 py-8">
+          <td colspan="5" class="!py-8">
             {% if ciclo_aberto %}
               {% url 'dashboard:adherence' as adherence_url %}
               {% include "components/empty_state.html" with title="Sem snapshots de aderência" message="Ainda não há snapshots de aderência para o ciclo aberto. O job diário popula esta lista." cta_label="Ver aderência" cta_href=adherence_url %}

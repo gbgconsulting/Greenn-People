@@ -1,5 +1,6 @@
 {% comment %}
   Drawer in-matrix da classificação 9-box (US1 write / US3 read-only).
+  Polish visual DS v2 / US4 (T034) — tipografia/densidade/separadores; hx-* intactos.
 
   Parâmetros:
   - classificacao: ClassificacaoTalento (usuario, ciclo, desempenho, potencial,
@@ -15,10 +16,13 @@
   via potencial_error / HX-Trigger; falha 4xx/5xx não apaga o drawer (ninebox_matrix.js).
   Link secundário classify: somente no modo write (FR-013; ClassifyTalentView = admin).
   A11y (T027): role=dialog aria-modal; Fechar + Escape; foco/trap via ninebox_matrix.js.
+
+  Anatomia v2: heading font-display; meta/UI em ink; separadores border-line;
+  densidades compactas; sem alterar hx-*/URLs/targets de negócio.
 {% endcomment %}
 {% with usuario=classificacao.usuario ciclo=classificacao.ciclo %}
 <section
-  class="space-y-4"
+  class="space-y-5"
   role="dialog"
   aria-modal="true"
   tabindex="-1"
@@ -33,43 +37,47 @@
     <div class="min-w-0 flex-1">
       <h3
         id="matrix-drawer-heading"
-        class="text-base font-semibold text-slate-800"
+        class="font-display text-lg font-medium tracking-tight text-ink"
         tabindex="-1"
       >
         {{ usuario.nome|default:usuario.email }}
       </h3>
       {% if usuario.nome %}
-      <p class="mt-0.5 text-sm text-slate-500">{{ usuario.email }}</p>
+      <p class="mt-0.5 text-sm leading-snug text-ink-muted">{{ usuario.email }}</p>
       {% endif %}
-      <p class="mt-2 text-sm text-slate-600">
-        <span class="font-medium text-slate-700">Área:</span>
-        {{ usuario.area.nome|default:"—" }}
-        ·
-        <span class="font-medium text-slate-700">Cargo:</span>
-        {{ usuario.cargo.nome|default:"—" }}
+      <p class="mt-2.5 text-sm leading-snug text-ink">
+        <span class="text-xs font-medium uppercase tracking-wide text-ink-muted">Área</span>
+        <span class="mt-0.5 block font-medium">{{ usuario.area.nome|default:"—" }}</span>
       </p>
-      <p class="mt-1 text-xs text-slate-500">
-        Ciclo <span class="font-medium text-slate-600">{{ ciclo.nome }}</span>
+      <p class="mt-2 text-sm leading-snug text-ink">
+        <span class="text-xs font-medium uppercase tracking-wide text-ink-muted">Cargo</span>
+        <span class="mt-0.5 block font-medium">{{ usuario.cargo.nome|default:"—" }}</span>
+      </p>
+      <p class="mt-2 text-xs leading-snug text-ink-muted">
+        Ciclo <span class="font-medium tabular-nums text-ink">{{ ciclo.nome }}</span>
       </p>
       {% if not drawer_writable %}
-      <p class="mt-2 text-xs text-slate-500" data-drawer-readonly-hint>
+      <p
+        class="mt-3 rounded-md border border-line bg-slate-50/80 px-2.5 py-2 text-xs leading-snug text-ink-muted"
+        data-drawer-readonly-hint
+      >
         Somente leitura — potencial e visibilidade só podem ser alterados por admin.
       </p>
       {% endif %}
     </div>
     <button
       type="button"
-      class="shrink-0 rounded-md px-2 py-1 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+      class="shrink-0 rounded-md px-2 py-1 text-sm font-medium text-ink-muted transition-colors hover:bg-slate-50 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
       data-drawer-close
     >
       Fechar
     </button>
   </header>
 
-  <dl class="grid grid-cols-1 gap-3 text-sm">
+  <dl class="grid grid-cols-1 gap-3 border-t border-line pt-4 text-sm">
     <div>
-      <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Desempenho</dt>
-      <dd class="mt-0.5 font-medium text-slate-800">
+      <dt class="text-xs font-medium uppercase tracking-wide text-ink-muted">Desempenho</dt>
+      <dd class="mt-0.5 font-medium leading-snug text-ink">
         {% if desempenho_label %}
           {{ desempenho_label }}
         {% elif classificacao.desempenho == 3 %}
@@ -79,13 +87,13 @@
         {% else %}
           Baixo
         {% endif %}
-        <span class="font-normal text-slate-500">(nível {{ classificacao.desempenho }})</span>
+        <span class="font-normal tabular-nums text-ink-muted">(nível {{ classificacao.desempenho }})</span>
       </dd>
     </div>
     {% if not drawer_writable %}
     <div>
-      <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Potencial</dt>
-      <dd class="mt-0.5 font-medium text-slate-800" data-drawer-potencial-readonly>
+      <dt class="text-xs font-medium uppercase tracking-wide text-ink-muted">Potencial</dt>
+      <dd class="mt-0.5 font-medium leading-snug text-ink" data-drawer-potencial-readonly>
         {% if potencial_label %}
           {{ potencial_label }}
         {% elif classificacao.potencial == 3 %}
@@ -95,17 +103,17 @@
         {% else %}
           Baixo
         {% endif %}
-        <span class="font-normal text-slate-500">(nível {{ classificacao.potencial }})</span>
+        <span class="font-normal tabular-nums text-ink-muted">(nível {{ classificacao.potencial }})</span>
       </dd>
     </div>
     {% endif %}
     <div>
-      <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Quadrante</dt>
-      <dd class="mt-0.5 font-medium text-slate-800">{{ classificacao.get_quadrante_display }}</dd>
+      <dt class="text-xs font-medium uppercase tracking-wide text-ink-muted">Quadrante</dt>
+      <dd class="mt-0.5 font-display text-base font-medium tracking-tight text-ink">{{ classificacao.get_quadrante_display }}</dd>
     </div>
     <div>
-      <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Visibilidade</dt>
-      <dd class="mt-1" id="drawer-visibility-badge">
+      <dt class="text-xs font-medium uppercase tracking-wide text-ink-muted">Visibilidade</dt>
+      <dd class="mt-1.5" id="drawer-visibility-badge">
         {% if classificacao.visivel_ao_colaborador %}
           {% include "components/badge_status.html" with status="ativo" label="Visível" %}
         {% else %}
@@ -125,7 +133,7 @@
     hx-indicator="#htmx-indicator, #matrix-drawer-indicator"
     hx-disabled-elt="find button[type='submit']"
     novalidate
-    class="space-y-4 border-t border-slate-100 pt-4"
+    class="space-y-4 border-t border-line pt-4"
     data-drawer-potencial-form
   >
     {% csrf_token %}
@@ -134,7 +142,7 @@
     {% if cargo %}<input type="hidden" name="cargo" value="{{ cargo }}" />{% endif %}
 
     <div>
-      <label for="drawer-potencial" class="mb-1.5 block text-sm font-medium text-slate-700">
+      <label for="drawer-potencial" class="mb-1.5 block text-sm font-medium text-ink">
         Potencial
       </label>
       <select
@@ -152,7 +160,7 @@
       {% if potencial_error %}
       <p id="drawer-potencial-error" class="mt-1.5 text-xs text-rose-600" role="alert">{{ potencial_error }}</p>
       {% else %}
-      <p class="mt-1.5 text-xs text-slate-500">Somente o potencial é editável; o desempenho permanece derivado da nota do líder.</p>
+      <p class="mt-1.5 text-xs leading-snug text-ink-muted">Somente o potencial é editável; o desempenho permanece derivado da nota do líder.</p>
       {% endif %}
     </div>
 
@@ -169,7 +177,7 @@
     hx-swap="innerHTML"
     hx-indicator="#htmx-indicator, #matrix-drawer-indicator"
     hx-disabled-elt="find button[type='submit']"
-    class="border-t border-slate-100 pt-4"
+    class="border-t border-line pt-4"
     data-drawer-visibility-form
   >
     {% csrf_token %}
@@ -182,10 +190,10 @@
     {% endif %}
   </form>
 
-  <p class="border-t border-slate-100 pt-4 text-sm">
+  <p class="border-t border-line pt-4 text-sm">
     <a
       href="{% url 'talent:classify' usuario.pk %}"
-      class="font-medium text-emerald-700 underline-offset-2 hover:underline"
+      class="font-medium text-emerald-700 underline-offset-2 transition-colors hover:text-emerald-800 hover:underline"
       data-drawer-classify-fallback
     >
       Abrir classificação clássica

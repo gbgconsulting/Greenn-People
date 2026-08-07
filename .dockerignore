@@ -25,6 +25,7 @@ db.sqlite3
 htmlcov
 media
 staticfiles
+node_modules
 bin/tailwindcss
 bin/tailwindcss.exe
 tailwindcss

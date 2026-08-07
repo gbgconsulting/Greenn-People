@@ -18,6 +18,27 @@
     nota_atual: '#059669',
   };
 
+  /* Tokens visuais DS v2 (espelham --font-ui / paleta em input.css) — só options Chart.js. */
+  var FONT_UI = "'Source Sans 3', ui-sans-serif, system-ui, sans-serif";
+  var COLOR_INK_MUTED = '#64748b';
+  var COLOR_LINE = '#e2e8f0';
+  var COLOR_TOOLTIP_BG = '#1e293b';
+  var BAR_RADIUS = 6;
+  var BAR_MAX_THICKNESS = 40;
+  var DOUGHNUT_CUTOUT = '68%';
+
+  function chartFont(overrides) {
+    var base = { family: FONT_UI, size: 12, weight: '400' };
+    if (!overrides) {
+      return base;
+    }
+    return {
+      family: overrides.family || base.family,
+      size: overrides.size !== undefined ? overrides.size : base.size,
+      weight: overrides.weight || base.weight,
+    };
+  }
+
   function readPayload(scriptId) {
     var el = document.getElementById(scriptId);
     if (!el) {
@@ -137,6 +158,18 @@
     });
   }
 
+  function subtleGrid() {
+    return {
+      color: COLOR_LINE,
+      lineWidth: 1,
+      drawTicks: false,
+    };
+  }
+
+  function axisBorderHidden() {
+    return { display: false };
+  }
+
   function basePlugins(showLegend) {
     var narrow = isNarrowViewport();
     return {
@@ -145,15 +178,28 @@
         position: 'bottom',
         labels: {
           usePointStyle: true,
-          boxWidth: 10,
-          // Fonte legível em ~375px sem depender só da cor (FR-007 / SC-006).
-          font: { size: narrow ? 11 : 12 },
-          padding: narrow ? 8 : 12,
+          boxWidth: 8,
+          boxHeight: 8,
+          // Fonte UI v2 legível em ~375px; texto + valor (FR-007 / SC-006).
+          color: COLOR_INK_MUTED,
+          font: chartFont({ size: narrow ? 11 : 12, weight: '500' }),
+          padding: narrow ? 10 : 14,
           generateLabels: legendLabelWithValue,
         },
       },
       tooltip: {
         enabled: true,
+        backgroundColor: COLOR_TOOLTIP_BG,
+        titleColor: '#ffffff',
+        bodyColor: '#e2e8f0',
+        borderColor: 'rgba(255, 255, 255, 0.08)',
+        borderWidth: 1,
+        cornerRadius: 8,
+        padding: narrow ? 8 : 10,
+        displayColors: true,
+        boxPadding: 4,
+        titleFont: chartFont({ size: narrow ? 11 : 12, weight: '600' }),
+        bodyFont: chartFont({ size: narrow ? 11 : 12, weight: '400' }),
         callbacks: {
           label: tooltipLabel,
         },
@@ -163,29 +209,38 @@
 
   function barScales(horizontal) {
     var narrow = isNarrowViewport();
-    var categoryTicks = {
-      autoSkip: false,
-      maxRotation: horizontal ? 0 : narrow ? 60 : 45,
-      minRotation: horizontal ? 0 : narrow ? 45 : 0,
-      font: { size: narrow ? 10 : 12 },
+    var tickFont = chartFont({ size: narrow ? 10 : 12, weight: '400' });
+    var categoryAxis = {
+      grid: { display: false },
+      border: axisBorderHidden(),
+      ticks: {
+        autoSkip: false,
+        maxRotation: horizontal ? 0 : narrow ? 60 : 45,
+        minRotation: horizontal ? 0 : narrow ? 45 : 0,
+        color: COLOR_INK_MUTED,
+        font: tickFont,
+      },
     };
-    var valueTicks = {
+    var valueAxis = {
       beginAtZero: true,
+      border: axisBorderHidden(),
+      grid: subtleGrid(),
       ticks: {
         precision: 0,
-        font: { size: narrow ? 10 : 12 },
+        color: COLOR_INK_MUTED,
+        font: tickFont,
       },
     };
 
     if (horizontal) {
       return {
-        x: valueTicks,
-        y: { ticks: categoryTicks },
+        x: valueAxis,
+        y: categoryAxis,
       };
     }
     return {
-      x: { ticks: categoryTicks },
-      y: valueTicks,
+      x: categoryAxis,
+      y: valueAxis,
     };
   }
 
@@ -202,7 +257,9 @@
         data: (serie.values || []).map(asNullableNumber),
         backgroundColor: color,
         borderColor: color,
-        borderWidth: 1,
+        borderWidth: 0,
+        borderRadius: BAR_RADIUS,
+        maxBarThickness: BAR_MAX_THICKNESS,
         skipNull: true,
       };
     });
@@ -236,26 +293,36 @@
       isDoughnut || (colors.length > 1 && colors.length >= labels.length);
     var fill = perCategoryColors ? colors : colors[0] || STATUS_TRIAD[0];
 
+    var dataset = {
+      label: payload.title || '',
+      data: values,
+      backgroundColor: fill,
+      borderColor: isDoughnut ? '#ffffff' : fill,
+      borderWidth: isDoughnut ? 2 : 0,
+    };
+    if (!isDoughnut) {
+      dataset.borderRadius = BAR_RADIUS;
+      dataset.maxBarThickness = BAR_MAX_THICKNESS;
+    }
+
+    var options = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: basePlugins(isDoughnut),
+      scales: isDoughnut ? undefined : barScales(),
+    };
+    if (isDoughnut) {
+      options.cutout = DOUGHNUT_CUTOUT;
+      options.layout = { padding: 4 };
+    }
+
     return {
       type: type,
       data: {
         labels: labels,
-        datasets: [
-          {
-            label: payload.title || '',
-            data: values,
-            backgroundColor: fill,
-            borderColor: isDoughnut ? '#ffffff' : fill,
-            borderWidth: isDoughnut ? 2 : 1,
-          },
-        ],
+        datasets: [dataset],
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: basePlugins(isDoughnut),
-        scales: isDoughnut ? undefined : barScales(),
-      },
+      options: options,
     };
   }
 

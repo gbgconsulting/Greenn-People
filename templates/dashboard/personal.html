@@ -7,7 +7,7 @@
 <header class="mb-6">
   <div class="flex flex-wrap items-start justify-between gap-3">
     <div>
-      <h1 class="text-2xl font-semibold text-slate-800">Meu painel</h1>
+      <h1 class="font-display text-2xl font-semibold text-slate-800">Meu painel</h1>
       <p class="mt-1 text-sm text-slate-500">
         Bem-vindo{% if user.nome %}, {{ user.nome }}{% endif %}.
         Seu ponto de partida no ciclo de desempenho.
@@ -23,7 +23,7 @@
 
 <section class="mb-8" aria-labelledby="desempenho-heading">
   <div class="mb-3">
-    <h2 id="desempenho-heading" class="text-lg font-medium text-slate-800">
+    <h2 id="desempenho-heading" class="font-display text-lg font-medium text-slate-800">
       Meu desempenho
     </h2>
     <p class="mt-0.5 text-sm text-slate-500">
@@ -57,7 +57,7 @@
 
 <section class="mb-8 min-w-0" aria-labelledby="gaps-visualizacoes-heading">
   <div class="mb-3">
-    <h2 id="gaps-visualizacoes-heading" class="text-lg font-medium text-slate-800">
+    <h2 id="gaps-visualizacoes-heading" class="font-display text-lg font-medium text-slate-800">
       Visualizações
     </h2>
     <p class="mt-0.5 text-sm text-slate-500">
@@ -71,7 +71,7 @@
 <section class="mb-8" aria-labelledby="competencias-resumo-heading">
   <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
     <div>
-      <h2 id="competencias-resumo-heading" class="text-lg font-medium text-slate-800">
+      <h2 id="competencias-resumo-heading" class="font-display text-lg font-medium text-slate-800">
         Níveis esperados
       </h2>
       <p class="mt-0.5 text-sm text-slate-500">
@@ -83,22 +83,22 @@
     {% endif %}
   </div>
   <div class="table-frame">
-    <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
-      <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+    <table>
+      <thead>
         <tr>
-          <th class="px-4 py-3 font-medium">Competência</th>
-          <th class="px-4 py-3 font-medium">Nível esperado</th>
-          <th class="px-4 py-3 font-medium">Nota atual</th>
+          <th>Competência</th>
+          <th>Nível esperado</th>
+          <th>Nota atual</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-slate-100">
+      <tbody>
         {% for item in competencias_resumo %}
-        <tr class="hover:bg-slate-50">
-          <td class="px-4 py-3 font-semibold text-slate-800">{{ item.competencia.nome }}</td>
-          <td class="px-4 py-3 tabular-nums text-slate-800">{{ item.nivel_esperado }}</td>
-          <td class="px-4 py-3">
+        <tr>
+          <td class="font-medium text-slate-800">{{ item.competencia.nome }}</td>
+          <td class="tabular-nums text-slate-800">{{ item.nivel_esperado }}</td>
+          <td>
             {% if item.nota_atual is not None %}
-              <span class="text-lg font-semibold tabular-nums text-slate-800">{{ item.nota_atual }}</span>
+              <span class="font-semibold tabular-nums text-slate-800">{{ item.nota_atual }}</span>
             {% else %}
               <span class="text-slate-400">—</span>
             {% endif %}
@@ -115,13 +115,13 @@
   </p>
 </section>
 {% elif vinculo_pendente %}
-<section class="mb-8 rounded-xl border border-slate-200 bg-white px-4 py-8 shadow-sm" aria-labelledby="vinculo-pendente-heading">
+<section class="mb-8" aria-labelledby="vinculo-pendente-heading">
   <h2 id="vinculo-pendente-heading" class="sr-only">Níveis esperados</h2>
   {% if not cargo %}
     {% include "components/empty_state.html" with title="Vínculo pendente" message="Seu perfil ainda não possui cargo definido. Peça ao administrador para concluir o vínculo antes de visualizar o nível esperado." %}
   {% else %}
-    <p class="mb-4 text-center text-sm text-slate-600">
-      Cargo: <span class="font-medium text-slate-800">{{ cargo.nome }}</span>
+    <p class="mb-1 text-center text-sm text-slate-500">
+      Cargo: <span class="font-medium text-slate-700">{{ cargo.nome }}</span>
     </p>
     {% include "components/empty_state.html" with title="Vínculo pendente" message="Este cargo ainda não possui competências vinculadas. Peça ao administrador para concluir o vínculo." %}
   {% endif %}
@@ -132,7 +132,7 @@
 <section class="mb-8" aria-labelledby="classificacao-heading">
   <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
     <div>
-      <h2 id="classificacao-heading" class="text-lg font-medium text-slate-800">
+      <h2 id="classificacao-heading" class="font-display text-lg font-medium text-slate-800">
         Minha classificação
       </h2>
       <p class="mt-0.5 text-sm text-slate-500">
@@ -141,12 +141,12 @@
     </div>
     <p class="text-sm text-slate-500">{{ classificacao.ciclo.nome }}</p>
   </div>
-  <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4 shadow-sm">
+  <div class="rounded-xl border border-emerald-200 bg-emerald-50/80 p-4">
     <p class="text-xs uppercase tracking-wide text-emerald-700">Quadrante</p>
-    <p class="mt-1 text-lg font-semibold text-emerald-900">
+    <p class="mt-1 font-display text-lg font-semibold text-emerald-900">
       {{ classificacao.get_quadrante_display }}
     </p>
-    <p class="mt-2 text-sm text-emerald-800">
+    <p class="mt-1.5 text-sm text-emerald-800">
       Desempenho {{ classificacao.desempenho }}/3 · potencial {{ classificacao.potencial }}/3
     </p>
     <p class="mt-3 text-sm">
@@ -160,30 +160,30 @@
 
 <section aria-labelledby="perfil-heading">
   <div class="mb-3">
-    <h2 id="perfil-heading" class="text-lg font-medium text-slate-800">
+    <h2 id="perfil-heading" class="font-display text-lg font-medium text-slate-800">
       Meu perfil
     </h2>
     <p class="mt-0.5 text-sm text-slate-500">
       Dados cadastrais do seu vínculo na organização.
     </p>
   </div>
-  <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+  <div class="rounded-xl border border-line bg-surface-card p-4">
     <dl class="grid gap-4 sm:grid-cols-2">
       <div>
         <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">E-mail</dt>
-        <dd class="mt-1 text-slate-800">{{ user.email }}</dd>
+        <dd class="mt-1 text-sm text-slate-800">{{ user.email }}</dd>
       </div>
       <div>
         <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">Área</dt>
-        <dd class="mt-1 text-slate-800">{{ user.area.nome|default:"—" }}</dd>
+        <dd class="mt-1 text-sm text-slate-800">{{ user.area.nome|default:"—" }}</dd>
       </div>
       <div>
         <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">Cargo</dt>
-        <dd class="mt-1 text-slate-800">{{ user.cargo.nome|default:"—" }}</dd>
+        <dd class="mt-1 text-sm text-slate-800">{{ user.cargo.nome|default:"—" }}</dd>
       </div>
       <div>
         <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">Gestor</dt>
-        <dd class="mt-1 text-slate-800">{% if user.line_manager %}{{ user.line_manager }}{% else %}—{% endif %}</dd>
+        <dd class="mt-1 text-sm text-slate-800">{% if user.line_manager %}{{ user.line_manager }}{% else %}—{% endif %}</dd>
       </div>
     </dl>
   </div>
