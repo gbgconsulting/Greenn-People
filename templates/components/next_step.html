@@ -14,8 +14,10 @@
     next_step.cta_url_name   — nome de URL existente (ou None)
     next_step.cta_kwargs     — kwargs para reverse (ex. pk)
     next_step.blocked_reason — motivo de espera / ausência de avanço
+
+  Mobile SC-006: stack vertical; CTA full-width até sm.
 {% endcomment %}
-<section class="next-step" aria-labelledby="next-step-title" data-component="next-step">
+<section class="next-step min-w-0" aria-labelledby="next-step-title" data-component="next-step">
   <h2 id="next-step-title" class="font-display text-base font-medium tracking-tight text-slate-800">
     {% if next_step.title %}{{ next_step.title }}{% else %}Próximo passo{% endif %}
   </h2>
@@ -24,36 +26,36 @@
   {% endif %}
 
   {% if next_step.cta_label and cta_href or next_step.cta_label and next_step.cta_url_name %}
-  <div class="mt-4" data-field="cta">
+  <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap" data-field="cta">
     {% if cta_href %}
-      {% include "components/button.html" with label=next_step.cta_label href=cta_href variant="primary" %}
+      {% include "components/button.html" with label=next_step.cta_label href=cta_href variant="primary" extra_class="w-full sm:w-auto" %}
     {% elif next_step.cta_url_name == 'dashboard:personal' %}
       {% url 'dashboard:personal' as next_step_cta_href %}
-      {% include "components/button.html" with label=next_step.cta_label href=next_step_cta_href variant="primary" %}
+      {% include "components/button.html" with label=next_step.cta_label href=next_step_cta_href variant="primary" extra_class="w-full sm:w-auto" %}
     {% elif next_step.cta_url_name == 'dashboard:team' %}
       {% url 'dashboard:team' as next_step_cta_href %}
-      {% include "components/button.html" with label=next_step.cta_label href=next_step_cta_href variant="primary" %}
+      {% include "components/button.html" with label=next_step.cta_label href=next_step_cta_href variant="primary" extra_class="w-full sm:w-auto" %}
     {% elif next_step.cta_url_name == 'goals:meta_list' %}
       {% url 'goals:meta_list' as next_step_cta_href %}
-      {% include "components/button.html" with label=next_step.cta_label href=next_step_cta_href variant="primary" %}
+      {% include "components/button.html" with label=next_step.cta_label href=next_step_cta_href variant="primary" extra_class="w-full sm:w-auto" %}
     {% elif next_step.cta_url_name == 'reviews:self_assessment' and next_step.cta_kwargs.pk %}
       {% url 'reviews:self_assessment' next_step.cta_kwargs.pk as next_step_cta_href %}
-      {% include "components/button.html" with label=next_step.cta_label href=next_step_cta_href variant="primary" %}
+      {% include "components/button.html" with label=next_step.cta_label href=next_step_cta_href variant="primary" extra_class="w-full sm:w-auto" %}
     {% elif next_step.cta_url_name == 'reviews:leader_assessment' and next_step.cta_kwargs.pk %}
       {% url 'reviews:leader_assessment' next_step.cta_kwargs.pk as next_step_cta_href %}
-      {% include "components/button.html" with label=next_step.cta_label href=next_step_cta_href variant="primary" %}
+      {% include "components/button.html" with label=next_step.cta_label href=next_step_cta_href variant="primary" extra_class="w-full sm:w-auto" %}
     {% elif next_step.cta_url_name == 'reviews:feedback_create' and next_step.cta_kwargs.pk %}
       {% url 'reviews:feedback_create' next_step.cta_kwargs.pk as next_step_cta_href %}
-      {% include "components/button.html" with label=next_step.cta_label href=next_step_cta_href variant="primary" %}
+      {% include "components/button.html" with label=next_step.cta_label href=next_step_cta_href variant="primary" extra_class="w-full sm:w-auto" %}
     {% elif next_step.cta_url_name == 'reviews:feedback_list' and next_step.cta_kwargs.pk %}
       {% url 'reviews:feedback_list' next_step.cta_kwargs.pk as next_step_cta_href %}
-      {% include "components/button.html" with label=next_step.cta_label href=next_step_cta_href variant="primary" %}
+      {% include "components/button.html" with label=next_step.cta_label href=next_step_cta_href variant="primary" extra_class="w-full sm:w-auto" %}
     {% elif next_step.cta_url_name == 'reviews:feedback_acknowledge' and next_step.cta_kwargs.pk %}
       {% url 'reviews:feedback_acknowledge' next_step.cta_kwargs.pk as next_step_cta_href %}
-      {% include "components/button.html" with label=next_step.cta_label href=next_step_cta_href variant="primary" %}
+      {% include "components/button.html" with label=next_step.cta_label href=next_step_cta_href variant="primary" extra_class="w-full sm:w-auto" %}
     {% elif next_step.cta_url_name == 'reviews:detail' and next_step.cta_kwargs.pk %}
       {% url 'reviews:detail' next_step.cta_kwargs.pk as next_step_cta_href %}
-      {% include "components/button.html" with label=next_step.cta_label href=next_step_cta_href variant="primary" %}
+      {% include "components/button.html" with label=next_step.cta_label href=next_step_cta_href variant="primary" extra_class="w-full sm:w-auto" %}
     {% endif %}
   </div>
   {% endif %}

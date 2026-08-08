@@ -8,10 +8,13 @@
     stage_stepper.stages — lista de StageStep com key, label, state
       state: concluida | atual | futura | bloqueada
 
-  Mobile (SC-006): números + rótulos curtos; desktop: rótulos completos.
+  Mobile SC-006 (compacto):
+    < sm  — só números (rótulo completo em title + sr-only)
+    sm–md — rótulos curtos
+    md+   — rótulos completos do DTO
   Sem lógica de negócio / sem can_advance.
 {% endcomment %}
-<nav class="stage-stepper" aria-label="Etapas do ciclo" data-component="stage-stepper">
+<nav class="stage-stepper w-full min-w-0" aria-label="Etapas do ciclo" data-component="stage-stepper">
   <ol class="flex list-none items-start gap-0 p-0 font-ui">
     {% if stage_stepper.stages %}
       {% for step in stage_stepper.stages %}
@@ -23,7 +26,7 @@
       >
         {% if not forloop.first %}
         <span
-          class="pointer-events-none absolute top-3 right-1/2 left-[-50%] z-0 h-px -translate-y-1/2 {% if step.state == 'concluida' or step.state == 'atual' %}bg-emerald-300{% else %}bg-slate-200{% endif %}"
+          class="pointer-events-none absolute top-3 right-1/2 left-[-50%] z-0 h-px -translate-y-1/2 sm:top-3.5 {% if step.state == 'concluida' or step.state == 'atual' %}bg-emerald-300{% else %}bg-slate-200{% endif %}"
           aria-hidden="true"
         ></span>
         {% endif %}
@@ -55,18 +58,19 @@
         >{{ forloop.counter }}</span>
         {% endif %}
 
-        {# Mobile: rótulo curto; md+: rótulo completo do DTO #}
+        {# <sm: sem rótulo visual (número basta); sm–md curto; md+: completo #}
         <span
-          class="mt-1.5 max-w-full truncate px-0.5 font-ui text-[10px] leading-tight tracking-tight sm:text-xs {% if step.state == 'concluida' %}text-emerald-700{% elif step.state == 'atual' %}font-medium text-amber-800{% elif step.state == 'bloqueada' %}text-slate-400{% else %}text-slate-500{% endif %}"
+          class="mt-1.5 hidden max-w-full truncate px-0.5 font-ui text-[10px] leading-tight tracking-tight sm:block sm:text-xs {% if step.state == 'concluida' %}text-emerald-700{% elif step.state == 'atual' %}font-medium text-amber-800{% elif step.state == 'bloqueada' %}text-slate-400{% else %}text-slate-500{% endif %}"
           title="{{ step.label }}"
+          aria-hidden="true"
         >
           <span class="md:hidden">
             {% if step.key == "input_metas" %}Metas
-            {% elif step.key == "aprovacao_metas" %}Aprov. metas
-            {% elif step.key == "resultados" %}Resultados
-            {% elif step.key == "aprovacao_resultados" %}Aprov. res.
-            {% elif step.key == "avaliacao" %}Avaliação
-            {% elif step.key == "feedback" %}Feedback
+            {% elif step.key == "aprovacao_metas" %}Aprov.
+            {% elif step.key == "resultados" %}Result.
+            {% elif step.key == "aprovacao_resultados" %}Aprov.res.
+            {% elif step.key == "avaliacao" %}Aval.
+            {% elif step.key == "feedback" %}Feed.
             {% else %}{{ step.label }}{% endif %}
           </span>
           <span class="hidden md:inline">{{ step.label }}</span>
@@ -85,32 +89,38 @@
       {# Fallback tipográfico das 6 etapas (sem DTO) — estados futuros neutros #}
       <li class="relative flex min-w-0 flex-1 flex-col items-center text-center" data-stage-key="input_metas" data-stage-state="futura">
         <span class="relative z-10 flex size-6 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white font-ui text-[10px] font-semibold text-slate-400 sm:size-7 sm:text-xs" aria-hidden="true">1</span>
-        <span class="mt-1.5 max-w-full truncate px-0.5 font-ui text-[10px] leading-tight text-slate-500 sm:text-xs" title="Input de metas"><span class="md:hidden">Metas</span><span class="hidden md:inline">Input de metas</span></span>
+        <span class="mt-1.5 hidden max-w-full truncate px-0.5 font-ui text-[10px] leading-tight text-slate-500 sm:block sm:text-xs" title="Input de metas" aria-hidden="true"><span class="md:hidden">Metas</span><span class="hidden md:inline">Input de metas</span></span>
+        <span class="sr-only">Input de metas — futura</span>
       </li>
       <li class="relative flex min-w-0 flex-1 flex-col items-center text-center" data-stage-key="aprovacao_metas" data-stage-state="futura">
-        <span class="pointer-events-none absolute top-3 right-1/2 left-[-50%] z-0 h-px -translate-y-1/2 bg-slate-200" aria-hidden="true"></span>
+        <span class="pointer-events-none absolute top-3 right-1/2 left-[-50%] z-0 h-px -translate-y-1/2 bg-slate-200 sm:top-3.5" aria-hidden="true"></span>
         <span class="relative z-10 flex size-6 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white font-ui text-[10px] font-semibold text-slate-400 sm:size-7 sm:text-xs" aria-hidden="true">2</span>
-        <span class="mt-1.5 max-w-full truncate px-0.5 font-ui text-[10px] leading-tight text-slate-500 sm:text-xs" title="Aprovação de metas"><span class="md:hidden">Aprov. metas</span><span class="hidden md:inline">Aprovação de metas</span></span>
+        <span class="mt-1.5 hidden max-w-full truncate px-0.5 font-ui text-[10px] leading-tight text-slate-500 sm:block sm:text-xs" title="Aprovação de metas" aria-hidden="true"><span class="md:hidden">Aprov.</span><span class="hidden md:inline">Aprovação de metas</span></span>
+        <span class="sr-only">Aprovação de metas — futura</span>
       </li>
       <li class="relative flex min-w-0 flex-1 flex-col items-center text-center" data-stage-key="resultados" data-stage-state="futura">
-        <span class="pointer-events-none absolute top-3 right-1/2 left-[-50%] z-0 h-px -translate-y-1/2 bg-slate-200" aria-hidden="true"></span>
+        <span class="pointer-events-none absolute top-3 right-1/2 left-[-50%] z-0 h-px -translate-y-1/2 bg-slate-200 sm:top-3.5" aria-hidden="true"></span>
         <span class="relative z-10 flex size-6 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white font-ui text-[10px] font-semibold text-slate-400 sm:size-7 sm:text-xs" aria-hidden="true">3</span>
-        <span class="mt-1.5 max-w-full truncate px-0.5 font-ui text-[10px] leading-tight text-slate-500 sm:text-xs" title="Resultados"><span class="md:hidden">Resultados</span><span class="hidden md:inline">Resultados</span></span>
+        <span class="mt-1.5 hidden max-w-full truncate px-0.5 font-ui text-[10px] leading-tight text-slate-500 sm:block sm:text-xs" title="Resultados" aria-hidden="true"><span class="md:hidden">Result.</span><span class="hidden md:inline">Resultados</span></span>
+        <span class="sr-only">Resultados — futura</span>
       </li>
       <li class="relative flex min-w-0 flex-1 flex-col items-center text-center" data-stage-key="aprovacao_resultados" data-stage-state="futura">
-        <span class="pointer-events-none absolute top-3 right-1/2 left-[-50%] z-0 h-px -translate-y-1/2 bg-slate-200" aria-hidden="true"></span>
+        <span class="pointer-events-none absolute top-3 right-1/2 left-[-50%] z-0 h-px -translate-y-1/2 bg-slate-200 sm:top-3.5" aria-hidden="true"></span>
         <span class="relative z-10 flex size-6 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white font-ui text-[10px] font-semibold text-slate-400 sm:size-7 sm:text-xs" aria-hidden="true">4</span>
-        <span class="mt-1.5 max-w-full truncate px-0.5 font-ui text-[10px] leading-tight text-slate-500 sm:text-xs" title="Aprovação de resultados"><span class="md:hidden">Aprov. res.</span><span class="hidden md:inline">Aprovação de resultados</span></span>
+        <span class="mt-1.5 hidden max-w-full truncate px-0.5 font-ui text-[10px] leading-tight text-slate-500 sm:block sm:text-xs" title="Aprovação de resultados" aria-hidden="true"><span class="md:hidden">Aprov.res.</span><span class="hidden md:inline">Aprovação de resultados</span></span>
+        <span class="sr-only">Aprovação de resultados — futura</span>
       </li>
       <li class="relative flex min-w-0 flex-1 flex-col items-center text-center" data-stage-key="avaliacao" data-stage-state="futura">
-        <span class="pointer-events-none absolute top-3 right-1/2 left-[-50%] z-0 h-px -translate-y-1/2 bg-slate-200" aria-hidden="true"></span>
+        <span class="pointer-events-none absolute top-3 right-1/2 left-[-50%] z-0 h-px -translate-y-1/2 bg-slate-200 sm:top-3.5" aria-hidden="true"></span>
         <span class="relative z-10 flex size-6 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white font-ui text-[10px] font-semibold text-slate-400 sm:size-7 sm:text-xs" aria-hidden="true">5</span>
-        <span class="mt-1.5 max-w-full truncate px-0.5 font-ui text-[10px] leading-tight text-slate-500 sm:text-xs" title="Avaliação"><span class="md:hidden">Avaliação</span><span class="hidden md:inline">Avaliação</span></span>
+        <span class="mt-1.5 hidden max-w-full truncate px-0.5 font-ui text-[10px] leading-tight text-slate-500 sm:block sm:text-xs" title="Avaliação" aria-hidden="true"><span class="md:hidden">Aval.</span><span class="hidden md:inline">Avaliação</span></span>
+        <span class="sr-only">Avaliação — futura</span>
       </li>
       <li class="relative flex min-w-0 flex-1 flex-col items-center text-center" data-stage-key="feedback" data-stage-state="futura">
-        <span class="pointer-events-none absolute top-3 right-1/2 left-[-50%] z-0 h-px -translate-y-1/2 bg-slate-200" aria-hidden="true"></span>
+        <span class="pointer-events-none absolute top-3 right-1/2 left-[-50%] z-0 h-px -translate-y-1/2 bg-slate-200 sm:top-3.5" aria-hidden="true"></span>
         <span class="relative z-10 flex size-6 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white font-ui text-[10px] font-semibold text-slate-400 sm:size-7 sm:text-xs" aria-hidden="true">6</span>
-        <span class="mt-1.5 max-w-full truncate px-0.5 font-ui text-[10px] leading-tight text-slate-500 sm:text-xs" title="Feedback"><span class="md:hidden">Feedback</span><span class="hidden md:inline">Feedback</span></span>
+        <span class="mt-1.5 hidden max-w-full truncate px-0.5 font-ui text-[10px] leading-tight text-slate-500 sm:block sm:text-xs" title="Feedback" aria-hidden="true"><span class="md:hidden">Feed.</span><span class="hidden md:inline">Feedback</span></span>
+        <span class="sr-only">Feedback — futura</span>
       </li>
     {% endif %}
   </ol>

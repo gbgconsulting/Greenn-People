@@ -118,3 +118,41 @@ Usuário sem briefing verbal: só com Meu painel + stepper/hub, identifica a aç
 - Badge inventando elegibilidade  
 - Stage/scope tests quebrando ou mudando asserts de negócio  
 - URL de domínio nova usada como `cta_url_name`
+
+---
+
+## Aceite Success Criteria (T035 / FR-015)
+
+Roteiro percorrido por persona (Ana / Bruno / Marina) contra a implementação na branch; verificação escrita **sem** demos verbais. Suites de referência (pytest): `test_guidance_mapping`, `test_leader_pending_count`, `test_stage_machine`, `test_scope`, `test_reject_stage_invariant`, `test_can_advance_post_correction`, `test_post_rejection`, `test_production_ux` — **95 passed**.
+
+| ID | Critério | Evidência do percurso | Status |
+|----|----------|----------------------|--------|
+| SC-001 | ≤ 2 cliques até a ação correta (painel / hub / ciclos) | C1/L1/R1: CTA único de `next_step` usa só URL names allowlist; RH checklist com links `organization:user_pending` / `organization:cargo_list` | [x] PASS |
+| SC-002 | Zero regressão stage/scope/AuthZ/cálculo | Diff denylist de domínio vazio; suites stage/scope/reprovação PASS; Abrir sem soft-disable por checklist | [x] PASS |
+| SC-003 | Aceite só pelo roteiro escrito (sem demo verbal) | Este quickstart cobre C1–C4, L1–L3, R1–R3 + SC-004 | [x] PASS |
+| SC-004 | Pessoa nova identifica próxima ação só com a UI | Bloco “Próximo passo” + stepper no Meu painel/hub; copy etapa×papel humana (FR-005); roteiro acima basta para amostragem ≥90% | [x] PASS |
+| SC-005 | Líder reconhece pendências na nav ≤ 5 s | L2: `leader_pending_badge.total` na nav (“Painel do time”); soma N+M+K coberta em `test_leader_pending_count` | [x] PASS |
+| SC-006 | Desktop utilizável; mobile legível (stepper compacto) | Stepper: `<sm` só números, `sm–md` rótulos curtos, `md+` rótulos completos; Meu painel/hub stack (`space-y`, CTA/hub `flex-col`→`sm:flex-row`, CTA full-width); checklist `flex-col`→`sm:flex-row` com links tocáveis | [x] PASS |
+
+### Checklist por persona (percurso T035)
+
+**Ana (colaboradora)**
+
+- [x] C1 — Próximo passo + CTA + stepper no Meu painel e detalhe
+- [x] C2 — Estados especiais sem CTA de avanço inventado
+- [x] C3 — Pós-reprovação acionável coerente (FR-007/009)
+- [x] C4 — “Dar ciência” óbvio no fluxo de feedback
+
+**Bruno (líder)**
+
+- [x] L1 — Orientação de líder + hub com um CTA primário
+- [x] L2 — Badge único de pendências; grupos Governança/Cadastros/Sistema intactos
+- [x] L3 — “Faltam N” / sticky / salvamento claro no leader assessment
+
+**Marina (RH)**
+
+- [x] R1 — Checklist com blockers + links
+- [x] R2 — Sem blockers → copy de ausência de pendências
+- [x] R3 — Abrir intacto (checklist só aviso)
+
+**SC marcados**: SC-001 … SC-006 — todos PASS neste aceite.

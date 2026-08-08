@@ -28,12 +28,28 @@
           {% endif %}
         </td>
         <td class="px-4 py-3 text-right">
-          <a href="{% url 'organization:user_update' u.pk %}?next=pending" class="text-emerald-700 hover:text-emerald-800">Vincular</a>
+          <a
+            href="{% url 'organization:user_update' u.pk %}?next=pending"
+            class="font-ui text-sm font-medium text-emerald-700 hover:text-emerald-800"
+          >Vincular área/cargo</a>
         </td>
       </tr>
       {% empty %}
       <tr>
-        <td colspan="6" class="px-4 py-8 text-center text-slate-500">Nenhum usuário pendente de vínculo.</td>
+        <td colspan="6" class="px-4 py-8 text-center font-ui text-slate-500">
+          Nenhum usuário pendente de vínculo.
+          {% if rh_has_cargo_blockers %}
+          <span class="mt-1 block text-sm text-amber-800">
+            Ainda há cargos sem competências/pesos —
+            <a href="{% url 'organization:cargo_list' %}" class="font-medium text-emerald-700 hover:text-emerald-800">revisar cargos</a>.
+          </span>
+          {% elif rh_pre_open_checklist and not rh_checklist_has_blockers %}
+          <span class="mt-1 block text-sm text-emerald-800">
+            Checklist operacional sem pendências neste escopo.
+            <a href="{% url 'cycles:ciclo_list' %}" class="font-medium text-emerald-700 hover:text-emerald-800">Voltar aos ciclos</a>.
+          </span>
+          {% endif %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>

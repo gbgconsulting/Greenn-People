@@ -31,7 +31,11 @@ from apps.goals.forms import get_open_ciclo
 from apps.organization.models import Area, Cargo
 from apps.reviews.models import Avaliacao
 from apps.reviews.services.evaluation import build_fr005_context
-from apps.reviews.services.guidance import build_stage_stepper, resolve_next_step
+from apps.reviews.services.guidance import (
+    build_stage_stepper,
+    detect_owner_correction_kind,
+    resolve_next_step,
+)
 from apps.talent.services.classification import get_visible_classification_for_collaborator
 
 # KPI liderança (PRD): ≥ 80% alta; faixa intermediária; abaixo = baixa.
@@ -87,10 +91,13 @@ class PersonalDashboardView(LoginRequiredMixin, TemplateView):
         etapa = None
         avaliacao_pk = None
         concluida = False
+        owner_correction_kind = None
         if avaliacao is not None:
             etapa = avaliacao.etapa
             avaliacao_pk = avaliacao.pk
             concluida = bool(avaliacao.concluida)
+            # FR-009 / T028: painel do dono após reprovação (leitura).
+            owner_correction_kind = detect_owner_correction_kind(avaliacao)
 
         return {
             'next_step': resolve_next_step(
@@ -100,6 +107,7 @@ class PersonalDashboardView(LoginRequiredMixin, TemplateView):
                 has_open_ciclo=has_open_ciclo,
                 vinculo_pendente=vinculo_pendente,
                 concluida=concluida,
+                owner_correction_kind=owner_correction_kind,
             ),
             'stage_stepper': build_stage_stepper(
                 etapa=etapa,

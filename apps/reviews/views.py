@@ -27,7 +27,11 @@ from apps.reviews.forms import (
 )
 from apps.reviews.models import Avaliacao, AvaliacaoCompetencia, Feedback
 from apps.reviews.services.evaluation import calcular_nota_final_lider
-from apps.reviews.services.guidance import build_stage_stepper, resolve_next_step
+from apps.reviews.services.guidance import (
+    build_stage_stepper,
+    detect_owner_correction_kind,
+    resolve_next_step,
+)
 
 # Transições que o próprio colaborador dispara (T036 / US1).
 _COLLABORATOR_ADVANCE_ETAPAS = frozenset(
@@ -209,6 +213,10 @@ class AvaliacaoDetailView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
         """Injeta ``next_step`` + ``stage_stepper`` só via ``guidance.py`` (FR-013)."""
         # Já estamos no detalhe de uma avaliação: vínculo existe.
         has_open_ciclo = avaliacao.ciclo.status == Ciclo.Status.ABERTO
+        # FR-009 / T028: hub do dono — correção pós-reprovação (só is_self).
+        owner_correction_kind = (
+            detect_owner_correction_kind(avaliacao) if is_self else None
+        )
         return {
             'next_step': resolve_next_step(
                 role=self._guidance_role(is_self=is_self),
@@ -217,6 +225,7 @@ class AvaliacaoDetailView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
                 has_open_ciclo=has_open_ciclo,
                 vinculo_pendente=False,
                 concluida=bool(avaliacao.concluida),
+                owner_correction_kind=owner_correction_kind,
             ),
             'stage_stepper': build_stage_stepper(
                 etapa=avaliacao.etapa,
@@ -386,9 +395,44 @@ class SelfAssessmentView(LoginRequiredMixin, DetailView):
                 'formset': formset,
                 'pode_editar': True,
                 'linhas_vazias': len(formset.forms) == 0,
+                **self._progress_flags(formset),
             },
         )
         return context
+
+    @staticmethod
+    def _nota_autoavaliacao_presente(form) -> bool:
+        """True se a linha já tem nota de autoavaliação (formset bound ou instance)."""
+        if form.is_bound:
+            raw = form.data.get(form.add_prefix('nota_autoavaliacao'), '')
+            if isinstance(raw, str):
+                return raw.strip() != ''
+            return raw is not None
+        return form.instance.nota_autoavaliacao is not None
+
+    def _progress_flags(self, formset) -> dict:
+        """Flags de progresso para UI (T026) — só leitura de formset/queryset.
+
+        Conta linhas sem ``nota_autoavaliacao``. Não chama ``calcular_nota_*``.
+        """
+        total = len(formset.forms)
+        if total == 0:
+            qs = self._linhas_queryset()
+            total = qs.count()
+            restantes = qs.filter(nota_autoavaliacao__isnull=True).count()
+        else:
+            restantes = sum(
+                1
+                for form in formset.forms
+                if not self._nota_autoavaliacao_presente(form)
+            )
+        preenchidas = total - restantes
+        return {
+            'notas_total': total,
+            'notas_preenchidas': preenchidas,
+            'notas_restantes': restantes,
+            'avaliacao_progresso_completo': total > 0 and restantes == 0,
+        }
 
     def _linhas_queryset(self):
         return (
@@ -489,9 +533,43 @@ class LeaderAssessmentView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
                 'pode_avancar': pode_avancar,
                 'avanco_desabilitado': not pode_avancar,
                 'motivo_bloqueio_avanco': motivo_bloqueio_avanco,
+                **self._progress_flags(formset),
             },
         )
         return context
+
+    @staticmethod
+    def _nota_lider_presente(form) -> bool:
+        """True se a linha já tem nota do líder (formset bound ou instance)."""
+        if form.is_bound:
+            raw = form.data.get(form.add_prefix('nota_lider'), '')
+            if isinstance(raw, str):
+                return raw.strip() != ''
+            return raw is not None
+        return form.instance.nota_lider is not None
+
+    def _progress_flags(self, formset) -> dict:
+        """Flags de progresso para UI (FR-008) — só leitura de formset/queryset.
+
+        Conta linhas sem ``nota_lider``. Não chama ``calcular_nota_*``.
+        """
+        total = len(formset.forms)
+        if total == 0:
+            # Formset vazio: cair no queryset para consistência com o banco.
+            qs = self._linhas_queryset()
+            total = qs.count()
+            restantes = qs.filter(nota_lider__isnull=True).count()
+        else:
+            restantes = sum(
+                1 for form in formset.forms if not self._nota_lider_presente(form)
+            )
+        preenchidas = total - restantes
+        return {
+            'notas_total': total,
+            'notas_preenchidas': preenchidas,
+            'notas_restantes': restantes,
+            'avaliacao_progresso_completo': total > 0 and restantes == 0,
+        }
 
     def _linhas_queryset(self):
         return (

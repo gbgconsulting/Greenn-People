@@ -3,19 +3,48 @@
 {% block title %}Autoavaliação — Greenn People{% endblock %}
 
 {% block content %}
-<div class="mb-6">
-  <h1 class="text-2xl font-semibold text-slate-800">Autoavaliação</h1>
-  <p class="mt-1 text-slate-500">
-    Avalie cada competência do seu cargo com base na escala definida.
-    {% if avaliacao.ciclo %}
-      Ciclo: {{ avaliacao.ciclo.nome }}.
+<div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+  <div class="min-w-0">
+    <h1 class="font-display text-2xl font-semibold text-slate-800">Autoavaliação</h1>
+    <p class="mt-1 font-ui text-slate-500">
+      Preencha as notas das competências na sua avaliação, com base na escala de cada uma.
+      {% if avaliacao.ciclo %}
+        Ciclo: {{ avaliacao.ciclo.nome }}.
+      {% endif %}
+    </p>
+  </div>
+
+  {% if not linhas_vazias and notas_total %}
+  <div
+    class="shrink-0 rounded-lg border border-line bg-surface-card px-3 py-2 font-ui text-sm"
+    data-field="progresso-notas"
+    role="status"
+    aria-live="polite"
+  >
+    {% if avaliacao_progresso_completo %}
+    <p class="font-medium text-emerald-700">
+      Todas as {{ notas_total }} notas preenchidas
+    </p>
+    {% elif notas_restantes == 1 %}
+    <p class="font-medium text-amber-800">Falta 1 nota</p>
+    <p class="mt-0.5 text-xs text-slate-500">
+      {{ notas_preenchidas }} de {{ notas_total }} preenchidas
+    </p>
+    {% else %}
+    <p class="font-medium text-amber-800">
+      Faltam {{ notas_restantes }} notas
+    </p>
+    <p class="mt-0.5 text-xs text-slate-500">
+      {{ notas_preenchidas }} de {{ notas_total }} preenchidas
+    </p>
     {% endif %}
-  </p>
+  </div>
+  {% endif %}
 </div>
 
 {% if linhas_vazias %}
 <div
-  class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900"
+  class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 font-ui text-sm text-amber-900"
   role="status"
 >
   <p class="font-medium">Linhas de competência indisponíveis</p>
@@ -34,7 +63,7 @@
   {{ formset.management_form }}
 
   {% if formset.non_form_errors %}
-  <div class="border-b border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700" role="alert">
+  <div class="border-b border-rose-200 bg-rose-50 px-4 py-3 font-ui text-sm text-rose-700" role="alert">
     {% for error in formset.non_form_errors %}{{ error }}{% endfor %}
   </div>
   {% endif %}
@@ -87,10 +116,13 @@
   </table>
 
   {% if pode_editar %}
-  <div class="flex flex-wrap gap-3 border-t border-slate-200 bg-slate-50 px-4 py-4">
+  <div class="flex flex-wrap items-center gap-3 border-t border-slate-200 bg-slate-50 px-4 py-4">
     {% include "components/button.html" with label="Salvar autoavaliação" type="submit" variant="primary" %}
     {% url 'dashboard:personal' as cancel_url %}
     {% include "components/button.html" with label="Voltar" href=cancel_url variant="secondary" %}
+    <p class="w-full font-ui text-xs leading-relaxed text-slate-500" role="note" data-field="save-confirm-hint">
+      Ao salvar, a confirmação aparece no topo da página (mensagem de sucesso).
+    </p>
   </div>
   {% endif %}
 </form>

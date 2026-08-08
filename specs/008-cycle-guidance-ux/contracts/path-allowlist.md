@@ -99,8 +99,11 @@ Tudo sob `specs/008-cycle-guidance-ux/` — docs da feature.
 
 ## Checklist de revisão de diff
 
-- [ ] Nenhum arquivo em denylist de comportamento
-- [ ] Nenhum `CreateView`/`urlpatterns` de domínio novo
-- [ ] Nenhum `migrations/`
-- [ ] Services novos são importáveis e **não** chamam advance/approve/cálculo
-- [ ] `nav_menu.html`: diff limitado a badge/count, sem reordenação de grupos
+- [x] Nenhum arquivo em denylist de comportamento
+  - Confirmado T038 (2026-08-08): `git diff development...WORKDIR` vazio em `stage.py` / `cycle.py` / `approval.py` / `scope.py` / `evaluation.py` / `apps/*/models.py` / `apps/*/migrations/` / `apps/*/urls.py`.
+- [x] Nenhum `CreateView`/`urlpatterns` de domínio novo
+- [x] Nenhum `migrations/`
+- [x] Services novos são importáveis e **não** chamam advance/approve/cálculo
+- [x] `nav_menu.html`: diff limitado a badge/count, sem reordenação de grupos
+  - Confirmado T037 (2026-08-08): `git diff development...HEAD -- templates/components/nav_menu.html` = apenas `badge_count=leader_pending_badge.total` no item “Painel do time”. Ordem de seções/labels idêntica a `development` (Colaborador → Líder → Gerente → Governança → Cadastros → Sistema).
+- Gate T038 (2026-08-08): pytest stage/scope/reprovação + guidance/pending = **95 passed**.

@@ -3,9 +3,58 @@
 {% block title %}Avaliação do líder — Greenn People{% endblock %}
 
 {% block content %}
+{# Sticky: colaborador + progresso “faltam N” (FR-008 / T025) — top-14 sob a topbar #}
+<div
+  class="sticky top-14 z-20 -mx-4 mb-6 border-b border-line bg-surface/95 px-4 py-3 backdrop-blur md:-mx-6 md:px-6"
+  data-component="leader-assessment-sticky"
+>
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+    <div class="min-w-0">
+      <p class="font-ui text-xs font-medium uppercase tracking-wide text-slate-500">
+        Avaliando
+      </p>
+      <p class="truncate font-display text-base font-medium tracking-tight text-slate-800">
+        {{ colaborador.nome|default:colaborador.email }}
+      </p>
+      {% if avaliacao.ciclo %}
+      <p class="mt-0.5 truncate font-ui text-xs text-slate-500">
+        Ciclo: {{ avaliacao.ciclo.nome }}
+      </p>
+      {% endif %}
+    </div>
+
+    {% if not linhas_vazias and notas_total %}
+    <div
+      class="shrink-0 rounded-lg border border-line bg-surface-card px-3 py-2 font-ui text-sm"
+      data-field="progresso-notas"
+      role="status"
+      aria-live="polite"
+    >
+      {% if avaliacao_progresso_completo %}
+      <p class="font-medium text-emerald-700">
+        Todas as {{ notas_total }} notas preenchidas
+      </p>
+      {% elif notas_restantes == 1 %}
+      <p class="font-medium text-amber-800">Falta 1 nota</p>
+      <p class="mt-0.5 text-xs text-slate-500">
+        {{ notas_preenchidas }} de {{ notas_total }} preenchidas
+      </p>
+      {% else %}
+      <p class="font-medium text-amber-800">
+        Faltam {{ notas_restantes }} notas
+      </p>
+      <p class="mt-0.5 text-xs text-slate-500">
+        {{ notas_preenchidas }} de {{ notas_total }} preenchidas
+      </p>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
 <div class="mb-6">
-  <h1 class="text-2xl font-semibold text-slate-800">Avaliação do líder</h1>
-  <p class="mt-1 text-slate-500">
+  <h1 class="font-display text-2xl font-semibold text-slate-800">Avaliação do líder</h1>
+  <p class="mt-1 font-ui text-slate-500">
     Avalie as competências de
     <span class="font-medium text-slate-700">{{ colaborador.nome|default:colaborador.email }}</span>,
     comparando com o nível esperado congelado no ciclo.
@@ -14,7 +63,7 @@
     {% endif %}
   </p>
   {% if nota_final_lider is not None %}
-  <p class="mt-2 text-sm text-emerald-700">
+  <p class="mt-2 font-ui text-sm text-emerald-700">
     Nota final do líder:
     <span class="font-semibold">{{ nota_final_lider }}</span>
   </p>
@@ -23,7 +72,7 @@
 
 {% if linhas_vazias %}
 <div
-  class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900"
+  class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 font-ui text-sm text-amber-900"
   role="status"
 >
   <p class="font-medium">Linhas de competência indisponíveis</p>
@@ -42,7 +91,7 @@
   {{ formset.management_form }}
 
   {% if formset.non_form_errors %}
-  <div class="border-b border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700" role="alert">
+  <div class="border-b border-rose-200 bg-rose-50 px-4 py-3 font-ui text-sm text-rose-700" role="alert">
     {% for error in formset.non_form_errors %}{{ error }}{% endfor %}
   </div>
   {% endif %}
@@ -125,10 +174,13 @@
   </div>
 
   {% if pode_editar %}
-  <div class="flex flex-wrap gap-3 border-t border-slate-200 bg-slate-50 px-4 py-4">
+  <div class="flex flex-wrap items-center gap-3 border-t border-slate-200 bg-slate-50 px-4 py-4">
     {% include "components/button.html" with label="Salvar avaliação" type="submit" variant="primary" %}
     {% url 'dashboard:personal' as cancel_url %}
     {% include "components/button.html" with label="Voltar" href=cancel_url variant="secondary" %}
+    <p class="w-full font-ui text-xs leading-relaxed text-slate-500" role="note" data-field="save-confirm-hint">
+      Ao salvar, a confirmação aparece no topo da página (mensagem de sucesso).
+    </p>
   </div>
   {% endif %}
 </form>
@@ -142,7 +194,7 @@
     {% include "components/button.html" with label="Avançar para feedback" type="submit" variant="secondary" disabled=avanco_desabilitado %}
   </form>
   {% if not pode_avancar and motivo_bloqueio_avanco %}
-  <p class="text-sm text-amber-700">{{ motivo_bloqueio_avanco }}</p>
+  <p class="font-ui text-sm text-amber-700">{{ motivo_bloqueio_avanco }}</p>
   {% endif %}
 </div>
 {% endif %}

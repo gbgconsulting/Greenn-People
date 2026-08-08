@@ -101,7 +101,7 @@ Monólito Django na raiz: allowlist em `contracts/path-allowlist.md`.
 
 ### MVP Gate (US1+US2) — verificação obrigatória
 
-- [ ] T023 Verificar regressão SC-002 / FR-013 após MVP: `git diff` em serviços de regra de negócio = **vazio** (`apps/cycles/services/stage.py`, `apps/cycles/services/cycle.py`, `apps/goals/services/approval.py`, `apps/accounts/services/scope.py`, mutators/cálculo em `apps/reviews/services/evaluation.py`, `apps/*/models.py`, `**/migrations/**`, `apps/*/urls.py`) **e** pytest stage+scope verdes: `python manage.py test tests.test_stage_machine tests.test_scope tests.test_reject_stage_invariant tests.test_can_advance_post_correction tests.test_post_rejection tests.test_production_ux` (+ `tests.test_guidance_mapping` / `tests.test_leader_pending_count`)
+- [X] T023 Verificar regressão SC-002 / FR-013 após MVP: `git diff` em serviços de regra de negócio = **vazio** (`apps/cycles/services/stage.py`, `apps/cycles/services/cycle.py`, `apps/goals/services/approval.py`, `apps/accounts/services/scope.py`, mutators/cálculo em `apps/reviews/services/evaluation.py`, `apps/*/models.py`, `**/migrations/**`, `apps/*/urls.py`) **e** pytest stage+scope verdes: `python manage.py test tests.test_stage_machine tests.test_scope tests.test_reject_stage_invariant tests.test_can_advance_post_correction tests.test_post_rejection tests.test_production_ux` (+ `tests.test_guidance_mapping` / `tests.test_leader_pending_count`)
 
 **Checkpoint MVP**: US1+US2 entregáveis; denylist de domínio intacta; stage/scope PASS
 
@@ -115,12 +115,12 @@ Monólito Django na raiz: allowlist em `contracts/path-allowlist.md`.
 
 ### Implementation for User Story 3
 
-- [ ] T024 [P] [US3] Expor flags de progresso (ex. notas restantes) só via leitura de formset/queryset em `apps/reviews/views.py` (leader assessment) — **sem** `calcular_nota_*`
-- [ ] T025 [P] [US3] UI “faltam N”, contexto sticky do colaborador e confirmação de salvamento em `templates/reviews/leader_assessment.html`
-- [ ] T026 [P] [US3] Clarificar progresso/orientação em `templates/reviews/self_assessment.html` se necessário à copy (sem mutar etapa)
-- [ ] T027 [US3] Tornar ação de ciente óbvia e reduzir hops via copy/links existentes em `templates/reviews/feedback_list.html`, `templates/reviews/feedback_list_partial.html`, `templates/reviews/feedback_form.html` — **sem** alterar predicados de quem pode dar ciência
-- [ ] T028 [US3] Garantir mensagem pós-reprovação acionável coerente com FR-007/US2 em painel/hub (`templates/dashboard/personal.html` / `templates/reviews/avaliacao_detail.html` via guidance já existente)
-- [ ] T029 [US3] Validar US3 via quickstart C3–C4 / L3
+- [X] T024 [P] [US3] Expor flags de progresso (ex. notas restantes) só via leitura de formset/queryset em `apps/reviews/views.py` (leader assessment) — **sem** `calcular_nota_*`
+- [X] T025 [P] [US3] UI “faltam N”, contexto sticky do colaborador e confirmação de salvamento em `templates/reviews/leader_assessment.html`
+- [X] T026 [P] [US3] Clarificar progresso/orientação em `templates/reviews/self_assessment.html` se necessário à copy (sem mutar etapa)
+- [X] T027 [US3] Tornar ação de ciente óbvia e reduzir hops via copy/links existentes em `templates/reviews/feedback_list.html`, `templates/reviews/feedback_list_partial.html`, `templates/reviews/feedback_form.html` — **sem** alterar predicados de quem pode dar ciência
+- [X] T028 [US3] Garantir mensagem pós-reprovação acionável coerente com FR-007/US2 em painel/hub (`templates/dashboard/personal.html` / `templates/reviews/avaliacao_detail.html` via guidance já existente)
+- [X] T029 [US3] Validar US3 via quickstart C3–C4 / L3
 
 **Checkpoint**: US3 independentemente testável sem tocar regras de feedback/avaliação
 
@@ -134,11 +134,11 @@ Monólito Django na raiz: allowlist em `contracts/path-allowlist.md`.
 
 ### Implementation for User Story 4
 
-- [ ] T030 [P] [US4] Implementar builder read-only `RhPreOpenChecklist` em `apps/reviews/services/guidance.py` (ou helper sibling) conforme `contracts/rh-checklist-advisory.md` — **sem** condicionar `open_cycle`
-- [ ] T031 [US4] Injetar checklist no context de listagem em `apps/cycles/views.py` (só `get_context_data` / flags) — **sem** alterar `CicloOpenView` / comportamento de abertura
-- [ ] T032 [P] [US4] Renderizar checklist avisório + links em `templates/cycles/ciclo_list.html` e `templates/cycles/ciclo_list_partial.html` (**nunca** soft-disable Abrir)
-- [ ] T033 [P] [US4] Reforçar links/contexto na superfície pending em `apps/organization/views.py` + `templates/organization/user_pending_list.html` / `user_pending_list_partial.html` se necessário (só apresentação)
-- [ ] T034 [US4] Validar US4 via quickstart R1–R3 (Abrir intacto; checklist só aviso)
+- [X] T030 [P] [US4] Implementar builder read-only `RhPreOpenChecklist` em `apps/reviews/services/guidance.py` (ou helper sibling) conforme `contracts/rh-checklist-advisory.md` — **sem** condicionar `open_cycle`
+- [X] T031 [US4] Injetar checklist no context de listagem em `apps/cycles/views.py` (só `get_context_data` / flags) — **sem** alterar `CicloOpenView` / comportamento de abertura
+- [X] T032 [P] [US4] Renderizar checklist avisório + links em `templates/cycles/ciclo_list.html` e `templates/cycles/ciclo_list_partial.html` (**nunca** soft-disable Abrir)
+- [X] T033 [P] [US4] Reforçar links/contexto na superfície pending em `apps/organization/views.py` + `templates/organization/user_pending_list.html` / `user_pending_list_partial.html` se necessário (só apresentação)
+- [X] T034 [US4] Validar US4 via quickstart R1–R3 (Abrir intacto; checklist só aviso)
 
 **Checkpoint**: US4 independentemente testável; abertura = regra vigente
 
@@ -148,10 +148,10 @@ Monólito Django na raiz: allowlist em `contracts/path-allowlist.md`.
 
 **Purpose**: Aceite escritório, mobile legível, gate final denylist + regressão
 
-- [ ] T035 [P] Percorrer quickstart.md completo (Ana / Bruno / Marina) e marcar SC-001…SC-006 em `specs/008-cycle-guidance-ux/quickstart.md` (aceite sem demos verbais — FR-015)
-- [ ] T036 [P] Revisar mobile legível (stack vertical; stepper compacto) em `templates/components/stage_stepper.html` + superfícies Meu painel / hub / checklist (SC-006)
-- [ ] T037 Confirmar `nav_menu.html` diff limitado a badge (sem reordenação de grupos IA) via `git diff templates/components/nav_menu.html`
-- [ ] T038 Gate final SC-002 / FR-013: `git diff` em serviços de regra de negócio = **vazio** (mesmos paths da T023: stage/cycle/approval/scope/evaluation mutators/models/migrations/urls) **e** pytest stage+scope verdes: `python manage.py test tests.test_stage_machine tests.test_scope tests.test_reject_stage_invariant tests.test_can_advance_post_correction tests.test_post_rejection tests.test_production_ux tests.test_guidance_mapping tests.test_leader_pending_count`
+- [X] T035 [P] Percorrer quickstart.md completo (Ana / Bruno / Marina) e marcar SC-001…SC-006 em `specs/008-cycle-guidance-ux/quickstart.md` (aceite sem demos verbais — FR-015)
+- [X] T036 [P] Revisar mobile legível (stack vertical; stepper compacto) em `templates/components/stage_stepper.html` + superfícies Meu painel / hub / checklist (SC-006)
+- [X] T037 Confirmar `nav_menu.html` diff limitado a badge (sem reordenação de grupos IA) via `git diff templates/components/nav_menu.html`
+- [X] T038 Gate final SC-002 / FR-013: `git diff` em serviços de regra de negócio = **vazio** (mesmos paths da T023: stage/cycle/approval/scope/evaluation mutators/models/migrations/urls) **e** pytest stage+scope verdes: `python manage.py test tests.test_stage_machine tests.test_scope tests.test_reject_stage_invariant tests.test_can_advance_post_correction tests.test_post_rejection tests.test_production_ux tests.test_guidance_mapping tests.test_leader_pending_count`
 
 ---
 

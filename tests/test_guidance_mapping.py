@@ -277,6 +277,60 @@ def test_etapa_ausente_sem_cta():
     assert g.blocked_reason
 
 
+def test_pos_reprovacao_metas_acionavel_sem_blocked():
+    """T028 / FR-009: dono com meta reprovada → copy alinhada ao hint FR-007."""
+    g = resolve_next_step(
+        role='colaborador',
+        etapa=ETAPA_APROVACAO_METAS,
+        owner_correction_kind='metas',
+    )
+
+    _assert_dto_shape(g)
+    assert g.title == 'Corrija a meta reprovada'
+    assert g.body == 'Corrija a meta e salve para reenviar à aprovação.'
+    assert g.cta_url_name == 'goals:meta_list'
+    assert g.cta_label == 'Corrigir metas'
+    assert g.blocked_reason is None
+
+
+def test_pos_reprovacao_resultados_acionavel_sem_blocked():
+    """T028 / FR-009: dono com resultado reprovado → mesmo destino e ação corretiva."""
+    g = resolve_next_step(
+        role='colaborador',
+        etapa=ETAPA_APROVACAO_RESULTADOS,
+        owner_correction_kind='resultados',
+    )
+
+    _assert_dto_shape(g)
+    assert g.title == 'Corrija o resultado reprovado'
+    assert g.body == 'Ajuste o progresso e clique em «Corrigir e reenviar».'
+    assert g.cta_url_name == 'goals:meta_list'
+    assert g.cta_label == 'Corrigir resultados'
+    assert g.blocked_reason is None
+
+
+def test_pos_reprovacao_nao_aplica_quando_concluida():
+    """Estados especiais têm precedência sobre correção pós-reprovação."""
+    g = resolve_next_step(
+        role='colaborador',
+        concluida=True,
+        avaliacao_pk=1,
+        etapa=ETAPA_APROVACAO_METAS,
+        owner_correction_kind='metas',
+    )
+    assert g.title == 'Ciclo concluído para você'
+    assert g.cta_url_name == 'reviews:detail'
+
+
+def test_owner_correction_kind_invalido_levanta():
+    with pytest.raises(ValueError, match='owner_correction_kind inválido'):
+        resolve_next_step(
+            role='colaborador',
+            etapa=ETAPA_APROVACAO_METAS,
+            owner_correction_kind='feedback',
+        )
+
+
 def test_role_invalido_levanta():
     with pytest.raises(ValueError, match='role inválido'):
         resolve_next_step(role='diretor', etapa=ETAPA_INPUT_METAS)
