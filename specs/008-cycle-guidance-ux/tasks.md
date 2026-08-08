@@ -70,14 +70,14 @@ Monólito Django na raiz: allowlist em `contracts/path-allowlist.md`.
 
 ### Implementation for User Story 1
 
-- [ ] T008 [P] [US1] Completar markup de `templates/components/next_step.html` (título, body, CTA único ou ausência de CTA + `blocked_reason`; reutilizar button Freeze existente)
-- [ ] T009 [P] [US1] Completar markup de `templates/components/stage_stepper.html` (6 etapas; estados visuais; variante compacta mobile legível — SC-006)
-- [ ] T010 [US1] Injetar context `next_step` + `stage_stepper` em `apps/dashboard/views.py` (`PersonalDashboardView.get_context_data`) chamando apenas `guidance.py` (sem AuthZ nova)
-- [ ] T011 [US1] Incluir `{% include %}` de `next_step` + `stage_stepper` em `templates/dashboard/personal.html`
-- [ ] T012 [US1] Injetar context guidance/stepper em detalhe da avaliação em `apps/reviews/views.py` (Detail) — só `get_context_data` / flags de apresentação
-- [ ] T013 [US1] Incluir stepper (e bloco se couber no hub) em `templates/reviews/avaliacao_detail.html` via partials shared (FR-002)
-- [ ] T014 [P] [US1] Adicionar classes mínimas do stepper em `static/src/input.css` **somente se** utilitários insuficientes; rebuild `static/css/tailwind.css`
-- [ ] T015 [US1] Validar US1 via quickstart (cenários C1–C2 + stepper no detalhe); confirmar CTA usa só URL names existentes
+- [X] T008 [P] [US1] Completar markup de `templates/components/next_step.html` (título, body, CTA único ou ausência de CTA + `blocked_reason`; reutilizar button Freeze existente)
+- [X] T009 [P] [US1] Completar markup de `templates/components/stage_stepper.html` (6 etapas; estados visuais; variante compacta mobile legível — SC-006)
+- [X] T010 [US1] Injetar context `next_step` + `stage_stepper` em `apps/dashboard/views.py` (`PersonalDashboardView.get_context_data`) chamando apenas `guidance.py` (sem AuthZ nova)
+- [X] T011 [US1] Incluir `{% include %}` de `next_step` + `stage_stepper` em `templates/dashboard/personal.html`
+- [X] T012 [US1] Injetar context guidance/stepper em detalhe da avaliação em `apps/reviews/views.py` (Detail) — só `get_context_data` / flags de apresentação
+- [X] T013 [US1] Incluir stepper (e bloco se couber no hub) em `templates/reviews/avaliacao_detail.html` via partials shared (FR-002)
+- [X] T014 [P] [US1] Adicionar classes mínimas do stepper em `static/src/input.css` **somente se** utilitários insuficientes; rebuild `static/css/tailwind.css`
+- [X] T015 [US1] Validar US1 via quickstart (cenários C1–C2 + stepper no detalhe); confirmar CTA usa só URL names existentes
 
 **Checkpoint**: US1 independentemente testável no Meu painel + detalhe
 
@@ -91,13 +91,13 @@ Monólito Django na raiz: allowlist em `contracts/path-allowlist.md`.
 
 ### Implementation for User Story 2
 
-- [ ] T016 [US2] Ajustar hierarquia visual de CTAs em `templates/reviews/avaliacao_detail.html` (exatamente um primário alinhado a `NextStepGuidance`; demais secundários; copy humana FR-005) — **sem** alterar predicados `can_advance` / POST existentes
-- [ ] T017 [P] [US2] Implementar contagem read-only `LeaderPendingBadge` (soma 3 fontes com predicados **já existentes**) em `apps/reviews/services/guidance.py` ou `apps/reviews/services/pending_counts.py` — reusa `get_visible_users` **sem alterar** `apps/accounts/services/scope.py`
-- [ ] T018 [P] [US2] Cobrir soma N+M+K e exclusão fora do escopo em `tests/test_leader_pending_count.py`
-- [ ] T019 [US2] Expor total do badge via `apps/core/context_processors.py` (leitura por request autenticado; sem AuthZ nova)
-- [ ] T020 [US2] Aceitar slot opcional `badge_count` em `templates/components/nav_link.html` e passar total em `templates/components/nav_menu.html` **sem** reordenar/renomear grupos Governança/Cadastros/Sistema
-- [ ] T021 [US2] Alinhar copy/contexto do hint pós-reprovação em `apps/goals/views.py` / templates `templates/goals/meta_list.html` (+ partials) com `_proximo_passo_pos_reprovacao` — **sem** mudar `meta_approval_actionable` / approval service
-- [ ] T022 [US2] Validar US2 via quickstart L1–L2 (badge ≤5s; nav grupos intactos; hub 1 CTA)
+- [X] T016 [US2] Ajustar hierarquia visual de CTAs em `templates/reviews/avaliacao_detail.html` (exatamente um primário alinhado a `NextStepGuidance`; demais secundários; copy humana FR-005) — **sem** alterar predicados `can_advance` / POST existentes
+- [X] T017 [P] [US2] Implementar contagem read-only `LeaderPendingBadge` (soma 3 fontes com predicados **já existentes**) em `apps/reviews/services/guidance.py` ou `apps/reviews/services/pending_counts.py` — reusa `get_visible_users` **sem alterar** `apps/accounts/services/scope.py`
+- [X] T018 [P] [US2] Cobrir soma N+M+K e exclusão fora do escopo em `tests/test_leader_pending_count.py`
+- [X] T019 [US2] Expor total do badge via `apps/core/context_processors.py` (leitura por request autenticado; sem AuthZ nova)
+- [X] T020 [US2] Aceitar slot opcional `badge_count` em `templates/components/nav_link.html` e passar total em `templates/components/nav_menu.html` **sem** reordenar/renomear grupos Governança/Cadastros/Sistema
+- [X] T021 [US2] Alinhar copy/contexto do hint pós-reprovação em `apps/goals/views.py` / templates `templates/goals/meta_list.html` (+ partials) com `_proximo_passo_pos_reprovacao` — **sem** mudar `meta_approval_actionable` / approval service
+- [X] T022 [US2] Validar US2 via quickstart L1–L2 (badge ≤5s; nav grupos intactos; hub 1 CTA)
 
 ### MVP Gate (US1+US2) — verificação obrigatória
 

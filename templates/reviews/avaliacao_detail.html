@@ -20,6 +20,13 @@
   </div>
 </div>
 
+<section class="mb-8 space-y-6" aria-labelledby="orientacao-heading">
+  <h2 id="orientacao-heading" class="sr-only">Orientação do ciclo</h2>
+  {# CTA primário único alinhado a NextStepGuidance (FR-004 / FR-005). #}
+  {% include "components/next_step.html" with next_step=next_step %}
+  {% include "components/stage_stepper.html" with stage_stepper=stage_stepper %}
+</section>
+
 <div class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
   <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
     <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Área</p>
@@ -43,29 +50,33 @@
   </div>
 </div>
 
-<div class="mb-6 flex flex-wrap gap-2">
-  {% if pode_autoavaliar %}
-    {% url 'reviews:self_assessment' avaliacao.pk as self_url %}
-    {% include "components/button.html" with label="Autoavaliação" href=self_url variant="primary" %}
-  {% endif %}
-  {% if pode_avaliar_lider %}
-    {% url 'reviews:leader_assessment' avaliacao.pk as leader_url %}
-    {% include "components/button.html" with label="Avaliar competências" href=leader_url variant="primary" %}
-  {% endif %}
-  {% url 'reviews:feedback_list' avaliacao.pk as feedback_url %}
-  {% include "components/button.html" with label="Feedbacks" href=feedback_url variant="secondary" %}
-  {% if pode_criar_feedback %}
-    {% url 'reviews:feedback_create' avaliacao.pk as feedback_create_url %}
-    {% include "components/button.html" with label="Novo feedback" href=feedback_create_url variant="secondary" %}
-  {% endif %}
-  {% if rotulo_avanco %}
-  <form method="post" action="{% url 'reviews:advance' avaliacao.pk %}" class="inline">
-    {% csrf_token %}
-    <input type="hidden" name="next" value="{% url 'reviews:detail' avaliacao.pk %}">
-    {% include "components/button.html" with label=rotulo_avanco type="submit" variant="secondary" disabled=avanco_desabilitado %}
-  </form>
-  {% endif %}
-</div>
+{# FR-004: demais ações do hub são secundárias; copy humana FR-005. Predicados/POST intactos. #}
+<section class="mb-6" aria-labelledby="hub-acoes-heading">
+  <h2 id="hub-acoes-heading" class="sr-only">Ações desta avaliação</h2>
+  <div class="flex flex-wrap gap-2" data-hub-actions>
+    {% if pode_autoavaliar %}
+      {% url 'reviews:self_assessment' avaliacao.pk as self_url %}
+      {% include "components/button.html" with label="Autoavaliar" href=self_url variant="secondary" %}
+    {% endif %}
+    {% if pode_avaliar_lider %}
+      {% url 'reviews:leader_assessment' avaliacao.pk as leader_url %}
+      {% include "components/button.html" with label="Avaliar" href=leader_url variant="secondary" %}
+    {% endif %}
+    {% url 'reviews:feedback_list' avaliacao.pk as feedback_url %}
+    {% include "components/button.html" with label="Feedbacks" href=feedback_url variant="secondary" %}
+    {% if pode_criar_feedback %}
+      {% url 'reviews:feedback_create' avaliacao.pk as feedback_create_url %}
+      {% include "components/button.html" with label="Ir ao feedback" href=feedback_create_url variant="secondary" %}
+    {% endif %}
+    {% if rotulo_avanco %}
+    <form method="post" action="{% url 'reviews:advance' avaliacao.pk %}" class="inline">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{% url 'reviews:detail' avaliacao.pk %}">
+      {% include "components/button.html" with label=rotulo_avanco type="submit" variant="secondary" disabled=avanco_desabilitado %}
+    </form>
+    {% endif %}
+  </div>
+</section>
 {% if rotulo_avanco and not pode_avancar and motivo_bloqueio_avanco %}
 <p class="mb-6 text-sm text-amber-700">{{ motivo_bloqueio_avanco }}</p>
 {% endif %}

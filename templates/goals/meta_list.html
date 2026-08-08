@@ -31,6 +31,11 @@
 {% if avaliacao_pk and rotulo_avanco and not pode_avancar and motivo_bloqueio_avanco %}
 <p class="mb-4 text-sm text-amber-700">{{ motivo_bloqueio_avanco }}</p>
 {% endif %}
+{% if proximo_passo_lista_hint %}
+<p class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800" role="status">
+  {{ proximo_passo_lista_hint }}
+</p>
+{% endif %}
 
 {% if ciclo_aberto %}
 <div class="mb-4 flex flex-wrap gap-2" role="navigation" aria-label="Filtro por status">

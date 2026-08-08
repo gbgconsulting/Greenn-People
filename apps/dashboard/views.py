@@ -31,6 +31,7 @@ from apps.goals.forms import get_open_ciclo
 from apps.organization.models import Area, Cargo
 from apps.reviews.models import Avaliacao
 from apps.reviews.services.evaluation import build_fr005_context
+from apps.reviews.services.guidance import build_stage_stepper, resolve_next_step
 from apps.talent.services.classification import get_visible_classification_for_collaborator
 
 # KPI liderança (PRD): ≥ 80% alta; faixa intermediária; abaixo = baixa.
@@ -61,7 +62,52 @@ class PersonalDashboardView(LoginRequiredMixin, TemplateView):
             self.request.user,
         )
         context['chart_gaps_competencia'] = self._chart_gaps_competencia(context)
+        context.update(self._guidance_presentation_context(context))
         return context
+
+    def _guidance_role(self) -> str:
+        """Papel de apresentação a partir de flags já existentes (sem AuthZ nova)."""
+        user = self.request.user
+        if getattr(user, 'is_admin', False):
+            return 'rh'
+        if user.is_leader:
+            return 'lider'
+        return 'colaborador'
+
+    def _guidance_presentation_context(self, fr005: dict) -> dict:
+        """Injeta ``next_step`` + ``stage_stepper`` só via ``guidance.py`` (FR-013)."""
+        avaliacao = fr005.get('avaliacao')
+        ciclo_aberto = fr005.get('ciclo_aberto')
+        has_open_ciclo = ciclo_aberto is not None
+        # Contrato: vínculo ou avaliação pendente → copy sem CTA de avanço inventado.
+        vinculo_pendente = bool(fr005.get('vinculo_pendente')) or (
+            has_open_ciclo and avaliacao is None
+        )
+
+        etapa = None
+        avaliacao_pk = None
+        concluida = False
+        if avaliacao is not None:
+            etapa = avaliacao.etapa
+            avaliacao_pk = avaliacao.pk
+            concluida = bool(avaliacao.concluida)
+
+        return {
+            'next_step': resolve_next_step(
+                role=self._guidance_role(),
+                etapa=etapa,
+                avaliacao_pk=avaliacao_pk,
+                has_open_ciclo=has_open_ciclo,
+                vinculo_pendente=vinculo_pendente,
+                concluida=concluida,
+            ),
+            'stage_stepper': build_stage_stepper(
+                etapa=etapa,
+                has_open_ciclo=has_open_ciclo,
+                vinculo_pendente=vinculo_pendente,
+                concluida=concluida,
+            ),
+        }
 
     def _chart_gaps_competencia(self, fr005: dict) -> dict:
         """Barras esperado × nota a partir de ``competencias_resumo`` (US3).

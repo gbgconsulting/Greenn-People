@@ -1,15 +1,15 @@
 {% extends "base.html" %}
 
-{% block title %}{% if meta_reprovada %}Corrigir meta{% elif meta %}Editar meta{% else %}Nova meta{% endif %} — Greenn People{% endblock %}
+{% block title %}{% if item_reprovado or meta_reprovada %}{{ rotulo_editar|default:"Corrigir" }} meta{% elif meta %}Editar meta{% else %}Nova meta{% endif %} — Greenn People{% endblock %}
 
 {% block content %}
 <div class="mx-auto max-w-lg">
   <h1 class="mb-1 text-2xl font-semibold text-slate-800">
-    {% if meta_reprovada %}Corrigir meta{% elif meta %}Editar meta{% else %}Nova meta{% endif %}
+    {% if item_reprovado or meta_reprovada %}{{ rotulo_editar|default:"Corrigir" }} meta{% elif meta %}Editar meta{% else %}Nova meta{% endif %}
   </h1>
-  <p class="mb-6 text-slate-500">
-    {% if meta_reprovada %}
-      Esta meta foi reprovada. Ajuste o conteúdo e salve para reenviar à aprovação.
+  <p class="mb-6 {% if proximo_passo_hint %}text-amber-700{% else %}text-slate-500{% endif %}">
+    {% if proximo_passo_hint %}
+      {{ proximo_passo_hint }}
     {% elif meta %}
       Atualize a meta vinculada a um objetivo estratégico do ciclo aberto.
     {% else %}
@@ -48,7 +48,11 @@
 
     <div class="flex flex-wrap gap-3">
       {% url 'goals:meta_list' as cancel_url %}
-      {% include "components/button.html" with label=meta_reprovada|yesno:"Corrigir e reenviar,Salvar" type="submit" variant="primary" %}
+      {% if item_reprovado or meta_reprovada %}
+        {% include "components/button.html" with label=rotulo_editar|default:"Corrigir" type="submit" variant="primary" %}
+      {% else %}
+        {% include "components/button.html" with label="Salvar" type="submit" variant="primary" %}
+      {% endif %}
       {% include "components/button.html" with label="Cancelar" href=cancel_url variant="secondary" %}
     </div>
   </form>

@@ -66,9 +66,9 @@
     <li>
       {% url 'dashboard:team' as u %}
       {% if '/dashboard/team' in path %}
-        {% include "components/nav_link.html" with href=u label="Painel do time" is_active="1" only %}
+        {% include "components/nav_link.html" with href=u label="Painel do time" is_active="1" badge_count=leader_pending_badge.total only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Painel do time" only %}
+        {% include "components/nav_link.html" with href=u label="Painel do time" badge_count=leader_pending_badge.total only %}
       {% endif %}
     </li>
   </ul>

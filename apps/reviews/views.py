@@ -10,7 +10,9 @@ from apps.accounts.services.scope import user_in_scope
 from apps.audit.services import log_scope_denied
 from apps.core.mixins import HtmxPaginatedListMixin, ScopedObjectMixin
 from apps.cycles.exceptions import CycleClosedError, StageTransitionError
+from apps.cycles.models import Ciclo
 from apps.cycles.services.stage import advance_stage, can_advance
+from apps.goals.forms import get_open_ciclo
 from apps.reviews.exceptions import CalculationError
 from apps.reviews.forms import (
     FeedbackForm,
@@ -23,9 +25,9 @@ from apps.reviews.forms import (
     resolve_feedback_tipo,
     self_assessment_editable,
 )
-from apps.goals.forms import get_open_ciclo
 from apps.reviews.models import Avaliacao, AvaliacaoCompetencia, Feedback
 from apps.reviews.services.evaluation import calcular_nota_final_lider
+from apps.reviews.services.guidance import build_stage_stepper, resolve_next_step
 
 # Transições que o próprio colaborador dispara (T036 / US1).
 _COLLABORATOR_ADVANCE_ETAPAS = frozenset(
@@ -176,9 +178,53 @@ class AvaliacaoDetailView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
                 ),
                 'pode_criar_feedback': feedback_create_allowed(user, avaliacao),
                 **_advance_context(user, avaliacao),
+                **self._guidance_presentation_context(
+                    avaliacao,
+                    is_self=is_self,
+                ),
             },
         )
         return context
+
+    def _guidance_role(self, *, is_self: bool) -> str:
+        """Papel de apresentação no hub (sem AuthZ nova).
+
+        Sujeito da avaliação → colaborador; demais: admin→rh, líder→lider.
+        """
+        if is_self:
+            return 'colaborador'
+        user = self.request.user
+        if getattr(user, 'is_admin', False):
+            return 'rh'
+        if user.is_leader:
+            return 'lider'
+        return 'colaborador'
+
+    def _guidance_presentation_context(
+        self,
+        avaliacao: Avaliacao,
+        *,
+        is_self: bool,
+    ) -> dict:
+        """Injeta ``next_step`` + ``stage_stepper`` só via ``guidance.py`` (FR-013)."""
+        # Já estamos no detalhe de uma avaliação: vínculo existe.
+        has_open_ciclo = avaliacao.ciclo.status == Ciclo.Status.ABERTO
+        return {
+            'next_step': resolve_next_step(
+                role=self._guidance_role(is_self=is_self),
+                etapa=avaliacao.etapa,
+                avaliacao_pk=avaliacao.pk,
+                has_open_ciclo=has_open_ciclo,
+                vinculo_pendente=False,
+                concluida=bool(avaliacao.concluida),
+            ),
+            'stage_stepper': build_stage_stepper(
+                etapa=avaliacao.etapa,
+                has_open_ciclo=has_open_ciclo,
+                vinculo_pendente=False,
+                concluida=bool(avaliacao.concluida),
+            ),
+        }
 
 
 class AdvanceStageView(LoginRequiredMixin, View):
