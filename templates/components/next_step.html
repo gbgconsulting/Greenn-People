@@ -1,0 +1,26 @@
+{% comment %}
+  Bloco "Próximo passo" (008-cycle-guidance-ux) — stub de apresentação.
+
+  Stub (T003): markup mínimo; sem lógica de negócio.
+  Markup completo: T008 (título, body, CTA único ou ausência + blocked_reason).
+
+  Uso esperado (após guidance context):
+    {% include "components/next_step.html" with next_step=next_step %}
+
+  Parâmetros (DTO NextStepGuidance):
+    next_step.title          — título
+    next_step.body           — frase curta
+    next_step.cta_label      — rótulo do CTA (ou vazio)
+    next_step.cta_url_name   — nome de URL existente (ou None)
+    next_step.cta_kwargs     — kwargs para reverse
+    next_step.blocked_reason — motivo de espera / sem CTA
+{% endcomment %}
+<section class="next-step" aria-labelledby="next-step-title" data-component="next-step">
+  <h2 id="next-step-title" class="font-display text-base font-medium tracking-tight text-slate-800">
+    {% if next_step.title %}{{ next_step.title }}{% else %}Próximo passo{% endif %}
+  </h2>
+  {% if next_step.body %}
+  <p class="mt-1.5 font-ui text-sm leading-relaxed text-slate-500">{{ next_step.body }}</p>
+  {% endif %}
+  {% comment %}CTA / blocked_reason — preenchidos em T008{% endcomment %}
+</section>

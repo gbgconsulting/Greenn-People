@@ -1,0 +1,31 @@
+{% comment %}
+  Stepper visual das 6 etapas do ciclo (008-cycle-guidance-ux) — stub de apresentação.
+
+  Stub (T003): markup mínimo; sem lógica de negócio / sem can_advance.
+  Markup completo: T009 (estados concluida|atual|futura|bloqueada; variante compacta mobile).
+
+  Uso esperado (após guidance context):
+    {% include "components/stage_stepper.html" with stage_stepper=stage_stepper %}
+
+  Parâmetros (DTO StageStepperState):
+    stage_stepper.stages — lista de StageStep com key, label, state
+{% endcomment %}
+<nav class="stage-stepper" aria-label="Etapas do ciclo" data-component="stage-stepper">
+  <ol class="flex flex-wrap gap-2 font-ui text-xs text-slate-500">
+    {% if stage_stepper.stages %}
+      {% for step in stage_stepper.stages %}
+      <li data-stage-key="{{ step.key }}" data-stage-state="{{ step.state|default:'futura' }}">
+        {{ step.label|default:step.key }}
+      </li>
+      {% endfor %}
+    {% else %}
+      {% comment %}Placeholder das 6 etapas — estados visuais em T009{% endcomment %}
+      <li data-stage-key="input_metas">Input de metas</li>
+      <li data-stage-key="aprovacao_metas">Aprovação de metas</li>
+      <li data-stage-key="resultados">Resultados</li>
+      <li data-stage-key="aprovacao_resultados">Aprovação de resultados</li>
+      <li data-stage-key="avaliacao">Avaliação</li>
+      <li data-stage-key="feedback">Feedback</li>
+    {% endif %}
+  </ol>
+</nav>
