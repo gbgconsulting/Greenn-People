@@ -49,7 +49,11 @@ _COLLABORATOR_ADVANCE_ETAPAS = frozenset(
 
 
 def _proximo_passo_pos_reprovacao(avaliacao, meta, *, is_owner, pode_progresso):
-    """Hint + rótulos de CTA quando o item está reprovado (FR-003 / T010)."""
+    """Hint + rótulos de CTA quando o item está reprovado (FR-007 / T021).
+
+    Fonte de verdade da copy pós-reprovação em listagem, form e partials de metas.
+    Não altera predicados de aprovação/elegibilidade.
+    """
     defaults = {
         'item_reprovado': False,
         'proximo_passo_hint': '',
@@ -275,6 +279,17 @@ class MetaListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin
             _meta_row_context(self.request, meta) for meta in context['metas']
         ]
 
+        # FR-007: resumo de página reutiliza o mesmo hint do helper (sem copy paralela).
+        proximo_passo_lista_hint = ''
+        for row in meta_rows:
+            if not row.get('item_reprovado') or not row.get('proximo_passo_hint'):
+                continue
+            if row.get('mostrar_link_editar') or row.get('pode_atualizar_progresso'):
+                proximo_passo_lista_hint = row['proximo_passo_hint']
+                break
+            if not proximo_passo_lista_hint:
+                proximo_passo_lista_hint = row['proximo_passo_hint']
+
         pode_avancar = False
         rotulo_avanco = ''
         motivo_bloqueio_avanco = ''
@@ -302,6 +317,7 @@ class MetaListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin
                 and avaliacao is not None
                 and avaliacao.etapa == avaliacao.Etapa.INPUT_METAS,
                 'meta_rows': meta_rows,
+                'proximo_passo_lista_hint': proximo_passo_lista_hint,
                 'avaliacao_pk': avaliacao_pk,
                 'pode_avancar': pode_avancar,
                 'avanco_desabilitado': not pode_avancar,
@@ -374,11 +390,17 @@ class MetaUpdateView(LoginRequiredMixin, ScopedObjectMixin, UpdateView):
         context = super().get_context_data(**kwargs)
         meta = self.object
         avaliacao = get_avaliacao_for_user(meta.usuario)
-        context['meta_reprovada'] = (
-            meta.status == Meta.Status.REPROVADA
-            and avaliacao is not None
-            and avaliacao.etapa == Avaliacao.Etapa.APROVACAO_METAS
+        is_owner = meta.usuario_id == self.request.user.pk
+        pode_progresso = is_owner and meta_progress_editable(avaliacao, meta)
+        cta = _proximo_passo_pos_reprovacao(
+            avaliacao,
+            meta,
+            is_owner=is_owner,
+            pode_progresso=pode_progresso,
         )
+        context.update(cta)
+        # Alias legado do template: mesma semântica de ``item_reprovado``.
+        context['meta_reprovada'] = cta['item_reprovado']
         return context
 
     def get_form_kwargs(self):

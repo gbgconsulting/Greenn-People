@@ -5,14 +5,58 @@
 {% block content %}
 <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
   <div>
-    <h1 class="text-2xl font-semibold text-slate-800">Usuários pendentes de vínculo</h1>
-    <p class="mt-1 text-slate-500">
-      Colaboradores ativos sem área e/ou cargo definidos.
+    <h1 class="font-display text-2xl font-semibold text-slate-800">Usuários pendentes de vínculo</h1>
+    <p class="mt-1 font-ui text-sm text-slate-500">
+      Colaboradores ativos sem área e/ou cargo — item do checklist operacional pré-abertura.
     </p>
   </div>
-  {% url 'organization:user_list' as list_url %}
-  {% include "components/button.html" with label="Todos os usuários" href=list_url variant="secondary" %}
+  <div class="flex flex-wrap items-center gap-2">
+    {% url 'cycles:ciclo_list' as ciclos_url %}
+    {% include "components/button.html" with label="Voltar aos ciclos" href=ciclos_url variant="secondary" %}
+    {% url 'organization:user_list' as list_url %}
+    {% include "components/button.html" with label="Todos os usuários" href=list_url variant="secondary" %}
+  </div>
 </div>
+
+{# Contexto avisório FR-011/012 — fora de #list-container para sobreviver ao HTMX. #}
+<section
+  id="rh-pending-guidance"
+  class="mb-5 rounded-xl border {% if users %}border-amber-200 bg-amber-50{% else %}border-emerald-200 bg-emerald-50/60{% endif %} px-4 py-4"
+  aria-labelledby="rh-pending-guidance-title"
+  data-component="rh-pending-guidance"
+  data-advisory-only="true"
+>
+  <h2
+    id="rh-pending-guidance-title"
+    class="font-display text-base font-medium tracking-tight text-slate-800"
+  >
+    Correção de vínculos (pré-abertura)
+  </h2>
+  {% if users %}
+  <p class="mt-1 font-ui text-sm leading-relaxed text-slate-600">
+    Vincule área e cargo de cada colaborador abaixo. Isto é aviso operacional —
+    não altera nem bloqueia a abertura de ciclo; a regra vigente permanece.
+  </p>
+  {% else %}
+  <p class="mt-1 font-ui text-sm leading-relaxed text-emerald-900" role="status">
+    Nenhum usuário ativo sem área/cargo neste escopo.
+  </p>
+  {% endif %}
+
+  <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+    <a
+      href="{% url 'cycles:ciclo_list' %}"
+      class="font-ui text-sm font-medium text-emerald-700 hover:text-emerald-800"
+    >Ver checklist nos ciclos</a>
+    {% if rh_has_cargo_blockers %}
+    <a
+      href="{% url 'organization:cargo_list' %}"
+      class="font-ui text-sm font-medium text-emerald-700 hover:text-emerald-800"
+      data-blocker-kind="cargo_missing_competencies"
+    >Revisar cargos sem competências/pesos</a>
+    {% endif %}
+  </div>
+</section>
 
 {% include "organization/user_pending_list_partial.html" %}
 {% endblock %}

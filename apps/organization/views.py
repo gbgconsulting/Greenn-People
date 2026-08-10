@@ -23,6 +23,10 @@ from apps.organization.forms import (
     UserUpdateForm,
 )
 from apps.organization.models import Area, Cargo
+from apps.reviews.services.guidance import (
+    KIND_CARGO_MISSING_COMPETENCIES,
+    build_rh_pre_open_checklist,
+)
 
 
 class AdminOrganizationMixin(LoginRequiredMixin, RequiresAdminMixin):
@@ -252,3 +256,19 @@ class PendingUsersListView(AdminOrganizationMixin, HtmxPaginatedListMixin, ListV
             .select_related('area', 'cargo', 'line_manager')
             .order_by('nome', 'email')
         )
+
+    def get_context_data(self, **kwargs):
+        """Contexto avisório do checklist RH (FR-011) — só apresentação.
+
+        Não condiciona abertura de ciclo; reforça links de correção e
+        contexto pré-abertura nesta superfície de vínculos pendentes.
+        """
+        context = super().get_context_data(**kwargs)
+        checklist = build_rh_pre_open_checklist()
+        context['rh_pre_open_checklist'] = checklist
+        context['rh_checklist_has_blockers'] = checklist.has_blockers
+        context['rh_has_cargo_blockers'] = any(
+            item.kind == KIND_CARGO_MISSING_COMPETENCIES
+            for item in checklist.items
+        )
+        return context

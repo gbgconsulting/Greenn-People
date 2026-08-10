@@ -21,6 +21,14 @@
   </div>
 </header>
 
+{# T028 / FR-009: next_step já sobrescreve com hint acionável pós-reprovação (FR-007). #}
+{# T036 / SC-006: stack vertical no mobile; stepper compacto no partial. #}
+<section class="mb-8 min-w-0 space-y-6" aria-labelledby="orientacao-heading">
+  <h2 id="orientacao-heading" class="sr-only">Orientação do ciclo</h2>
+  {% include "components/next_step.html" with next_step=next_step %}
+  {% include "components/stage_stepper.html" with stage_stepper=stage_stepper %}
+</section>
+
 <section class="mb-8" aria-labelledby="desempenho-heading">
   <div class="mb-3">
     <h2 id="desempenho-heading" class="font-display text-lg font-medium text-slate-800">

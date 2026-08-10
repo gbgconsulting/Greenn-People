@@ -1,4 +1,23 @@
+{# Abrir NUNCA soft-disable por checklist (FR-012 / SC-002). Checklist avisório fica em ciclo_list.html. #}
 <div id="list-container">
+{% if rh_pre_open_checklist and rh_checklist_has_blockers %}
+<p
+  class="mb-3 font-ui text-xs leading-relaxed text-amber-800 sm:text-sm"
+  role="status"
+  data-field="rh-checklist-hint"
+>
+  Há pendências no checklist operacional acima — revise os links de correção antes de abrir.
+  O botão Abrir permanece disponível conforme a regra vigente.
+</p>
+{% elif rh_pre_open_checklist and not rh_checklist_has_blockers %}
+<p
+  class="mb-3 font-ui text-xs leading-relaxed text-slate-500 sm:text-sm"
+  role="status"
+  data-field="rh-checklist-hint"
+>
+  Checklist operacional sem pendências neste escopo. Abrir segue a regra já vigente.
+</p>
+{% endif %}
 <div class="table-frame">
   <table>
     <thead>
@@ -38,6 +57,7 @@
               <button
                 type="submit"
                 class="font-semibold text-emerald-700 hover:text-emerald-800"
+                {% if rh_pre_open_checklist %}aria-describedby="rh-pre-open-checklist"{% endif %}
               >Abrir</button>
             </form>
             {% else %}

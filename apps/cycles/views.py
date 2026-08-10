@@ -16,6 +16,7 @@ from apps.cycles.models import Ciclo
 from apps.cycles.services.cycle import close_cycle, open_cycle
 from apps.goals.forms import ObjetivoEstrategicoForm
 from apps.goals.models import ObjetivoEstrategico
+from apps.reviews.services.guidance import build_rh_pre_open_checklist
 
 
 class AdminCyclesMixin(LoginRequiredMixin, RequiresAdminMixin):
@@ -54,6 +55,17 @@ class CicloListView(AdminCyclesMixin, HtmxPaginatedListMixin, ListView):
             Ciclo.objects.annotate(avaliacoes_count=Count('avaliacoes'))
             .order_by('-data_inicio', 'nome')
         )
+
+    def get_context_data(self, **kwargs):
+        """Injeta checklist RH avisório (FR-011/012) — só apresentação.
+
+        Não condiciona Abrir / ``CicloOpenView`` / ``open_cycle``.
+        """
+        context = super().get_context_data(**kwargs)
+        checklist = build_rh_pre_open_checklist()
+        context['rh_pre_open_checklist'] = checklist
+        context['rh_checklist_has_blockers'] = checklist.has_blockers
+        return context
 
 
 class CicloCreateView(AdminCyclesMixin, CreateView):

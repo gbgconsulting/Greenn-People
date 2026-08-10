@@ -75,6 +75,7 @@ def test_meta_row_ctas_pos_reprovacao_pt_br(meta, avaliacao):
     avaliacao.etapa = Avaliacao.Etapa.APROVACAO_METAS
     avaliacao.save(update_fields=['etapa', 'updated_at'])
     Meta.objects.filter(pk=meta.pk).update(status=Meta.Status.REPROVADA)
+    meta.refresh_from_db()
 
     owner_ctx = _proximo_passo_pos_reprovacao(
         avaliacao,
@@ -112,6 +113,24 @@ def test_meta_row_ctas_pos_reprovacao_pt_br(meta, avaliacao):
     )
     assert resultado_ctx['rotulo_salvar_progresso'] == 'Corrigir e reenviar'
     assert 'corrigir e reenviar' in resultado_ctx['proximo_passo_hint'].lower()
+
+
+@pytest.mark.django_db
+def test_meta_form_usa_hint_do_helper_pos_reprovacao(meta, avaliacao, client):
+    """T021: formulário de correção reutiliza copy de ``_proximo_passo_pos_reprovacao``."""
+    avaliacao.etapa = Avaliacao.Etapa.APROVACAO_METAS
+    avaliacao.save(update_fields=['etapa', 'updated_at'])
+    Meta.objects.filter(pk=meta.pk).update(status=Meta.Status.REPROVADA)
+    meta.refresh_from_db()
+
+    client.force_login(meta.usuario)
+    response = client.get(reverse('goals:meta_update', kwargs={'pk': meta.pk}))
+    assert response.status_code == 200
+    body = response.content.decode()
+    assert 'Corrigir meta' in body or '>Corrigir<' in body or 'Corrigir' in body
+    assert 'Corrija a meta e salve para reenviar à aprovação.' in body
+    assert 'Corrigir e reenviar' not in body
+    assert 'Ajuste o conteúdo e salve' not in body
 
 
 @pytest.mark.django_db

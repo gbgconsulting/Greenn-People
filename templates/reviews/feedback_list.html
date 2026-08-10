@@ -5,8 +5,8 @@
 {% block content %}
 <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
   <div>
-    <h1 class="text-2xl font-semibold text-slate-800">Feedbacks</h1>
-    <p class="mt-1 text-slate-500">
+    <h1 class="font-display text-2xl font-semibold text-slate-800">Feedbacks</h1>
+    <p class="mt-1 font-ui text-slate-500">
       Histórico de feedbacks de
       <span class="font-medium text-slate-700">{{ colaborador.nome|default:colaborador.email }}</span>
       {% if avaliacao.ciclo %}
@@ -14,8 +14,17 @@
       {% endif %}
       · etapa {{ avaliacao.get_etapa_display }}.
     </p>
+    {% if request.user.pk == colaborador.pk %}
+    <p class="mt-2 font-ui text-sm text-slate-600">
+      Se houver feedback do líder aguardando ciência, use
+      <span class="font-medium text-slate-800">Dar ciência</span>
+      no cabeçalho do card — sem precisar abrir outra tela.
+    </p>
+    {% endif %}
   </div>
   <div class="flex flex-wrap items-center gap-2">
+    {% url 'reviews:detail' avaliacao.pk as hub_url %}
+    {% include "components/button.html" with label="Voltar à avaliação" href=hub_url variant="secondary" %}
     {% if pode_criar %}
       {% url 'reviews:feedback_create' avaliacao.pk as create_url %}
       {% include "components/button.html" with label="Novo feedback" href=create_url variant="primary" %}
