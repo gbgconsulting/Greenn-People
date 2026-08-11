@@ -249,7 +249,7 @@ class CicloDetailView(AdminCyclesMixin, DetailView):
             chart_type=CHART_TYPE_DOUGHNUT,
             title='Distribuição de aderência',
             empty_message=(
-                'Nenhum snapshot de aderência para este ciclo.'
+                'Ainda não há dados de aderência para este ciclo.'
             ),
         )
 

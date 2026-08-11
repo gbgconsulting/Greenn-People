@@ -5,7 +5,9 @@
  *
  * Catálogo (contratos/chart-catalog.md · Freeze A):
  *   bar | doughnut | doughnut_or_bar | bar_grouped | bar_horizontal | area
- * Valor central no doughnut: plugin inline (afterDraw) — sem plugin npm / lib nova.
+ * Valor central no doughnut + datalabels em barras: plugins inline (afterDraw /
+ * afterDatasetsDraw) — sem plugin npm / lib nova.
+ * Barras limpas (DS): grid e ticks de valor off; leitura via datalabel / legend / KPI.
  *
  * Convenção DOM (com _chart_block.html):
  *   <canvas data-chart-payload="script-id"></canvas>
@@ -26,7 +28,6 @@
   var FONT_UI = "'Source Sans 3', ui-sans-serif, system-ui, sans-serif";
   var COLOR_INK = '#0f172a';
   var COLOR_INK_MUTED = '#64748b';
-  var COLOR_LINE = '#e2e8f0';
   var COLOR_TOOLTIP_BG = '#1e293b';
   /* Acabamento mono teal (não-semântico) — área / séries sem cor no payload. */
   var COLOR_FINISH_TEAL = '#0d9488';
@@ -186,7 +187,7 @@
    * Legenda Chart.js com texto + valor (FR-007): não depende só da cor.
    * Doughnut/pie: um item por faixa (labels).
    * Multi-série (grouped): um item por série.
-   * Barra única categórica: oculta (eixo + figcaption cobrem).
+   * Barra única categórica: oculta (datalabel + figcaption cobrem).
    */
   function legendLabelWithValue(chart) {
     var data = chart.data || {};
@@ -232,16 +233,98 @@
     });
   }
 
-  function subtleGrid() {
+  function axisBorderHidden() {
+    return { display: false };
+  }
+
+  /**
+   * Escalas “barras limpas” (DS Charts polish):
+   * grid off; ticks de valor off (leitura via datalabel / legend / KPI);
+   * eixo de categoria só com labels textuais.
+   * `mode`: 'bar' | 'area' — area mantém o mesmo padrão limpo (grid mínimo = off).
+   */
+  function cleanScales(horizontal, mode) {
+    var narrow = isNarrowViewport();
+    var tickFont = chartFont({ size: narrow ? 10 : 12, weight: '400' });
+    var isArea = mode === 'area';
+    var categoryAxis = {
+      grid: { display: false },
+      border: axisBorderHidden(),
+      ticks: {
+        autoSkip: isArea ? true : false,
+        maxRotation: horizontal ? 0 : narrow ? 45 : 0,
+        minRotation: 0,
+        color: COLOR_INK_MUTED,
+        font: tickFont,
+        padding: 6,
+      },
+    };
+    var valueAxis = {
+      beginAtZero: true,
+      border: axisBorderHidden(),
+      grid: { display: false },
+      ticks: {
+        display: false,
+      },
+      // Folga para datalabels não colarem na borda do canvas.
+      grace: isArea ? '0%' : '8%',
+    };
+
+    if (horizontal) {
+      return {
+        x: valueAxis,
+        y: categoryAxis,
+      };
+    }
     return {
-      color: COLOR_LINE,
-      lineWidth: 1,
-      drawTicks: false,
+      x: categoryAxis,
+      y: valueAxis,
     };
   }
 
-  function axisBorderHidden() {
-    return { display: false };
+  /**
+   * Plugin inline — valor na barra (sem chartjs-plugin-datalabels / npm).
+   * Substitui ticks do eixo de valor (DS: priorizar rótulos de dados).
+   */
+  function barValueLabelsPlugin(horizontal) {
+    return {
+      id: 'barValueLabels',
+      afterDatasetsDraw: function (chart) {
+        if (chart.config.type !== 'bar') {
+          return;
+        }
+        var ctx = chart.ctx;
+        var narrow = isNarrowViewport();
+        var fontSize = narrow ? 11 : 12;
+        ctx.save();
+        ctx.font = '600 ' + fontSize + 'px ' + FONT_UI;
+        ctx.fillStyle = COLOR_INK;
+        chart.data.datasets.forEach(function (dataset, datasetIndex) {
+          var meta = chart.getDatasetMeta(datasetIndex);
+          if (!meta || meta.hidden) {
+            return;
+          }
+          meta.data.forEach(function (element, index) {
+            var raw = dataset.data[index];
+            if (raw === null || raw === undefined) {
+              return;
+            }
+            var text = String(raw);
+            var pos = element.tooltipPosition();
+            if (horizontal) {
+              ctx.textAlign = 'left';
+              ctx.textBaseline = 'middle';
+              ctx.fillText(text, pos.x + 8, pos.y);
+            } else {
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'bottom';
+              ctx.fillText(text, pos.x, pos.y - 6);
+            }
+          });
+        });
+        ctx.restore();
+      },
+    };
   }
 
   function basePlugins(showLegend) {
@@ -281,46 +364,10 @@
     };
   }
 
-  function barScales(horizontal) {
-    var narrow = isNarrowViewport();
-    var tickFont = chartFont({ size: narrow ? 10 : 12, weight: '400' });
-    var categoryAxis = {
-      grid: { display: false },
-      border: axisBorderHidden(),
-      ticks: {
-        autoSkip: false,
-        maxRotation: horizontal ? 0 : narrow ? 60 : 45,
-        minRotation: horizontal ? 0 : narrow ? 45 : 0,
-        color: COLOR_INK_MUTED,
-        font: tickFont,
-      },
-    };
-    var valueAxis = {
-      beginAtZero: true,
-      border: axisBorderHidden(),
-      grid: subtleGrid(),
-      ticks: {
-        precision: 0,
-        color: COLOR_INK_MUTED,
-        font: tickFont,
-      },
-    };
-
-    if (horizontal) {
-      return {
-        x: valueAxis,
-        y: categoryAxis,
-      };
-    }
-    return {
-      x: categoryAxis,
-      y: valueAxis,
-    };
-  }
-
   function buildGroupedConfig(payload) {
     var labels = payload.labels || [];
-    var datasets = (payload.series || []).map(function (serie, index) {
+    var seriesList = payload.series || [];
+    var datasets = seriesList.map(function (serie, index) {
       var color =
         serie.color ||
         GROUPED_DEFAULTS[serie.key] ||
@@ -339,6 +386,8 @@
     });
     // Gaps com vários nomes: eixo Y no mobile (~375px) mantém rótulos legíveis.
     var horizontal = isNarrowViewport() && labels.length > 2;
+    // Datalabels em comparativos curtos (DS); muitos pontos → tooltip + figcaption.
+    var showValueLabels = labels.length * Math.max(seriesList.length, 1) <= 12;
 
     return {
       type: 'bar',
@@ -349,8 +398,14 @@
         // Altura vem de .dashboard-chart-canvas (SC-006).
         maintainAspectRatio: false,
         plugins: basePlugins(true),
-        scales: barScales(horizontal),
+        scales: cleanScales(horizontal, 'bar'),
+        layout: {
+          padding: horizontal
+            ? { top: 4, right: 28, bottom: 4, left: 4 }
+            : { top: 18, right: 8, bottom: 4, left: 4 },
+        },
       },
+      plugins: showValueLabels ? [barValueLabelsPlugin(horizontal)] : [],
     };
   }
 
@@ -363,7 +418,7 @@
     var isDoughnut = type === 'doughnut';
     var horizontal = payload.type === 'bar_horizontal';
     // Barra categórica: cores por faixa quando o payload traz triad/lista;
-    // legenda Chart.js oculta (eixo + figcaption). Doughnut: legenda com texto.
+    // legenda Chart.js oculta (datalabel + figcaption). Doughnut: legenda com texto.
     var perCategoryColors =
       isDoughnut || (colors.length > 1 && colors.length >= labels.length);
     var fill = perCategoryColors ? colors : colors[0] || STATUS_TRIAD[0];
@@ -384,10 +439,13 @@
       responsive: true,
       maintainAspectRatio: false,
       plugins: basePlugins(isDoughnut),
-      scales: isDoughnut ? undefined : barScales(horizontal),
+      scales: isDoughnut ? undefined : cleanScales(horizontal, 'bar'),
     };
     if (horizontal) {
       options.indexAxis = 'y';
+      options.layout = { padding: { top: 4, right: 32, bottom: 4, left: 4 } };
+    } else if (!isDoughnut) {
+      options.layout = { padding: { top: 18, right: 8, bottom: 4, left: 4 } };
     }
     if (isDoughnut) {
       options.cutout = DOUGHNUT_CUTOUT;
@@ -401,13 +459,16 @@
         datasets: [dataset],
       },
       options: options,
+      plugins: [],
     };
 
     if (isDoughnut) {
       var centerText = resolveDoughnutCenterText(payload);
       if (centerText) {
-        config.plugins = [doughnutCenterPlugin(centerText)];
+        config.plugins.push(doughnutCenterPlugin(centerText));
       }
+    } else {
+      config.plugins.push(barValueLabelsPlugin(horizontal));
     }
 
     return config;
@@ -473,7 +534,9 @@
         responsive: true,
         maintainAspectRatio: false,
         plugins: basePlugins(showLegend),
-        scales: barScales(false),
+        // Area: labels de categoria; eixo de valor e grid off (DS — limpo).
+        scales: cleanScales(false, 'area'),
+        layout: { padding: { top: 8, right: 8, bottom: 4, left: 4 } },
         elements: {
           line: { borderJoinStyle: 'round' },
         },

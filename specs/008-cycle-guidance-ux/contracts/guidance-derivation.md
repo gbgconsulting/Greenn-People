@@ -61,7 +61,7 @@ Copy pode ser polida se preservar **mesmo significado e destino**.
 | Sem ciclo aberto | qualquer | Sem ciclo em andamento | Não há ciclo de desempenho aberto no momento. | — | — |
 | Vínculo / avaliação pendente | colaborador | Avaliação ainda não vinculada | Seu vínculo ao ciclo ainda não está pronto; acompanhe com o RH se necessário. | — ou Ver painel | `dashboard:personal` ou — |
 | `input_metas` | colaborador (dono) | Defina suas metas | Cadastre e ajuste as metas deste ciclo antes de enviar para aprovação. | Ir para metas | `goals:meta_list` |
-| `input_metas` | líder (escopo) | Aguardando metas do time | Os colaboradores do seu escopo ainda estão na etapa de input de metas. | Ver time / metas | `goals:meta_list` ou `dashboard:team` |
+| `input_metas` | líder (escopo) | Aguardando metas do time | Os colaboradores do seu escopo ainda estão na etapa de metas. | Ver time / metas | `goals:meta_list` ou `dashboard:team` |
 | `aprovacao_metas` | líder (ator) | Aprove as metas | Revise e aprove ou reprove as metas pendentes no seu escopo. | Revisar metas | `goals:meta_list` |
 | `aprovacao_metas` | colaborador (dono) | Metas em aprovação | Aguarde a decisão do líder; se houver reprovação, corrija e reenvie. | Ver metas | `goals:meta_list` |
 | `resultados` | colaborador (dono) | Atualize os resultados | Informe o progresso/resultados das metas deste ciclo. | Atualizar resultados | `goals:meta_list` |

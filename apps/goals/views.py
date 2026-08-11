@@ -344,7 +344,7 @@ class MetaCreateView(LoginRequiredMixin, CreateView):
         ):
             messages.error(
                 request,
-                'Só é possível cadastrar metas na etapa de input de metas '
+                'Só é possível cadastrar metas na etapa de metas '
                 'de um ciclo aberto.',
             )
             return HttpResponseRedirect(reverse('goals:meta_list'))
@@ -422,7 +422,7 @@ class MetaUpdateView(LoginRequiredMixin, ScopedObjectMixin, UpdateView):
 
 
 class MetaDeleteView(LoginRequiredMixin, ScopedObjectMixin, DeleteView):
-    """Exclusão de meta pendente na etapa de input de metas."""
+    """Exclusão de meta pendente na etapa de metas."""
 
     model = Meta
     template_name = 'goals/meta_confirm_delete.html'
@@ -444,7 +444,7 @@ class MetaDeleteView(LoginRequiredMixin, ScopedObjectMixin, DeleteView):
         if not pode_excluir:
             messages.error(
                 request,
-                'Só é possível excluir metas pendentes na etapa de input de metas.',
+                'Só é possível excluir metas pendentes na etapa de metas.',
             )
             return HttpResponseRedirect(reverse('goals:meta_list'))
         return super().dispatch(request, *args, **kwargs)

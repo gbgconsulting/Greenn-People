@@ -26,7 +26,6 @@
   </div>
 </header>
 
-{# US1 / T011: painel admin = KPI → doughnut (Triad + valor central) + progresso → tabela. #}
 <section class="mb-8 min-w-0" aria-labelledby="indicadores-heading">
   <div class="mb-3">
     <h2 id="indicadores-heading" class="font-display text-lg font-medium text-slate-800">
@@ -65,10 +64,10 @@
 
       {% if aderencia_resumo.media is not None %}
         {% with val=aderencia_resumo.media|stringformat:"d"|add:"%" %}
-        {% include "components/card.html" with label="Aderência média" value=val badge_status=aderencia_resumo.status body="Líderes com snapshot (cálculo assíncrono)." %}
+        {% include "components/card.html" with label="Aderência média" value=val badge_status=aderencia_resumo.status body="Média dos líderes com aderência registrada." %}
         {% endwith %}
       {% else %}
-        {% include "components/card.html" with label="Aderência média" value="—" body="Nenhum snapshot ainda — o job diário popula esta métrica." %}
+        {% include "components/card.html" with label="Aderência média" value="—" body="Ainda não há dados de aderência — eles são atualizados diariamente." %}
       {% endif %}
     </div>
 
@@ -78,19 +77,18 @@
           Visualizações
         </h3>
         <p class="mt-0.5 text-sm text-slate-500">
-          Doughnut de aderência (Status Triad + total no centro) e progresso das avaliações — separados.
+          Aderência dos líderes e andamento das avaliações no ciclo.
         </p>
       </div>
-      {# grid-cols-1 no mobile (~375px): charts empilhados; valor central/rótulos consultáveis (SC-007). #}
       <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {% if chart_aderencia_distribuicao.has_data %}
-          {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" kpi_label="Snapshots" kpi_value=chart_aderencia_distribuicao.total kpi_body="líderes no ciclo" insight="Alta, média e baixa — o centro soma os snapshots." %}
+          {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" kpi_label="Líderes" kpi_value=chart_aderencia_distribuicao.total kpi_body="com aderência no ciclo" insight="Distribuição em alta, média e baixa — o centro mostra o total." %}
         {% else %}
           {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" %}
         {% endif %}
 
         {% if chart_ciclo_progresso.has_data %}
-          {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" kpi_label="Total" kpi_value=chart_ciclo_progresso.total kpi_body="avaliações no ciclo" insight="Contagem por etapa — não misturar com a Triad de aderência." %}
+          {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" kpi_label="Total" kpi_value=chart_ciclo_progresso.total kpi_body="avaliações no ciclo" insight="Quantidade de avaliações em cada etapa." %}
         {% else %}
           {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" %}
         {% endif %}
@@ -104,7 +102,7 @@
             Líderes com menor aderência
           </h3>
           <p class="mt-0.5 text-sm text-slate-500">
-            Drill-down da distribuição — priorize quem está abaixo do esperado.
+            Priorize quem está abaixo do esperado na distribuição.
           </p>
         </div>
         <a href="{% url 'dashboard:adherence' %}" class="text-sm font-medium text-emerald-700 hover:text-emerald-800">
@@ -142,7 +140,7 @@
               <td colspan="5" class="!py-8">
                 {% if ciclo_aberto %}
                   {% url 'dashboard:adherence' as adherence_url %}
-                  {% include "components/empty_state.html" with title="Sem snapshots de aderência" message="Ainda não há snapshots de aderência para o ciclo aberto. O job diário popula esta lista." cta_label="Ver aderência" cta_href=adherence_url %}
+                  {% include "components/empty_state.html" with title="Sem dados de aderência" message="Ainda não há aderência registrada para o ciclo aberto. Os índices são atualizados diariamente." cta_label="Ver aderência" cta_href=adherence_url %}
                 {% else %}
                   {% url 'cycles:ciclo_list' as ciclos_url %}
                   {% include "components/empty_state.html" with title="Sem ciclo aberto" message="Nenhum ciclo aberto no momento. Abra ou gerencie ciclos para acompanhar aderência da liderança." cta_label="Gerenciar ciclos" cta_href=ciclos_url %}

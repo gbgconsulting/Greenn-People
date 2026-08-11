@@ -48,7 +48,7 @@ STAGE_ORDER: tuple[str, ...] = (
 )
 
 STAGE_LABELS: Mapping[str, str] = {
-    ETAPA_INPUT_METAS: 'Input de metas',
+    ETAPA_INPUT_METAS: 'Metas',
     ETAPA_APROVACAO_METAS: 'Aprovação de metas',
     ETAPA_RESULTADOS: 'Resultados',
     ETAPA_APROVACAO_RESULTADOS: 'Aprovação de resultados',
@@ -515,11 +515,11 @@ def _resolve_etapa_lider(
             'Aguardando metas do time',
             (
                 'Os colaboradores do seu escopo ainda estão na etapa '
-                'de input de metas.'
+                'de metas.'
             ),
             cta_label='Ver time',
             cta_url_name='dashboard:team',
-            blocked_reason='Colaboradores ainda na etapa de input de metas.',
+            blocked_reason='Colaboradores ainda na etapa de metas.',
         )
     if etapa == ETAPA_APROVACAO_METAS:
         return _guidance(
@@ -589,7 +589,7 @@ def _resolve_etapa_rh(
 ) -> NextStepGuidance:
     """RH não é ator de etapa: copy de acompanhamento sem inventar avanço."""
     kwargs = _pk_kwargs(avaliacao_pk)
-    etapa_label = etapa.replace('_', ' ')
+    etapa_label = STAGE_LABELS.get(etapa, etapa)
     if avaliacao_pk is not None:
         return _guidance(
             'Acompanhe o ciclo',

@@ -37,7 +37,7 @@
   "type": "bar",
   "has_data": true,
   "title": "Progresso das avaliações no ciclo",
-  "labels": ["Input de metas", "…", "Feedback"],
+  "labels": ["Metas", "…", "Feedback"],
   "keys": ["input_metas", "aprovacao_metas", "resultados", "aprovacao_resultados", "avaliacao", "feedback"],
   "values": [2, 4, 1, 0, 3, 5],
   "total": 15,

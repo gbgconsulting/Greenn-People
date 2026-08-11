@@ -168,7 +168,7 @@ class MetaForm(forms.ModelForm):
         if not meta_content_editable(avaliacao, meta):
             raise forms.ValidationError(
                 'Não é possível criar ou editar metas fora da etapa permitida '
-                '(input de metas, ou ajuste de meta pendente/reprovada).',
+                '(etapa de metas, ou ajuste de meta pendente/reprovada).',
             )
 
         objetivo = cleaned.get('objetivo_estrategico')

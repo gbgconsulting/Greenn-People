@@ -321,7 +321,7 @@ def aderencia_distribution_payload(
     *,
     chart_id: str = 'chart-aderencia-distribuicao',
     title: str = 'Distribuição de aderência',
-    empty_message: str = 'Nenhum snapshot de aderência para este ciclo.',
+    empty_message: str = 'Ainda não há dados de aderência para este ciclo.',
     chart_type: str = CHART_TYPE_DOUGHNUT_OR_BAR,
     center_text: str | None = None,
 ) -> dict[str, Any]:
@@ -367,11 +367,13 @@ def categorical_counts_payload(
     labels = [labels_by_key.get(key, key) for key in ordered_keys]
     resolved_colors: Sequence[str] | None = colors
     if resolved_colors is None and highlight_max and values:
+        # Amber só se houver pico real (máx estritamente > mín); empate total → mono.
         max_index = max(range(len(values)), key=lambda i: values[i])
-        # Empate: primeiro índice do máximo (determinístico).
+        peak = values[max_index]
+        has_peak = peak > 0 and peak > min(values)
         resolved_colors = mono_finish_colors(
             len(values),
-            highlight_index=max_index if any(v > 0 for v in values) else None,
+            highlight_index=max_index if has_peak else None,
         )
     return series_payload(
         chart_id=chart_id,
@@ -399,7 +401,8 @@ def coverage_bar_payload(
     """Payload ``bar_horizontal`` de cobertura (% ou totais) — FR-006 / Freeze B.
 
     ``rows`` vêm de ``coverage_by_area`` / ``coverage_by_cargo`` (composição).
-    Amber no índice de **menor** cobertura (gargalo); sem inventar métrica.
+    Amber no índice de **menor** cobertura só quando há gargalo real
+    (mínimo estritamente menor que o máximo) — sem inventar métrica.
     """
     usable = [
         row for row in rows
@@ -418,8 +421,10 @@ def coverage_bar_payload(
 
     highlight_index: int | None = None
     if highlight_lowest and values:
-        # Empate: primeiro índice do mínimo (determinístico — rows já ordenados).
-        highlight_index = min(range(len(values)), key=lambda i: values[i])
+        # Empate total (ex.: todas 100%) → sem amber; primeiro mín se houver gap.
+        min_index = min(range(len(values)), key=lambda i: values[i])
+        if values[min_index] < max(values):
+            highlight_index = min_index
 
     colors = mono_finish_colors(
         len(values),

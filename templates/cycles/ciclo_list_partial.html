@@ -1,4 +1,3 @@
-{# Abrir NUNCA soft-disable por checklist (FR-012 / SC-002). Checklist avisório fica em ciclo_list.html. #}
 <div id="list-container">
 {% if rh_pre_open_checklist and rh_checklist_has_blockers %}
 <p
@@ -37,7 +36,6 @@
         id="ciclo-row-{{ ciclo.pk }}"
       >
         <td>
-          {# US3 / T025 · FR-007: link para página dedicada ciclo_detail — não accordion/inline. #}
           <a
             href="{% url 'cycles:ciclo_detail' ciclo.pk %}"
             class="font-display font-semibold text-emerald-700 hover:text-emerald-800"

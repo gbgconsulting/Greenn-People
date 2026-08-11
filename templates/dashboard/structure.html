@@ -9,7 +9,7 @@
     <div>
       <h1 class="font-display text-2xl font-semibold text-slate-800">Estrutura</h1>
       <p class="mt-1 text-sm text-slate-500">
-        Cobertura por área e cargo no seu escopo — lacunas ficam no drill-down.
+        Cobertura por área e cargo no seu escopo — lacunas de competência aparecem mais abaixo.
       </p>
     </div>
     <div class="flex flex-wrap items-center gap-2">
@@ -81,19 +81,17 @@
   </form>
 </section>
 
-{# US2 / T017 · Freeze B: KPI cobertura → charts área/cargo → lacunas/líderes secundários. #}
 <section class="mb-8 min-w-0" aria-labelledby="cobertura-heading">
   <div class="mb-3">
     <h2 id="cobertura-heading" class="font-display text-lg font-medium text-slate-800">
       Cobertura no escopo
     </h2>
     <p class="mt-0.5 text-sm text-slate-500">
-      Quem já tem avaliação neste ciclo — distinto da aderência de líderes.
+      Quem no escopo já tem avaliação neste ciclo.
     </p>
   </div>
 
   <div class="managerial-panel">
-    {# 1) KPIs — cobertura % / totais (FR-006). #}
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores de cobertura">
       {% if cobertura_resumo.has_ciclo and cobertura_resumo.percentual is not None %}
         {% with val=cobertura_resumo.percentual|stringformat:"d"|add:"%" %}
@@ -122,32 +120,30 @@
       {% endif %}
     </div>
 
-    {# 2) Visual principal — bar_horizontal por área e por cargo. #}
     <div class="min-w-0" aria-labelledby="cobertura-charts-heading">
       <div class="mb-3">
         <h3 id="cobertura-charts-heading" class="font-display text-lg font-medium text-slate-800">
           Cobertura por dimensão
         </h3>
         <p class="mt-0.5 text-sm text-slate-500">
-          Amber marca o gargalo (menor cobertura). Lacunas de competência ficam abaixo.
+          Percentual com avaliação por área e por cargo — a menor cobertura fica em destaque.
         </p>
       </div>
       <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {% if chart_cobertura_area.has_data %}
-          {% include "dashboard/_chart_block.html" with chart=chart_cobertura_area script_id="chart-cobertura-area" insight="Percentual com avaliação por área — escopo dos filtros." %}
+          {% include "dashboard/_chart_block.html" with chart=chart_cobertura_area script_id="chart-cobertura-area" insight="Cobertura por área no escopo dos filtros." %}
         {% else %}
           {% include "dashboard/_chart_block.html" with chart=chart_cobertura_area script_id="chart-cobertura-area" %}
         {% endif %}
 
         {% if chart_cobertura_cargo.has_data %}
-          {% include "dashboard/_chart_block.html" with chart=chart_cobertura_cargo script_id="chart-cobertura-cargo" insight="Percentual com avaliação por cargo — mesmo escopo." %}
+          {% include "dashboard/_chart_block.html" with chart=chart_cobertura_cargo script_id="chart-cobertura-cargo" insight="Cobertura por cargo no mesmo escopo." %}
         {% else %}
           {% include "dashboard/_chart_block.html" with chart=chart_cobertura_cargo script_id="chart-cobertura-cargo" %}
         {% endif %}
       </div>
     </div>
 
-    {# 3) Secundário — líderes no escopo (não é a visão principal). #}
     <div class="min-w-0" aria-labelledby="lideres-heading">
       <div class="mb-3">
         <h3 id="lideres-heading" class="font-display text-lg font-medium text-slate-800">
@@ -196,7 +192,6 @@
       </div>
     </div>
 
-    {# 4) Secundário acionável — lacunas (Freeze B; não misturar com cobertura). #}
     <div class="min-w-0" aria-labelledby="lacunas-area-heading">
       <div class="mb-3">
         <h3 id="lacunas-area-heading" class="font-display text-lg font-medium text-slate-800">

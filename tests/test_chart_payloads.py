@@ -333,6 +333,58 @@ def test_categorical_counts_bar_horizontal_highlight_max():
     assert mono_finish_colors(3, highlight_index=1) == payload['colors']
 
 
+def test_categorical_counts_highlight_max_skips_flat_tie():
+    """Empate total no máximo → mono teal (sem amber fantasma)."""
+    payload = categorical_counts_payload(
+        {'a': 3, 'b': 3, 'c': 3},
+        ordered_keys=['a', 'b', 'c'],
+        labels_by_key={'a': 'A', 'b': 'B', 'c': 'C'},
+        chart_id='chart-flat',
+        chart_type=CHART_TYPE_BAR_HORIZONTAL,
+        title='Flat',
+        empty_message='Sem progresso.',
+        highlight_max=True,
+    )
+    assert payload['colors'] == [FINISH_TEAL, FINISH_TEAL, FINISH_TEAL]
+
+
+def test_coverage_bar_highlights_lowest_when_gap():
+    from apps.dashboard.chart_payloads import coverage_bar_payload
+
+    payload = coverage_bar_payload(
+        [
+            {'area_nome': 'A', 'total': 4, 'percentual': 50},
+            {'area_nome': 'B', 'total': 2, 'percentual': 100},
+        ],
+        chart_id='chart-cobertura-area',
+        title='Cobertura por área',
+        label_key='area_nome',
+        empty_message='Sem cobertura.',
+    )
+    assert payload['has_data'] is True
+    assert payload['values'] == [50.0, 100.0]
+    assert payload['colors'] == [FINISH_AMBER_HIGHLIGHT, FINISH_TEAL]
+
+
+def test_coverage_bar_no_highlight_when_all_equal():
+    """Todas em 100% → sem amber na primeira barra por empate."""
+    from apps.dashboard.chart_payloads import coverage_bar_payload
+
+    payload = coverage_bar_payload(
+        [
+            {'area_nome': 'Move Smoke', 'total': 2, 'percentual': 100},
+            {'area_nome': 'Outra', 'total': 3, 'percentual': 100},
+        ],
+        chart_id='chart-cobertura-area',
+        title='Cobertura por área',
+        label_key='area_nome',
+        empty_message='Sem cobertura.',
+    )
+    assert payload['has_data'] is True
+    assert payload['values'] == [100.0, 100.0]
+    assert payload['colors'] == [FINISH_TEAL, FINISH_TEAL]
+
+
 def test_categorical_counts_all_zero_is_empty():
     payload = categorical_counts_payload(
         {'a': 0, 'b': 0},

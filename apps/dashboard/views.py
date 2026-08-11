@@ -609,7 +609,7 @@ class AdherenceListView(
             chart_type=chart_type,
             title=title,
             empty_message=(
-                'Nenhum snapshot de aderência no escopo para este ciclo.'
+                'Ainda não há dados de aderência neste escopo para o ciclo.'
             ),
         )
 

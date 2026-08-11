@@ -8,7 +8,6 @@
     <h1 class="font-display text-2xl font-semibold text-slate-800">Ciclos de avaliação</h1>
     <p class="mt-1 text-sm text-slate-500">
       Crie, abra e encerre ciclos centralizados. Apenas um ciclo pode estar aberto por vez.
-      {# US3 / T025 · FR-007: detalhe gerencial é página dedicada (`ciclo_detail`), não accordion na lista. #}
       Use o nome do ciclo ou «Visão gerencial» para abrir o painel consolidado.
     </p>
   </div>
@@ -16,7 +15,6 @@
   {% include "components/button.html" with label="Novo ciclo" href=create_url variant="primary" %}
 </header>
 
-{# Checklist RH pré-abertura (FR-011/012) — só aviso; fora de #list-container para sobreviver ao HTMX. #}
 {% if rh_pre_open_checklist %}
 <section
   id="rh-pre-open-checklist"
@@ -29,11 +27,10 @@
     id="rh-pre-open-checklist-title"
     class="font-display text-base font-medium tracking-tight text-slate-800"
   >
-    Checklist operacional (pré-abertura)
+    Antes de abrir um ciclo
   </h2>
   <p class="mt-1 font-ui text-sm leading-relaxed text-slate-600">
-    Aviso para revisão de cadastro antes de abrir um ciclo.
-    Não altera nem bloqueia o botão Abrir — a abertura segue a regra já vigente.
+    Revise pendências de vínculo e cargos. Abrir ciclo continua disponível mesmo com avisos.
   </p>
 
   {% if rh_checklist_has_blockers %}

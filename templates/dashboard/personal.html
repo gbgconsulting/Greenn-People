@@ -21,15 +21,12 @@
   </div>
 </header>
 
-{# T028 / FR-009: next_step já sobrescreve com hint acionável pós-reprovação (FR-007). #}
-{# T036 / SC-006: stack vertical no mobile; stepper compacto no partial. #}
 <section class="mb-8 min-w-0 space-y-6" aria-labelledby="orientacao-heading">
   <h2 id="orientacao-heading" class="sr-only">Orientação do ciclo</h2>
   {% include "components/next_step.html" with next_step=next_step %}
   {% include "components/stage_stepper.html" with stage_stepper=stage_stepper %}
 </section>
 
-{# US1 / T009: painel desempenho = KPI → chart + mini-KPI → tabela (Freeze C; ~375px empilha). #}
 <section class="mb-8 min-w-0" aria-labelledby="desempenho-heading">
   <div class="mb-3">
     <h2 id="desempenho-heading" class="font-display text-lg font-medium text-slate-800">
@@ -66,7 +63,7 @@
     </div>
 
     {% if chart_gaps_competencia.has_data %}
-      {% include "dashboard/_chart_block.html" with chart=chart_gaps_competencia script_id="chart-gaps-competencia" kpi_label="Competências" kpi_value=competencias_resumo|length kpi_body="no comparativo esperado × nota" insight="Esperado versus nota — onde a nota fica abaixo do nível, há gap." %}
+      {% include "dashboard/_chart_block.html" with chart=chart_gaps_competencia script_id="chart-gaps-competencia" kpi_label="Competências" kpi_value=competencias_resumo|length kpi_body="comparativo esperado × nota" insight="Onde a nota fica abaixo do nível esperado, há um gap a acompanhar." %}
     {% else %}
       {% include "dashboard/_chart_block.html" with chart=chart_gaps_competencia script_id="chart-gaps-competencia" %}
     {% endif %}
@@ -79,7 +76,7 @@
             Níveis esperados
           </h3>
           <p class="mt-0.5 text-sm text-slate-500">
-            Detalhe por competência — drill-down do comparativo acima.
+            Detalhe por competência do comparativo acima.
           </p>
         </div>
         {% if cargo %}

@@ -1,4 +1,3 @@
-{# Drill-down HTMX do painel do time (US2 / T015) — tabela secundária; KPIs/chart/destaque ficam fora. #}
 <div id="list-container">
 <div class="table-frame">
   <table>
@@ -13,7 +12,6 @@
       </tr>
     </thead>
     <tbody>
-      {# Ação da liderança primeiro (mesmos dados; sem query nova) #}
       {% for item in membros_resumo %}
         {% if item.avaliacao %}
           {% if item.avaliacao.etapa == "avaliacao" or item.avaliacao.etapa == "aprovacao_metas" or item.avaliacao.etapa == "aprovacao_resultados" %}
@@ -61,7 +59,6 @@
         {% endif %}
       {% endfor %}
 
-      {# Demais no escopo #}
       {% for item in membros_resumo %}
         {% if not item.avaliacao %}
         <tr>

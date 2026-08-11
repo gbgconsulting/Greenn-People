@@ -1,4 +1,3 @@
-{# Drill-down HTMX do painel de aderência (US2 / T018) — tabela secundária; KPIs/chart ficam fora. #}
 <div id="list-container">
 <div class="table-frame">
   <table>
@@ -49,7 +48,7 @@
       <tr>
         <td colspan="9" class="!py-8">
           {% if ciclo_filtro %}
-            {% include "components/empty_state.html" with title="Sem snapshots de aderência" message="Nenhum snapshot no escopo para o ciclo filtrado. O job diário popula esta lista." %}
+            {% include "components/empty_state.html" with title="Sem dados de aderência" message="Nenhum líder com aderência neste escopo para o ciclo filtrado. Os índices são atualizados diariamente." %}
           {% else %}
             {% include "components/empty_state.html" with title="Ciclo necessário" message="Selecione ou abra um ciclo nos filtros acima para ver aderência da liderança." %}
           {% endif %}

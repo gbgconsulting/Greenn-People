@@ -14,7 +14,7 @@
   "type": "bar",
   "has_data": true,
   "title": "Status do escopo no ciclo",
-  "labels": ["Input de metas", "…", "Feedback", "Sem avaliação"],
+  "labels": ["Metas", "…", "Feedback", "Sem avaliação"],
   "keys": ["input_metas", "aprovacao_metas", "resultados", "aprovacao_resultados", "avaliacao", "feedback", "sem_avaliacao"],
   "values": [1, 2, 0, 1, 3, 0, 2],
   "total": 9,

@@ -9,7 +9,7 @@
     <div>
       <h1 class="font-display text-2xl font-semibold text-slate-800">Aderência da liderança</h1>
       <p class="mt-1 text-sm text-slate-500">
-        Índices pré-calculados (snapshots) — sem recálculo nesta página.
+        Aderência dos líderes no ciclo selecionado.
       </p>
     </div>
     {% if ciclo_filtro %}
@@ -49,34 +49,32 @@
   </form>
 </section>
 
-{# US2 / T018 · Freeze C: KPI → doughnut (Triad + centro) → lista drill-down HTMX. #}
 <section class="mb-8 min-w-0" aria-labelledby="aderencia-heading">
   <div class="mb-3">
     <h2 id="aderencia-heading" class="font-display text-lg font-medium text-slate-800">
       Onde estamos
     </h2>
     <p class="mt-0.5 text-sm text-slate-500">
-      Média e distribuição no escopo — a tabela abaixo é só o drill-down.
+      Média e distribuição no escopo — a lista abaixo detalha cada líder.
     </p>
   </div>
 
   <div class="managerial-panel">
-    {# 1) KPIs — média / totais / baixa (contrato managerial-panel). #}
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores de aderência">
       {% if aderencia_resumo.has_ciclo and aderencia_resumo.media is not None %}
         {% with val=aderencia_resumo.media|stringformat:"d"|add:"%" %}
-        {% include "components/card.html" with label="Aderência média" value=val badge_status=aderencia_resumo.status body="Média dos snapshots no escopo filtrado." %}
+        {% include "components/card.html" with label="Aderência média" value=val badge_status=aderencia_resumo.status body="Média dos líderes no escopo filtrado." %}
         {% endwith %}
       {% elif aderencia_resumo.has_ciclo %}
-        {% include "components/card.html" with label="Aderência média" value="—" body="Nenhum snapshot no escopo para este ciclo." %}
+        {% include "components/card.html" with label="Aderência média" value="—" body="Ainda não há dados de aderência neste escopo." %}
       {% else %}
         {% include "components/card.html" with label="Aderência média" value="—" body="Selecione ou abra um ciclo nos filtros." %}
       {% endif %}
 
       {% if aderencia_resumo.has_ciclo %}
-        {% include "components/card.html" with label="Líderes com snapshot" value=aderencia_resumo.total_lideres body="Snapshots no mesmo escopo da lista." %}
+        {% include "components/card.html" with label="Líderes com aderência" value=aderencia_resumo.total_lideres body="Com índice registrado no mesmo escopo da lista." %}
       {% else %}
-        {% include "components/card.html" with label="Líderes com snapshot" value="—" body="Disponível quando houver ciclo." %}
+        {% include "components/card.html" with label="Líderes com aderência" value="—" body="Disponível quando houver ciclo." %}
       {% endif %}
 
       {% if aderencia_resumo.has_ciclo and aderencia_resumo.baixa is not None %}
@@ -90,21 +88,19 @@
       {% endif %}
     </div>
 
-    {# 2) Visual principal — doughnut Status Triad + total no centro. #}
     {% if chart_aderencia_distribuicao.has_data %}
-      {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" kpi_label="Snapshots" kpi_value=chart_aderencia_distribuicao.total kpi_body="líderes no escopo" insight="Alta, média e baixa — o centro soma os snapshots filtrados." %}
+      {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" kpi_label="Líderes" kpi_value=chart_aderencia_distribuicao.total kpi_body="com aderência no escopo" insight="Distribuição em alta, média e baixa — o centro mostra o total." %}
     {% else %}
       {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" %}
     {% endif %}
 
-    {# 3) Drill-down — lista paginada (secundária); HTMX troca só #list-container. #}
     <div class="min-w-0" aria-labelledby="aderencia-drilldown-heading">
       <div class="mb-3">
         <h3 id="aderencia-drilldown-heading" class="font-display text-lg font-medium text-slate-800">
-          Snapshots no escopo
+          Líderes no escopo
         </h3>
         <p class="mt-0.5 text-sm text-slate-500">
-          Detalhe por líder — componentes e data do cálculo assíncrono.
+          Detalhe por líder — componentes e data da última atualização.
         </p>
       </div>
       {% include "dashboard/adherence_list_partial.html" %}

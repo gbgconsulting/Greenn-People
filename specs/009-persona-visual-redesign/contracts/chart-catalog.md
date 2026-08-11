@@ -59,6 +59,22 @@
 
 ---
 
+## Acabamento limpo (default — alinhado ao DS)
+
+Init em `static/js/dashboard_charts.js` (presentation-only; **sem** mudar shape/métricas):
+
+| Tipo | Eixo de valor / grid | Leitura |
+|------|----------------------|---------|
+| `bar` / `bar_horizontal` | Off | Datalabel inline na barra (+ mini-KPI); **sem** figcaption duplicando label+valor |
+| `bar_grouped` (curto) | Off | Datalabel + legenda Chart.js (séries) + figcaption com `parts` se útil |
+| `bar_grouped` (muitos pontos) | Off | Tooltip + figcaption (evita saturação de labels) |
+| `area` | Off | Labels de categoria + tooltip (+ legenda se multi-série) |
+| `doughnut` | N/A | Valor central + legenda texto+valor (figcaption) |
+
+Categoria: só labels textuais (sem grid). Continua Chart.js **4.5.1** / plugin inline — sem lib nova.
+
+---
+
 ## Non-goals deste contrato
 
 - Trocar lib; mudar CDN major; plugin npm de charts; inventar métrica; endpoint REST para séries; tocar denylist (stage/approval/fórmulas/AuthZ/models/migrations).

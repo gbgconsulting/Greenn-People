@@ -20,10 +20,8 @@
   </div>
 </div>
 
-{# T036 / SC-006: orientação empilhada no mobile; stepper compacto no partial. #}
 <section class="mb-8 min-w-0 space-y-6" aria-labelledby="orientacao-heading">
   <h2 id="orientacao-heading" class="sr-only">Orientação do ciclo</h2>
-  {# CTA primário único (FR-004/005). T028: pós-reprovação acionável via guidance (FR-007/009). #}
   {% include "components/next_step.html" with next_step=next_step %}
   {% include "components/stage_stepper.html" with stage_stepper=stage_stepper %}
 </section>
@@ -51,8 +49,6 @@
   </div>
 </div>
 
-{# FR-004: demais ações do hub são secundárias; copy humana FR-005. Predicados/POST intactos. #}
-{# T036: stack vertical no mobile (SC-006); wrap em sm+. #}
 <section class="mb-6 min-w-0" aria-labelledby="hub-acoes-heading">
   <h2 id="hub-acoes-heading" class="sr-only">Ações desta avaliação</h2>
   <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap" data-hub-actions>
@@ -113,7 +109,7 @@
       {% empty %}
       <tr>
         <td colspan="5" class="px-4 py-8 text-center text-slate-500">
-          Ainda não há linhas de competência snapshotadas nesta avaliação.
+          Ainda não há competências registradas nesta avaliação.
           Elas são criadas ao entrar na etapa de avaliação.
         </td>
       </tr>

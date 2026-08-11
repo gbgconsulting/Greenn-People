@@ -20,19 +20,17 @@
   </div>
 </header>
 
-{# US2 / T015: painel gerencial Freeze C — KPI → chart → ranking → tabela secundária. #}
 <section class="mb-8 min-w-0" aria-labelledby="team-status-heading">
   <div class="mb-3">
     <h2 id="team-status-heading" class="font-display text-lg font-medium text-slate-800">
       Status no ciclo
     </h2>
     <p class="mt-0.5 text-sm text-slate-500">
-      Contagens e distribuição no escopo — a tabela no rodapé é só o drill-down.
+      Contagens e distribuição no escopo — a tabela no final detalha cada pessoa.
     </p>
   </div>
 
   <div class="managerial-panel">
-    {# 1) KPIs — card.html (1–3); valores já agregados no mesmo escopo. #}
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores do time">
       {% include "components/card.html" with label="No escopo" value=team_resumo.total_escopo body="Colaboradores no seu escopo hierárquico." %}
 
@@ -53,14 +51,12 @@
       {% endif %}
     </div>
 
-    {# 2) Visual principal — bar_horizontal (US1); KPIs ficam acima (sem mini-KPI duplicado). #}
     {% if chart_escopo_status.has_data %}
       {% include "dashboard/_chart_block.html" with chart=chart_escopo_status script_id="chart-escopo-status" insight=chart_escopo_status.insight %}
     {% else %}
       {% include "dashboard/_chart_block.html" with chart=chart_escopo_status script_id="chart-escopo-status" %}
     {% endif %}
 
-    {# 3) Ranking / destaque acionável (FR-005) — fora de #list-container (HTMX). #}
     <div class="min-w-0" aria-labelledby="team-destaque-heading">
       <div class="mb-3">
         <h3 id="team-destaque-heading" class="font-display text-lg font-medium text-slate-800">
@@ -131,7 +127,6 @@
       {% endif %}
     </div>
 
-    {# 4) Drill-down — tabela paginada (secundária); HTMX troca só #list-container. #}
     <div class="min-w-0" aria-labelledby="team-drilldown-heading">
       <div class="mb-3">
         <h3 id="team-drilldown-heading" class="font-display text-lg font-medium text-slate-800">
