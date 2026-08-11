@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Estrutura — Greenn People{% endblock %}
 
@@ -6,9 +7,9 @@
 <header class="mb-6">
   <div class="flex flex-wrap items-start justify-between gap-3">
     <div>
-      <h1 class="text-2xl font-semibold text-slate-800">Estrutura</h1>
+      <h1 class="font-display text-2xl font-semibold text-slate-800">Estrutura</h1>
       <p class="mt-1 text-sm text-slate-500">
-        Líderes no seu escopo e lacunas de competências por área e cargo.
+        Cobertura por área e cargo no seu escopo — lacunas ficam no drill-down.
       </p>
     </div>
     <div class="flex flex-wrap items-center gap-2">
@@ -25,7 +26,7 @@
 
 <section class="mb-8" aria-labelledby="filtros-heading">
   <div class="mb-3">
-    <h2 id="filtros-heading" class="text-lg font-medium text-slate-800">
+    <h2 id="filtros-heading" class="font-display text-lg font-medium text-slate-800">
       Filtros
     </h2>
     <p class="mt-0.5 text-sm text-slate-500">
@@ -80,147 +81,224 @@
   </form>
 </section>
 
-<section class="mb-8" aria-labelledby="lideres-heading">
+{# US2 / T017 · Freeze B: KPI cobertura → charts área/cargo → lacunas/líderes secundários. #}
+<section class="mb-8 min-w-0" aria-labelledby="cobertura-heading">
   <div class="mb-3">
-    <h2 id="lideres-heading" class="text-lg font-medium text-slate-800">Líderes da estrutura</h2>
-    <p class="mt-0.5 text-sm text-slate-500">
-      Aderência por líder no escopo dos filtros atuais.
-    </p>
-  </div>
-  <div class="table-frame">
-    <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
-      <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-        <tr>
-          <th class="px-4 py-3 font-medium">Líder</th>
-          <th class="px-4 py-3 font-medium">Área</th>
-          <th class="px-4 py-3 font-medium">Cargo</th>
-          <th class="px-4 py-3 font-medium">Aderência</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-slate-100">
-        {% for item in lideres_resumo %}
-        <tr class="hover:bg-slate-50">
-          <td class="px-4 py-3">
-            <p class="font-medium text-slate-800">{{ item.lider.nome|default:item.lider.email }}</p>
-            <p class="text-xs text-slate-500">{{ item.lider.email }}</p>
-          </td>
-          <td class="px-4 py-3 text-slate-600">{{ item.lider.area.nome|default:"—" }}</td>
-          <td class="px-4 py-3 text-slate-600">{{ item.lider.cargo.nome|default:"—" }}</td>
-          <td class="px-4 py-3 font-semibold tabular-nums text-slate-800">
-            {% if item.snapshot %}
-              {{ item.snapshot.percentual }}%
-            {% else %}
-              <span class="font-normal text-slate-400">—</span>
-            {% endif %}
-          </td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="4" class="px-4 py-8">
-            {% include "components/empty_state.html" with title="Sem líderes no escopo" message="Nenhum líder no escopo para os filtros atuais. Ajuste ciclo, área ou cargo acima." %}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</section>
-
-<section class="mb-8" aria-labelledby="lacunas-area-heading">
-  <div class="mb-3">
-    <h2 id="lacunas-area-heading" class="text-lg font-medium text-slate-800">
-      Lacunas por área
+    <h2 id="cobertura-heading" class="font-display text-lg font-medium text-slate-800">
+      Cobertura no escopo
     </h2>
     <p class="mt-0.5 text-sm text-slate-500">
-      Lacuna = nível esperado − nota do líder (valores positivos indicam abaixo do esperado).
+      Quem já tem avaliação neste ciclo — distinto da aderência de líderes.
     </p>
   </div>
-  <div class="table-frame">
-    <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
-      <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-        <tr>
-          <th class="px-4 py-3 font-medium">Área</th>
-          <th class="px-4 py-3 font-medium">Competência</th>
-          <th class="px-4 py-3 font-medium">Média nota</th>
-          <th class="px-4 py-3 font-medium">Média esperado</th>
-          <th class="px-4 py-3 font-medium">Lacuna média</th>
-          <th class="px-4 py-3 font-medium">Com lacuna</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-slate-100">
-        {% for row in lacunas_por_area %}
-        <tr class="hover:bg-slate-50">
-          <td class="px-4 py-3 font-medium text-slate-800">{{ row.area_nome }}</td>
-          <td class="px-4 py-3 text-slate-600">{{ row.competencia_nome }}</td>
-          <td class="px-4 py-3 tabular-nums text-slate-800">{{ row.media_nota|default:"—" }}</td>
-          <td class="px-4 py-3 tabular-nums text-slate-800">{{ row.media_esperado|default:"—" }}</td>
-          <td class="px-4 py-3 font-semibold tabular-nums {% if row.media_lacuna and row.media_lacuna > 0 %}text-rose-700{% else %}text-slate-800{% endif %}">
-            {{ row.media_lacuna|default:"—" }}
-          </td>
-          <td class="px-4 py-3 tabular-nums text-slate-600">{{ row.com_lacuna }}/{{ row.total }}</td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="6" class="px-4 py-8">
-            {% if ciclo_filtro %}
-              {% include "components/empty_state.html" with title="Sem lacunas por área" message="Ainda não há notas de líder para agregar lacunas por área neste ciclo." %}
-            {% else %}
-              {% include "components/empty_state.html" with title="Ciclo necessário" message="Selecione ou abra um ciclo nos filtros acima para ver lacunas por área." %}
-            {% endif %}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</section>
 
-<section aria-labelledby="lacunas-cargo-heading">
-  <div class="mb-3">
-    <h2 id="lacunas-cargo-heading" class="text-lg font-medium text-slate-800">
-      Lacunas por cargo
-    </h2>
-    <p class="mt-0.5 text-sm text-slate-500">
-      Mesmo critério de lacuna, agrupado por cargo.
-    </p>
-  </div>
-  <div class="table-frame">
-    <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
-      <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-        <tr>
-          <th class="px-4 py-3 font-medium">Cargo</th>
-          <th class="px-4 py-3 font-medium">Competência</th>
-          <th class="px-4 py-3 font-medium">Média nota</th>
-          <th class="px-4 py-3 font-medium">Média esperado</th>
-          <th class="px-4 py-3 font-medium">Lacuna média</th>
-          <th class="px-4 py-3 font-medium">Com lacuna</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-slate-100">
-        {% for row in lacunas_por_cargo %}
-        <tr class="hover:bg-slate-50">
-          <td class="px-4 py-3 font-medium text-slate-800">{{ row.cargo_nome }}</td>
-          <td class="px-4 py-3 text-slate-600">{{ row.competencia_nome }}</td>
-          <td class="px-4 py-3 tabular-nums text-slate-800">{{ row.media_nota|default:"—" }}</td>
-          <td class="px-4 py-3 tabular-nums text-slate-800">{{ row.media_esperado|default:"—" }}</td>
-          <td class="px-4 py-3 font-semibold tabular-nums {% if row.media_lacuna and row.media_lacuna > 0 %}text-rose-700{% else %}text-slate-800{% endif %}">
-            {{ row.media_lacuna|default:"—" }}
-          </td>
-          <td class="px-4 py-3 tabular-nums text-slate-600">{{ row.com_lacuna }}/{{ row.total }}</td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="6" class="px-4 py-8">
-            {% if ciclo_filtro %}
-              {% include "components/empty_state.html" with title="Sem lacunas por cargo" message="Ainda não há notas de líder para agregar lacunas por cargo neste ciclo." %}
-            {% else %}
-              {% include "components/empty_state.html" with title="Ciclo necessário" message="Selecione ou abra um ciclo nos filtros acima para ver lacunas por cargo." %}
-            {% endif %}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <div class="managerial-panel">
+    {# 1) KPIs — cobertura % / totais (FR-006). #}
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores de cobertura">
+      {% if cobertura_resumo.has_ciclo and cobertura_resumo.percentual is not None %}
+        {% with val=cobertura_resumo.percentual|stringformat:"d"|add:"%" %}
+        {% include "components/card.html" with label="Cobertura" value=val body="Com avaliação no ciclo filtrado." %}
+        {% endwith %}
+      {% elif cobertura_resumo.has_ciclo %}
+        {% include "components/card.html" with label="Cobertura" value="—" body="Sem colaboradores no escopo filtrado." %}
+      {% else %}
+        {% include "components/card.html" with label="Cobertura" value="—" body="Selecione ou abra um ciclo nos filtros." %}
+      {% endif %}
+
+      {% if cobertura_resumo.has_ciclo and cobertura_resumo.com_avaliacao is not None %}
+        {% include "components/card.html" with label="Com avaliação" value=cobertura_resumo.com_avaliacao body="Colaboradores cobertos no escopo." %}
+      {% else %}
+        {% include "components/card.html" with label="Com avaliação" value="—" body="Disponível quando houver ciclo." %}
+      {% endif %}
+
+      {% if cobertura_resumo.has_ciclo and cobertura_resumo.sem_avaliacao is not None %}
+        {% if cobertura_resumo.sem_avaliacao > 0 %}
+          {% include "components/card.html" with label="Sem avaliação" value=cobertura_resumo.sem_avaliacao badge_status="pendente" badge_label="Lacuna" body="No escopo ainda sem avaliação neste ciclo." %}
+        {% else %}
+          {% include "components/card.html" with label="Sem avaliação" value=cobertura_resumo.sem_avaliacao badge_status="concluida" badge_label="Completo" body="Todos no escopo já têm avaliação." %}
+        {% endif %}
+      {% else %}
+        {% include "components/card.html" with label="Sem avaliação" value="—" body="Disponível quando houver ciclo." %}
+      {% endif %}
+    </div>
+
+    {# 2) Visual principal — bar_horizontal por área e por cargo. #}
+    <div class="min-w-0" aria-labelledby="cobertura-charts-heading">
+      <div class="mb-3">
+        <h3 id="cobertura-charts-heading" class="font-display text-lg font-medium text-slate-800">
+          Cobertura por dimensão
+        </h3>
+        <p class="mt-0.5 text-sm text-slate-500">
+          Amber marca o gargalo (menor cobertura). Lacunas de competência ficam abaixo.
+        </p>
+      </div>
+      <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {% if chart_cobertura_area.has_data %}
+          {% include "dashboard/_chart_block.html" with chart=chart_cobertura_area script_id="chart-cobertura-area" insight="Percentual com avaliação por área — escopo dos filtros." %}
+        {% else %}
+          {% include "dashboard/_chart_block.html" with chart=chart_cobertura_area script_id="chart-cobertura-area" %}
+        {% endif %}
+
+        {% if chart_cobertura_cargo.has_data %}
+          {% include "dashboard/_chart_block.html" with chart=chart_cobertura_cargo script_id="chart-cobertura-cargo" insight="Percentual com avaliação por cargo — mesmo escopo." %}
+        {% else %}
+          {% include "dashboard/_chart_block.html" with chart=chart_cobertura_cargo script_id="chart-cobertura-cargo" %}
+        {% endif %}
+      </div>
+    </div>
+
+    {# 3) Secundário — líderes no escopo (não é a visão principal). #}
+    <div class="min-w-0" aria-labelledby="lideres-heading">
+      <div class="mb-3">
+        <h3 id="lideres-heading" class="font-display text-lg font-medium text-slate-800">
+          Líderes da estrutura
+        </h3>
+        <p class="mt-0.5 text-sm text-slate-500">
+          Referência de aderência por líder — detalhe em Ver aderência.
+        </p>
+      </div>
+      <div class="table-frame">
+        <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+          <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <tr>
+              <th class="px-4 py-3 font-medium">Líder</th>
+              <th class="px-4 py-3 font-medium">Área</th>
+              <th class="px-4 py-3 font-medium">Cargo</th>
+              <th class="px-4 py-3 font-medium">Aderência</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            {% for item in lideres_resumo %}
+            <tr class="hover:bg-slate-50">
+              <td class="px-4 py-3">
+                <p class="font-medium text-slate-800">{{ item.lider.nome|default:item.lider.email }}</p>
+                <p class="text-xs text-slate-500">{{ item.lider.email }}</p>
+              </td>
+              <td class="px-4 py-3 text-slate-600">{{ item.lider.area.nome|default:"—" }}</td>
+              <td class="px-4 py-3 text-slate-600">{{ item.lider.cargo.nome|default:"—" }}</td>
+              <td class="px-4 py-3 font-semibold tabular-nums text-slate-800">
+                {% if item.snapshot %}
+                  {{ item.snapshot.percentual }}%
+                {% else %}
+                  <span class="font-normal text-slate-400">—</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4" class="px-4 py-8">
+                {% include "components/empty_state.html" with title="Sem líderes no escopo" message="Nenhum líder no escopo para os filtros atuais. Ajuste ciclo, área ou cargo acima." %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {# 4) Secundário acionável — lacunas (Freeze B; não misturar com cobertura). #}
+    <div class="min-w-0" aria-labelledby="lacunas-area-heading">
+      <div class="mb-3">
+        <h3 id="lacunas-area-heading" class="font-display text-lg font-medium text-slate-800">
+          Lacunas por área
+        </h3>
+        <p class="mt-0.5 text-sm text-slate-500">
+          Lacuna = nível esperado − nota do líder (valores positivos = abaixo do esperado).
+        </p>
+      </div>
+      <div class="table-frame">
+        <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+          <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <tr>
+              <th class="px-4 py-3 font-medium">Área</th>
+              <th class="px-4 py-3 font-medium">Competência</th>
+              <th class="px-4 py-3 font-medium">Média nota</th>
+              <th class="px-4 py-3 font-medium">Média esperado</th>
+              <th class="px-4 py-3 font-medium">Lacuna média</th>
+              <th class="px-4 py-3 font-medium">Com lacuna</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            {% for row in lacunas_por_area %}
+            <tr class="hover:bg-slate-50">
+              <td class="px-4 py-3 font-medium text-slate-800">{{ row.area_nome }}</td>
+              <td class="px-4 py-3 text-slate-600">{{ row.competencia_nome }}</td>
+              <td class="px-4 py-3 tabular-nums text-slate-800">{{ row.media_nota|default:"—" }}</td>
+              <td class="px-4 py-3 tabular-nums text-slate-800">{{ row.media_esperado|default:"—" }}</td>
+              <td class="px-4 py-3 font-semibold tabular-nums {% if row.media_lacuna and row.media_lacuna > 0 %}text-rose-700{% else %}text-slate-800{% endif %}">
+                {{ row.media_lacuna|default:"—" }}
+              </td>
+              <td class="px-4 py-3 tabular-nums text-slate-600">{{ row.com_lacuna }}/{{ row.total }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="px-4 py-8">
+                {% if ciclo_filtro %}
+                  {% include "components/empty_state.html" with title="Sem lacunas por área" message="Ainda não há notas de líder para agregar lacunas por área neste ciclo." %}
+                {% else %}
+                  {% include "components/empty_state.html" with title="Ciclo necessário" message="Selecione ou abra um ciclo nos filtros acima para ver lacunas por área." %}
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="min-w-0" aria-labelledby="lacunas-cargo-heading">
+      <div class="mb-3">
+        <h3 id="lacunas-cargo-heading" class="font-display text-lg font-medium text-slate-800">
+          Lacunas por cargo
+        </h3>
+        <p class="mt-0.5 text-sm text-slate-500">
+          Mesmo critério de lacuna, agrupado por cargo.
+        </p>
+      </div>
+      <div class="table-frame">
+        <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+          <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <tr>
+              <th class="px-4 py-3 font-medium">Cargo</th>
+              <th class="px-4 py-3 font-medium">Competência</th>
+              <th class="px-4 py-3 font-medium">Média nota</th>
+              <th class="px-4 py-3 font-medium">Média esperado</th>
+              <th class="px-4 py-3 font-medium">Lacuna média</th>
+              <th class="px-4 py-3 font-medium">Com lacuna</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            {% for row in lacunas_por_cargo %}
+            <tr class="hover:bg-slate-50">
+              <td class="px-4 py-3 font-medium text-slate-800">{{ row.cargo_nome }}</td>
+              <td class="px-4 py-3 text-slate-600">{{ row.competencia_nome }}</td>
+              <td class="px-4 py-3 tabular-nums text-slate-800">{{ row.media_nota|default:"—" }}</td>
+              <td class="px-4 py-3 tabular-nums text-slate-800">{{ row.media_esperado|default:"—" }}</td>
+              <td class="px-4 py-3 font-semibold tabular-nums {% if row.media_lacuna and row.media_lacuna > 0 %}text-rose-700{% else %}text-slate-800{% endif %}">
+                {{ row.media_lacuna|default:"—" }}
+              </td>
+              <td class="px-4 py-3 tabular-nums text-slate-600">{{ row.com_lacuna }}/{{ row.total }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="px-4 py-8">
+                {% if ciclo_filtro %}
+                  {% include "components/empty_state.html" with title="Sem lacunas por cargo" message="Ainda não há notas de líder para agregar lacunas por cargo neste ciclo." %}
+                {% else %}
+                  {% include "components/empty_state.html" with title="Ciclo necessário" message="Selecione ou abra um ciclo nos filtros acima para ver lacunas por cargo." %}
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" defer></script>
+<script src="{% static 'js/dashboard_charts.js' %}" defer></script>
 {% endblock %}

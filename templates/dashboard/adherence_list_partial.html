@@ -1,53 +1,58 @@
+{# Drill-down HTMX do painel de aderência (US2 / T018) — tabela secundária; KPIs/chart ficam fora. #}
 <div id="list-container">
-<div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-  <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
-    <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+<div class="table-frame">
+  <table>
+    <thead>
       <tr>
-        <th class="px-4 py-3 font-medium">Líder</th>
-        <th class="px-4 py-3 font-medium">Área</th>
-        <th class="px-4 py-3 font-medium">Ciclo</th>
-        <th class="px-4 py-3 font-medium">Aderência</th>
-        <th class="px-4 py-3 font-medium">Status</th>
-        <th class="px-4 py-3 font-medium">Aprovações</th>
-        <th class="px-4 py-3 font-medium">Feedbacks</th>
-        <th class="px-4 py-3 font-medium">Ações PDI</th>
-        <th class="px-4 py-3 font-medium">Calculado em</th>
+        <th>Líder</th>
+        <th>Área</th>
+        <th>Ciclo</th>
+        <th>Aderência</th>
+        <th>Status</th>
+        <th>Aprovações</th>
+        <th>Feedbacks</th>
+        <th>Ações PDI</th>
+        <th>Calculado em</th>
       </tr>
     </thead>
-    <tbody class="divide-y divide-slate-100">
+    <tbody>
       {% for item in snapshots_resumo %}
-      <tr class="hover:bg-slate-50">
-        <td class="px-4 py-3">
+      <tr class="{% if item.status == 'baixa' %}border-l-4 border-l-rose-400 bg-rose-50/30 hover:bg-rose-50/50{% else %}hover:bg-slate-50{% endif %}">
+        <td>
           <p class="font-medium text-slate-800">{{ item.snapshot.lider.nome|default:item.snapshot.lider.email }}</p>
           <p class="text-xs text-slate-500">{{ item.snapshot.lider.email }}</p>
         </td>
-        <td class="px-4 py-3 text-slate-600">{{ item.snapshot.lider.area.nome|default:"—" }}</td>
-        <td class="px-4 py-3 text-slate-600">{{ item.snapshot.ciclo.nome }}</td>
-        <td class="px-4 py-3 font-medium text-slate-800">{{ item.snapshot.percentual }}%</td>
-        <td class="px-4 py-3">
+        <td class="text-slate-600">{{ item.snapshot.lider.area.nome|default:"—" }}</td>
+        <td class="text-slate-600">{{ item.snapshot.ciclo.nome }}</td>
+        <td class="font-semibold tabular-nums text-slate-800">{{ item.snapshot.percentual }}%</td>
+        <td>
           {% include "components/badge_status.html" with status=item.status %}
         </td>
-        <td class="px-4 py-3 text-slate-600">
+        <td class="tabular-nums text-slate-600">
           {% with c=item.snapshot.componentes.aprovacoes %}
             {% if c %}{{ c.no_prazo }}/{{ c.total }} ({{ c.percentual }}%){% else %}—{% endif %}
           {% endwith %}
         </td>
-        <td class="px-4 py-3 text-slate-600">
+        <td class="tabular-nums text-slate-600">
           {% with c=item.snapshot.componentes.feedbacks %}
             {% if c %}{{ c.no_prazo }}/{{ c.total }} ({{ c.percentual }}%){% else %}—{% endif %}
           {% endwith %}
         </td>
-        <td class="px-4 py-3 text-slate-600">
+        <td class="tabular-nums text-slate-600">
           {% with c=item.snapshot.componentes.acoes_pdi %}
             {% if c %}{{ c.no_prazo }}/{{ c.total }} ({{ c.percentual }}%){% else %}—{% endif %}
           {% endwith %}
         </td>
-        <td class="px-4 py-3 text-slate-600">{{ item.snapshot.calculado_em|date:"d/m/Y H:i" }}</td>
+        <td class="tabular-nums text-slate-600">{{ item.snapshot.calculado_em|date:"d/m/Y H:i" }}</td>
       </tr>
       {% empty %}
       <tr>
-        <td colspan="9" class="px-4 py-8 text-center text-slate-500">
-          Nenhum snapshot de aderência encontrado para o filtro atual.
+        <td colspan="9" class="!py-8">
+          {% if ciclo_filtro %}
+            {% include "components/empty_state.html" with title="Sem snapshots de aderência" message="Nenhum snapshot no escopo para o ciclo filtrado. O job diário popula esta lista." %}
+          {% else %}
+            {% include "components/empty_state.html" with title="Ciclo necessário" message="Selecione ou abra um ciclo nos filtros acima para ver aderência da liderança." %}
+          {% endif %}
         </td>
       </tr>
       {% endfor %}

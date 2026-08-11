@@ -383,3 +383,55 @@ def categorical_counts_payload(
         keys=ordered_keys,
         colors=list(resolved_colors) if resolved_colors is not None else None,
     )
+
+
+def coverage_bar_payload(
+    rows: Sequence[Mapping[str, Any]],
+    *,
+    chart_id: str,
+    title: str,
+    label_key: str,
+    empty_message: str,
+    chart_type: str = CHART_TYPE_BAR_HORIZONTAL,
+    value_key: str = 'percentual',
+    highlight_lowest: bool = True,
+) -> dict[str, Any]:
+    """Payload ``bar_horizontal`` de cobertura (% ou totais) — FR-006 / Freeze B.
+
+    ``rows`` vêm de ``coverage_by_area`` / ``coverage_by_cargo`` (composição).
+    Amber no índice de **menor** cobertura (gargalo); sem inventar métrica.
+    """
+    usable = [
+        row for row in rows
+        if int(row.get('total') or 0) > 0 and row.get(value_key) is not None
+    ]
+    if not usable:
+        return empty_series_payload(
+            chart_id=chart_id,
+            chart_type=chart_type,
+            title=title,
+            empty_message=empty_message,
+        )
+
+    labels = [str(row.get(label_key) or '') for row in usable]
+    values: list[float] = [float(row[value_key]) for row in usable]
+
+    highlight_index: int | None = None
+    if highlight_lowest and values:
+        # Empate: primeiro índice do mínimo (determinístico — rows já ordenados).
+        highlight_index = min(range(len(values)), key=lambda i: values[i])
+
+    colors = mono_finish_colors(
+        len(values),
+        highlight_index=highlight_index,
+    )
+    return series_payload(
+        chart_id=chart_id,
+        chart_type=chart_type,
+        title=title,
+        labels=labels,
+        values=values,
+        empty_message=empty_message,
+        colors=colors,
+        total=len(usable),
+    )

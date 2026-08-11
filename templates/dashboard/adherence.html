@@ -1,36 +1,119 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Aderência da liderança — Greenn People{% endblock %}
 
 {% block content %}
-<div class="mb-6 flex flex-wrap items-start justify-between gap-3">
-  <div>
-    <h1 class="text-2xl font-semibold text-slate-800">Aderência da liderança</h1>
-    <p class="mt-1 text-slate-500">
-      Índices pré-calculados (snapshots) — sem recálculo nesta página.
-      {% if ciclo_filtro %} · ciclo {{ ciclo_filtro.nome }}{% endif %}
+<header class="mb-6">
+  <div class="flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <h1 class="font-display text-2xl font-semibold text-slate-800">Aderência da liderança</h1>
+      <p class="mt-1 text-sm text-slate-500">
+        Índices pré-calculados (snapshots) — sem recálculo nesta página.
+      </p>
+    </div>
+    {% if ciclo_filtro %}
+      {% include "components/badge_status.html" with status="ativo" label=ciclo_filtro.nome extra_class="mt-1" %}
+    {% else %}
+      {% include "components/badge_status.html" with status="arquivado" label="Nenhum ciclo selecionado" extra_class="mt-1" %}
+    {% endif %}
+  </div>
+</header>
+
+<section class="mb-8" aria-labelledby="filtros-aderencia-heading">
+  <div class="mb-3">
+    <h2 id="filtros-aderencia-heading" class="font-display text-lg font-medium text-slate-800">
+      Filtros
+    </h2>
+    <p class="mt-0.5 text-sm text-slate-500">
+      Escolha o ciclo — KPIs e distribuição usam o mesmo escopo da lista.
     </p>
   </div>
-</div>
+  <form method="get" class="grid grid-cols-1 gap-3 sm:flex sm:flex-wrap sm:items-end" role="search" aria-label="Filtrar por ciclo">
+    <div class="min-w-0 sm:min-w-[10rem]">
+      <label for="ciclo" class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Ciclo</label>
+      <select
+        id="ciclo"
+        name="ciclo"
+        class="form-control w-full"
+        onchange="this.form.submit()"
+      >
+        <option value="">Ciclo aberto{% if ciclo_aberto %} ({{ ciclo_aberto.nome }}){% else %} (nenhum){% endif %}</option>
+        {% for c in ciclos %}
+        <option value="{{ c.pk }}" {% if ciclo_filtro and ciclo_filtro.pk == c.pk %}selected{% endif %}>
+          {{ c.nome }} — {{ c.get_status_display }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+  </form>
+</section>
 
-<form method="get" class="mb-6 grid grid-cols-1 gap-3 sm:flex sm:flex-wrap sm:items-end" role="search" aria-label="Filtrar por ciclo">
-  <div class="min-w-0 sm:min-w-[10rem]">
-    <label for="ciclo" class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Ciclo</label>
-    <select
-      id="ciclo"
-      name="ciclo"
-      class="form-control w-full"
-      onchange="this.form.submit()"
-    >
-      <option value="">Ciclo aberto{% if ciclo_aberto %} ({{ ciclo_aberto.nome }}){% else %} (nenhum){% endif %}</option>
-      {% for c in ciclos %}
-      <option value="{{ c.pk }}" {% if ciclo_filtro and ciclo_filtro.pk == c.pk %}selected{% endif %}>
-        {{ c.nome }} — {{ c.get_status_display }}
-      </option>
-      {% endfor %}
-    </select>
+{# US2 / T018 · Freeze C: KPI → doughnut (Triad + centro) → lista drill-down HTMX. #}
+<section class="mb-8 min-w-0" aria-labelledby="aderencia-heading">
+  <div class="mb-3">
+    <h2 id="aderencia-heading" class="font-display text-lg font-medium text-slate-800">
+      Onde estamos
+    </h2>
+    <p class="mt-0.5 text-sm text-slate-500">
+      Média e distribuição no escopo — a tabela abaixo é só o drill-down.
+    </p>
   </div>
-</form>
 
-{% include "dashboard/adherence_list_partial.html" %}
+  <div class="managerial-panel">
+    {# 1) KPIs — média / totais / baixa (contrato managerial-panel). #}
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores de aderência">
+      {% if aderencia_resumo.has_ciclo and aderencia_resumo.media is not None %}
+        {% with val=aderencia_resumo.media|stringformat:"d"|add:"%" %}
+        {% include "components/card.html" with label="Aderência média" value=val badge_status=aderencia_resumo.status body="Média dos snapshots no escopo filtrado." %}
+        {% endwith %}
+      {% elif aderencia_resumo.has_ciclo %}
+        {% include "components/card.html" with label="Aderência média" value="—" body="Nenhum snapshot no escopo para este ciclo." %}
+      {% else %}
+        {% include "components/card.html" with label="Aderência média" value="—" body="Selecione ou abra um ciclo nos filtros." %}
+      {% endif %}
+
+      {% if aderencia_resumo.has_ciclo %}
+        {% include "components/card.html" with label="Líderes com snapshot" value=aderencia_resumo.total_lideres body="Snapshots no mesmo escopo da lista." %}
+      {% else %}
+        {% include "components/card.html" with label="Líderes com snapshot" value="—" body="Disponível quando houver ciclo." %}
+      {% endif %}
+
+      {% if aderencia_resumo.has_ciclo and aderencia_resumo.baixa is not None %}
+        {% if aderencia_resumo.baixa > 0 %}
+          {% include "components/card.html" with label="Baixa aderência" value=aderencia_resumo.baixa badge_status="baixa" badge_label="Atenção" body="Abaixo de 50% — priorize na lista." %}
+        {% else %}
+          {% include "components/card.html" with label="Baixa aderência" value=aderencia_resumo.baixa badge_status="alta" badge_label="Em dia" body="Ninguém abaixo de 50% no escopo." %}
+        {% endif %}
+      {% else %}
+        {% include "components/card.html" with label="Baixa aderência" value="—" body="Disponível quando houver ciclo." %}
+      {% endif %}
+    </div>
+
+    {# 2) Visual principal — doughnut Status Triad + total no centro. #}
+    {% if chart_aderencia_distribuicao.has_data %}
+      {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" kpi_label="Snapshots" kpi_value=chart_aderencia_distribuicao.total kpi_body="líderes no escopo" insight="Alta, média e baixa — o centro soma os snapshots filtrados." %}
+    {% else %}
+      {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" %}
+    {% endif %}
+
+    {# 3) Drill-down — lista paginada (secundária); HTMX troca só #list-container. #}
+    <div class="min-w-0" aria-labelledby="aderencia-drilldown-heading">
+      <div class="mb-3">
+        <h3 id="aderencia-drilldown-heading" class="font-display text-lg font-medium text-slate-800">
+          Snapshots no escopo
+        </h3>
+        <p class="mt-0.5 text-sm text-slate-500">
+          Detalhe por líder — componentes e data do cálculo assíncrono.
+        </p>
+      </div>
+      {% include "dashboard/adherence_list_partial.html" %}
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" defer></script>
+<script src="{% static 'js/dashboard_charts.js' %}" defer></script>
 {% endblock %}
