@@ -37,7 +37,11 @@
         id="ciclo-row-{{ ciclo.pk }}"
       >
         <td>
-          <p class="font-display font-semibold text-slate-800">{{ ciclo.nome }}</p>
+          {# US3 / T025 · FR-007: link para página dedicada ciclo_detail — não accordion/inline. #}
+          <a
+            href="{% url 'cycles:ciclo_detail' ciclo.pk %}"
+            class="font-display font-semibold text-emerald-700 hover:text-emerald-800"
+          >{{ ciclo.nome }}</a>
         </td>
         <td class="text-slate-600 tabular-nums">{{ ciclo.data_inicio|date:"d/m/Y" }}</td>
         <td class="text-slate-600 tabular-nums">{{ ciclo.data_fim|date:"d/m/Y" }}</td>
@@ -51,6 +55,10 @@
         <td class="tabular-nums text-slate-600">{{ ciclo.avaliacoes_count }}</td>
         <td class="text-right">
           <div class="inline-flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
+            <a
+              href="{% url 'cycles:ciclo_detail' ciclo.pk %}"
+              class="font-medium text-emerald-700 hover:text-emerald-800"
+            >Visão gerencial</a>
             {% if ciclo.status == "encerrado" %}
             <form method="post" action="{% url 'cycles:ciclo_open' ciclo.pk %}" class="inline">
               {% csrf_token %}

@@ -8,6 +8,8 @@
     <h1 class="font-display text-2xl font-semibold text-slate-800">Ciclos de avaliação</h1>
     <p class="mt-1 text-sm text-slate-500">
       Crie, abra e encerre ciclos centralizados. Apenas um ciclo pode estar aberto por vez.
+      {# US3 / T025 · FR-007: detalhe gerencial é página dedicada (`ciclo_detail`), não accordion na lista. #}
+      Use o nome do ciclo ou «Visão gerencial» para abrir o painel consolidado.
     </p>
   </div>
   {% url 'cycles:ciclo_create' as create_url %}

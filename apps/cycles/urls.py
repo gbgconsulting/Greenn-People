@@ -28,6 +28,11 @@ urlpatterns = [
         name='ciclo_close',
     ),
     path(
+        '<int:pk>/',
+        views.CicloDetailView.as_view(),
+        name='ciclo_detail',
+    ),
+    path(
         '<int:ciclo_pk>/objectives/',
         views.ObjetivoEstrategicoListView.as_view(),
         name='objetivo_list',
