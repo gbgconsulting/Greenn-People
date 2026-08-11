@@ -1,5 +1,5 @@
 {% comment %}
-  Bloco reutilizável de gráfico (Chart.js + empty state) — polish visual DS v2 / US3.
+  Bloco reutilizável de gráfico (Chart.js + mini-KPI + empty) — Freeze A / US1.
 
   Uso:
     {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" %}
@@ -7,88 +7,112 @@
   Com id no payload (script_id opcional):
     {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao %}
 
+  Com mini-KPI vizinho (só apresentação — caller passa valores já calculados):
+    {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" kpi_label="Total" kpi_value=chart_ciclo_progresso.total kpi_body="avaliações no ciclo" %}
+
+  Com insight (1 linha sob o título):
+    {% include "dashboard/_chart_block.html" with chart=chart_escopo_status insight="Maior volume em feedback do líder." %}
+
   Parâmetros:
-    chart       — payload dict (has_data, title, empty_message, legend_items; id se script_id omitido)
-    script_id   — id de json_script / data-chart-payload (default: chart.id)
-    title       — sobrescreve chart.title
-    extra_class — classes extras no wrapper
+    chart            — payload dict (has_data, title, empty_message, legend_items, insight?; id se script_id omitido)
+    script_id        — id de json_script / data-chart-payload (default: chart.id)
+    title            — sobrescreve chart.title
+    insight          — lead de 1 linha (default: chart.insight)
+    kpi_label        — se definido, renderiza mini-KPI via card.html ao lado do canvas
+    kpi_value        — valor do mini-KPI (caller)
+    kpi_body         — texto auxiliar do mini-KPI
+    kpi_badge_status — badge opcional no card
+    kpi_badge_label  — rótulo do badge
+    extra_class      — classes extras no wrapper
 
   Convenção DOM (dashboard_charts.js):
     <canvas data-chart-payload="script-id"></canvas>
     {{ chart|json_script:"script-id" }}
 
-  Anatomia v2: frame leve (borda + surface-card, sem sombra) alinhado a KPI/card;
-  título em font-display; figcaption em UI com rótulo+valor (FR-007).
+  Anatomia: title → insight → (mini-KPI | canvas) → figcaption / empty_state.
+  Mobile (~375px): empilha KPI → chart. Sem sombra; empty honesto (FR-003).
 {% endcomment %}
-{% with payload_id=script_id|default:chart.id chart_title=title|default:chart.title %}
-<figure class="min-w-0 rounded-xl border border-line bg-surface-card p-4 sm:p-5 {{ extra_class }}"{% if payload_id %} aria-labelledby="{{ payload_id }}-heading"{% endif %}>
-  {% if chart_title %}
-  <h3 id="{{ payload_id }}-heading" class="font-display text-lg font-medium tracking-tight text-slate-800">{{ chart_title }}</h3>
+{% with payload_id=script_id|default:chart.id chart_title=title|default:chart.title chart_insight=insight|default:chart.insight %}
+<div class="{% if kpi_label %}flex min-w-0 flex-col gap-4 sm:flex-row sm:items-stretch{% else %}min-w-0{% endif %} {{ extra_class }}">
+  {% if kpi_label %}
+  <div class="shrink-0 sm:w-40 lg:w-44">
+    {% include "components/card.html" with label=kpi_label value=kpi_value body=kpi_body badge_status=kpi_badge_status badge_label=kpi_badge_label extra_class="h-full" only %}
+  </div>
   {% endif %}
 
-  {% if chart.has_data %}
-  <div class="dashboard-chart-canvas">
-    <canvas
-      data-chart-payload="{{ payload_id }}"
-      role="img"
-      {% if chart_title %}aria-label="{{ chart_title }}"{% endif %}
-    ></canvas>
-  </div>
+  <figure class="min-w-0 rounded-xl border border-line bg-surface-card p-4 sm:p-5{% if kpi_label %} flex-1{% endif %}"{% if payload_id %} aria-labelledby="{{ payload_id }}-heading"{% endif %}>
+    {% if chart_title %}
+    <h3 id="{{ payload_id }}-heading" class="font-display text-lg font-medium tracking-tight text-slate-800">{{ chart_title }}</h3>
+    {% endif %}
 
-  {% if chart.legend_items %}
-  <figcaption class="mt-4 border-t border-line pt-3.5">
-    <p class="sr-only">Resumo textual das séries (além da cor):</p>
-    <ul class="flex flex-wrap gap-x-5 gap-y-2.5 text-sm leading-snug text-slate-600" role="list">
-      {% for item in chart.legend_items %}
-        {% if item.parts %}
-        <li class="min-w-0 basis-full sm:basis-[calc(50%-0.625rem)]">
-          <span class="font-medium text-slate-800">{{ item.label }}</span>
-          <span class="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-slate-500">
-            {% for part in item.parts %}
-            <span class="inline-flex items-center gap-1.5">
-              {% if part.color %}
-              <span
-                class="inline-block size-2.5 shrink-0 rounded-sm"
-                style="background-color: {{ part.color }}"
-                aria-hidden="true"
-              ></span>
-              {% endif %}
-              <span>{{ part.label }}:
-                {% if part.value is None %}—{% else %}{{ part.value }}{% endif %}
+    {% if chart_insight %}
+    <p class="{% if chart_title %}mt-1 {% endif %}font-ui text-sm font-semibold leading-snug text-slate-700">{{ chart_insight }}</p>
+    {% endif %}
+
+    {% if chart.has_data %}
+    <div class="dashboard-chart-canvas">
+      <canvas
+        data-chart-payload="{{ payload_id }}"
+        role="img"
+        {% if chart_title %}aria-label="{{ chart_title }}"{% endif %}
+      ></canvas>
+    </div>
+
+    {% if chart.legend_items %}
+    <figcaption class="mt-4 border-t border-line pt-3.5">
+      <p class="sr-only">Resumo textual das séries (além da cor):</p>
+      <ul class="flex flex-wrap gap-x-5 gap-y-2.5 text-sm leading-snug text-slate-600" role="list">
+        {% for item in chart.legend_items %}
+          {% if item.parts %}
+          <li class="min-w-0 basis-full sm:basis-[calc(50%-0.625rem)]">
+            <span class="font-medium text-slate-800">{{ item.label }}</span>
+            <span class="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-slate-500">
+              {% for part in item.parts %}
+              <span class="inline-flex items-center gap-1.5">
+                {% if part.color %}
+                <span
+                  class="inline-block size-2.5 shrink-0 rounded-sm"
+                  style="background-color: {{ part.color }}"
+                  aria-hidden="true"
+                ></span>
+                {% endif %}
+                <span>{{ part.label }}:
+                  {% if part.value is None %}—{% else %}{{ part.value }}{% endif %}
+                </span>
               </span>
+              {% endfor %}
             </span>
-            {% endfor %}
-          </span>
-        </li>
-        {% else %}
-        <li class="inline-flex items-center gap-1.5">
-          {% if item.color %}
-          <span
-            class="inline-block size-2.5 shrink-0 rounded-sm"
-            style="background-color: {{ item.color }}"
-            aria-hidden="true"
-          ></span>
+          </li>
+          {% else %}
+          <li class="inline-flex items-center gap-1.5">
+            {% if item.color %}
+            <span
+              class="inline-block size-2.5 shrink-0 rounded-sm"
+              style="background-color: {{ item.color }}"
+              aria-hidden="true"
+            ></span>
+            {% endif %}
+            <span>
+              <span class="font-medium text-slate-800">{{ item.label }}</span>:
+              {% if item.value is None %}—{% else %}{{ item.value }}{% endif %}
+            </span>
+          </li>
           {% endif %}
-          <span>
-            <span class="font-medium text-slate-800">{{ item.label }}</span>:
-            {% if item.value is None %}—{% else %}{{ item.value }}{% endif %}
-          </span>
-        </li>
-        {% endif %}
-      {% endfor %}
-    </ul>
-  </figcaption>
-  {% endif %}
-  {% else %}
-  <div class="mt-3 py-4 sm:py-5">
-    {% with empty_msg=chart.empty_message|default:"Sem dados para exibir neste gráfico." %}
-      {% include "components/empty_state.html" with message=empty_msg only %}
-    {% endwith %}
-  </div>
-  {% endif %}
+        {% endfor %}
+      </ul>
+    </figcaption>
+    {% endif %}
+    {% else %}
+    <div class="mt-3 py-4 sm:py-5">
+      {% with empty_msg=chart.empty_message|default:"Sem dados para exibir neste gráfico." %}
+        {% include "components/empty_state.html" with message=empty_msg only %}
+      {% endwith %}
+    </div>
+    {% endif %}
 
-  {% if chart and payload_id %}
-  {{ chart|json_script:payload_id }}
-  {% endif %}
-</figure>
+    {% if chart and payload_id %}
+    {{ chart|json_script:payload_id }}
+    {% endif %}
+  </figure>
+</div>
 {% endwith %}

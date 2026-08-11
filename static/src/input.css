@@ -190,7 +190,16 @@
   }
 
   /*
-   * Canvas de gráfico (005-dashboard-charts / SC-006 + 007 US3 T029):
+   * Painel gerencial (009 Freeze C / FR-011):
+   * Ritmo vertical canônico KPI → visual → tabela/drill (~375px empilha na mesma ordem).
+   * Sem chrome/sombra própria — composição só; shell/nav/auth intocados.
+   */
+  .managerial-panel {
+    @apply flex flex-col gap-6 sm:gap-8;
+  }
+
+  /*
+   * Canvas de gráfico (005-dashboard-charts / SC-006 + 007 US3 T029 + 009 T005):
    * altura fixa legível em viewport ~375px; Chart.js com maintainAspectRatio: false.
    * Ritmo v2: espaço título→plot um pouco maior; bump sutil 15.5 / 17 / 19 rem.
    * Não altera shell/nav/topbar — só o bloco do gráfico.

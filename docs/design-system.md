@@ -15,9 +15,21 @@ Não criar `DESIGN.md` na raiz: a documentação de design deste projeto vive aq
 
 ## Freeze
 
-**Status:** **Freeze v2** (feature `007-design-system-v2` · FR-009 / SC-004). Substitui o congelamento de `004-ux-visual-foundation` para as decisões listadas abaixo. Twin técnico: `static/src/input.css` (+ components/templates/JS tocados na mesma entrega).
+**Status:** **Freeze v2** (base `007-design-system-v2` · FR-009 / SC-004; **reabertura A/B/C** em `009-persona-visual-redesign`, decisão visual 2026-08-11 via Canvas). Twin técnico: `static/src/input.css` (+ components/templates/JS tocados na mesma entrega).
 
-Este documento é a **fonte da verdade** de tokens e padrões de UI do Greenn People. O v2 **reabriu** tipografia e acabamento visual no app autenticado com decisão explícita da feature 007; login/`base_auth` ficam **fora** (isolamento). Demais superfícies devem **consumir** o conjunto documentado (e os includes em `templates/components/`), sem inventar ilhas de estilo.
+Este documento é a **fonte da verdade** de tokens e padrões de UI do Greenn People. O v2 **reabriu** tipografia e acabamento visual no app autenticado com decisão explícita da feature 007; login/`base_auth` ficam **fora** (isolamento). Em 009, há **reabertura formal A/B/C** (tabela abaixo). Demais superfícies devem **consumir** o conjunto documentado (e os includes em `templates/components/`), sem inventar ilhas de estilo.
+
+### Reabertura formal A/B/C (`009-persona-visual-redesign`)
+
+Decisão de produto (Canvas 2026-08-11). Documentação canônica = esta seção + **Charts polish (DS v2)** + **Painel gerencial (DS v2 · Freeze C)**. Tokens CSS gêmeos (ex. `.managerial-panel`, altura canvas) entram em `static/src/input.css` na **mesma** entrega do contrato visual (FR-011 / SC-006). **Sem** redesenhar nav / `base_auth` / login.
+
+| # | Ponto | Decisão | Limite |
+|---|---|---|---|
+| **A** | **Charts polish (DS v2)** | Tipos expressivos por propósito (`doughnut` + valor central, `bar_horizontal`, `area`, multi-série quando o shape já existir) + **paleta de acabamento** / gradiente só no Chart.js | Chart.js **4.5.1** apenas; sem lib nova; sem métrica inventada; Status Triad e shape `has_data` / `labels` / `values` / `series` / `colors` / `legend_items` permanecem |
+| **B** | Slice de gráficos | **Incluir** `templates/dashboard/structure.html` (`dashboard:structure`) no slice Chart.js | Visual principal = **cobertura** área/cargo; lacunas/pendências = secundário acionável; cobertura ≠ aderência (FR-006) |
+| **C** | Padrão **painel gerencial** | Composição canônica **KPI(s) + visualização + tabela/drill-down** (+ ações) para líder e RH | Tabela **não** é visão principal; reutiliza tipografia, `card`/KPI, `.table-frame`, `empty_state` v2 |
+
+Contratos de referência: `specs/009-persona-visual-redesign/contracts/chart-catalog.md`, `managerial-panel.md`, `cycle-managerial-detail.md`.
 
 ### Cobertura Freeze v2
 
@@ -26,7 +38,8 @@ Este documento é a **fonte da verdade** de tokens e padrões de UI do Greenn Pe
 | Tipografia | Display (**Fraunces**) + UI (**Source Sans 3**) no app autenticado (`.app-shell`); Inter permanece default global / auth (`--font-sans` intocado) — seção **Tipografia** |
 | Botões | Ritmo/pesos/hover/focus refinados; mesmas variantes semânticas (`primary` \| `secondary` \| `outlined` \| `loading`) — seção **Botões (DS v2)** |
 | Cards / KPI / table-frame / empty | Densidade/hierarquia v2; composição limpa (sem sombra excessiva) — seções **KPI / cartões**, **Table-frame**, **Empty states** |
-| Charts polish | Options Chart.js + CSS/markup do bloco; sem novas métricas/libs — seção **Charts polish (DS v2)** |
+| Charts (polish + catálogo 009) | Options Chart.js + tipos expressivos + paleta/hierarquia — seção **Charts polish (DS v2)** (+ reabertura A) |
+| Painel gerencial | KPI → visual → drill-down → ações — seção **Painel gerencial (DS v2 · Freeze C)** |
 | Ninebox polish | Visual-only (grade, cards, drawer domínio, drag/ARIA); contratos 006 intactos — seção **Ninebox polish (DS v2)** |
 | Shell | Estrutura IA Governança/Cadastros/Sistema **inalterada**; densidade/tipografia no chrome (`sidebar` / `topbar` / `.shell-brand` / `.nav-link*`) sob `.app-shell` (T044) |
 | Auth | Login / `base_auth` **OUT** desta feature — isolamento documentado; `--font-sans` / `body { font-sans }` não mudam |
@@ -50,7 +63,8 @@ Referência visual: [Verdee \| Guia de Estilo](https://www.figma.com/design/LqU1
 | Shell Admin (Governança / Cadastros / Sistema) + destaque Ciclos/Aderência | Seção Shell |
 | Topbar (ciclo aberto / fallback) | Seção Shell / Topbar |
 | Botões, inputs, badges, empty states, KPI/cards, table-frame | Seções DS v2 acima + componentes; inputs baseline; badges Status Triad intacto |
-| Charts polish (options Chart.js + bloco CSS/markup) | Seção **Charts polish (DS v2)**; contrato consumo 005 abaixo |
+| Charts polish + catálogo expressivo (tipos/paleta/barras limpas) | Seção **Charts polish (DS v2)**; contratos 005 + `specs/009-persona-visual-redesign/contracts/chart-catalog.md` |
+| Painel gerencial (KPI + visual + tabela) | Seção **Painel gerencial (DS v2 · Freeze C)**; `contracts/managerial-panel.md` |
 | Ninebox polish (grade, cards, drawer domínio, drag/empty) | Seção **Ninebox polish (DS v2)**; contrato consumo 006 abaixo |
 | Focus-visible, skip link, modal trap, indicador HTMX | Seção Focus-visible e a11y |
 
@@ -60,12 +74,12 @@ Evidência before/after das telas-piloto v2: `specs/007-design-system-v2/evidenc
 
 1. **Consumir, não reinventar** — novos gráficos, matriz 9-box e demais telas reutilizam tokens, hierarquia tipográfica/espacial e componentes canônicos deste doc.
 2. **Doc ↔ CSS juntos** — mudança de token ou padrão atualiza `docs/design-system.md` e `static/src/input.css` (e components afetados) na mesma entrega.
-3. **Sem reabrir Freeze v2** — não reinventar tipografia display/UI, variantes de botão, chrome de KPI/table-frame/empty, charts polish ou ninebox polish fora deste contrato; não reaplicar WIP Impeccable nem redesenhar o chrome de navegação como pré-requisito de features de visualização.
+3. **Sem reabrir Freeze v2 fora do contrato** — não reinventar tipografia display/UI, variantes de botão, chrome de KPI/table-frame/empty ou ninebox polish; charts e painel gerencial só evoluem dentro das seções **Charts polish** / **Painel gerencial** (reabertura A/B/C de 009 já incorporada). Não reaplicar WIP Impeccable nem redesenhar nav/login.
 4. **Exceções** — só com decisão explícita de produto que atualize este Freeze (status + tabela de cobertura) na mesma mudança.
 
-### Gráficos no dashboard (consumo · FR-013 / SC-007)
+### Gráficos no dashboard (consumo · 005 + reabertura A/B · 009)
 
-Feature `005-dashboard-charts`: visualizações **consomem** Status Triad e componentes deste Freeze (`empty_state`, tipografia/espacial dos cards). **Não** reabre marca, shell, nav, topbar nem inventa ilha de estilo. Acabamento visual v2 (eixos, tooltips, altura do bloco): ver seção **Charts polish (DS v2)**.
+Feature `005-dashboard-charts` (consumo) + `009-persona-visual-redesign` (catálogo expressivo). Visualizações **consomem** Status Triad **só onde a semântica de aderência/status exige**; contagens e rankings usam paleta de acabamento monocromática (ver **Charts polish**). **Não** reabre marca, shell, nav, topbar nem inventa ilha de estilo.
 
 | Campo | Valor |
 |---|---|
@@ -73,18 +87,21 @@ Feature `005-dashboard-charts`: visualizações **consomem** Status Triad e comp
 | Versão | **4.5.1** (UMD minificado) |
 | CDN | jsDelivr — `https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js` |
 | Init local | `static/js/dashboard_charts.js` |
-| Cores de série | Status Triad — alta `#059669` / média `#d97706` / baixa `#e11d48` + labels textuais |
+| Tipos canônicos | `bar` · `bar_grouped` · `bar_horizontal` · `doughnut` (+ valor central) · `area` · `doughnut_or_bar` |
+| Cores semânticas | Status Triad — alta `#059669` / média `#d97706` / baixa `#e11d48` + labels textuais (**só** aderência/status) |
+| Cores de acabamento | Teal/cyan/slate mono em contagens e rankings; highlight amber só no gargalo/insight |
 | Acessibilidade (FR-007) | Legenda Chart.js com texto; `figcaption`/`legend_items` com rótulo + valor (não só cor) |
 
 **Superfícies que carregam o script** (`{% block extra_js %}` da página — **nunca** em `templates/base.html`):
 
 | Template | Rota | Slice |
 |---|---|---|
-| `templates/dashboard/admin.html` | `dashboard:admin` | 1 MVP |
-| `templates/dashboard/team.html` | `dashboard:team` | 2 |
-| `templates/dashboard/personal.html` | `dashboard:personal` (`/`) | 3 |
-
-**Fora do slice**: `dashboard:structure` (`StructureDashboardView` / `templates/dashboard/structure.html`) **não** carrega Chart.js nesta feature — métricas de aderência/lacunas de área-cargo ≠ distribuição de etapas do time.
+| `templates/dashboard/admin.html` | `dashboard:admin` | 005 + US1 |
+| `templates/dashboard/team.html` | `dashboard:team` | 005 + US1/US2 |
+| `templates/dashboard/personal.html` | `dashboard:personal` (`/`) | 005 + US1 |
+| `templates/dashboard/structure.html` | `dashboard:structure` | **009 reabertura B** (US2) |
+| `templates/dashboard/adherence.html` | `dashboard:adherence` | **009** (US2) |
+| `templates/cycles/ciclo_detail.html` | `cycles:ciclo_detail` | **009** (US3) |
 
 ### Matriz 9-box interativa (consumo · FR-012 / research R10)
 
@@ -455,16 +472,51 @@ Piloto: listas `templates/cycles/ciclo_list.html` / `ciclo_list_partial.html` (e
 
 ## Charts polish (DS v2)
 
-**Status:** Parte do **Freeze v2**. Acabamento visual dos gráficos já existentes (feature `005`). **Só** options Chart.js, CSS de altura/ritmo e markup do bloco — **sem** novas métricas, endpoints, libs ou mudanças de shape JSON. Contrato: `specs/007-design-system-v2/contracts/chart-visual-polish.md`.
+**Status:** Parte do **Freeze v2**. Base visual da feature `005` + **reabertura A** (`009-persona-visual-redesign`, decisão Canvas 2026-08-11). Catálogo de tipos/payloads: `specs/009-persona-visual-redesign/contracts/chart-catalog.md`. Lib permanece Chart.js **4.5.1** — sem lib nova / plugin npm.
 
 ### Artefatos
 
 | Camada | Path | Papel |
 |---|---|---|
-| Options Chart.js | `static/js/dashboard_charts.js` | Fonte UI, grid, radius/thickness, cutout, tooltip chrome, legend padding |
+| Options + tipos | `static/js/dashboard_charts.js` | Init por `type`; valor central doughnut; barras limpas |
+| Payloads | `apps/dashboard/chart_payloads.py` | Shape `has_data` / `labels` / `values` / `series` / `total` / `legend_items` |
 | Altura / ritmo | `static/src/input.css` (`.dashboard-chart-canvas`) | Altura fixa responsiva; Chart.js com `maintainAspectRatio: false` |
-| Markup do bloco | `templates/dashboard/_chart_block.html` | Frame, título, canvas, figcaption, empty |
+| Markup do bloco | `templates/dashboard/_chart_block.html` | Frame, título/insight, canvas, figcaption, empty |
 | Empty visual | `templates/components/empty_state.html` | Acabamento v2 quando `has_data` é falso |
+
+### Decisões de direção (votos Canvas US1 · 2026-08-11)
+
+| Caso | Superfície | Tipo escolhido | Paleta | Storytelling |
+|---|---|---|---|---|
+| Gap de competência | `personal.html` | `bar_horizontal` **grouped** (esperado × nota) | Esperado = slate/neutral · Nota = teal/emerald · highlight amber se abaixo | Insight 1 linha (“quais competências com gap”) → barras → figcaption |
+| Distribuição de etapas | `team.html` (+ progresso em ciclo RH) | `bar_horizontal` **monocromática** | Teal/cyan único; **amber só no gargalo** (maior volume) | Callout/insight do gargalo → barras com datalabels → tabela drill |
+| Cobertura área/cargo | `structure.html` (**Freeze B**) | `bar_horizontal` mono de **cobertura** | Teal/cyan; lacunas só no secundário | KPI cobertura → chart → lacunas/pendências (não misturar aderência) |
+| Aderência + progresso | `admin.html` / ciclo RH | `doughnut` Status Triad + **valor central** + mini-KPI/Usage de progresso | Triad intacta na rosca; progresso em teal/verde de acabamento (separado) | %/total no centro; progresso **não** misturado na Triad |
+
+**Rejeitado para etapas:** rosca com 1 cor por etapa (≥5–7 fatias) e empilhada arco-íris — polui e quebra hierarquia. Se rosca/empilhada entrar em etapas, **agregar em ≤3 buckets** semânticos (em fluxo / travados / sem avaliação).
+
+### Paleta — regras
+
+| Uso | Regra |
+|---|---|
+| Aderência alta / média / baixa | Status Triad `#059669` / `#d97706` / `#e11d48` — **inalterada** |
+| Contagens, rankings, cobertura, etapas | **Monocromático** teal/cyan (`info`) — **proibido** rainbow por categoria |
+| Gargalo / abaixo da meta | Amber (`warning`) + peso tipográfico no insight — não reinventar Triad |
+| Séries comparativas (esperado × nota) | Neutro (slate) + sucesso/teal — máx. 2 cores de série + 1 de highlight |
+| Gradiente / area fill | Só acabamento de fill (área); não substitui Triad nem multiplica hues em barras |
+
+### Barras limpas (obrigatório)
+
+Priorizar **rótulos de dados** à saturação de eixos:
+
+| Aspecto | Padrão |
+|---|---|
+| Datalabels | Ligados em barras de série única / comparativos curtos |
+| Grid | Off (ou hairline residual só se houver faixa muito larga) |
+| Ticks do eixo de valor | Off quando datalabels cobrem a leitura |
+| Eixo de categoria | Só labels textuais (sem grid) |
+| Insight | 1 linha acima do canvas (título do bloco ou lead) — o chart responde **uma** pergunta |
+| Mobile ~375px | Manter datalabels legíveis; empilhar KPI → chart → tabela |
 
 ### Bloco (`_chart_block.html`)
 
@@ -474,12 +526,17 @@ Frame alinhado a KPI/card (composição limpa, **sem** sombra):
 |---|---|
 | Container (`<figure>`) | `rounded-xl border border-line bg-surface-card p-4 sm:p-5` |
 | Título | `font-display text-lg font-medium tracking-tight text-slate-800` (`h3`) |
+| Insight (opcional) | 1 linha `font-ui text-sm font-semibold text-slate-700` sob o título (`insight` ou `chart.insight`) |
+| Mini-KPI (opcional) | Se `kpi_label` → `components/card.html` ao lado do canvas (empilha no mobile; `sm:flex-row`) — valores só do caller |
 | Canvas wrapper | `.dashboard-chart-canvas` (ver CSS abaixo) |
 | Figcaption | `mt-4 border-t border-line pt-3.5`; lista `text-sm leading-snug text-slate-600` com rótulo **+** valor (e swatch `aria-hidden` opcional) |
 | Empty | Ritmo `mt-3 py-4 sm:py-5` + include `empty_state` com `chart.empty_message` — **sem** séries inventadas |
 
 ```html
 {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" %}
+
+{# Mini-KPI vizinho (presentation-only): #}
+{% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" kpi_label="Total" kpi_value=chart_ciclo_progresso.total %}
 ```
 
 ### Altura CSS (`.dashboard-chart-canvas`)
@@ -492,33 +549,99 @@ Frame alinhado a KPI/card (composição limpa, **sem** sombra):
 
 Também: `relative mt-5 w-full min-w-0`. Rótulos e legenda devem permanecer consultáveis em ~375px.
 
-### Options Chart.js (só visual)
+### Options Chart.js (visual)
 
-Constantes espelham tokens de `input.css` (`--font-ui`, ink-muted, line) — **não** alteram Status Triad de negócio (`#059669` / `#d97706` / `#e11d48`).
+Constantes espelham tokens de `input.css` (`--font-ui`, ink-muted, line). Status Triad de negócio **não** muda.
 
 | Aspecto | Valor / comportamento |
 |---|---|
-| Família | Source Sans 3 (`FONT_UI`) — eixos, legenda, tooltips |
-| Ticks / labels | `color` ink-muted `#64748b`; size 12 (10–11 no mobile) |
-| Legenda | `position: bottom`; `usePointStyle`; padding 14 (10 no mobile); weight `500`; texto + valor (FR-007) |
-| Grid (eixo de valor) | `#e2e8f0`, `lineWidth: 1`, sem ticks; eixo de categoria sem grid |
-| Bordas de escala | ocultas |
-| Barras | `borderRadius: 6`, `maxBarThickness: 40`, `borderWidth: 0` |
-| Doughnut | `cutout: '68%'`, borda branca 2px entre fatias |
-| Tooltip | fundo ink `#1e293b`, `cornerRadius: 8`, borda sutil, title semibold / body regular |
-| Responsivo | `responsive: true` + `maintainAspectRatio: false` (altura no CSS); barras agrupadas podem virar `indexAxis: 'y'` em viewport estreito (max-width 639px) com mais de 2 labels |
+| Família | Source Sans 3 (`FONT_UI`) — labels, legenda, tooltips |
+| Datalabels (barras) | Preferir valor na barra/ao lado; ticks de valor off |
+| Grid | Preferir off em barras categóricas limpas |
+| Legenda | `position: bottom` quando multi-série; `usePointStyle`; texto + valor (FR-007) |
+| Barras | `borderRadius: 6`, `maxBarThickness: 40`, `borderWidth: 0`; horizontal via `indexAxis: 'y'` |
+| Doughnut | `cutout: '68%'`, borda branca 2px; **plugin/inline de valor central** (`total` ou % destaque) |
+| Area | Fill suave monocromático; grid mínimo; só com série temporal/categórica real |
+| Tooltip | fundo ink `#1e293b`, `cornerRadius: 8`, borda sutil |
+| Responsivo | `responsive: true` + `maintainAspectRatio: false` |
 
-### Intocado (regressão 005)
+### Intocado (regressão)
 
 | Item | Regra |
 |---|---|
-| Shape JSON | `has_data`, `labels`, `values`, `series`, `colors`, `legend_items`, `type` |
-| Negócio | `apps/dashboard/chart_payloads.py`, views e `apps/dashboard/urls.py` sem mudança de contrato |
+| Shape JSON base | `has_data`, `labels`, `values`, `series`, `colors`, `legend_items`, `type` (+ `total` quando doughnut central) |
+| Fórmulas / AuthZ / stage | Sem mudança — denylist 009 |
 | Lib | Chart.js **4.5.1** CDN — sem lib nova, sem plugin npm |
-| Script load | Só admin / team / personal em `extra_js` — **nunca** em `base.html` |
+| Script load | Só páginas do slice em `extra_js` — **nunca** em `base.html` |
 | Empty | `has_data !== true` → sem Chart; empty honesto |
 
-Pilotos: `templates/dashboard/{admin,team,personal}.html` via `_chart_block.html`.
+---
+
+## Painel gerencial (DS v2 · Freeze C)
+
+**Status:** Parte do **Freeze v2** — reabertura **C** (`009-persona-visual-redesign`, Canvas aprovado 2026-08-11). Contrato: `specs/009-persona-visual-redesign/contracts/managerial-panel.md`. Padrão **referenciável** por time, estrutura, aderência e detalhe de ciclo (SC-006).
+
+### Wrapper
+
+| Classe / artefato | Papel |
+|---|---|
+| `.managerial-panel` | Wrapper de ritmo vertical (`flex flex-col gap-6 sm:gap-8` em `static/src/input.css`) — filhos = KPI → visual → drill/ações |
+| `.dashboard-chart-canvas` | Altura do plot (15.5 / 17 / 19 rem) — ver **Charts polish** |
+| `templates/components/card.html` | KPI(s) |
+| `templates/dashboard/_chart_block.html` | Visual principal (catálogo Freeze A) |
+| `.table-frame` / partial HTMX | Drill-down / ranking acionável |
+| `templates/components/empty_state.html` | Empty por seção |
+
+```html
+<div class="managerial-panel">
+  <!-- KPIs -->
+  <!-- {% include "dashboard/_chart_block.html" ... %} -->
+  <!-- drill-down / .table-frame -->
+</div>
+```
+
+### Composição canônica
+
+Ordem visual obrigatória (desktop e empilhamento mobile ~375px — **KPI → visual → tabela**):
+
+1. **KPI(s)** — `templates/components/card.html` (1–3 cards)  
+2. **Visualização** — `templates/dashboard/_chart_block.html` (catálogo US1 / Freeze A)  
+3. **Drill-down** — `.table-frame` / lista HTMX / ranking acionável  
+4. **Ações** — links para superfícies **já existentes** (sem AuthZ / fluxo novo)
+
+**Insight / callout** (opcional, 1–2 linhas) pode aparecer junto aos KPIs ou como lead do `_chart_block` — **não** substitui KPI nem vira a visão principal.
+
+A tabela **não** é a visão principal: se remover KPIs/chart, a pergunta “onde estamos?” deve ficar mais difícil — não o contrário.
+
+### Storytelling
+
+| Camada | Pergunta que responde |
+|---|---|
+| KPI (+ insight) | “Estamos bem?” / “Quantos blockers?” |
+| Chart | “Onde está a concentração / lacuna?” (**uma** pergunta) |
+| Tabela / ranking | “Quem?” + “o que fazer a seguir” |
+| Links / checklist | Navegação para a ação (checklist 008 avisório no ciclo RH — sem hard-block) |
+
+### Aplicação por superfície
+
+| Superfície | KPI | Visual principal | Secundário / drill |
+|---|---|---|---|
+| Time | contagens etapa / pendências | `bar_horizontal` mono + highlight amber no gargalo | ranking/destaque acionável + `team_list_partial` |
+| Estrutura (**Freeze B**) | cobertura % / totais área/cargo | chart de **cobertura** (`bar_horizontal` mono) | lacunas/pendências **secundárias** + líderes — **sem** misturar aderência |
+| Aderência | média / distribuição | doughnut Status Triad + valor central | lista snapshots (HTMX partial) |
+| Ciclo RH (`ciclo_detail`) | progresso / blockers | progresso por etapa + cobertura + aderência (seções distintas) | checklist 008 + tabelas por área |
+
+### Empty
+
+Cada seção com empty próprio (`empty_state`); sem inventar ranking/cobertura/séries fictícias (FR-003).
+
+### Paleta no painel
+
+Contagens / cobertura / etapas = teal/cyan **monocromático** (+ amber no below-meta / gargalo). Rosca de aderência = **somente** Status Triad (3 fatias). Sem arco-íris por categoria. Cobertura (estrutura) e aderência permanecem semanticamente distintas.
+
+### Intocado
+
+Nav / shell IA / `base_auth` / login; AuthZ (`get_visible_users` / scope); stage / approval / fórmulas; models / migrations. Ouro: desligar CSS/charts/painel ⇒ mesmos POSTs e resultados de negócio.
 
 ---
 

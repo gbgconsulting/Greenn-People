@@ -3,6 +3,10 @@
  * Carregado só em páginas de dashboard com gráfico (admin → team → personal).
  * Chart.js UMD (cdn) deve estar disponível como `Chart` global antes deste arquivo.
  *
+ * Catálogo (contratos/chart-catalog.md · Freeze A):
+ *   bar | doughnut | doughnut_or_bar | bar_grouped | bar_horizontal | area
+ * Valor central no doughnut: plugin inline (afterDraw) — sem plugin npm / lib nova.
+ *
  * Convenção DOM (com _chart_block.html):
  *   <canvas data-chart-payload="script-id"></canvas>
  *   {{ payload|json_script:"script-id" }}
@@ -20,12 +24,17 @@
 
   /* Tokens visuais DS v2 (espelham --font-ui / paleta em input.css) — só options Chart.js. */
   var FONT_UI = "'Source Sans 3', ui-sans-serif, system-ui, sans-serif";
+  var COLOR_INK = '#0f172a';
   var COLOR_INK_MUTED = '#64748b';
   var COLOR_LINE = '#e2e8f0';
   var COLOR_TOOLTIP_BG = '#1e293b';
+  /* Acabamento mono teal (não-semântico) — área / séries sem cor no payload. */
+  var COLOR_FINISH_TEAL = '#0d9488';
   var BAR_RADIUS = 6;
   var BAR_MAX_THICKNESS = 40;
   var DOUGHNUT_CUTOUT = '68%';
+  var AREA_TENSION = 0.35;
+  var AREA_FILL_ALPHA = 0.22;
 
   function chartFont(overrides) {
     var base = { family: FONT_UI, size: 12, weight: '400' };
@@ -51,11 +60,76 @@
     }
   }
 
+  /**
+   * Mapeia type do payload → tipo Chart.js nativo.
+   * bar_horizontal → bar (+ indexAxis y); area → line (+ fill).
+   */
   function resolveChartType(payloadType) {
     if (payloadType === 'doughnut' || payloadType === 'doughnut_or_bar') {
       return 'doughnut';
     }
+    if (payloadType === 'area') {
+      return 'line';
+    }
     return 'bar';
+  }
+
+  function hexToRgba(hex, alpha) {
+    var raw = String(hex || '').replace('#', '');
+    if (raw.length === 3) {
+      raw = raw[0] + raw[0] + raw[1] + raw[1] + raw[2] + raw[2];
+    }
+    if (raw.length !== 6) {
+      return 'rgba(13, 148, 136, ' + alpha + ')';
+    }
+    var r = parseInt(raw.slice(0, 2), 16);
+    var g = parseInt(raw.slice(2, 4), 16);
+    var b = parseInt(raw.slice(4, 6), 16);
+    return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + alpha + ')';
+  }
+
+  /** Texto do centro: center_text (opcional) ou total do payload — sem inventar %. */
+  function resolveDoughnutCenterText(payload) {
+    if (payload.center_text !== null && payload.center_text !== undefined && payload.center_text !== '') {
+      return String(payload.center_text);
+    }
+    if (payload.total !== null && payload.total !== undefined && payload.total !== '') {
+      return String(payload.total);
+    }
+    return '';
+  }
+
+  /**
+   * Plugin inline Chart.js 4.x — valor central no doughnut (research R1).
+   * Sem chartjs-plugin-datalabels / npm.
+   */
+  function doughnutCenterPlugin(centerText) {
+    return {
+      id: 'doughnutCenterValue',
+      afterDraw: function (chart) {
+        if (!centerText || chart.config.type !== 'doughnut') {
+          return;
+        }
+        var meta = chart.getDatasetMeta(0);
+        if (!meta || !meta.data || !meta.data.length) {
+          return;
+        }
+        var anchor = meta.data[0];
+        if (!anchor || anchor.x === undefined || anchor.y === undefined) {
+          return;
+        }
+        var narrow = isNarrowViewport();
+        var ctx = chart.ctx;
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = COLOR_INK;
+        ctx.font =
+          (narrow ? '600 18px ' : '600 22px ') + FONT_UI;
+        ctx.fillText(centerText, anchor.x, anchor.y);
+        ctx.restore();
+      },
+    };
   }
 
   function asNullableNumber(value) {
@@ -287,6 +361,7 @@
     var colors =
       payload.colors && payload.colors.length ? payload.colors : STATUS_TRIAD;
     var isDoughnut = type === 'doughnut';
+    var horizontal = payload.type === 'bar_horizontal';
     // Barra categórica: cores por faixa quando o payload traz triad/lista;
     // legenda Chart.js oculta (eixo + figcaption). Doughnut: legenda com texto.
     var perCategoryColors =
@@ -309,14 +384,17 @@
       responsive: true,
       maintainAspectRatio: false,
       plugins: basePlugins(isDoughnut),
-      scales: isDoughnut ? undefined : barScales(),
+      scales: isDoughnut ? undefined : barScales(horizontal),
     };
+    if (horizontal) {
+      options.indexAxis = 'y';
+    }
     if (isDoughnut) {
       options.cutout = DOUGHNUT_CUTOUT;
       options.layout = { padding: 4 };
     }
 
-    return {
+    var config = {
       type: type,
       data: {
         labels: labels,
@@ -324,11 +402,91 @@
       },
       options: options,
     };
+
+    if (isDoughnut) {
+      var centerText = resolveDoughnutCenterText(payload);
+      if (centerText) {
+        config.plugins = [doughnutCenterPlugin(centerText)];
+      }
+    }
+
+    return config;
+  }
+
+  /**
+   * Tendência temporal: Chart.js `line` + fill (type payload `area`).
+   * Aceita `values` (série única) ou `series` (multi-área) — sem inventar pontos.
+   */
+  function buildAreaConfig(payload) {
+    var labels = payload.labels || [];
+    var seriesList = payload.series || [];
+    var datasets;
+    var showLegend;
+
+    if (seriesList.length) {
+      showLegend = true;
+      datasets = seriesList.map(function (serie, index) {
+        var color =
+          serie.color ||
+          GROUPED_DEFAULTS[serie.key] ||
+          (payload.colors && payload.colors[index]) ||
+          COLOR_FINISH_TEAL;
+        return {
+          label: serie.label || serie.key || 'Série ' + (index + 1),
+          data: (serie.values || []).map(asNullableNumber),
+          borderColor: color,
+          backgroundColor: hexToRgba(color, AREA_FILL_ALPHA),
+          fill: true,
+          tension: AREA_TENSION,
+          borderWidth: 2,
+          pointRadius: isNarrowViewport() ? 2 : 3,
+          pointHoverRadius: 5,
+          pointBackgroundColor: color,
+          spanGaps: false,
+        };
+      });
+    } else {
+      showLegend = false;
+      var color =
+        (payload.colors && payload.colors[0]) || COLOR_FINISH_TEAL;
+      datasets = [
+        {
+          label: payload.title || '',
+          data: (payload.values || []).map(asNullableNumber),
+          borderColor: color,
+          backgroundColor: hexToRgba(color, AREA_FILL_ALPHA),
+          fill: true,
+          tension: AREA_TENSION,
+          borderWidth: 2,
+          pointRadius: isNarrowViewport() ? 2 : 3,
+          pointHoverRadius: 5,
+          pointBackgroundColor: color,
+          spanGaps: false,
+        },
+      ];
+    }
+
+    return {
+      type: 'line',
+      data: { labels: labels, datasets: datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: basePlugins(showLegend),
+        scales: barScales(false),
+        elements: {
+          line: { borderJoinStyle: 'round' },
+        },
+      },
+    };
   }
 
   function buildConfig(payload) {
     if (payload.type === 'bar_grouped') {
       return buildGroupedConfig(payload);
+    }
+    if (payload.type === 'area') {
+      return buildAreaConfig(payload);
     }
     return buildSingleSeriesConfig(payload);
   }
