@@ -20,28 +20,36 @@
   </div>
 </header>
 
-<section class="mb-8 min-w-0" aria-labelledby="team-visualizacoes-heading">
-  <div class="mb-3">
-    <h2 id="team-visualizacoes-heading" class="font-display text-lg font-medium text-slate-800">
-      Visualizações
-    </h2>
-    <p class="mt-0.5 text-sm text-slate-500">
-      Distribuição de etapas no escopo completo do ciclo.
-    </p>
-  </div>
-  {% include "dashboard/_chart_block.html" with chart=chart_escopo_status script_id="chart-escopo-status" %}
-</section>
-
-<section aria-labelledby="team-status-heading">
+{# US1 / T010: visual bar_horizontal (gargalo) acima da tabela; tabela = drill-down. #}
+<section class="mb-8 min-w-0" aria-labelledby="team-status-heading">
   <div class="mb-3">
     <h2 id="team-status-heading" class="font-display text-lg font-medium text-slate-800">
       Status no ciclo
     </h2>
     <p class="mt-0.5 text-sm text-slate-500">
-      Etapa e nota do líder em destaque — priorize quem aguarda ação sua.
+      Distribuição de etapas no escopo — a tabela abaixo detalha quem aguarda ação.
     </p>
   </div>
-  {% include "dashboard/team_list_partial.html" %}
+
+  <div class="managerial-panel">
+    {% if chart_escopo_status.has_data %}
+      {% include "dashboard/_chart_block.html" with chart=chart_escopo_status script_id="chart-escopo-status" kpi_label="No escopo" kpi_value=chart_escopo_status.total kpi_body="colaboradores no ciclo" %}
+    {% else %}
+      {% include "dashboard/_chart_block.html" with chart=chart_escopo_status script_id="chart-escopo-status" %}
+    {% endif %}
+
+    <div class="min-w-0" aria-labelledby="team-drilldown-heading">
+      <div class="mb-3">
+        <h3 id="team-drilldown-heading" class="font-display text-lg font-medium text-slate-800">
+          Colaboradores
+        </h3>
+        <p class="mt-0.5 text-sm text-slate-500">
+          Drill-down do gráfico — etapa e nota do líder; priorize quem aguarda ação sua.
+        </p>
+      </div>
+      {% include "dashboard/team_list_partial.html" %}
+    </div>
+  </div>
 </section>
 {% endblock %}
 

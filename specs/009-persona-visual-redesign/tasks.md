@@ -77,12 +77,12 @@ Monólito Django na raiz: allowlist em `contracts/path-allowlist.md`.
 
 ### Implementation for User Story 1
 
-- [ ] T009 [P] [US1] Wire chart expressivo + mini-KPI em `templates/dashboard/personal.html` (`extra_js` Chart.js 4.5.1 + `dashboard_charts.js`; allowlist US1; **sem** AuthZ/fórmulas)
-- [ ] T010 [P] [US1] Wire chart expressivo (ex. `bar_horizontal` / ranking) acima da tabela em `templates/dashboard/team.html` (allowlist; tabela ainda drill-down; denylist intacta)
-- [ ] T011 [P] [US1] Polish doughnut/progresso + valor central em `templates/dashboard/admin.html` (allowlist; Status Triad inalterada)
-- [ ] T012 [US1] Ajustar só context/`type`/payload em Personal/Team/Admin em `apps/dashboard/views.py` (composição de payload; **sem** alterar `get_visible_users` / `scope.py` / models)
-- [ ] T013 [P] [US1] Cobrir types novos + empty `has_data` falso em `tests/test_chart_payloads.py` ou `tests/test_persona_panels_charts.py` (asserts só de presentation payload; **sem** mudar asserts de stage/scope)
-- [ ] T014 [US1] Validar US1 via `specs/009-persona-visual-redesign/quickstart.md` §1 (+ SC-003 parcial); confirmar CDN Chart.js **4.5.1** e denylist diff vazio nos paths de domínio
+- [X] T009 [P] [US1] Wire chart expressivo + mini-KPI em `templates/dashboard/personal.html` (`extra_js` Chart.js 4.5.1 + `dashboard_charts.js`; allowlist US1; **sem** AuthZ/fórmulas)
+- [X] T010 [P] [US1] Wire chart expressivo (ex. `bar_horizontal` / ranking) acima da tabela em `templates/dashboard/team.html` (allowlist; tabela ainda drill-down; denylist intacta)
+- [X] T011 [P] [US1] Polish doughnut/progresso + valor central em `templates/dashboard/admin.html` (allowlist; Status Triad inalterada)
+- [X] T012 [US1] Ajustar só context/`type`/payload em Personal/Team/Admin em `apps/dashboard/views.py` (composição de payload; **sem** alterar `get_visible_users` / `scope.py` / models)
+- [X] T013 [P] [US1] Cobrir types novos + empty `has_data` falso em `tests/test_chart_payloads.py` ou `tests/test_persona_panels_charts.py` (asserts só de presentation payload; **sem** mudar asserts de stage/scope)
+- [X] T014 [US1] Validar US1 via `specs/009-persona-visual-redesign/quickstart.md` §1 (+ SC-003 parcial); confirmar CDN Chart.js **4.5.1** e denylist diff vazio nos paths de domínio — evidência 2026-08-11: CDN pinado em personal/team/admin; denylist clean desde `373134d`; pytest `test_chart_payloads` 16 PASS + stage/scope smoke 23 PASS
 
 **Checkpoint**: US1 independentemente testável; catálogo pronto para US2 ∥ US3
 

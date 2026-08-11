@@ -32,7 +32,9 @@
   Anatomia: title → insight → (mini-KPI | canvas) → figcaption / empty_state.
   Mobile (~375px): empilha KPI → chart. Sem sombra; empty honesto (FR-003).
 {% endcomment %}
-{% with payload_id=script_id|default:chart.id chart_title=title|default:chart.title chart_insight=insight|default:chart.insight %}
+{# firstof ignora VariableDoesNotExist — insight é opcional no payload (T009). #}
+{% with payload_id=script_id|default:chart.id chart_title=title|default:chart.title %}
+{% firstof insight chart.insight "" as chart_insight %}
 <div class="{% if kpi_label %}flex min-w-0 flex-col gap-4 sm:flex-row sm:items-stretch{% else %}min-w-0{% endif %} {{ extra_class }}">
   {% if kpi_label %}
   <div class="shrink-0 sm:w-40 lg:w-44">
