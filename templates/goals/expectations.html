@@ -3,22 +3,31 @@
 {% block title %}Expectativas — Greenn People{% endblock %}
 
 {% block content %}
-<div class="mb-6">
-  <h1 class="text-2xl font-semibold text-slate-800">Expectativas</h1>
-  <p class="mt-1 text-slate-500">
-    Competências do seu cargo, níveis esperados e metas vinculadas aos objetivos estratégicos.
-  </p>
-</div>
+<header class="mb-6 flex flex-wrap items-start justify-between gap-3">
+  <div>
+    <h1 class="font-display text-2xl font-semibold text-slate-800">Expectativas</h1>
+    <p class="mt-1 text-sm text-slate-500">
+      Competências do seu cargo, níveis esperados e metas vinculadas aos objetivos estratégicos.
+    </p>
+  </div>
+  {# T034: CTA compacto do mapa 008 — sem bloco next_step/stepper (hub fica no painel/detail) #}
+  {% if surface_cta %}
+  <div class="flex flex-wrap items-center gap-2">
+    {% include "components/button.html" with label=surface_cta.label href=surface_cta.href variant="primary" %}
+  </div>
+  {% endif %}
+</header>
 
 <section class="mb-6" aria-labelledby="resumo-desempenho-heading">
   <h2 id="resumo-desempenho-heading" class="sr-only">Resumo de desempenho</h2>
   <div class="grid gap-4 sm:grid-cols-2">
-    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+    {# KPI anatomy = components/card.html (body condicional sem |add frágil) #}
+    <div class="rounded-xl border border-line bg-surface-card p-4">
       <p class="text-xs uppercase tracking-wide text-slate-500">Nota atual</p>
-      <p class="mt-1 text-2xl font-semibold text-slate-800">
+      <p class="mt-1 font-display text-2xl font-semibold tabular-nums tracking-tight text-slate-800">
         {% if nota_atual is not None %}{{ nota_atual }}{% else %}—{% endif %}
       </p>
-      <p class="mt-2 text-sm text-slate-500">
+      <p class="mt-1.5 text-sm leading-snug text-slate-500">
         {% if nota_atual_origem == "lider" %}
           Nota consolidada do líder{% if ciclo_aberto %} · {{ ciclo_aberto.nome }}{% endif %}
         {% elif nota_atual_origem == "autoavaliacao" %}
@@ -28,12 +37,12 @@
         {% endif %}
       </p>
     </div>
-    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div class="rounded-xl border border-line bg-surface-card p-4">
       <p class="text-xs uppercase tracking-wide text-slate-500">Nível esperado</p>
-      <p class="mt-1 text-2xl font-semibold text-slate-800">
+      <p class="mt-1 font-display text-2xl font-semibold tabular-nums tracking-tight text-slate-800">
         {% if vinculo_pendente %}—{% else %}{{ competencias_resumo|length }}{% endif %}
       </p>
-      <p class="mt-2 text-sm text-slate-500">
+      <p class="mt-1.5 text-sm leading-snug text-slate-500">
         {% if vinculo_pendente %}
           Vínculo de cargo/competências pendente.
         {% elif cargo %}
@@ -47,12 +56,15 @@
 </section>
 
 {% if vinculo_pendente %}
-<div
-  class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900"
+<section
+  class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-4"
+  aria-labelledby="vinculo-pendente-heading"
   role="status"
 >
-  <p class="font-medium">Vínculo pendente</p>
-  <p class="mt-1 text-amber-800">
+  <h2 id="vinculo-pendente-heading" class="font-display text-base font-medium tracking-tight text-slate-800">
+    Vínculo pendente
+  </h2>
+  <p class="mt-1 font-ui text-sm leading-relaxed text-amber-900">
     {% if not cargo %}
       Seu perfil ainda não possui cargo definido. Peça ao administrador para
       concluir o vínculo antes de visualizar competências e níveis esperados.
@@ -61,42 +73,48 @@
       Peça ao administrador para configurar o perfil de competências do cargo.
     {% endif %}
   </p>
-</div>
+</section>
 {% else %}
 <section class="mb-8" aria-labelledby="competencias-heading">
   <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-    <h2 id="competencias-heading" class="text-lg font-medium text-slate-800">
+    <h2 id="competencias-heading" class="font-display text-lg font-medium text-slate-800">
       Competências do cargo
     </h2>
     {% if cargo %}
     <p class="text-sm text-slate-500">Cargo: {{ cargo.nome }}</p>
     {% endif %}
   </div>
-  <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-    <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
-      <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+  <div class="table-frame">
+    <table>
+      <thead>
         <tr>
-          <th class="px-4 py-3 font-medium">Competência</th>
-          <th class="px-4 py-3 font-medium">Tipo</th>
-          <th class="px-4 py-3 font-medium">Nível esperado</th>
-          <th class="px-4 py-3 font-medium">Nota atual</th>
-          <th class="px-4 py-3 font-medium">Escala</th>
+          <th>Competência</th>
+          <th>Tipo</th>
+          <th>Nível esperado</th>
+          <th>Nota atual</th>
+          <th>Escala</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-slate-100">
+      <tbody>
         {% for item in competencias_resumo %}
-        <tr class="hover:bg-slate-50">
-          <td class="px-4 py-3 font-medium text-slate-800">{{ item.competencia.nome }}</td>
-          <td class="px-4 py-3 text-slate-600">{{ item.competencia.get_tipo_display }}</td>
-          <td class="px-4 py-3 text-slate-800">{{ item.nivel_esperado }}</td>
-          <td class="px-4 py-3 text-slate-600">
+        <tr>
+          <td class="font-medium text-slate-800">{{ item.competencia.nome }}</td>
+          <td class="text-slate-600">{{ item.competencia.get_tipo_display }}</td>
+          <td class="tabular-nums text-slate-800">{{ item.nivel_esperado }}</td>
+          <td class="tabular-nums text-slate-600">
             {% if item.nota_atual is not None %}{{ item.nota_atual }}{% else %}—{% endif %}
           </td>
-          <td class="px-4 py-3 text-slate-600">
+          <td class="text-slate-600">
             {{ item.competencia.escala.nome }}
             <span class="text-slate-400">
               ({{ item.competencia.escala.valor_minimo }}–{{ item.competencia.escala.valor_maximo }})
             </span>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="!py-8">
+            {% include "components/empty_state.html" with title="Sem competências" message="Nenhuma competência configurada para o seu cargo neste momento." %}
           </td>
         </tr>
         {% endfor %}
@@ -108,7 +126,7 @@
 
 <section aria-labelledby="metas-heading">
   <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-    <h2 id="metas-heading" class="text-lg font-medium text-slate-800">
+    <h2 id="metas-heading" class="font-display text-lg font-medium text-slate-800">
       Metas do ciclo
     </h2>
     {% if ciclo_aberto %}
@@ -117,36 +135,34 @@
   </div>
 
   {% if not ciclo_aberto %}
-  <div class="rounded-xl border border-slate-200 bg-white px-4 py-8 text-center text-slate-500 shadow-sm">
-    Não há ciclo aberto no momento. As metas do ciclo aparecerão aqui quando um ciclo estiver ativo.
-  </div>
+    {% include "components/empty_state.html" with title="Sem ciclo aberto" message="Não há ciclo aberto no momento. As metas do ciclo aparecerão aqui quando um ciclo estiver ativo." %}
   {% else %}
-  <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-    <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
-      <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+  <div class="table-frame">
+    <table>
+      <thead>
         <tr>
-          <th class="px-4 py-3 font-medium">Meta</th>
-          <th class="px-4 py-3 font-medium">Objetivo estratégico</th>
-          <th class="px-4 py-3 font-medium">Progresso</th>
-          <th class="px-4 py-3 font-medium">Status</th>
+          <th>Meta</th>
+          <th>Objetivo estratégico</th>
+          <th>Progresso</th>
+          <th>Status</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-slate-100">
+      <tbody>
         {% for meta in metas %}
-        <tr class="hover:bg-slate-50" id="meta-row-{{ meta.pk }}">
-          <td class="px-4 py-3 font-medium text-slate-800">{{ meta.descricao }}</td>
-          <td class="px-4 py-3 text-slate-600">{{ meta.objetivo_estrategico.descricao }}</td>
-          <td class="px-4 py-3 text-slate-600">
+        <tr id="meta-row-{{ meta.pk }}">
+          <td class="font-medium text-slate-800">{{ meta.descricao }}</td>
+          <td class="text-slate-600">{{ meta.objetivo_estrategico.descricao }}</td>
+          <td class="tabular-nums text-slate-600">
             {% if meta.progresso is not None %}{{ meta.progresso }}%{% else %}—{% endif %}
           </td>
-          <td class="px-4 py-3">
+          <td>
             {% include "components/badge_status.html" with status=meta.status label=meta.get_status_display %}
           </td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="4" class="px-4 py-8 text-center text-slate-500">
-            Você ainda não possui metas neste ciclo.
+          <td colspan="4" class="!py-8">
+            {% include "components/empty_state.html" with title="Sem metas neste ciclo" message="Você ainda não possui metas neste ciclo." %}
           </td>
         </tr>
         {% endfor %}

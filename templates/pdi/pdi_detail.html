@@ -22,12 +22,26 @@
 <section class="mb-8" aria-labelledby="pdi-resumo-heading">
   <h2 id="pdi-resumo-heading" class="sr-only">Resumo do PDI</h2>
   <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-    {% include "components/card.html" with label="Status" badge_status=pdi.status badge_label=pdi.get_status_display %}
-    {% with progresso_label=progresso|stringformat:"d"|add:"%" %}
-    {% include "components/card.html" with label="Progresso" value=progresso_label %}
-    {% endwith %}
-    {% include "components/card.html" with label="Área" title=colaborador.area.nome|default:"—" %}
-    {% include "components/card.html" with label="Cargo" title=colaborador.cargo.nome|default:"—" %}
+    <div class="rounded-xl border border-line bg-surface-card p-4">
+      <p class="text-xs uppercase tracking-wide text-slate-500">Status</p>
+      <div class="mt-1.5">
+        {% include "components/badge_status.html" with status=pdi.status label=pdi.get_status_display %}
+      </div>
+    </div>
+    <div class="rounded-xl border border-line bg-surface-card p-4">
+      <p class="text-xs uppercase tracking-wide text-slate-500">Progresso</p>
+      <p class="mt-1 font-display text-2xl font-semibold tabular-nums tracking-tight text-slate-800">
+        {{ progresso }}%
+      </p>
+    </div>
+    <div class="rounded-xl border border-line bg-surface-card p-4">
+      <p class="text-xs uppercase tracking-wide text-slate-500">Área</p>
+      <p class="mt-1 font-medium text-slate-800">{{ colaborador.area.nome|default:"—" }}</p>
+    </div>
+    <div class="rounded-xl border border-line bg-surface-card p-4">
+      <p class="text-xs uppercase tracking-wide text-slate-500">Cargo</p>
+      <p class="mt-1 font-medium text-slate-800">{{ colaborador.cargo.nome|default:"—" }}</p>
+    </div>
   </div>
 </section>
 
@@ -35,7 +49,7 @@
   <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
     <div>
       <h2 id="acoes-heading" class="font-display text-lg font-medium text-slate-800">Ações de desenvolvimento</h2>
-      <p class="mt-0.5 text-sm text-slate-500">Atualize status, prazos e responsáveis sem sair desta tela.</p>
+      <p class="mt-0.5 font-ui text-sm text-slate-500">Atualize status, prazos e responsáveis sem sair desta tela.</p>
     </div>
     {% url 'pdi:action_create_modal' pdi.pk as acao_create_modal_url %}
     {% include "components/button.html" with label="Nova ação" type="button" variant="primary" hx_get=acao_create_modal_url %}

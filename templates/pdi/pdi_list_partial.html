@@ -1,23 +1,23 @@
 <div id="list-container">
-<div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-  <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
-    <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+<div class="table-frame">
+  <table>
+    <thead>
       <tr>
-        <th class="px-4 py-3 font-medium">Título</th>
-        <th class="px-4 py-3 font-medium">Colaborador</th>
-        <th class="px-4 py-3 font-medium">Status</th>
-        <th class="px-4 py-3 font-medium">Progresso</th>
-        <th class="px-4 py-3 font-medium text-right">Ações</th>
+        <th>Título</th>
+        <th>Colaborador</th>
+        <th>Status</th>
+        <th>Progresso</th>
+        <th class="text-right">Ações</th>
       </tr>
     </thead>
-    <tbody class="divide-y divide-slate-100">
+    <tbody>
       {% for row in pdi_rows %}
-      <tr class="hover:bg-slate-50">
-        <td class="px-4 py-3">
-          <p class="font-medium text-slate-800">{{ row.pdi.titulo }}</p>
+      <tr class="{% if row.is_self %}border-l-4 border-l-emerald-500 bg-emerald-50/30 hover:bg-emerald-50/50{% endif %}">
+        <td>
+          <p class="font-semibold text-slate-800">{{ row.pdi.titulo }}</p>
         </td>
-        <td class="px-4 py-3">
-          <p class="text-slate-800">
+        <td>
+          <p class="font-medium text-slate-800">
             {{ row.pdi.usuario.nome|default:row.pdi.usuario.email }}
             {% if row.is_self %}
               <span class="ml-1 text-xs font-normal text-slate-400">(você)</span>
@@ -25,11 +25,11 @@
           </p>
           <p class="text-xs text-slate-500">{{ row.pdi.usuario.email }}</p>
         </td>
-        <td class="px-4 py-3">
+        <td>
           {% include "components/badge_status.html" with status=row.pdi.status label=row.pdi.get_status_display %}
         </td>
-        <td class="px-4 py-3 text-slate-800">{{ row.progresso }}%</td>
-        <td class="px-4 py-3 text-right">
+        <td class="tabular-nums text-slate-800">{{ row.progresso }}%</td>
+        <td class="text-right">
           <a
             href="{% url 'pdi:detail' row.pdi.pk %}"
             class="font-medium text-emerald-700 hover:text-emerald-800"
@@ -38,11 +38,14 @@
       </tr>
       {% empty %}
       <tr>
-        <td colspan="5" class="px-4 py-8 text-center text-slate-500">
+        <td colspan="5" class="!py-8">
           {% if status_filtro %}
-            Nenhum PDI com este status no seu escopo.
+            {% include "components/empty_state.html" with title="Nenhum PDI neste filtro" message="Nenhum PDI com este status no seu escopo. Tente remover o filtro ou escolha outro status." %}
+          {% elif pode_criar %}
+            {% url 'pdi:create' as pdi_create_url %}
+            {% include "components/empty_state.html" with title="Nenhum PDI cadastrado" message="Nenhum PDI cadastrado no seu escopo." cta_label="Novo PDI" cta_href=pdi_create_url %}
           {% else %}
-            Nenhum PDI cadastrado no seu escopo.
+            {% include "components/empty_state.html" with title="Nenhum PDI cadastrado" message="Nenhum PDI cadastrado no seu escopo." %}
           {% endif %}
         </td>
       </tr>
