@@ -1,22 +1,53 @@
+from decimal import Decimal
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Count
+from django.db.models import Avg, Count, Q
 from django.db.models.deletion import ProtectedError
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse, reverse_lazy
 from django.views import View
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 from django.views.generic.detail import SingleObjectMixin
 
+from apps.accounts.services.scope import get_visible_users
 from apps.core.mixins import HtmxPaginatedListMixin, RequiresAdminMixin
 from apps.cycles.exceptions import CycleAlreadyOpenError, CycleNotOpenError
 from apps.cycles.forms import CicloForm
 from apps.cycles.models import Ciclo
 from apps.cycles.services.cycle import close_cycle, open_cycle
+from apps.dashboard.chart_payloads import (
+    CHART_TYPE_BAR_HORIZONTAL,
+    CHART_TYPE_DOUGHNUT,
+    aderencia_distribution_payload,
+    categorical_counts_payload,
+)
+from apps.dashboard.models import AderenciaSnapshot
+from apps.dashboard.services.structure import build_structure_coverage
+from apps.dashboard.views import aderencia_status
 from apps.goals.forms import ObjetivoEstrategicoForm
 from apps.goals.models import ObjetivoEstrategico
+from apps.reviews.models import Avaliacao
 from apps.reviews.services.guidance import build_rh_pre_open_checklist
+
+
+def _rh_pre_open_checklist_context() -> dict:
+    """T026 / FR-008: reusa ``build_rh_pre_open_checklist`` só como apresentação.
+
+    Lê ``apps/reviews/services/guidance.py`` sem alterar advisory → hard-block.
+    Nunca condiciona ``CicloOpenView`` / ``open_cycle`` / ``cycle.py``.
+    """
+    checklist = build_rh_pre_open_checklist()
+    if not checklist.advisory_only:
+        raise AssertionError(
+            'rh_pre_open_checklist deve permanecer advisory_only=True '
+            '(FR-008); não condicionar abertura de ciclo.',
+        )
+    return {
+        'rh_pre_open_checklist': checklist,
+        'rh_checklist_has_blockers': checklist.has_blockers,
+    }
 
 
 class AdminCyclesMixin(LoginRequiredMixin, RequiresAdminMixin):
@@ -62,9 +93,7 @@ class CicloListView(AdminCyclesMixin, HtmxPaginatedListMixin, ListView):
         Não condiciona Abrir / ``CicloOpenView`` / ``open_cycle``.
         """
         context = super().get_context_data(**kwargs)
-        checklist = build_rh_pre_open_checklist()
-        context['rh_pre_open_checklist'] = checklist
-        context['rh_checklist_has_blockers'] = checklist.has_blockers
+        context.update(_rh_pre_open_checklist_context())
         return context
 
 
@@ -111,8 +140,126 @@ class CicloDeleteView(AdminCyclesMixin, DeleteView):
         return response
 
 
+class CicloDetailView(AdminCyclesMixin, DetailView):
+    """Painel gerencial read-only do ciclo (US3 / FR-007).
+
+    AuthZ = ``AdminCyclesMixin`` (LoginRequired + RequiresAdmin). Sem
+    ``ScopedObjectMixin`` — Ciclo não tem dono; precedente admin-only.
+    Não toca ``CicloOpenView`` / ``close`` / ``cycle.py``.
+    """
+
+    model = Ciclo
+    template_name = 'cycles/ciclo_detail.html'
+    context_object_name = 'ciclo'
+
+    def get_context_data(self, **kwargs):
+        """Composição read-only: progresso + cobertura + aderência + checklist.
+
+        Checklist = reuse T026 de ``build_rh_pre_open_checklist`` (008 / FR-008);
+        avisório — não condiciona Abrir ciclo / ``open_cycle``.
+        """
+        context = super().get_context_data(**kwargs)
+        ciclo = self.object
+
+        # Escopo já resolvido pelo AuthZ admin — builder só recebe visible.
+        visible = get_visible_users(self.request.user).filter(is_active=True)
+        cobertura = build_structure_coverage(visible, ciclo)
+
+        context['chart_ciclo_progresso'] = self._chart_ciclo_progresso(ciclo)
+        context['avaliacoes_resumo'] = self._avaliacoes_resumo(ciclo)
+        context['cobertura_resumo'] = cobertura['resumo']
+        context['chart_cobertura_area'] = cobertura['chart_por_area']
+        context['chart_cobertura_cargo'] = cobertura['chart_por_cargo']
+        context['aderencia_resumo'] = self._aderencia_resumo(ciclo)
+        context['chart_aderencia_distribuicao'] = (
+            self._chart_aderencia_distribuicao(ciclo)
+        )
+        context.update(_rh_pre_open_checklist_context())
+        return context
+
+    def _avaliacoes_resumo(self, ciclo: Ciclo) -> dict:
+        totals = Avaliacao.objects.filter(ciclo=ciclo).aggregate(
+            total=Count('pk'),
+            concluidas=Count('pk', filter=Q(concluida=True)),
+        )
+        total = totals['total'] or 0
+        concluidas = totals['concluidas'] or 0
+        percentual = (
+            (Decimal(concluidas) * Decimal('100') / Decimal(total)).quantize(
+                Decimal('0.01'),
+            )
+            if total
+            else None
+        )
+        return {
+            'total': total,
+            'concluidas': concluidas,
+            'percentual_concluidas': percentual,
+        }
+
+    def _aderencia_resumo(self, ciclo: Ciclo) -> dict:
+        agg = AderenciaSnapshot.objects.filter(ciclo=ciclo).aggregate(
+            media=Avg('percentual'),
+            total_lideres=Count('pk'),
+        )
+        media = agg['media']
+        if media is not None:
+            media = Decimal(media).quantize(Decimal('0.01'))
+        return {
+            'media': media,
+            'total_lideres': agg['total_lideres'] or 0,
+            'status': aderencia_status(media),
+        }
+
+    def _chart_ciclo_progresso(self, ciclo: Ciclo) -> dict:
+        """Contagem ``Avaliacao.etapa`` no ciclo → payload catálogo (US1)."""
+        etapa_keys = [choice.value for choice in Avaliacao.Etapa]
+        labels_by_key = dict(Avaliacao.Etapa.choices)
+        key_counts = {
+            row['etapa']: int(row['total'])
+            for row in (
+                Avaliacao.objects.filter(ciclo=ciclo)
+                .values('etapa')
+                .annotate(total=Count('pk'))
+            )
+        }
+        return categorical_counts_payload(
+            key_counts,
+            ordered_keys=etapa_keys,
+            labels_by_key=labels_by_key,
+            chart_id='chart-ciclo-progresso',
+            chart_type=CHART_TYPE_BAR_HORIZONTAL,
+            title='Progresso das avaliações no ciclo',
+            empty_message=(
+                'Não há avaliações neste ciclo para exibir progresso.'
+            ),
+            highlight_max=True,
+        )
+
+    def _chart_aderencia_distribuicao(self, ciclo: Ciclo) -> dict:
+        """``AderenciaSnapshot`` do ciclo → doughnut (Status Triad)."""
+        status_keys = [
+            aderencia_status(percentual)
+            for percentual in AderenciaSnapshot.objects.filter(
+                ciclo=ciclo,
+            ).values_list('percentual', flat=True)
+        ]
+        return aderencia_distribution_payload(
+            status_keys,
+            chart_type=CHART_TYPE_DOUGHNUT,
+            title='Distribuição de aderência',
+            empty_message=(
+                'Ainda não há dados de aderência para este ciclo.'
+            ),
+        )
+
+
 class CicloOpenView(AdminCyclesMixin, SingleObjectMixin, View):
-    """Abre o ciclo e cria Avaliacao para colaboradores ativos (FR-015/016)."""
+    """Abre o ciclo e cria Avaliacao para colaboradores ativos (FR-015/016).
+
+    Não lê ``build_rh_pre_open_checklist`` — checklist permanece avisório
+    (T026 / FR-008); abertura segue só ``open_cycle`` / ``cycle.py``.
+    """
 
     model = Ciclo
     http_method_names = ['post', 'options']

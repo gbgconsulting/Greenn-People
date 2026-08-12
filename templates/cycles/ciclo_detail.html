@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ ciclo.nome }} — Ciclo — Greenn People{% endblock %}
+
+{% block content %}
+<header class="mb-6">
+  <div class="flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <p class="mb-1 text-sm text-slate-500">
+        <a href="{% url 'cycles:ciclo_list' %}" class="font-medium text-emerald-700 hover:text-emerald-800">Ciclos</a>
+        <span aria-hidden="true"> / </span>
+        <span>Visão gerencial</span>
+      </p>
+      <h1 class="font-display text-2xl font-semibold text-slate-800">{{ ciclo.nome }}</h1>
+      <p class="mt-1 text-sm text-slate-500">
+        Progresso, cobertura e aderência deste ciclo — com avisos operacionais no final.
+      </p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      {% if ciclo.status == "aberto" %}
+        {% include "components/badge_status.html" with status="ativo" label=ciclo.get_status_display extra_class="mt-1" %}
+      {% else %}
+        {% include "components/badge_status.html" with status="arquivado" label=ciclo.get_status_display extra_class="mt-1" %}
+      {% endif %}
+      {% url 'cycles:ciclo_list' as ciclos_url %}
+      {% include "components/button.html" with label="Voltar à lista" href=ciclos_url variant="secondary" %}
+      {% url 'dashboard:adherence' as adherence_url %}
+      {% include "components/button.html" with label="Ver aderência" href=adherence_url variant="secondary" %}
+    </div>
+  </div>
+  <p class="mt-3 text-sm text-slate-500">
+    {{ ciclo.data_inicio|date:"d/m/Y" }} — {{ ciclo.data_fim|date:"d/m/Y" }}
+  </p>
+</header>
+
+<section class="mb-8 min-w-0" aria-labelledby="ciclo-detail-heading">
+  <div class="mb-3">
+    <h2 id="ciclo-detail-heading" class="font-display text-lg font-medium text-slate-800">
+      Onde o ciclo está
+    </h2>
+    <p class="mt-0.5 text-sm text-slate-500">
+      Resumo do ciclo: se uma seção não tiver dados, ela aparece vazia sem inventar números.
+    </p>
+  </div>
+
+  <div class="managerial-panel">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores do ciclo">
+      {% if avaliacoes_resumo.percentual_concluidas is not None %}
+        {% with val=avaliacoes_resumo.percentual_concluidas|stringformat:"d"|add:"%" %}
+        {% include "components/card.html" with label="Avaliações concluídas" value=val body="Feedback líder + ciência neste ciclo." %}
+        {% endwith %}
+      {% else %}
+        {% include "components/card.html" with label="Avaliações concluídas" value="—" body="Ainda não há avaliações neste ciclo." %}
+      {% endif %}
+
+      {% if cobertura_resumo.has_ciclo and cobertura_resumo.percentual is not None %}
+        {% with val=cobertura_resumo.percentual|stringformat:"d"|add:"%" %}
+        {% include "components/card.html" with label="Cobertura" value=val body="Colaboradores ativos com avaliação neste ciclo." %}
+        {% endwith %}
+      {% elif cobertura_resumo.has_ciclo %}
+        {% include "components/card.html" with label="Cobertura" value="—" body="Sem colaboradores ativos no escopo." %}
+      {% else %}
+        {% include "components/card.html" with label="Cobertura" value="—" body="Ciclo indisponível para cobertura." %}
+      {% endif %}
+
+      {% if rh_pre_open_checklist %}
+        {% if rh_checklist_has_blockers %}
+          {% with blockers=rh_pre_open_checklist.items|length %}
+          {% include "components/card.html" with label="Pendências do checklist" value=blockers badge_status="pendente" badge_label="Revisar" body="Não impede abrir o ciclo — veja o checklist abaixo." %}
+          {% endwith %}
+        {% else %}
+          {% include "components/card.html" with label="Pendências do checklist" value="0" badge_status="concluida" badge_label="Em dia" body="Sem pendências de cadastro no momento." %}
+        {% endif %}
+      {% else %}
+        {% include "components/card.html" with label="Pendências do checklist" value="—" body="Checklist operacional indisponível." %}
+      {% endif %}
+    </div>
+
+    <div class="min-w-0" aria-labelledby="progresso-heading">
+      <div class="mb-3">
+        <h3 id="progresso-heading" class="font-display text-lg font-medium text-slate-800">
+          Progresso das avaliações
+        </h3>
+        <p class="mt-0.5 text-sm text-slate-500">
+          Quantidade de avaliações em cada etapa do ciclo.
+        </p>
+      </div>
+      {% if chart_ciclo_progresso.has_data %}
+        {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" kpi_label="Total" kpi_value=chart_ciclo_progresso.total kpi_body="avaliações no ciclo" insight="A etapa com mais avaliações fica em destaque." %}
+      {% else %}
+        {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" %}
+      {% endif %}
+    </div>
+
+    <div class="min-w-0" aria-labelledby="cobertura-ciclo-heading">
+      <div class="mb-3">
+        <h3 id="cobertura-ciclo-heading" class="font-display text-lg font-medium text-slate-800">
+          Cobertura por dimensão
+        </h3>
+        <p class="mt-0.5 text-sm text-slate-500">
+          Percentual de pessoas com avaliação, por área e por cargo.
+        </p>
+      </div>
+      <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {% if chart_cobertura_area.has_data %}
+          {% include "dashboard/_chart_block.html" with chart=chart_cobertura_area script_id="chart-cobertura-area" insight="Áreas com menor cobertura ficam em destaque." %}
+        {% else %}
+          {% include "dashboard/_chart_block.html" with chart=chart_cobertura_area script_id="chart-cobertura-area" %}
+        {% endif %}
+
+        {% if chart_cobertura_cargo.has_data %}
+          {% include "dashboard/_chart_block.html" with chart=chart_cobertura_cargo script_id="chart-cobertura-cargo" insight="Cargos com menor cobertura ficam em destaque." %}
+        {% else %}
+          {% include "dashboard/_chart_block.html" with chart=chart_cobertura_cargo script_id="chart-cobertura-cargo" %}
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="min-w-0" aria-labelledby="aderencia-ciclo-heading">
+      <div class="mb-3">
+        <h3 id="aderencia-ciclo-heading" class="font-display text-lg font-medium text-slate-800">
+          Aderência da liderança
+        </h3>
+        <p class="mt-0.5 text-sm text-slate-500">
+          Como anda a aderência dos líderes neste ciclo.
+        </p>
+      </div>
+
+      <div class="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2" aria-label="Resumo de aderência">
+        {% if aderencia_resumo.media is not None %}
+          {% with val=aderencia_resumo.media|stringformat:"d"|add:"%" %}
+          {% include "components/card.html" with label="Aderência média" value=val badge_status=aderencia_resumo.status body="Média dos líderes neste ciclo." %}
+          {% endwith %}
+        {% else %}
+          {% include "components/card.html" with label="Aderência média" value="—" body="Ainda não há dados de aderência neste ciclo." %}
+        {% endif %}
+        {% include "components/card.html" with label="Líderes com aderência" value=aderencia_resumo.total_lideres body="Líderes com aderência registrada neste ciclo." %}
+      </div>
+
+      {% if chart_aderencia_distribuicao.has_data %}
+        {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" kpi_label="Líderes" kpi_value=chart_aderencia_distribuicao.total kpi_body="com aderência no ciclo" insight="Distribuição em alta, média e baixa — o centro mostra o total." %}
+      {% else %}
+        {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" %}
+      {% endif %}
+    </div>
+
+    <div class="min-w-0" aria-labelledby="checklist-ciclo-heading">
+      <div class="mb-3">
+        <h3 id="checklist-ciclo-heading" class="font-display text-lg font-medium text-slate-800">
+          Checklist operacional
+        </h3>
+        <p class="mt-0.5 text-sm text-slate-500">
+          Pendências de cadastro para revisar — não impedem abrir o ciclo.
+        </p>
+      </div>
+
+      {% if rh_pre_open_checklist %}
+      <section
+        id="rh-pre-open-checklist"
+        class="rounded-xl border {% if rh_checklist_has_blockers %}border-amber-200 bg-amber-50{% else %}border-emerald-200 bg-emerald-50/60{% endif %} px-4 py-4"
+        aria-labelledby="rh-pre-open-checklist-title"
+        data-component="rh-pre-open-checklist"
+        data-advisory-only="true"
+      >
+        <h4
+          id="rh-pre-open-checklist-title"
+          class="font-display text-base font-medium tracking-tight text-slate-800"
+        >
+          Antes de abrir um ciclo
+        </h4>
+        <p class="mt-1 font-ui text-sm leading-relaxed text-slate-600">
+          Revise pendências de vínculo e cargos. Abrir ciclo continua disponível mesmo com avisos.
+        </p>
+
+        {% if rh_checklist_has_blockers %}
+        <ul class="mt-3 list-none space-y-2" role="list">
+          {% for item in rh_pre_open_checklist.items %}
+          <li
+            class="flex min-w-0 flex-col gap-2 rounded-lg border border-amber-200/80 bg-white/70 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+            data-blocker-kind="{{ item.kind }}"
+          >
+            <span class="min-w-0 font-ui text-sm leading-relaxed text-amber-950">
+              {{ item.label }}
+            </span>
+            {% if item.fix_url_name == 'organization:user_pending' %}
+              {% url 'organization:user_pending' as fix_href %}
+              <a
+                href="{{ fix_href }}"
+                class="inline-flex min-h-11 w-full shrink-0 items-center font-ui text-sm font-medium text-emerald-700 hover:text-emerald-800 sm:w-auto sm:min-h-0"
+              >Corrigir vínculos</a>
+            {% elif item.fix_url_name == 'organization:cargo_list' %}
+              {% url 'organization:cargo_list' as fix_href %}
+              <a
+                href="{{ fix_href }}"
+                class="inline-flex min-h-11 w-full shrink-0 items-center font-ui text-sm font-medium text-emerald-700 hover:text-emerald-800 sm:w-auto sm:min-h-0"
+              >Revisar cargos</a>
+            {% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="mt-3 font-ui text-sm text-emerald-900" role="status" data-field="no-blockers">
+          Sem pendências operacionais neste escopo (usuários sem área/cargo e cargos sem competências/pesos).
+        </p>
+        {% endif %}
+      </section>
+      {% else %}
+        {% include "components/empty_state.html" with title="Checklist indisponível" message="Não foi possível montar o checklist operacional nesta página." %}
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" defer></script>
+<script src="{% static 'js/dashboard_charts.js' %}" defer></script>
+{% endblock %}

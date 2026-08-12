@@ -3,7 +3,7 @@
 {% block title %}Usuários pendentes — Greenn People{% endblock %}
 
 {% block content %}
-<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+<header class="mb-6 flex flex-wrap items-start justify-between gap-3">
   <div>
     <h1 class="font-display text-2xl font-semibold text-slate-800">Usuários pendentes de vínculo</h1>
     <p class="mt-1 font-ui text-sm text-slate-500">
@@ -16,9 +16,8 @@
     {% url 'organization:user_list' as list_url %}
     {% include "components/button.html" with label="Todos os usuários" href=list_url variant="secondary" %}
   </div>
-</div>
+</header>
 
-{# Contexto avisório FR-011/012 — fora de #list-container para sobreviver ao HTMX. #}
 <section
   id="rh-pending-guidance"
   class="mb-5 rounded-xl border {% if users %}border-amber-200 bg-amber-50{% else %}border-emerald-200 bg-emerald-50/60{% endif %} px-4 py-4"

@@ -11,7 +11,7 @@ class Avaliacao(TimeStampedModel):
     """Per-user evaluation within a performance cycle (aggregated stage)."""
 
     class Etapa(models.TextChoices):
-        INPUT_METAS = 'input_metas', 'Input de metas'
+        INPUT_METAS = 'input_metas', 'Metas'
         APROVACAO_METAS = 'aprovacao_metas', 'Aprovação de metas'
         RESULTADOS = 'resultados', 'Resultados'
         APROVACAO_RESULTADOS = 'aprovacao_resultados', 'Aprovação de resultados'

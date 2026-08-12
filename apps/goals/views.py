@@ -5,7 +5,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django.template.loader import render_to_string
-from django.urls import reverse, reverse_lazy
+from django.urls import NoReverseMatch, reverse, reverse_lazy
 from django.views import View
 from django.views.generic import (
     CreateView,
@@ -39,6 +39,10 @@ from apps.goals.services.approval import (
 )
 from apps.reviews.models import Avaliacao
 from apps.reviews.services.evaluation import build_fr005_context
+from apps.reviews.services.guidance import (
+    detect_owner_correction_kind,
+    resolve_next_step,
+)
 
 _COLLABORATOR_ADVANCE_ETAPAS = frozenset(
     {
@@ -46,6 +50,9 @@ _COLLABORATOR_ADVANCE_ETAPAS = frozenset(
         Avaliacao.Etapa.RESULTADOS,
     },
 )
+
+# CTAs 008 pouco úteis nesta superfície (já há painel ou copy local).
+_EXPECTATIONS_SURFACE_CTA_SKIP = frozenset({'dashboard:personal'})
 
 
 def _proximo_passo_pos_reprovacao(avaliacao, meta, *, is_owner, pode_progresso):
@@ -238,7 +245,59 @@ class ExpectationsView(LoginRequiredMixin, TemplateView):
 
         context.update(fr005)
         context['metas'] = metas
+        # T034: CTA compacto via mapa 008 — sem hub next_step/stepper nesta tela.
+        context['surface_cta'] = self._surface_cta_context(fr005)
         return context
+
+    def _surface_cta_context(self, fr005: dict) -> dict | None:
+        """CTA mínimo reusando ``resolve_next_step`` (sem predicado AuthZ novo)."""
+        avaliacao = fr005.get('avaliacao')
+        ciclo_aberto = fr005.get('ciclo_aberto')
+        has_open_ciclo = ciclo_aberto is not None
+        # Mesmo contrato do painel pessoal: vínculo ou avaliação ausente.
+        vinculo_pendente = bool(fr005.get('vinculo_pendente')) or (
+            has_open_ciclo and avaliacao is None
+        )
+        # Copy local de vínculo/empty já cobre estes estados — sem CTA extra.
+        if vinculo_pendente or not has_open_ciclo:
+            return None
+
+        etapa = None
+        avaliacao_pk = None
+        concluida = False
+        owner_correction_kind = None
+        if avaliacao is not None:
+            etapa = avaliacao.etapa
+            avaliacao_pk = avaliacao.pk
+            concluida = bool(avaliacao.concluida)
+            owner_correction_kind = detect_owner_correction_kind(avaliacao)
+
+        next_step = resolve_next_step(
+            role='colaborador',
+            etapa=etapa,
+            avaliacao_pk=avaliacao_pk,
+            has_open_ciclo=has_open_ciclo,
+            vinculo_pendente=False,
+            concluida=concluida,
+            owner_correction_kind=owner_correction_kind,
+        )
+        if (
+            not next_step.cta_label
+            or not next_step.cta_url_name
+            or next_step.cta_url_name in _EXPECTATIONS_SURFACE_CTA_SKIP
+        ):
+            return None
+        try:
+            href = reverse(
+                next_step.cta_url_name,
+                kwargs=dict(next_step.cta_kwargs or {}),
+            )
+        except NoReverseMatch:
+            return None
+        return {
+            'label': next_step.cta_label,
+            'href': href,
+        }
 
 
 class MetaListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin, ListView):
@@ -344,7 +403,7 @@ class MetaCreateView(LoginRequiredMixin, CreateView):
         ):
             messages.error(
                 request,
-                'Só é possível cadastrar metas na etapa de input de metas '
+                'Só é possível cadastrar metas na etapa de metas '
                 'de um ciclo aberto.',
             )
             return HttpResponseRedirect(reverse('goals:meta_list'))
@@ -422,7 +481,7 @@ class MetaUpdateView(LoginRequiredMixin, ScopedObjectMixin, UpdateView):
 
 
 class MetaDeleteView(LoginRequiredMixin, ScopedObjectMixin, DeleteView):
-    """Exclusão de meta pendente na etapa de input de metas."""
+    """Exclusão de meta pendente na etapa de metas."""
 
     model = Meta
     template_name = 'goals/meta_confirm_delete.html'
@@ -444,7 +503,7 @@ class MetaDeleteView(LoginRequiredMixin, ScopedObjectMixin, DeleteView):
         if not pode_excluir:
             messages.error(
                 request,
-                'Só é possível excluir metas pendentes na etapa de input de metas.',
+                'Só é possível excluir metas pendentes na etapa de metas.',
             )
             return HttpResponseRedirect(reverse('goals:meta_list'))
         return super().dispatch(request, *args, **kwargs)

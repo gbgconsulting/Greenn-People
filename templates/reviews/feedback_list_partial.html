@@ -29,7 +29,6 @@
           {% endif %}
         {% endif %}
         {% if row.pode_dar_ciencia %}
-        {# CTA no cabeçalho (FR-010): ação óbvia sem rolar o conteúdo #}
         <form
           method="post"
           action="{% url 'reviews:feedback_acknowledge' row.feedback.pk %}"

@@ -4,42 +4,44 @@
 
 {% block content %}
 <div class="mx-auto max-w-lg">
-  <h1 class="mb-1 text-2xl font-semibold text-slate-800">
-    {% if object %}Editar competência{% else %}Nova competência{% endif %}
-  </h1>
-  <p class="mb-6 text-slate-500">Vincule a competência a uma escala de avaliação.</p>
+  <header class="mb-6">
+    <h1 class="font-display text-2xl font-semibold text-slate-800">
+      {% if object %}Editar competência{% else %}Nova competência{% endif %}
+    </h1>
+    <p class="mt-1 font-ui text-sm text-slate-500">Vincule a competência a uma escala de avaliação.</p>
+  </header>
 
-  <form method="post" novalidate class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+  <form method="post" novalidate class="rounded-xl border border-line bg-surface-card p-6">
     {% csrf_token %}
 
     {% if form.non_field_errors %}
-      <div class="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700" role="alert">
+      <div class="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 font-ui text-sm text-rose-700" role="alert">
         {% for error in form.non_field_errors %}{{ error }}{% endfor %}
       </div>
     {% endif %}
 
     <div class="mb-4">
-      <label for="{{ form.nome.id_for_label }}" class="mb-1 block text-sm font-medium text-slate-700">{{ form.nome.label }}</label>
+      <label for="{{ form.nome.id_for_label }}" class="mb-1 block font-ui text-sm font-medium text-slate-700">{{ form.nome.label }}</label>
       {{ form.nome }}
-      {% if form.nome.errors %}<p class="mt-1 text-xs text-rose-600" role="alert">{{ form.nome.errors.0 }}</p>{% endif %}
+      {% if form.nome.errors %}<p class="mt-1 font-ui text-xs text-rose-600" role="alert">{{ form.nome.errors.0 }}</p>{% endif %}
     </div>
 
     <div class="mb-4">
-      <label for="{{ form.descricao.id_for_label }}" class="mb-1 block text-sm font-medium text-slate-700">{{ form.descricao.label }}</label>
+      <label for="{{ form.descricao.id_for_label }}" class="mb-1 block font-ui text-sm font-medium text-slate-700">{{ form.descricao.label }}</label>
       {{ form.descricao }}
-      {% if form.descricao.errors %}<p class="mt-1 text-xs text-rose-600" role="alert">{{ form.descricao.errors.0 }}</p>{% endif %}
+      {% if form.descricao.errors %}<p class="mt-1 font-ui text-xs text-rose-600" role="alert">{{ form.descricao.errors.0 }}</p>{% endif %}
     </div>
 
     <div class="mb-4">
-      <label for="{{ form.tipo.id_for_label }}" class="mb-1 block text-sm font-medium text-slate-700">{{ form.tipo.label }}</label>
+      <label for="{{ form.tipo.id_for_label }}" class="mb-1 block font-ui text-sm font-medium text-slate-700">{{ form.tipo.label }}</label>
       {{ form.tipo }}
-      {% if form.tipo.errors %}<p class="mt-1 text-xs text-rose-600" role="alert">{{ form.tipo.errors.0 }}</p>{% endif %}
+      {% if form.tipo.errors %}<p class="mt-1 font-ui text-xs text-rose-600" role="alert">{{ form.tipo.errors.0 }}</p>{% endif %}
     </div>
 
     <div class="mb-6">
-      <label for="{{ form.escala.id_for_label }}" class="mb-1 block text-sm font-medium text-slate-700">{{ form.escala.label }}</label>
+      <label for="{{ form.escala.id_for_label }}" class="mb-1 block font-ui text-sm font-medium text-slate-700">{{ form.escala.label }}</label>
       {{ form.escala }}
-      {% if form.escala.errors %}<p class="mt-1 text-xs text-rose-600" role="alert">{{ form.escala.errors.0 }}</p>{% endif %}
+      {% if form.escala.errors %}<p class="mt-1 font-ui text-xs text-rose-600" role="alert">{{ form.escala.errors.0 }}</p>{% endif %}
     </div>
 
     <div class="flex flex-wrap gap-3">

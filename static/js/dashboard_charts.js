@@ -3,6 +3,12 @@
  * Carregado só em páginas de dashboard com gráfico (admin → team → personal).
  * Chart.js UMD (cdn) deve estar disponível como `Chart` global antes deste arquivo.
  *
+ * Catálogo (contratos/chart-catalog.md · Freeze A):
+ *   bar | doughnut | doughnut_or_bar | bar_grouped | bar_horizontal | area
+ * Valor central no doughnut + datalabels em barras: plugins inline (afterDraw /
+ * afterDatasetsDraw) — sem plugin npm / lib nova.
+ * Barras limpas (DS): grid e ticks de valor off; leitura via datalabel / legend / KPI.
+ *
  * Convenção DOM (com _chart_block.html):
  *   <canvas data-chart-payload="script-id"></canvas>
  *   {{ payload|json_script:"script-id" }}
@@ -20,12 +26,16 @@
 
   /* Tokens visuais DS v2 (espelham --font-ui / paleta em input.css) — só options Chart.js. */
   var FONT_UI = "'Source Sans 3', ui-sans-serif, system-ui, sans-serif";
+  var COLOR_INK = '#0f172a';
   var COLOR_INK_MUTED = '#64748b';
-  var COLOR_LINE = '#e2e8f0';
   var COLOR_TOOLTIP_BG = '#1e293b';
+  /* Acabamento mono teal (não-semântico) — área / séries sem cor no payload. */
+  var COLOR_FINISH_TEAL = '#0d9488';
   var BAR_RADIUS = 6;
   var BAR_MAX_THICKNESS = 40;
   var DOUGHNUT_CUTOUT = '68%';
+  var AREA_TENSION = 0.35;
+  var AREA_FILL_ALPHA = 0.22;
 
   function chartFont(overrides) {
     var base = { family: FONT_UI, size: 12, weight: '400' };
@@ -51,11 +61,76 @@
     }
   }
 
+  /**
+   * Mapeia type do payload → tipo Chart.js nativo.
+   * bar_horizontal → bar (+ indexAxis y); area → line (+ fill).
+   */
   function resolveChartType(payloadType) {
     if (payloadType === 'doughnut' || payloadType === 'doughnut_or_bar') {
       return 'doughnut';
     }
+    if (payloadType === 'area') {
+      return 'line';
+    }
     return 'bar';
+  }
+
+  function hexToRgba(hex, alpha) {
+    var raw = String(hex || '').replace('#', '');
+    if (raw.length === 3) {
+      raw = raw[0] + raw[0] + raw[1] + raw[1] + raw[2] + raw[2];
+    }
+    if (raw.length !== 6) {
+      return 'rgba(13, 148, 136, ' + alpha + ')';
+    }
+    var r = parseInt(raw.slice(0, 2), 16);
+    var g = parseInt(raw.slice(2, 4), 16);
+    var b = parseInt(raw.slice(4, 6), 16);
+    return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + alpha + ')';
+  }
+
+  /** Texto do centro: center_text (opcional) ou total do payload — sem inventar %. */
+  function resolveDoughnutCenterText(payload) {
+    if (payload.center_text !== null && payload.center_text !== undefined && payload.center_text !== '') {
+      return String(payload.center_text);
+    }
+    if (payload.total !== null && payload.total !== undefined && payload.total !== '') {
+      return String(payload.total);
+    }
+    return '';
+  }
+
+  /**
+   * Plugin inline Chart.js 4.x — valor central no doughnut (research R1).
+   * Sem chartjs-plugin-datalabels / npm.
+   */
+  function doughnutCenterPlugin(centerText) {
+    return {
+      id: 'doughnutCenterValue',
+      afterDraw: function (chart) {
+        if (!centerText || chart.config.type !== 'doughnut') {
+          return;
+        }
+        var meta = chart.getDatasetMeta(0);
+        if (!meta || !meta.data || !meta.data.length) {
+          return;
+        }
+        var anchor = meta.data[0];
+        if (!anchor || anchor.x === undefined || anchor.y === undefined) {
+          return;
+        }
+        var narrow = isNarrowViewport();
+        var ctx = chart.ctx;
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = COLOR_INK;
+        ctx.font =
+          (narrow ? '600 18px ' : '600 22px ') + FONT_UI;
+        ctx.fillText(centerText, anchor.x, anchor.y);
+        ctx.restore();
+      },
+    };
   }
 
   function asNullableNumber(value) {
@@ -112,7 +187,7 @@
    * Legenda Chart.js com texto + valor (FR-007): não depende só da cor.
    * Doughnut/pie: um item por faixa (labels).
    * Multi-série (grouped): um item por série.
-   * Barra única categórica: oculta (eixo + figcaption cobrem).
+   * Barra única categórica: oculta (datalabel + figcaption cobrem).
    */
   function legendLabelWithValue(chart) {
     var data = chart.data || {};
@@ -158,16 +233,98 @@
     });
   }
 
-  function subtleGrid() {
+  function axisBorderHidden() {
+    return { display: false };
+  }
+
+  /**
+   * Escalas “barras limpas” (DS Charts polish):
+   * grid off; ticks de valor off (leitura via datalabel / legend / KPI);
+   * eixo de categoria só com labels textuais.
+   * `mode`: 'bar' | 'area' — area mantém o mesmo padrão limpo (grid mínimo = off).
+   */
+  function cleanScales(horizontal, mode) {
+    var narrow = isNarrowViewport();
+    var tickFont = chartFont({ size: narrow ? 10 : 12, weight: '400' });
+    var isArea = mode === 'area';
+    var categoryAxis = {
+      grid: { display: false },
+      border: axisBorderHidden(),
+      ticks: {
+        autoSkip: isArea ? true : false,
+        maxRotation: horizontal ? 0 : narrow ? 45 : 0,
+        minRotation: 0,
+        color: COLOR_INK_MUTED,
+        font: tickFont,
+        padding: 6,
+      },
+    };
+    var valueAxis = {
+      beginAtZero: true,
+      border: axisBorderHidden(),
+      grid: { display: false },
+      ticks: {
+        display: false,
+      },
+      // Folga para datalabels não colarem na borda do canvas.
+      grace: isArea ? '0%' : '8%',
+    };
+
+    if (horizontal) {
+      return {
+        x: valueAxis,
+        y: categoryAxis,
+      };
+    }
     return {
-      color: COLOR_LINE,
-      lineWidth: 1,
-      drawTicks: false,
+      x: categoryAxis,
+      y: valueAxis,
     };
   }
 
-  function axisBorderHidden() {
-    return { display: false };
+  /**
+   * Plugin inline — valor na barra (sem chartjs-plugin-datalabels / npm).
+   * Substitui ticks do eixo de valor (DS: priorizar rótulos de dados).
+   */
+  function barValueLabelsPlugin(horizontal) {
+    return {
+      id: 'barValueLabels',
+      afterDatasetsDraw: function (chart) {
+        if (chart.config.type !== 'bar') {
+          return;
+        }
+        var ctx = chart.ctx;
+        var narrow = isNarrowViewport();
+        var fontSize = narrow ? 11 : 12;
+        ctx.save();
+        ctx.font = '600 ' + fontSize + 'px ' + FONT_UI;
+        ctx.fillStyle = COLOR_INK;
+        chart.data.datasets.forEach(function (dataset, datasetIndex) {
+          var meta = chart.getDatasetMeta(datasetIndex);
+          if (!meta || meta.hidden) {
+            return;
+          }
+          meta.data.forEach(function (element, index) {
+            var raw = dataset.data[index];
+            if (raw === null || raw === undefined) {
+              return;
+            }
+            var text = String(raw);
+            var pos = element.tooltipPosition();
+            if (horizontal) {
+              ctx.textAlign = 'left';
+              ctx.textBaseline = 'middle';
+              ctx.fillText(text, pos.x + 8, pos.y);
+            } else {
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'bottom';
+              ctx.fillText(text, pos.x, pos.y - 6);
+            }
+          });
+        });
+        ctx.restore();
+      },
+    };
   }
 
   function basePlugins(showLegend) {
@@ -207,46 +364,10 @@
     };
   }
 
-  function barScales(horizontal) {
-    var narrow = isNarrowViewport();
-    var tickFont = chartFont({ size: narrow ? 10 : 12, weight: '400' });
-    var categoryAxis = {
-      grid: { display: false },
-      border: axisBorderHidden(),
-      ticks: {
-        autoSkip: false,
-        maxRotation: horizontal ? 0 : narrow ? 60 : 45,
-        minRotation: horizontal ? 0 : narrow ? 45 : 0,
-        color: COLOR_INK_MUTED,
-        font: tickFont,
-      },
-    };
-    var valueAxis = {
-      beginAtZero: true,
-      border: axisBorderHidden(),
-      grid: subtleGrid(),
-      ticks: {
-        precision: 0,
-        color: COLOR_INK_MUTED,
-        font: tickFont,
-      },
-    };
-
-    if (horizontal) {
-      return {
-        x: valueAxis,
-        y: categoryAxis,
-      };
-    }
-    return {
-      x: categoryAxis,
-      y: valueAxis,
-    };
-  }
-
   function buildGroupedConfig(payload) {
     var labels = payload.labels || [];
-    var datasets = (payload.series || []).map(function (serie, index) {
+    var seriesList = payload.series || [];
+    var datasets = seriesList.map(function (serie, index) {
       var color =
         serie.color ||
         GROUPED_DEFAULTS[serie.key] ||
@@ -265,6 +386,8 @@
     });
     // Gaps com vários nomes: eixo Y no mobile (~375px) mantém rótulos legíveis.
     var horizontal = isNarrowViewport() && labels.length > 2;
+    // Datalabels em comparativos curtos (DS); muitos pontos → tooltip + figcaption.
+    var showValueLabels = labels.length * Math.max(seriesList.length, 1) <= 12;
 
     return {
       type: 'bar',
@@ -275,8 +398,14 @@
         // Altura vem de .dashboard-chart-canvas (SC-006).
         maintainAspectRatio: false,
         plugins: basePlugins(true),
-        scales: barScales(horizontal),
+        scales: cleanScales(horizontal, 'bar'),
+        layout: {
+          padding: horizontal
+            ? { top: 4, right: 28, bottom: 4, left: 4 }
+            : { top: 18, right: 8, bottom: 4, left: 4 },
+        },
       },
+      plugins: showValueLabels ? [barValueLabelsPlugin(horizontal)] : [],
     };
   }
 
@@ -287,8 +416,9 @@
     var colors =
       payload.colors && payload.colors.length ? payload.colors : STATUS_TRIAD;
     var isDoughnut = type === 'doughnut';
+    var horizontal = payload.type === 'bar_horizontal';
     // Barra categórica: cores por faixa quando o payload traz triad/lista;
-    // legenda Chart.js oculta (eixo + figcaption). Doughnut: legenda com texto.
+    // legenda Chart.js oculta (datalabel + figcaption). Doughnut: legenda com texto.
     var perCategoryColors =
       isDoughnut || (colors.length > 1 && colors.length >= labels.length);
     var fill = perCategoryColors ? colors : colors[0] || STATUS_TRIAD[0];
@@ -309,26 +439,117 @@
       responsive: true,
       maintainAspectRatio: false,
       plugins: basePlugins(isDoughnut),
-      scales: isDoughnut ? undefined : barScales(),
+      scales: isDoughnut ? undefined : cleanScales(horizontal, 'bar'),
     };
+    if (horizontal) {
+      options.indexAxis = 'y';
+      options.layout = { padding: { top: 4, right: 32, bottom: 4, left: 4 } };
+    } else if (!isDoughnut) {
+      options.layout = { padding: { top: 18, right: 8, bottom: 4, left: 4 } };
+    }
     if (isDoughnut) {
       options.cutout = DOUGHNUT_CUTOUT;
       options.layout = { padding: 4 };
     }
 
-    return {
+    var config = {
       type: type,
       data: {
         labels: labels,
         datasets: [dataset],
       },
       options: options,
+      plugins: [],
+    };
+
+    if (isDoughnut) {
+      var centerText = resolveDoughnutCenterText(payload);
+      if (centerText) {
+        config.plugins.push(doughnutCenterPlugin(centerText));
+      }
+    } else {
+      config.plugins.push(barValueLabelsPlugin(horizontal));
+    }
+
+    return config;
+  }
+
+  /**
+   * Tendência temporal: Chart.js `line` + fill (type payload `area`).
+   * Aceita `values` (série única) ou `series` (multi-área) — sem inventar pontos.
+   */
+  function buildAreaConfig(payload) {
+    var labels = payload.labels || [];
+    var seriesList = payload.series || [];
+    var datasets;
+    var showLegend;
+
+    if (seriesList.length) {
+      showLegend = true;
+      datasets = seriesList.map(function (serie, index) {
+        var color =
+          serie.color ||
+          GROUPED_DEFAULTS[serie.key] ||
+          (payload.colors && payload.colors[index]) ||
+          COLOR_FINISH_TEAL;
+        return {
+          label: serie.label || serie.key || 'Série ' + (index + 1),
+          data: (serie.values || []).map(asNullableNumber),
+          borderColor: color,
+          backgroundColor: hexToRgba(color, AREA_FILL_ALPHA),
+          fill: true,
+          tension: AREA_TENSION,
+          borderWidth: 2,
+          pointRadius: isNarrowViewport() ? 2 : 3,
+          pointHoverRadius: 5,
+          pointBackgroundColor: color,
+          spanGaps: false,
+        };
+      });
+    } else {
+      showLegend = false;
+      var color =
+        (payload.colors && payload.colors[0]) || COLOR_FINISH_TEAL;
+      datasets = [
+        {
+          label: payload.title || '',
+          data: (payload.values || []).map(asNullableNumber),
+          borderColor: color,
+          backgroundColor: hexToRgba(color, AREA_FILL_ALPHA),
+          fill: true,
+          tension: AREA_TENSION,
+          borderWidth: 2,
+          pointRadius: isNarrowViewport() ? 2 : 3,
+          pointHoverRadius: 5,
+          pointBackgroundColor: color,
+          spanGaps: false,
+        },
+      ];
+    }
+
+    return {
+      type: 'line',
+      data: { labels: labels, datasets: datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: basePlugins(showLegend),
+        // Area: labels de categoria; eixo de valor e grid off (DS — limpo).
+        scales: cleanScales(false, 'area'),
+        layout: { padding: { top: 8, right: 8, bottom: 4, left: 4 } },
+        elements: {
+          line: { borderJoinStyle: 'round' },
+        },
+      },
     };
   }
 
   function buildConfig(payload) {
     if (payload.type === 'bar_grouped') {
       return buildGroupedConfig(payload);
+    }
+    if (payload.type === 'area') {
+      return buildAreaConfig(payload);
     }
     return buildSingleSeriesConfig(payload);
   }

@@ -104,7 +104,6 @@
   </div>
 
   <div class="flex flex-col gap-4 xl:flex-row xl:items-start">
-    {# Região de resultados: loading (aria-busy) ≠ empty definitivo (FR-005 / T026) #}
     <div
       id="matrix-results"
       class="relative min-w-0 flex-1"
@@ -116,7 +115,6 @@
       </div>
 
       {% if total_classificados == 0 %}
-      {# Empty definitivo: Freeze empty_state — sem grade vazia enganosa #}
       <div
         id="ninebox-matrix-empty"
         class="table-frame px-4 py-10 sm:px-6 sm:py-12"
@@ -137,7 +135,6 @@
         data-move-url-template="{% url 'talent:matrix_move' 999999999 %}"
       >
         <div class="inline-grid min-w-full gap-0 overflow-hidden rounded-lg border border-line" style="grid-template-columns: 5.5rem repeat(3, minmax(10rem, 1fr));">
-          {# Cabeçalho: eixo potencial (rótulo textual além da cor — SC-006 / T028) #}
           <div class="bg-slate-50/80 p-2" aria-hidden="true"></div>
           {% for label in potencial_labels %}
           <div class="border-b border-l border-line bg-slate-50/80 px-2 py-2.5 text-center text-xs font-medium uppercase tracking-wide text-ink-muted">
@@ -158,7 +155,6 @@
       {% endif %}
     </div>
 
-    {# Shell do drawer: indicador local fora do swap target (SC-004 / T017) #}
     <aside
       class="relative w-full shrink-0 rounded-lg border border-line bg-surface-card p-4 xl:sticky xl:top-4 xl:w-80"
       aria-label="Detalhe da classificação"
@@ -173,7 +169,6 @@
         aria-busy="false"
         data-drawer-state="idle"
       >
-        {# Placeholder idle — NÃO é empty definitivo de filtro/escopo #}
         <div data-drawer-placeholder="idle">
           {% include "components/empty_state.html" with title="Detalhe" message="Selecione uma pessoa na grade para inspecionar a classificação." %}
         </div>

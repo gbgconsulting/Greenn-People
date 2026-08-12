@@ -1,22 +1,22 @@
 <div id="list-container">
 <div class="table-frame">
-  <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
-    <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+  <table>
+    <thead>
       <tr>
-        <th class="px-4 py-3 font-medium">Colaborador</th>
-        <th class="px-4 py-3 font-medium">Área</th>
-        <th class="px-4 py-3 font-medium">Cargo</th>
-        <th class="px-4 py-3 font-medium">Etapa</th>
-        <th class="px-4 py-3 font-medium">Nota líder</th>
-        <th class="px-4 py-3 font-medium text-right">Ações</th>
+        <th>Colaborador</th>
+        <th>Área</th>
+        <th>Cargo</th>
+        <th>Etapa</th>
+        <th>Nota líder</th>
+        <th class="text-right">Ações</th>
       </tr>
     </thead>
-    <tbody class="divide-y divide-slate-100">
+    <tbody>
       {% for row in avaliacao_rows %}
       <tr
-        class="{% if row.is_self %}border-l-4 border-l-emerald-500 bg-emerald-50/30 hover:bg-emerald-50/50{% else %}hover:bg-slate-50{% endif %}"
+        class="{% if row.is_self %}border-l-4 border-l-emerald-500 bg-emerald-50/30 hover:bg-emerald-50/50{% endif %}"
       >
-        <td class="px-4 py-3">
+        <td>
           <p class="font-semibold text-slate-800">
             {{ row.avaliacao.usuario.nome|default:row.avaliacao.usuario.email }}
             {% if row.is_self %}
@@ -25,9 +25,9 @@
           </p>
           <p class="text-xs text-slate-500">{{ row.avaliacao.usuario.email }}</p>
         </td>
-        <td class="px-4 py-3 text-slate-600">{{ row.avaliacao.usuario.area.nome|default:"—" }}</td>
-        <td class="px-4 py-3 text-slate-600">{{ row.avaliacao.usuario.cargo.nome|default:"—" }}</td>
-        <td class="px-4 py-3">
+        <td class="text-slate-600">{{ row.avaliacao.usuario.area.nome|default:"—" }}</td>
+        <td class="text-slate-600">{{ row.avaliacao.usuario.cargo.nome|default:"—" }}</td>
+        <td>
           {% if row.avaliacao.concluida or row.avaliacao.etapa == "feedback" %}
             {% include "components/badge_status.html" with status="concluido" label=row.avaliacao.get_etapa_display %}
           {% elif row.avaliacao.etapa == "avaliacao" %}
@@ -38,14 +38,14 @@
             {% include "components/badge_status.html" with status="arquivado" label=row.avaliacao.get_etapa_display %}
           {% endif %}
         </td>
-        <td class="px-4 py-3 tabular-nums text-slate-800">
+        <td class="tabular-nums text-slate-800">
           {% if row.avaliacao.nota_final_lider is not None %}
             {{ row.avaliacao.nota_final_lider }}
           {% else %}
             <span class="text-slate-400">—</span>
           {% endif %}
         </td>
-        <td class="px-4 py-3 text-right">
+        <td class="text-right">
           <div class="inline-flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
             <a
               href="{% url 'reviews:detail' row.avaliacao.pk %}"
@@ -68,7 +68,7 @@
       </tr>
       {% empty %}
       <tr>
-        <td colspan="6" class="px-4 py-8">
+        <td colspan="6" class="!py-8">
           {% if not ciclo_aberto %}
             {% include "components/empty_state.html" with title="Sem ciclo aberto" message="As avaliações aparecerão quando um ciclo estiver ativo." %}
           {% else %}

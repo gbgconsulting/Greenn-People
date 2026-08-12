@@ -14,6 +14,9 @@ from apps.core.mixins import (
 )
 from apps.cycles.models import Ciclo
 from apps.dashboard.chart_payloads import (
+    CHART_TYPE_BAR_GROUPED,
+    CHART_TYPE_BAR_HORIZONTAL,
+    CHART_TYPE_DOUGHNUT,
     SEM_AVALIACAO_KEY,
     SEM_AVALIACAO_LABEL,
     aderencia_distribution_payload,
@@ -23,6 +26,7 @@ from apps.dashboard.chart_payloads import (
 )
 from apps.dashboard.models import AderenciaSnapshot
 from apps.dashboard.services.structure import (
+    build_structure_coverage,
     gaps_by_area,
     gaps_by_cargo,
     leaders_with_adherence,
@@ -118,13 +122,15 @@ class PersonalDashboardView(LoginRequiredMixin, TemplateView):
         }
 
     def _chart_gaps_competencia(self, fr005: dict) -> dict:
-        """Barras esperado × nota a partir de ``competencias_resumo`` (US3).
+        """Barras esperado × nota a partir de ``competencias_resumo`` (US1).
 
+        Type canônico ``bar_grouped`` (chart-catalog) — só apresentação.
         Empty honesto (has_data false + empty_state via _chart_block):
         vínculo pendente / lista vazia / nenhuma nota comparável.
-        ``null`` em ``nota_atual`` permanece null — não vira 0 (FR-006 / T022).
+        ``null`` em ``nota_atual`` permanece null — não vira 0 (FR-006).
         """
         title = 'Esperado × nota por competência'
+        chart_type = CHART_TYPE_BAR_GROUPED
         # Mensagem canônica do contrato (cenário sem notas comparáveis).
         empty_sem_notas = (
             'Ainda não há notas por competência para exibir gaps.'
@@ -133,6 +139,7 @@ class PersonalDashboardView(LoginRequiredMixin, TemplateView):
         if fr005.get('vinculo_pendente'):
             return grouped_series_payload(
                 chart_id='chart-gaps-competencia',
+                chart_type=chart_type,
                 title=title,
                 labels=[],
                 series=[],
@@ -147,6 +154,7 @@ class PersonalDashboardView(LoginRequiredMixin, TemplateView):
         if not competencias:
             return grouped_series_payload(
                 chart_id='chart-gaps-competencia',
+                chart_type=chart_type,
                 title=title,
                 labels=[],
                 series=[],
@@ -161,6 +169,7 @@ class PersonalDashboardView(LoginRequiredMixin, TemplateView):
         if all(item.get('nota_atual') is None for item in competencias):
             return grouped_series_payload(
                 chart_id='chart-gaps-competencia',
+                chart_type=chart_type,
                 title=title,
                 labels=[],
                 series=[],
@@ -184,6 +193,7 @@ class PersonalDashboardView(LoginRequiredMixin, TemplateView):
 
         return grouped_series_payload(
             chart_id='chart-gaps-competencia',
+            chart_type=chart_type,
             title=title,
             labels=labels,
             series=[
@@ -200,7 +210,22 @@ class PersonalDashboardView(LoginRequiredMixin, TemplateView):
             ],
             empty_message=empty_sem_notas,
             has_data=True,
+            total=len(labels),
         )
+
+
+# Etapas em que o líder típico atua (mesmo conjunto do destaque amber no drill-down).
+_TEAM_ATTENTION_ETAPAS = frozenset({
+    Avaliacao.Etapa.AVALIACAO,
+    Avaliacao.Etapa.APROVACAO_METAS,
+    Avaliacao.Etapa.APROVACAO_RESULTADOS,
+})
+_TEAM_ATTENTION_PRIORITY = {
+    Avaliacao.Etapa.AVALIACAO: 0,
+    Avaliacao.Etapa.APROVACAO_METAS: 1,
+    Avaliacao.Etapa.APROVACAO_RESULTADOS: 2,
+}
+_TEAM_DESTAQUE_LIMIT = 8
 
 
 class TeamDashboardView(
@@ -247,46 +272,45 @@ class TeamDashboardView(
             }
             for membro in membros
         ]
-        # Agregação do chart usa o queryset completo (R2/R3) — não object_list.
-        context['chart_escopo_status'] = self._chart_escopo_status(ciclo)
+        # Agregação do chart/KPIs/destaque usa queryset completo (R2/R3) — não object_list.
+        key_counts, etapa_por_usuario, membro_ids = self._scope_status_counts(ciclo)
+        context['chart_escopo_status'] = self._chart_escopo_status(
+            ciclo,
+            key_counts=key_counts,
+            membro_ids=membro_ids,
+            etapa_por_usuario=etapa_por_usuario,
+        )
+        context['team_resumo'] = self._team_resumo(
+            ciclo,
+            key_counts=key_counts,
+            membro_ids=membro_ids,
+            etapa_por_usuario=etapa_por_usuario,
+        )
+        context['destaque_atencao'] = self._destaque_atencao(
+            ciclo,
+            etapa_por_usuario=etapa_por_usuario,
+        )
         return context
 
-    def _chart_escopo_status(self, ciclo: Ciclo | None) -> dict:
-        """Conta etapas (+ sem_avaliacao) sobre todo get_visible_users do escopo.
+    def _scope_status_counts(
+        self,
+        ciclo: Ciclo | None,
+    ) -> tuple[dict[str, int] | None, dict[int, str], list[int]]:
+        """Contagens etapa (+ sem_avaliacao) sobre todo o escopo visível.
 
-        Empty honesto (has_data false + empty_state via _chart_block):
-        sem ciclo / sem membros / sem avaliações úteis — sem série fictícia.
+        Retorna ``(key_counts, etapa_por_usuario, membro_ids)``.
+        ``key_counts`` is ``None`` when empty honesto (sem ciclo / sem
+        membros / sem avaliações no ciclo) — mesmos critérios do chart US1.
         """
-        title = 'Status do escopo no ciclo'
         etapa_keys = [choice.value for choice in Avaliacao.Etapa]
         ordered_keys = [*etapa_keys, SEM_AVALIACAO_KEY]
-        labels_by_key = {
-            **dict(Avaliacao.Etapa.choices),
-            SEM_AVALIACAO_KEY: SEM_AVALIACAO_LABEL,
-        }
 
         if ciclo is None:
-            # Sem ciclo: empty PT-BR — canvas não inicializa (FR-006 / T016).
-            return empty_series_payload(
-                chart_id='chart-escopo-status',
-                chart_type='bar',
-                title=title,
-                empty_message=(
-                    'Não há ciclo aberto para exibir o status do escopo.'
-                ),
-            )
+            return None, {}, []
 
-        # Universo = get_queryset() completo; nunca só a página HTMX (FR-011 / R2).
         membro_ids = list(self.get_queryset().values_list('pk', flat=True))
         if not membro_ids:
-            return empty_series_payload(
-                chart_id='chart-escopo-status',
-                chart_type='bar',
-                title=title,
-                empty_message=(
-                    'Não há colaboradores no seu escopo para exibir status.'
-                ),
-            )
+            return None, {}, []
 
         etapa_por_usuario = dict(
             Avaliacao.objects.filter(
@@ -295,15 +319,7 @@ class TeamDashboardView(
             ).values_list('usuario_id', 'etapa'),
         )
         if not etapa_por_usuario:
-            # Membros sem avaliação no ciclo → empty honesto (sem só “sem_avaliacao”).
-            return empty_series_payload(
-                chart_id='chart-escopo-status',
-                chart_type='bar',
-                title=title,
-                empty_message=(
-                    'Não há dados de ciclo no seu escopo para exibir.'
-                ),
-            )
+            return None, {}, membro_ids
 
         key_counts = {key: 0 for key in ordered_keys}
         for usuario_id in membro_ids:
@@ -312,18 +328,181 @@ class TeamDashboardView(
                 key_counts[SEM_AVALIACAO_KEY] += 1
             else:
                 key_counts[etapa] += 1
+        return key_counts, etapa_por_usuario, membro_ids
 
-        return categorical_counts_payload(
+    def _team_resumo(
+        self,
+        ciclo: Ciclo | None,
+        *,
+        key_counts: dict[str, int] | None,
+        membro_ids: list[int],
+        etapa_por_usuario: dict[int, str],
+    ) -> dict:
+        """KPIs de apresentação (contagens etapa / pendências) — FR-004 / Freeze C.
+
+        Só agrega o que já está no escopo; sem predicados AuthZ novos.
+        """
+        total_escopo = len(membro_ids) if membro_ids else self.get_queryset().count()
+        if ciclo is None:
+            return {
+                'total_escopo': total_escopo,
+                'aguardando_acao': None,
+                'sem_avaliacao': None,
+                'has_ciclo': False,
+            }
+        if key_counts is None:
+            # Ciclo aberto mas sem avaliações úteis / escopo vazio.
+            sem = total_escopo if total_escopo and not etapa_por_usuario else 0
+            return {
+                'total_escopo': total_escopo,
+                'aguardando_acao': 0,
+                'sem_avaliacao': sem,
+                'has_ciclo': True,
+            }
+        aguardando = sum(
+            key_counts.get(etapa, 0) for etapa in _TEAM_ATTENTION_ETAPAS
+        )
+        return {
+            'total_escopo': total_escopo,
+            'aguardando_acao': aguardando,
+            'sem_avaliacao': key_counts.get(SEM_AVALIACAO_KEY, 0),
+            'has_ciclo': True,
+        }
+
+    def _destaque_atencao(
+        self,
+        ciclo: Ciclo | None,
+        *,
+        etapa_por_usuario: dict[int, str],
+    ) -> list[dict]:
+        """Ranking acionável de quem precisa de atenção (FR-005).
+
+        Subconjunto do escopo já visível em etapas de ação do líder; links
+        para URLs já existentes. Limitado para leitura no first glance.
+        """
+        if ciclo is None or not etapa_por_usuario:
+            return []
+
+        attention_ids = [
+            uid
+            for uid, etapa in etapa_por_usuario.items()
+            if etapa in _TEAM_ATTENTION_ETAPAS
+        ]
+        if not attention_ids:
+            return []
+
+        usuarios = {
+            u.pk: u
+            for u in self.get_queryset().filter(pk__in=attention_ids)
+        }
+        avaliacoes = {
+            av.usuario_id: av
+            for av in Avaliacao.objects.filter(
+                ciclo=ciclo,
+                usuario_id__in=attention_ids,
+            ).select_related('ciclo')
+        }
+
+        items: list[dict] = []
+        for usuario_id in attention_ids:
+            usuario = usuarios.get(usuario_id)
+            avaliacao = avaliacoes.get(usuario_id)
+            if usuario is None or avaliacao is None:
+                continue
+            items.append({'usuario': usuario, 'avaliacao': avaliacao})
+
+        items.sort(
+            key=lambda item: (
+                _TEAM_ATTENTION_PRIORITY.get(item['avaliacao'].etapa, 99),
+                (item['usuario'].nome or '').lower(),
+                (item['usuario'].email or '').lower(),
+            ),
+        )
+        return items[:_TEAM_DESTAQUE_LIMIT]
+
+    def _chart_escopo_status(
+        self,
+        ciclo: Ciclo | None,
+        *,
+        key_counts: dict[str, int] | None = None,
+        membro_ids: list[int] | None = None,
+        etapa_por_usuario: dict[int, str] | None = None,
+    ) -> dict:
+        """Conta etapas (+ sem_avaliacao) sobre todo get_visible_users do escopo.
+
+        US1 / T010: ``bar_horizontal`` monocromática com amber no gargalo
+        (maior volume) — só apresentação (FR-001 / DS charts polish).
+
+        Empty honesto (has_data false + empty_state via _chart_block):
+        sem ciclo / sem membros / sem avaliações úteis — sem série fictícia.
+        """
+        title = 'Status do escopo no ciclo'
+        chart_type = CHART_TYPE_BAR_HORIZONTAL
+        etapa_keys = [choice.value for choice in Avaliacao.Etapa]
+        ordered_keys = [*etapa_keys, SEM_AVALIACAO_KEY]
+        labels_by_key = {
+            **dict(Avaliacao.Etapa.choices),
+            SEM_AVALIACAO_KEY: SEM_AVALIACAO_LABEL,
+        }
+
+        if ciclo is None:
+            return empty_series_payload(
+                chart_id='chart-escopo-status',
+                chart_type=chart_type,
+                title=title,
+                empty_message=(
+                    'Não há ciclo aberto para exibir o status do escopo.'
+                ),
+            )
+
+        if membro_ids is None or etapa_por_usuario is None or key_counts is None:
+            key_counts, etapa_por_usuario, membro_ids = self._scope_status_counts(
+                ciclo,
+            )
+
+        if not membro_ids:
+            return empty_series_payload(
+                chart_id='chart-escopo-status',
+                chart_type=chart_type,
+                title=title,
+                empty_message=(
+                    'Não há colaboradores no seu escopo para exibir status.'
+                ),
+            )
+
+        if key_counts is None:
+            return empty_series_payload(
+                chart_id='chart-escopo-status',
+                chart_type=chart_type,
+                title=title,
+                empty_message=(
+                    'Não há dados de ciclo no seu escopo para exibir.'
+                ),
+            )
+
+        payload = categorical_counts_payload(
             key_counts,
             ordered_keys=ordered_keys,
             labels_by_key=labels_by_key,
             chart_id='chart-escopo-status',
-            chart_type='bar',
+            chart_type=chart_type,
             title=title,
             empty_message=(
                 'Não há dados de ciclo no seu escopo para exibir.'
             ),
+            highlight_max=True,
         )
+        # Insight 1 linha do gargalo (DS storytelling) — mesmos counts, sem métrica nova.
+        if payload.get('has_data'):
+            values = list(payload.get('values') or [])
+            labels = list(payload.get('labels') or [])
+            if values and labels and any(v > 0 for v in values):
+                max_index = max(range(len(values)), key=lambda i: values[i])
+                gargalo = labels[max_index]
+                payload['insight'] = (
+                    f'Maior volume em {gargalo} — priorize a fila de atenção.'
+                )
+        return payload
 
 
 class AdherenceListView(
@@ -332,7 +511,11 @@ class AdherenceListView(
     HtmxPaginatedListMixin,
     ListView,
 ):
-    """Lista snapshots de aderência (FR-018) — só leitura, sem recálculo síncrono."""
+    """Lista snapshots de aderência (FR-018) — só leitura, sem recálculo síncrono.
+
+    US2 / T018: KPI + doughnut a partir do mesmo QS filtrado (escopo/ciclo);
+    nunca chama ``compute_adherence`` / tasks.
+    """
 
     model = AderenciaSnapshot
     template_name = 'dashboard/adherence.html'
@@ -369,7 +552,66 @@ class AdherenceListView(
             }
             for snap in context['object_list']
         ]
+        # QS completo (mesmo AuthZ/ciclo da lista) — não a página paginada.
+        qs_all = self.get_queryset()
+        context['aderencia_resumo'] = self._aderencia_resumo_from_qs(qs_all, ciclo)
+        context['chart_aderencia_distribuicao'] = (
+            self._chart_aderencia_from_qs(qs_all, ciclo)
+        )
         return context
+
+    def _aderencia_resumo_from_qs(self, qs, ciclo: Ciclo | None) -> dict:
+        """Agrega média/total/baixa só a partir de snapshots já filtrados."""
+        if ciclo is None:
+            return {
+                'media': None,
+                'total_lideres': 0,
+                'baixa': None,
+                'status': 'baixa',
+                'has_ciclo': False,
+            }
+        agg = qs.aggregate(
+            media=Avg('percentual'),
+            total_lideres=Count('pk'),
+            baixa=Count('pk', filter=Q(percentual__lt=_ADERENCIA_MEDIA)),
+        )
+        media = agg['media']
+        if media is not None:
+            media = Decimal(media).quantize(Decimal('0.01'))
+        return {
+            'media': media,
+            'total_lideres': agg['total_lideres'] or 0,
+            'baixa': agg['baixa'] or 0,
+            'status': aderencia_status(media),
+            'has_ciclo': True,
+        }
+
+    def _chart_aderencia_from_qs(self, qs, ciclo: Ciclo | None) -> dict:
+        """Doughnut alta/média/baixa no escopo — reuso do builder de apresentação."""
+        chart_type = CHART_TYPE_DOUGHNUT
+        title = 'Distribuição de aderência'
+        if ciclo is None:
+            return empty_series_payload(
+                chart_id='chart-aderencia-distribuicao',
+                chart_type=chart_type,
+                title=title,
+                empty_message=(
+                    'Selecione ou abra um ciclo para exibir a distribuição '
+                    'de aderência.'
+                ),
+            )
+        status_keys = [
+            aderencia_status(percentual)
+            for percentual in qs.values_list('percentual', flat=True)
+        ]
+        return aderencia_distribution_payload(
+            status_keys,
+            chart_type=chart_type,
+            title=title,
+            empty_message=(
+                'Ainda não há dados de aderência neste escopo para o ciclo.'
+            ),
+        )
 
     def _resolve_ciclo(self) -> Ciclo | None:
         ciclo_id = self.request.GET.get('ciclo')
@@ -382,7 +624,7 @@ class AdherenceListView(
 
 
 class StructureDashboardView(LoginRequiredMixin, RequiresManagerOrAdminMixin, TemplateView):
-    """Painel de estrutura: líderes, aderência e lacunas por área/cargo (FR-019 / RF-29)."""
+    """Painel de estrutura: cobertura (Freeze B) + lacunas secundárias (FR-019 / FR-006)."""
 
     template_name = 'dashboard/structure.html'
 
@@ -391,7 +633,15 @@ class StructureDashboardView(LoginRequiredMixin, RequiresManagerOrAdminMixin, Te
         ciclo = self._resolve_ciclo()
         area_id = self._parse_optional_int('area')
         cargo_id = self._parse_optional_int('cargo')
+        # AuthZ inalterada — mesmo QS; builder só recebe visible já resolvido (T016/T017).
         visible = get_visible_users(self.request.user).filter(is_active=True)
+
+        cobertura = build_structure_coverage(
+            visible,
+            ciclo,
+            area_id=area_id,
+            cargo_id=cargo_id,
+        )
 
         context['ciclo_filtro'] = ciclo
         context['ciclo_aberto'] = get_open_ciclo()
@@ -400,6 +650,9 @@ class StructureDashboardView(LoginRequiredMixin, RequiresManagerOrAdminMixin, Te
         context['cargos'] = Cargo.objects.filter(is_active=True).order_by('nivel', 'nome')
         context['filtro_area_id'] = area_id
         context['filtro_cargo_id'] = cargo_id
+        context['cobertura_resumo'] = cobertura['resumo']
+        context['chart_cobertura_area'] = cobertura['chart_por_area']
+        context['chart_cobertura_cargo'] = cobertura['chart_por_cargo']
         context['lideres_resumo'] = leaders_with_adherence(
             visible,
             ciclo,
@@ -555,13 +808,19 @@ class AdminDashboardView(LoginRequiredMixin, RequiresAdminMixin, TemplateView):
         ]
 
     def _chart_aderencia_distribuicao(self, ciclo: Ciclo | None) -> dict:
-        """Conta snapshots do ciclo por faixa via `aderencia_status` (contrato admin)."""
+        """Conta snapshots do ciclo por faixa via `aderencia_status` (US1).
+
+        Type canônico ``doughnut`` + ``total`` no centro (chart-catalog /
+        data-model) — Status Triad inalterada; só type/apresentação.
+        """
+        chart_type = CHART_TYPE_DOUGHNUT
+        title = 'Distribuição de aderência'
         if ciclo is None:
             # Sem ciclo: empty honesto — sem faixas zeradas inventadas (FR-006).
             return empty_series_payload(
                 chart_id='chart-aderencia-distribuicao',
-                chart_type='doughnut_or_bar',
-                title='Distribuição de aderência',
+                chart_type=chart_type,
+                title=title,
                 empty_message=(
                     'Não há ciclo disponível para exibir a distribuição '
                     'de aderência.'
@@ -574,16 +833,27 @@ class AdminDashboardView(LoginRequiredMixin, RequiresAdminMixin, TemplateView):
             ).values_list('percentual', flat=True)
         ]
         # Zero snapshots → has_data false + empty_message PT-BR do helper.
-        return aderencia_distribution_payload(status_keys)
+        # ``total`` no payload alimenta o valor central do doughnut no JS.
+        return aderencia_distribution_payload(
+            status_keys,
+            chart_type=chart_type,
+            title=title,
+        )
 
     def _chart_ciclo_progresso(self, ciclo: Ciclo | None) -> dict:
-        """Conta avaliações do ciclo por `Avaliacao.Etapa` (contrato admin)."""
+        """Conta avaliações do ciclo por `Avaliacao.Etapa` (US1).
+
+        Barras horizontais expressivas + amber no maior volume (acabamento);
+        counts e chaves de etapa inalterados (FR-001 / data-model).
+        """
+        chart_type = CHART_TYPE_BAR_HORIZONTAL
+        title = 'Progresso das avaliações no ciclo'
         if ciclo is None:
             # Sem ciclo: empty honesto — sem barras de etapa inventadas (FR-006).
             return empty_series_payload(
                 chart_id='chart-ciclo-progresso',
-                chart_type='bar',
-                title='Progresso das avaliações no ciclo',
+                chart_type=chart_type,
+                title=title,
                 empty_message=(
                     'Não há ciclo disponível para exibir o progresso '
                     'das avaliações.'
@@ -605,9 +875,10 @@ class AdminDashboardView(LoginRequiredMixin, RequiresAdminMixin, TemplateView):
             ordered_keys=etapa_keys,
             labels_by_key=labels_by_key,
             chart_id='chart-ciclo-progresso',
-            chart_type='bar',
-            title='Progresso das avaliações no ciclo',
+            chart_type=chart_type,
+            title=title,
             empty_message=(
                 'Não há avaliações neste ciclo para exibir progresso.'
             ),
+            highlight_max=True,
         )

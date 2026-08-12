@@ -3,10 +3,10 @@
 {% block title %}Competências — Greenn People{% endblock %}
 
 {% block content %}
-<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+<header class="mb-6 flex flex-wrap items-start justify-between gap-3">
   <div>
-    <h1 class="text-2xl font-semibold text-slate-800">Competências</h1>
-    <p class="mt-1 text-slate-500">Catálogo de competências avaliáveis por escala.</p>
+    <h1 class="font-display text-2xl font-semibold text-slate-800">Competências</h1>
+    <p class="mt-1 font-ui text-sm text-slate-500">Catálogo de competências avaliáveis por escala.</p>
   </div>
   <div class="flex flex-wrap gap-2">
     {% url 'competencies:escala_list' as escalas_url %}
@@ -14,7 +14,7 @@
     {% url 'competencies:competencia_create' as create_url %}
     {% include "components/button.html" with label="Nova competência" href=create_url variant="primary" %}
   </div>
-</div>
+</header>
 
 {% include "competencies/competencia_list_partial.html" %}
 {% endblock %}

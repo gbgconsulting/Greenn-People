@@ -26,7 +26,7 @@ A lógica de negócio do ciclo de desempenho, a máquina de estados e a autoriza
 
 ### User Story 1 - Colaborador e líder veem “Próximo passo” + stepper de etapas (Priority: P1)
 
-Ana (colaboradora) e Bruno (líder) abrem o Meu painel e imediatamente veem um bloco “Próximo passo” com título claro, uma frase curta do que fazer agora e um único botão principal que leva à ação correta para a etapa atual da Avaliação no ciclo aberto. No mesmo painel (e no detalhe da avaliação) um stepper visual das 6 etapas do ciclo (do input de metas ao feedback) mostra o que já ficou para trás, o que está em andamento, o que ainda virá e o que está bloqueado. Se não houver ciclo aberto, se o vínculo ainda estiver pendente ou se o ciclo já estiver concluído para aquela pessoa, o bloco comunica esse estado sem pedir “próxima ação de etapa”.
+Ana (colaboradora) e Bruno (líder) abrem o Meu painel e imediatamente veem um bloco “Próximo passo” com título claro, uma frase curta do que fazer agora e um único botão principal que leva à ação correta para a etapa atual da Avaliação no ciclo aberto. No mesmo painel (e no detalhe da avaliação) um stepper visual das 6 etapas do ciclo (de Metas ao feedback) mostra o que já ficou para trás, o que está em andamento, o que ainda virá e o que está bloqueado. Se não houver ciclo aberto, se o vínculo ainda estiver pendente ou se o ciclo já estiver concluído para aquela pessoa, o bloco comunica esse estado sem pedir “próxima ação de etapa”.
 
 **Why this priority**: Sem orientação no ponto de entrada principal, a produção em massa gera suporte verbal e abandono; é o maior redutor de fricção para colaborador e líder.
 
@@ -107,7 +107,7 @@ Marina (RH/admin), antes ou no fluxo de abertura de ciclo (lista/fluxo de ciclos
 
 - **FR-001**: O Meu painel MUST exibir um bloco “Próximo passo” com título, uma frase de orientação e no máximo um CTA primário derivado do estado da Avaliação do usuário no ciclo aberto (ou dos estados especiais: sem ciclo, vínculo pendente, ciclo concluído para o usuário).
 - **FR-001a**: O conteúdo do bloco “Próximo passo” (título, frase, rótulo do CTA e destino) MUST seguir o **contrato de apresentação** da tabela abaixo — derivado apenas do estado já existente da Avaliação/ciclo e do papel no contexto; rotas listadas são nomes de URL **já existentes** (FR-013); quando a ação primária não cabe ao papel atual, o bloco comunica espera/estado sem inventar avanço.
-- **FR-002**: O Meu painel e o detalhe da avaliação MUST exibir um stepper visual das 6 etapas do ciclo (input de metas → … → feedback) com estados distintos: concluída, atual, futura e bloqueada, coerentes com o estado real da avaliação. A marcação MUST ser um **partial/component shared** em `templates/components` (mesmo markup nos dois pontos), sem estender design system Freeze/tipografia/charts (FR-014) e sem alterar estados de negócio.
+- **FR-002**: O Meu painel e o detalhe da avaliação MUST exibir um stepper visual das 6 etapas do ciclo (Metas → … → feedback) com estados distintos: concluída, atual, futura e bloqueada, coerentes com o estado real da avaliação. A marcação MUST ser um **partial/component shared** em `templates/components` (mesmo markup nos dois pontos), sem estender design system Freeze/tipografia/charts (FR-014) e sem alterar estados de negócio.
 - **FR-003**: O CTA primário do “Próximo passo” MUST levar o usuário à superfície correta da ação da etapa atual; pessoa nova no papel MUST conseguir identificar essa ação sem instrução verbal.
 
 #### Contrato de apresentação — mapa etapa → orientação (somente UI)
@@ -119,7 +119,7 @@ Fonte da etapa: `Avaliacao.etapa` vigente. Destinos: URLs de negócio já existe
 | Sem ciclo aberto | qualquer | Sem ciclo em andamento | Não há ciclo de desempenho aberto no momento. | — (sem CTA de avanço) | — |
 | Vínculo / avaliação pendente | colaborador | Avaliação ainda não vinculada | Seu vínculo ao ciclo ainda não está pronto; acompanhe com o RH se necessário. | — ou Ver painel | `dashboard:personal` |
 | `input_metas` | colaborador (dono) | Defina suas metas | Cadastre e ajuste as metas deste ciclo antes de enviar para aprovação. | Ir para metas | `goals:meta_list` |
-| `input_metas` | líder (escopo) | Aguardando metas do time | Os colaboradores do seu escopo ainda estão na etapa de input de metas. | Ver time / metas | `goals:meta_list` ou `dashboard:team` (já existente) |
+| `input_metas` | líder (escopo) | Aguardando metas do time | Os colaboradores do seu escopo ainda estão na etapa de metas. | Ver time / metas | `goals:meta_list` ou `dashboard:team` (já existente) |
 | `aprovacao_metas` | líder (ator) | Aprove as metas | Revise e aprove ou reprove as metas pendentes no seu escopo. | Revisar metas | `goals:meta_list` |
 | `aprovacao_metas` | colaborador (dono) | Metas em aprovação | Aguarde a decisão do líder; se houver reprovação, corrija e reenvie. | Ver metas | `goals:meta_list` |
 | `resultados` | colaborador (dono) | Atualize os resultados | Informe o progresso/resultados das metas deste ciclo. | Atualizar resultados | `goals:meta_list` |
@@ -149,7 +149,7 @@ Fonte da etapa: `Avaliacao.etapa` vigente. Destinos: URLs de negócio já existe
 
 - **Ciclo de desempenho**: período operacional aberto/fechado em que avaliações e etapas ocorrem.
 - **Avaliação**: vínculo do colaborador ao ciclo; carrega a etapa atual e o progresso no fluxo das 6 etapas.
-- **Etapa do ciclo**: uma das 6 fases sequenciais (do input de metas ao feedback); tem estados de apresentação concluída / atual / futura / bloqueada.
+- **Etapa do ciclo**: uma das 6 fases sequenciais (de Metas ao feedback); tem estados de apresentação concluída / atual / futura / bloqueada.
 - **Próximo passo**: orientação derivada do estado da avaliação (ou ausência de ciclo/vínculo/conclusão) composta por título, frase e CTA opcional.
 - **Pendência do líder**: item elegível no escopo do líder que exige ação (aprovação, avaliação ou feedback). O badge exibe a **soma** dessas três fontes já existentes; não é uma nova entidade de negócio.
 - **Bloqueador operacional (RH)**: condição de cadastro que prejudica abertura/execução saudável do ciclo (usuário sem área/cargo; cargo sem competências/pesos).

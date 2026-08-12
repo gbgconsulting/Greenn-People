@@ -12,7 +12,6 @@
       </tr>
     </thead>
     <tbody>
-      {# Ação da liderança primeiro (mesmos dados; sem query nova) #}
       {% for item in membros_resumo %}
         {% if item.avaliacao %}
           {% if item.avaliacao.etapa == "avaliacao" or item.avaliacao.etapa == "aprovacao_metas" or item.avaliacao.etapa == "aprovacao_resultados" %}
@@ -60,7 +59,6 @@
         {% endif %}
       {% endfor %}
 
-      {# Demais no escopo #}
       {% for item in membros_resumo %}
         {% if not item.avaliacao %}
         <tr>
