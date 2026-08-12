@@ -37,7 +37,7 @@
   </div>
 
   <div class="managerial-panel">
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {% if ciclos_resumo.percentual_encerrados is not None %}
         {% with val=ciclos_resumo.percentual_encerrados|stringformat:"d"|add:"%" enc=ciclos_resumo.encerrados|stringformat:"d" tot=ciclos_resumo.total|stringformat:"d" %}
         {% with body=enc|add:" de "|add:tot|add:" ciclo(s)" %}

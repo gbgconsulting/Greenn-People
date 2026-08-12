@@ -31,7 +31,7 @@
   </div>
 
   <div class="managerial-panel">
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores do time">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores do time">
       {% include "components/card.html" with label="No escopo" value=team_resumo.total_escopo body="Colaboradores no seu escopo hierárquico." %}
 
       {% if team_resumo.has_ciclo and team_resumo.aguardando_acao is not None %}

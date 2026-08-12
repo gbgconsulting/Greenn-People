@@ -153,7 +153,7 @@ Tudo sob `specs/009-persona-visual-redesign/`.
 - [ ] Nenhum arquivo em denylist de comportamento alterado em semântica
 - [ ] `get_visible_users` / `scope.py` = diff vazio (ou só imports não relacionados)
 - [ ] Sem migrations / models de domínio
-- [ ] Chart.js permanece 4.5.1; sem lib nova
+- [x] Chart.js permanece 4.5.1; sem lib nova (T043 · 2026-08-12)
 - [ ] US2/US3 só após catálogo US1 utilizável
 - [ ] `docs/design-system.md` + `input.css` atualizados se padrão/token novo
 - [ ] P3 ausente não falha aceite se P1+P2 ok até 03/09

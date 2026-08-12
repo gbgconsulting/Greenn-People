@@ -92,7 +92,7 @@
   </div>
 
   <div class="managerial-panel">
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores de cobertura">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores de cobertura">
       {% if cobertura_resumo.has_ciclo and cobertura_resumo.percentual is not None %}
         {% with val=cobertura_resumo.percentual|stringformat:"d"|add:"%" %}
         {% include "components/card.html" with label="Cobertura" value=val body="Com avaliação no ciclo filtrado." %}

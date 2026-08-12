@@ -38,7 +38,7 @@
   </div>
 
   <div class="managerial-panel">
-    <div class="grid gap-4 sm:grid-cols-2">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
       {% if nota_atual is not None %}
         {% if nota_atual_origem == "lider" %}
           {% include "components/card.html" with label="Nota atual" value=nota_atual badge_status="concluida" badge_label="Nota do líder" body="Nota consolidada do líder." %}

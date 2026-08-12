@@ -190,12 +190,17 @@
   }
 
   /*
-   * Painel gerencial (009 Freeze C / FR-011):
+   * Painel gerencial (009 Freeze C / FR-011 / SC-007):
    * Ritmo vertical canônico KPI → visual → tabela/drill (~375px empilha na mesma ordem).
+   * Filhos min-w-0 + w-full evitam bleed horizontal no main (p-4 ≈ 343px úteis).
    * Sem chrome/sombra própria — composição só; shell/nav/auth intocados.
    */
   .managerial-panel {
     @apply flex flex-col gap-6 sm:gap-8;
+  }
+
+  .managerial-panel > * {
+    @apply min-w-0 w-full;
   }
 
   /*

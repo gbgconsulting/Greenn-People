@@ -68,7 +68,7 @@ Referência visual: [Verdee \| Guia de Estilo](https://www.figma.com/design/LqU1
 | Ninebox polish (grade, cards, drawer domínio, drag/empty) | Seção **Ninebox polish (DS v2)**; contrato consumo 006 abaixo |
 | Focus-visible, skip link, modal trap, indicador HTMX | Seção Focus-visible e a11y |
 
-Evidência before/after das telas-piloto v2: `specs/007-design-system-v2/evidence/before-after/` (baseline 004 permanece em `specs/004-ux-visual-foundation/evidence/before-after/`).
+Evidência before/after das telas-piloto v2: `specs/007-design-system-v2/evidence/before-after/` (baseline 004 permanece em `specs/004-ux-visual-foundation/evidence/before-after/`). Reabertura A/B/C (009): `specs/009-persona-visual-redesign/evidence/before-after/` (SC-003/SC-006 · T042).
 
 ### Regras após o freeze
 
@@ -527,7 +527,7 @@ Frame alinhado a KPI/card (composição limpa, **sem** sombra):
 | Container (`<figure>`) | `rounded-xl border border-line bg-surface-card p-4 sm:p-5` |
 | Título | `font-display text-lg font-medium tracking-tight text-slate-800` (`h3`) |
 | Insight (opcional) | 1 linha `font-ui text-sm font-semibold text-slate-700` sob o título (`insight` ou `chart.insight`) |
-| Mini-KPI (opcional) | Se `kpi_label` → `components/card.html` ao lado do canvas (empilha no mobile; `sm:flex-row`) — valores só do caller |
+| Mini-KPI (opcional) | Se `kpi_label` → `components/card.html` ao lado do canvas (`w-full` no mobile; `sm:w-40` + `sm:flex-row`) — valores só do caller |
 | Canvas wrapper | `.dashboard-chart-canvas` (ver CSS abaixo) |
 | Figcaption | `mt-4 border-t border-line pt-3.5`; lista `text-sm leading-snug text-slate-600` com rótulo **+** valor (e swatch `aria-hidden` opcional) |
 | Empty | Ritmo `mt-3 py-4 sm:py-5` + include `empty_state` com `chart.empty_message` — **sem** séries inventadas |
@@ -585,7 +585,7 @@ Constantes espelham tokens de `input.css` (`--font-ui`, ink-muted, line). Status
 
 | Classe / artefato | Papel |
 |---|---|
-| `.managerial-panel` | Wrapper de ritmo vertical (`flex flex-col gap-6 sm:gap-8` em `static/src/input.css`) — filhos = KPI → visual → drill/ações |
+| `.managerial-panel` | Wrapper de ritmo vertical (`flex flex-col gap-6 sm:gap-8`; filhos `min-w-0 w-full`) — KPI → visual → drill/ações; ~375px sem bleed horizontal (SC-007) |
 | `.dashboard-chart-canvas` | Altura do plot (15.5 / 17 / 19 rem) — ver **Charts polish** |
 | `templates/components/card.html` | KPI(s) |
 | `templates/dashboard/_chart_block.html` | Visual principal (catálogo Freeze A) |

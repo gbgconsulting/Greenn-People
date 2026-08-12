@@ -60,7 +60,7 @@
   </div>
 
   <div class="managerial-panel">
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores de aderência">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores de aderência">
       {% if aderencia_resumo.has_ciclo and aderencia_resumo.media is not None %}
         {% with val=aderencia_resumo.media|stringformat:"d"|add:"%" %}
         {% include "components/card.html" with label="Aderência média" value=val badge_status=aderencia_resumo.status body="Média dos líderes no escopo filtrado." %}

@@ -45,7 +45,7 @@
   </div>
 
   <div class="managerial-panel">
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores do ciclo">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores do ciclo">
       {% if avaliacoes_resumo.percentual_concluidas is not None %}
         {% with val=avaliacoes_resumo.percentual_concluidas|stringformat:"d"|add:"%" %}
         {% include "components/card.html" with label="Avaliações concluídas" value=val body="Feedback líder + ciência neste ciclo." %}
@@ -127,7 +127,7 @@
         </p>
       </div>
 
-      <div class="mb-4 grid gap-4 sm:grid-cols-2" aria-label="Resumo de aderência">
+      <div class="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2" aria-label="Resumo de aderência">
         {% if aderencia_resumo.media is not None %}
           {% with val=aderencia_resumo.media|stringformat:"d"|add:"%" %}
           {% include "components/card.html" with label="Aderência média" value=val badge_status=aderencia_resumo.status body="Média dos líderes neste ciclo." %}
