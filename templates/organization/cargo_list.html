@@ -3,14 +3,14 @@
 {% block title %}Cargos — Greenn People{% endblock %}
 
 {% block content %}
-<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+<header class="mb-6 flex flex-wrap items-start justify-between gap-3">
   <div>
-    <h1 class="text-2xl font-semibold text-slate-800">Cargos</h1>
-    <p class="mt-1 text-slate-500">Posições e níveis de senioridade.</p>
+    <h1 class="font-display text-2xl font-semibold text-slate-800">Cargos</h1>
+    <p class="mt-1 font-ui text-sm text-slate-500">Posições e níveis de senioridade.</p>
   </div>
   {% url 'organization:cargo_create' as create_url %}
   {% include "components/button.html" with label="Novo cargo" href=create_url variant="primary" %}
-</div>
+</header>
 
 {% include "organization/cargo_list_partial.html" %}
 {% endblock %}

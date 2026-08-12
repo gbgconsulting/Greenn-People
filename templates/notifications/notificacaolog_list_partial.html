@@ -1,39 +1,39 @@
 <div id="list-container">
-<div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-  <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
-    <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+<div class="table-frame">
+  <table>
+    <thead>
       <tr>
-        <th class="px-4 py-3 font-medium">Data</th>
-        <th class="px-4 py-3 font-medium">Destinatário</th>
-        <th class="px-4 py-3 font-medium">Tipo</th>
-        <th class="px-4 py-3 font-medium">Status</th>
-        <th class="px-4 py-3 font-medium">Erro</th>
+        <th>Data</th>
+        <th>Destinatário</th>
+        <th>Tipo</th>
+        <th>Status</th>
+        <th>Erro</th>
       </tr>
     </thead>
-    <tbody class="divide-y divide-slate-100">
+    <tbody>
       {% for log in logs %}
-      <tr class="hover:bg-slate-50">
-        <td class="whitespace-nowrap px-4 py-3 text-slate-600">{{ log.created_at|date:"d/m/Y H:i" }}</td>
-        <td class="px-4 py-3">
+      <tr>
+        <td class="whitespace-nowrap text-slate-600">{{ log.created_at|date:"d/m/Y H:i" }}</td>
+        <td>
           <p class="font-medium text-slate-800">{{ log.destinatario.nome|default:log.destinatario.email }}</p>
-          <p class="text-xs text-slate-500">{{ log.destinatario.email }}</p>
+          <p class="font-ui text-xs text-slate-500">{{ log.destinatario.email }}</p>
         </td>
-        <td class="px-4 py-3 text-slate-600">{{ log.get_tipo_display }}</td>
-        <td class="px-4 py-3">
+        <td class="text-slate-600">{{ log.get_tipo_display }}</td>
+        <td>
           {% if log.status == "enviado" %}
             {% include "components/badge_status.html" with status="alta" label=log.get_status_display %}
           {% else %}
             {% include "components/badge_status.html" with status="baixa" label=log.get_status_display %}
           {% endif %}
         </td>
-        <td class="max-w-md px-4 py-3 text-slate-600" title="{{ log.erro }}">
+        <td class="max-w-md text-slate-600" title="{{ log.erro }}">
           {{ log.erro|default:"—"|truncatechars:80 }}
         </td>
       </tr>
       {% empty %}
       <tr>
-        <td colspan="5" class="px-4 py-8 text-center text-slate-500">
-          Nenhum log de notificação encontrado para os filtros atuais.
+        <td colspan="5" class="!py-8">
+          {% include "components/empty_state.html" with title="Nenhum log encontrado" message="Nenhum log de notificação para os filtros atuais." %}
         </td>
       </tr>
       {% endfor %}

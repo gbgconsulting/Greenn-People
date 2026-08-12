@@ -170,10 +170,10 @@ Monólito Django na raiz: allowlist em `contracts/path-allowlist.md`.
 
 ### Implementation for User Story 5 (opcional)
 
-- [ ] T036 [P] [US5] Polish tipografia/table-frame/empty em `templates/organization/area_*.html` e `templates/organization/cargo_*.html` (**sem** AuthZ/CRUD)
-- [ ] T037 [P] [US5] Polish `templates/organization/user_*.html` (incl. pending) — só chrome
-- [ ] T038 [P] [US5] Polish `templates/competencies/*.html`, `templates/audit/*.html`, `templates/notifications/*.html` (allowlist P3; denylist intacta)
-- [ ] T039 [US5] Validar US5 via quickstart §5 **ou** registrar explicitamente “P3 omitido por prazo 03/09” no PR (ausência **não** falha aceite)
+- [X] T036 [P] [US5] Polish tipografia/table-frame/empty em `templates/organization/area_*.html` e `templates/organization/cargo_*.html` (**sem** AuthZ/CRUD) — evidência 2026-08-11: Freeze chrome (`font-display`/`font-ui`, `.table-frame`, `border-line`/`bg-surface-card` sem shadow, `empty_state` com title+CTA); URLs/CRUD/AuthZ intactos
+- [X] T037 [P] [US5] Polish `templates/organization/user_*.html` (incl. pending) — só chrome — evidência 2026-08-11: Freeze (`font-display`/`font-ui`, `.table-frame`, `border-line`/`bg-surface-card` sem shadow, `empty_state` title+CTA condicional em pending); URLs/CRUD/AuthZ/next=pending intactos
+- [X] T038 [P] [US5] Polish `templates/competencies/*.html`, `templates/audit/*.html`, `templates/notifications/*.html` (allowlist P3; denylist intacta) — evidência 2026-08-11: Freeze (`font-display`/`font-ui`, `.table-frame`, `border-line`/`bg-surface-card` sem shadow, `empty_state` title+CTA, filtros audit/notif com `form-control`+button DS); URLs/CRUD/AuthZ/filtros intactos
+- [X] T039 [US5] Validar US5 via quickstart §5 **ou** registrar explicitamente “P3 omitido por prazo 03/09” no PR (ausência **não** falha aceite) — evidência 2026-08-11: §5 P3 **entregue** (não omitido); áreas/cargos/usuários/competências/auditoria/notificações = Freeze chrome (`font-display`/`font-ui`, `.table-frame`, `border-line`/`bg-surface-card` sem `shadow-sm`, `empty_state`); diff `.py`/`apps`/`tests` **vazio** nesta fatia (só templates allowlist); T036–T038 [X]
 
 **Checkpoint**: P3 entregue **ou** formalmente skipado; aceite P1+P2 preservado
 

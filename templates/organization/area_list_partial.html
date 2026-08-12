@@ -1,39 +1,39 @@
 <div id="list-container">
-<div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-  <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
-    <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+<div class="table-frame">
+  <table>
+    <thead>
       <tr>
-        <th class="px-4 py-3 font-medium">Nome</th>
-        <th class="px-4 py-3 font-medium">Área pai</th>
-        <th class="px-4 py-3 font-medium">Status</th>
-        <th class="px-4 py-3 font-medium text-right">Ações</th>
+        <th>Nome</th>
+        <th>Área pai</th>
+        <th>Status</th>
+        <th class="text-right">Ações</th>
       </tr>
     </thead>
-    <tbody class="divide-y divide-slate-100">
+    <tbody>
       {% for area in areas %}
-      <tr class="hover:bg-slate-50">
-        <td class="px-4 py-3 font-medium text-slate-800">{{ area.nome }}</td>
-        <td class="px-4 py-3 text-slate-600">{{ area.parent.nome|default:"—" }}</td>
-        <td class="px-4 py-3">
+      <tr>
+        <td class="font-medium text-slate-800">{{ area.nome }}</td>
+        <td class="text-slate-600">{{ area.parent.nome|default:"—" }}</td>
+        <td>
           {% if area.is_active %}
             {% include "components/badge_status.html" with status="ativo" %}
           {% else %}
             {% include "components/badge_status.html" with status="arquivado" label="Inativa" %}
           {% endif %}
         </td>
-        <td class="px-4 py-3 text-right">
-          <a href="{% url 'organization:area_update' area.pk %}" class="text-emerald-700 hover:text-emerald-800">Editar</a>
+        <td class="text-right">
+          <a href="{% url 'organization:area_update' area.pk %}" class="font-medium text-emerald-700 hover:text-emerald-800">Editar</a>
           {% if area.is_active %}
           <span class="mx-2 text-slate-300">|</span>
-          <a href="{% url 'organization:area_delete' area.pk %}" class="text-rose-600 hover:text-rose-700">Desativar</a>
+          <a href="{% url 'organization:area_delete' area.pk %}" class="font-medium text-rose-600 hover:text-rose-700">Desativar</a>
           {% endif %}
         </td>
       </tr>
       {% empty %}
       <tr>
-        <td colspan="4" class="px-4 py-8">
+        <td colspan="4" class="!py-8">
           {% url 'organization:area_create' as area_create_url %}
-          {% include "components/empty_state.html" with message="Nenhuma área cadastrada." cta_label="Nova área" cta_href=area_create_url %}
+          {% include "components/empty_state.html" with title="Nenhuma área cadastrada" message="Cadastre a primeira área para montar a hierarquia organizacional." cta_label="Nova área" cta_href=area_create_url %}
         </td>
       </tr>
       {% endfor %}

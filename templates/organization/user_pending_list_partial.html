@@ -1,24 +1,24 @@
 <div id="list-container">
-<div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-  <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
-    <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+<div class="table-frame">
+  <table>
+    <thead>
       <tr>
-        <th class="px-4 py-3 font-medium">Nome</th>
-        <th class="px-4 py-3 font-medium">E-mail</th>
-        <th class="px-4 py-3 font-medium">Área</th>
-        <th class="px-4 py-3 font-medium">Cargo</th>
-        <th class="px-4 py-3 font-medium">Pendência</th>
-        <th class="px-4 py-3 font-medium text-right">Ações</th>
+        <th>Nome</th>
+        <th>E-mail</th>
+        <th>Área</th>
+        <th>Cargo</th>
+        <th>Pendência</th>
+        <th class="text-right">Ações</th>
       </tr>
     </thead>
-    <tbody class="divide-y divide-slate-100">
+    <tbody>
       {% for u in users %}
-      <tr class="hover:bg-slate-50">
-        <td class="px-4 py-3 font-medium text-slate-800">{{ u.nome }}</td>
-        <td class="px-4 py-3 text-slate-600">{{ u.email }}</td>
-        <td class="px-4 py-3 text-slate-600">{{ u.area.nome|default:"—" }}</td>
-        <td class="px-4 py-3 text-slate-600">{{ u.cargo.nome|default:"—" }}</td>
-        <td class="px-4 py-3">
+      <tr>
+        <td class="font-medium text-slate-800">{{ u.nome }}</td>
+        <td class="text-slate-600">{{ u.email }}</td>
+        <td class="text-slate-600">{{ u.area.nome|default:"—" }}</td>
+        <td class="text-slate-600">{{ u.cargo.nome|default:"—" }}</td>
+        <td>
           {% if not u.area_id and not u.cargo_id %}
             {% include "components/badge_status.html" with status="pendente" label="Área e cargo" %}
           {% elif not u.area_id %}
@@ -27,27 +27,24 @@
             {% include "components/badge_status.html" with status="pendente" label="Cargo" %}
           {% endif %}
         </td>
-        <td class="px-4 py-3 text-right">
+        <td class="text-right">
           <a
             href="{% url 'organization:user_update' u.pk %}?next=pending"
-            class="font-ui text-sm font-medium text-emerald-700 hover:text-emerald-800"
+            class="font-medium text-emerald-700 hover:text-emerald-800"
           >Vincular área/cargo</a>
         </td>
       </tr>
       {% empty %}
       <tr>
-        <td colspan="6" class="px-4 py-8 text-center font-ui text-slate-500">
-          Nenhum usuário pendente de vínculo.
+        <td colspan="6" class="!py-8">
           {% if rh_has_cargo_blockers %}
-          <span class="mt-1 block text-sm text-amber-800">
-            Ainda há cargos sem competências/pesos —
-            <a href="{% url 'organization:cargo_list' %}" class="font-medium text-emerald-700 hover:text-emerald-800">revisar cargos</a>.
-          </span>
+            {% url 'organization:cargo_list' as cargo_list_url %}
+            {% include "components/empty_state.html" with title="Nenhum usuário pendente de vínculo" message="Ainda há cargos sem competências/pesos." cta_label="Revisar cargos" cta_href=cargo_list_url %}
           {% elif rh_pre_open_checklist and not rh_checklist_has_blockers %}
-          <span class="mt-1 block text-sm text-emerald-800">
-            Checklist operacional sem pendências neste escopo.
-            <a href="{% url 'cycles:ciclo_list' %}" class="font-medium text-emerald-700 hover:text-emerald-800">Voltar aos ciclos</a>.
-          </span>
+            {% url 'cycles:ciclo_list' as ciclos_url %}
+            {% include "components/empty_state.html" with title="Nenhum usuário pendente de vínculo" message="Checklist operacional sem pendências neste escopo." cta_label="Voltar aos ciclos" cta_href=ciclos_url %}
+          {% else %}
+            {% include "components/empty_state.html" with title="Nenhum usuário pendente de vínculo" message="Colaboradores ativos sem área ou cargo aparecerão aqui." %}
           {% endif %}
         </td>
       </tr>
