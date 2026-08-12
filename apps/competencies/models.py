@@ -81,6 +81,14 @@ class Competencia(TimeStampedModel):
         verbose_name='escala',
     )
     is_active = models.BooleanField('ativa', default=True)
+    solides_id = models.CharField(
+        'ID Sólides',
+        max_length=50,
+        blank=True,
+        null=True,
+        unique=True,
+        db_index=True,
+    )
 
     class Meta:
         verbose_name = 'competência'

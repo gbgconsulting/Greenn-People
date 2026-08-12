@@ -58,6 +58,14 @@ class Avaliacao(TimeStampedModel):
             'congelado no encerramento do ciclo para o indicador de conclusão.'
         ),
     )
+    solides_id = models.CharField(
+        'ID Sólides',
+        max_length=50,
+        blank=True,
+        null=True,
+        unique=True,
+        db_index=True,
+    )
 
     class Meta:
         verbose_name = 'avaliação'

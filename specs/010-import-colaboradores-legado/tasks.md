@@ -78,13 +78,13 @@ Monólito Django na raiz: allowlist em `contracts/model-allowlist.md`. Parse XLS
 
 ### Implementation for User Story 1
 
-- [ ] T008 [P] [US1] Adicionar `solides_id` (`CharField(max_length=50, blank=True, null=True, unique=True, db_index=True)`) em `CustomUser` em `apps/accounts/models.py` — **ADITIVA somente solides_id; sem alterar campos existentes**; denylist intacta
-- [ ] T009 [P] [US1] Adicionar `solides_id` idêntico em `Cargo` em `apps/organization/models.py` — **ADITIVA somente solides_id**; denylist intacta
-- [ ] T010 [P] [US1] Adicionar `solides_id` idêntico em `Competencia` em `apps/competencies/models.py` — **schema only** nesta fatia; denylist intacta
-- [ ] T011 [P] [US1] Adicionar `solides_id` idêntico em `Avaliacao` em `apps/reviews/models.py` — **sem** alterar `etapa`/`concluida`/`nota_final_*`; denylist intacta
-- [ ] T012 [P] [US1] Adicionar `solides_id` idêntico em `PDI` em `apps/pdi/models.py` — **schema only**; denylist intacta
-- [ ] T013 [US1] Gerar e revisar migrations aditivas (`AddField solides_id`) em `apps/accounts/migrations/`, `apps/organization/migrations/`, `apps/competencies/migrations/`, `apps/reviews/migrations/`, `apps/pdi/migrations/` conforme `contracts/migration-safety.md` — `sqlmigrate` MUST mostrar somente `ADD COLUMN`; sem RunPython mutando domínio; denylist intacta
-- [ ] T014 [US1] Validar US1 via `specs/010-import-colaboradores-legado/quickstart.md` C1 (migrate, null ok, unique enforcement, CRUD/login inalterados); confirmar diff denylist vazio nos paths de domínio
+- [X] T008 [P] [US1] Adicionar `solides_id` (`CharField(max_length=50, blank=True, null=True, unique=True, db_index=True)`) em `CustomUser` em `apps/accounts/models.py` — **ADITIVA somente solides_id; sem alterar campos existentes**; denylist intacta
+- [X] T009 [P] [US1] Adicionar `solides_id` idêntico em `Cargo` em `apps/organization/models.py` — **ADITIVA somente solides_id**; denylist intacta
+- [X] T010 [P] [US1] Adicionar `solides_id` idêntico em `Competencia` em `apps/competencies/models.py` — **schema only** nesta fatia; denylist intacta
+- [X] T011 [P] [US1] Adicionar `solides_id` idêntico em `Avaliacao` em `apps/reviews/models.py` — **sem** alterar `etapa`/`concluida`/`nota_final_*`; denylist intacta
+- [X] T012 [P] [US1] Adicionar `solides_id` idêntico em `PDI` em `apps/pdi/models.py` — **schema only**; denylist intacta
+- [X] T013 [US1] Gerar e revisar migrations aditivas (`AddField solides_id`) em `apps/accounts/migrations/`, `apps/organization/migrations/`, `apps/competencies/migrations/`, `apps/reviews/migrations/`, `apps/pdi/migrations/` conforme `contracts/migration-safety.md` — `sqlmigrate` MUST mostrar somente `ADD COLUMN`; sem RunPython mutando domínio; denylist intacta
+- [X] T014 [US1] Validar US1 via `specs/010-import-colaboradores-legado/quickstart.md` C1 (migrate, null ok, unique enforcement, CRUD/login inalterados); confirmar diff denylist vazio nos paths de domínio
 
 **Checkpoint**: US1 independentemente testável; cinco entidades aceitam `solides_id` null (SC-001)
 
