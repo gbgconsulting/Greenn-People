@@ -62,9 +62,9 @@ Monólito Django na raiz: allowlist em `contracts/model-allowlist.md`. Parse XLS
 **Purpose**: Utilitários compartilhados de parse XLSX, datas e relatório mascarado — **BLOQUEIAM** todas as user stories  
 **⚠️ CRITICAL**: Nenhuma user story começa antes desta fase. **Zero** alteração em denylist.
 
-- [ ] T005 [P] Implementar leitura OOXML (planilha colaboradores + header avaliações) e validação de colunas obrigatórias em `apps/accounts/services/legacy_import/parse_xlsx.py` conforme `contracts/column-mapping-contract.md` §Obrigatórias e research R1 (openpyxl **somente** aqui; denylist intacta)
-- [ ] T006 [P] Implementar parser serial Excel + ISO para `Data demissão` em `apps/accounts/services/legacy_import/dates.py` conforme research R10 e `contracts/column-mapping-contract.md` §is_active (allowlist; denylist intacta)
-- [ ] T007 [P] Implementar estrutura de relatório (contadores + listas detalhadas), `mask_email()`/`mask_pii()` e `format_report()` com **amostra mascarada** em `apps/accounts/services/legacy_import/report.py` conforme `contracts/import-command-contract.md` §Formato do relatório e research R14 (nunca CPF/e-mail completo; denylist intacta)
+- [X] T005 [P] Implementar leitura OOXML (planilha colaboradores + header avaliações) e validação de colunas obrigatórias em `apps/accounts/services/legacy_import/parse_xlsx.py` conforme `contracts/column-mapping-contract.md` §Obrigatórias e research R1 (openpyxl **somente** aqui; denylist intacta)
+- [X] T006 [P] Implementar parser serial Excel + ISO para `Data demissão` em `apps/accounts/services/legacy_import/dates.py` conforme research R10 e `contracts/column-mapping-contract.md` §is_active (allowlist; denylist intacta)
+- [X] T007 [P] Implementar estrutura de relatório (contadores + listas detalhadas), `mask_email()`/`mask_pii()` e `format_report()` com **amostra mascarada** em `apps/accounts/services/legacy_import/report.py` conforme `contracts/import-command-contract.md` §Formato do relatório e research R14 (nunca CPF/e-mail completo; denylist intacta)
 
 **Checkpoint**: Parse de fixtures XLSX mínimas retorna estruturas normalizadas; datas unit-testáveis; relatório formatável sem persistência
 

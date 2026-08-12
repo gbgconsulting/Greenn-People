@@ -10,6 +10,8 @@ from apps.accounts.services.legacy_import.report import (
     ImportReport,
     ReportEntry,
     format_report,
+    mask_email,
+    mask_pii,
 )
 
 __all__ = [
@@ -17,4 +19,6 @@ __all__ = [
     "ReportEntry",
     "format_report",
     "import_colaboradores",
+    "mask_email",
+    "mask_pii",
 ]
