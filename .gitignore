@@ -41,6 +41,9 @@ Thumbs.db
 media/
 staticfiles/
 
+# Legado Sólides — backups com PII (nunca versionar; samples/ ok)
+data/legado-solides/raw/
+
 # Node (se Tailwind/CLI local for instalado via npm)
 node_modules/
 
