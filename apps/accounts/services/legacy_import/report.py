@@ -3,12 +3,17 @@
 Superfície pública reexportada por ``legacy_import.__init__``.
 Totais + amostra mascarada (max 5 por seção) conforme
 ``contracts/import-command-contract.md`` §Formato do relatório e research R14.
+
+US2 (T017): contadores ``areas_*`` / ``cargos_*`` / ``usuarios_*`` /
+``solides_id_preenchidos`` / ``demitidos_inativos`` + seções
+``criados`` / ``atualizados`` / ``nao_importaveis`` / ``conflitos``
+com helpers ``record_*`` e formatação mascarada.
 """
 
 from __future__ import annotations
 
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 
 # Contrato §Formato: amostra truncada a 5 itens por seção.
@@ -45,14 +50,17 @@ class ReportEntry:
 class ImportReport:
     """Relatório estruturado (contadores + listas) — contrato §Formato.
 
-    Contadores de persistência são preenchidos pelo importer (T018+).
-    Contadores alinhados a ``len`` das listas detalhadas quando aplicável.
+    Contadores de persistência são preenchidos pelo importer (T018+) /
+    resolve (áreas/cargos). Contadores ``nao_importaveis`` / ``conflitos`` /
+    ``ciclos_hierarquia`` alinham a ``len`` das listas detalhadas.
+    Amostra em ``format_report`` trunca a 5 por seção (documentado no header).
     """
 
     modo: str = "persist"
     colaboradores_file: str = ""
     avaliacoes_file: str = ""
 
+    # --- US2: estrutura organizacional + usuários ---
     areas_criadas: int = 0
     areas_reutilizadas: int = 0
     cargos_criados: int = 0
@@ -63,10 +71,13 @@ class ImportReport:
     usuarios_inalterados: int = 0
     solides_id_preenchidos: int = 0
     demitidos_inativos: int = 0
+
+    # --- US3: hierarquia (preenchidos em T022) ---
     gestores_vinculados: int = 0
     sem_gestor: int = 0
 
     criados: list[ReportEntry] = field(default_factory=list)
+    atualizados: list[ReportEntry] = field(default_factory=list)
     nao_importaveis: list[ReportEntry] = field(default_factory=list)
     conflitos: list[ReportEntry] = field(default_factory=list)
     ciclos_hierarquia: list[ReportEntry] = field(default_factory=list)
@@ -85,6 +96,117 @@ class ImportReport:
     def n_ciclos_hierarquia(self) -> int:
         """Contador alinhado à seção Ciclos de hierarquia."""
         return len(self.ciclos_hierarquia)
+
+
+# ---------------------------------------------------------------------------
+# Helpers US2 — registrar amostra / contadores (importer + resolve + crosswalk)
+# ---------------------------------------------------------------------------
+
+
+def record_criado(
+    report: ImportReport,
+    *,
+    nome: str,
+    email: str,
+    area: str = "",
+    cargo: str = "",
+    increment_counter: bool = True,
+) -> None:
+    """Acrescenta amostra de usuário criado (e-mail mascarado na formatação).
+
+    Quando ``increment_counter`` é True, incrementa ``usuarios_criados``.
+    """
+    report.criados.append(
+        ReportEntry(
+            label=nome,
+            extra=email,
+            motivo=_area_cargo_motivo(area, cargo),
+        )
+    )
+    if increment_counter:
+        report.usuarios_criados += 1
+
+
+def record_atualizado(
+    report: ImportReport,
+    *,
+    nome: str,
+    email: str,
+    area: str = "",
+    cargo: str = "",
+    increment_counter: bool = True,
+) -> None:
+    """Acrescenta amostra de usuário atualizado (e-mail mascarado na formatação).
+
+    Quando ``increment_counter`` é True, incrementa ``usuarios_atualizados``.
+    """
+    report.atualizados.append(
+        ReportEntry(
+            label=nome,
+            extra=email,
+            motivo=_area_cargo_motivo(area, cargo),
+        )
+    )
+    if increment_counter:
+        report.usuarios_atualizados += 1
+
+
+def record_nao_importavel(
+    report: ImportReport,
+    *,
+    linha: str | int,
+    motivo: str,
+) -> None:
+    """Acrescenta item à seção Não importáveis (contador = ``len``)."""
+    report.nao_importaveis.append(
+        ReportEntry(label=str(linha), motivo=motivo)
+    )
+
+
+def record_conflito(
+    report: ImportReport,
+    *,
+    tipo: str,
+    extra: str = "",
+    motivo: str = "",
+) -> None:
+    """Acrescenta conflito (contador = ``len``).
+
+    Convenção de ``extra``/``motivo`` (contrato):
+    - ``email_duplicado_backup``: ``extra=email=…``, ``motivo=linhas=a,b``
+    - ``crosswalk_ambiguo``: ``extra=nome=…``, ``motivo=ids=a,b``
+    - ``gestor_nao_resolvido``: ``extra=superior_id=…``, ``motivo=usuario=…``
+    """
+    report.conflitos.append(
+        ReportEntry(label=tipo, extra=extra, motivo=motivo)
+    )
+
+
+def extend_conflitos(
+    report: ImportReport,
+    entries: Iterable[ReportEntry],
+) -> None:
+    """Mescla entradas pré-classificadas em Conflitos (ex. crosswalk)."""
+    report.conflitos.extend(entries)
+
+
+def note_solides_id_preenchido(report: ImportReport, n: int = 1) -> None:
+    """Incrementa ``solides_id_preenchidos`` (User/Cargo resolvido via crosswalk)."""
+    report.solides_id_preenchidos += n
+
+
+def note_demitido_inativo(report: ImportReport, n: int = 1) -> None:
+    """Incrementa ``demitidos_inativos`` (``is_active=False`` por Data demissão)."""
+    report.demitidos_inativos += n
+
+
+def _area_cargo_motivo(area: str, cargo: str) -> str:
+    parts: list[str] = []
+    if area.strip():
+        parts.append(f"area={area.strip()}")
+    if cargo.strip():
+        parts.append(f"cargo={cargo.strip()}")
+    return " | ".join(parts)
 
 
 def mask_email(value: str | None) -> str:
@@ -169,7 +291,9 @@ def format_report(report: ImportReport) -> str:
         "--- Amostra (mascarada, max 5 por seção) ---",
         "criados:",
     ]
-    lines.extend(_sample_lines(report.criados, _format_criado))
+    lines.extend(_sample_lines(report.criados, _format_usuario_amostra))
+    lines.append("atualizados:")
+    lines.extend(_sample_lines(report.atualizados, _format_usuario_amostra))
     lines.append("nao_importaveis:")
     lines.extend(_sample_lines(report.nao_importaveis, _format_nao_importavel))
     lines.append("conflitos:")
@@ -188,7 +312,8 @@ def _sample_lines(
     return [formatter(entry) for entry in entries[:_SAMPLE_MAX]]
 
 
-def _format_criado(entry: ReportEntry) -> str:
+def _format_usuario_amostra(entry: ReportEntry) -> str:
+    """Formato criados/atualizados: ``nome=… | email=m***@… | area=…``."""
     parts = [f"  - nome={entry.label}", f"email={mask_email(entry.extra)}"]
     if entry.motivo.strip():
         parts.append(_mask_emails_in_text(entry.motivo.strip()))
