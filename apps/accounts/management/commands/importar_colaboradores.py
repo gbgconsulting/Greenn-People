@@ -3,12 +3,13 @@
 Superfície CLI fina — valida args, chama ``import_colaboradores`` e emite o
 relatório (stdout e opcionalmente ``--report-file``).
 
-Códigos de saída (``contracts/import-command-contract.md`` §Códigos de saída):
+Códigos de saída (``contracts/import-command-contract.md`` §Códigos de saída / T027):
 - ``0`` — sucesso (persistência ok ou dry-run ok; conflitos não-fatais ok)
 - ``1`` — erro fatal pré-persistência ou de persistência:
   - args inválidos / ausentes
   - arquivo ausente ou ilegível / OOXML inválido
   - colunas obrigatórias ausentes
+  - falha de migration pré-requisito (``solides_id`` ausente)
   - falha inesperada de persistência (``transaction.atomic`` faz rollback)
 - Não há exit ``2`` nesta versão (args inválidos também → ``1``).
 
@@ -24,6 +25,8 @@ from django.core.management.base import BaseCommand, CommandError
 
 from apps.accounts.services.legacy_import import (
     LegacyParseError,
+    LegacyPersistError,
+    LegacySchemaError,
     format_report,
     import_colaboradores,
 )
@@ -74,7 +77,7 @@ class Command(BaseCommand):
             help="Parse + totais projetados sem commit no banco.",
         )
 
-    def handle(self, *args, **options) -> None:
+    def handle(self, *args, **options) -> int:
         colaboradores_path = options["colaboradores"]
         avaliacoes_path = options["avaliacoes"]
         report_file = options["report_file"]
@@ -87,17 +90,29 @@ class Command(BaseCommand):
                 dry_run=dry_run,
             )
         except LegacyParseError as exc:
-            # Arquivo / OOXML / colunas — zero writes (parse pré-DB).
+            # T025: arquivo / OOXML / colunas — zero writes (parse pré-DB).
             raise CommandError(str(exc), returncode=1) from exc
+        except LegacySchemaError as exc:
+            # T027: migration 6.5.1 ausente — zero writes (pré-atomic).
+            raise CommandError(str(exc), returncode=1) from exc
+        except LegacyPersistError as exc:
+            # T027: exceção na persistência — atomic já fez rollback.
+            raise CommandError(
+                f"Falha na persistência: {exc}",
+                returncode=1,
+            ) from exc
+        except CommandError:
+            raise
         except Exception as exc:
-            # Falha inesperada de persistência → exit 1 (atomic já fez rollback).
+            # Cinto e suspensório: qualquer outra falha → exit 1.
             raise CommandError(
                 f"Falha na importação: {exc}",
                 returncode=1,
             ) from exc
 
         self._emit_report(format_report(report), report_file)
-        # Sucesso (persist ou dry-run) → exit 0 implícito do BaseCommand.
+        # T027: sucesso (persist ou dry-run, conflitos não-fatais ok) → exit 0.
+        return 0
 
     def _emit_report(self, text: str, report_file: str | None) -> None:
         self.stdout.write(text, ending="")

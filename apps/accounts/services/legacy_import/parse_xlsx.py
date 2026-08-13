@@ -4,12 +4,14 @@
 Colunas: ``contracts/column-mapping-contract.md`` §Obrigatórias;
 pré-condições: ``contracts/import-command-contract.md``.
 
-Falha fatal pré-persistência (arquivo ausente/ilegível, OOXML inválido,
-colunas obrigatórias ausentes) → ``LegacyParseError`` (exit 1 no command).
+T025: falhas fatais pré-persistência (arquivo ausente/ilegível, OOXML
+inválido, colunas obrigatórias ausentes) → ``LegacyParseError`` (exit 1
+no command; zero writes).
 """
 
 from __future__ import annotations
 
+import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -94,16 +96,54 @@ class ParsedAvaliacoesCrosswalk:
 
 
 def _assert_readable_file(path: Path) -> None:
-    """Garante path existente, arquivo e legível."""
+    """Garante que ``path`` existe e é um arquivo legível.
+
+    Raises:
+        LegacyParseError: ausente, não é arquivo, ou ilegível (T025).
+    """
     if not path.exists():
-        raise LegacyParseError(f"Arquivo ausente: {path}")
+        raise LegacyParseError(f"Arquivo não encontrado: {path}")
     if not path.is_file():
-        raise LegacyParseError(f"Path não é arquivo: {path}")
+        raise LegacyParseError(f"Path não é um arquivo legível: {path}")
     try:
         with path.open("rb") as fh:
             fh.read(1)
     except OSError as exc:
         raise LegacyParseError(f"Arquivo ilegível: {path} ({exc})") from exc
+
+
+def validate_source_paths(
+    colaboradores_path: str | Path,
+    avaliacoes_path: str | Path | None = None,
+) -> tuple[Path, Path | None]:
+    """Pré-condição: path colaboradores (e avaliações, se informado) existem.
+
+    Valida os paths **antes** de ler conteúdo OOXML, para falhar cedo
+    sem escrita. Se ambos falharem, a mensagem agrega os dois.
+
+    Returns:
+        ``(colaboradores_path, avaliacoes_path)`` resolvidos como ``Path``.
+        ``avaliacoes_path`` é ``None`` quando não informado / vazio.
+
+    Raises:
+        LegacyParseError: um ou ambos os paths inválidos (T025 — fatal).
+    """
+    colaboradores = Path(colaboradores_path)
+    avaliacoes: Path | None = None
+    if avaliacoes_path is not None and str(avaliacoes_path).strip():
+        avaliacoes = Path(avaliacoes_path)
+
+    errors: list[str] = []
+    for path in (colaboradores, avaliacoes):
+        if path is None:
+            continue
+        try:
+            _assert_readable_file(path)
+        except LegacyParseError as exc:
+            errors.append(str(exc))
+    if errors:
+        raise LegacyParseError("; ".join(errors))
+    return colaboradores, avaliacoes
 
 
 def _header_index(header_row: tuple[Any, ...]) -> dict[str, int]:
@@ -167,26 +207,52 @@ def _as_id(value: Any) -> str:
     return str(value).strip()
 
 
-def _load_sheet_rows(path: Path) -> list[tuple[Any, ...]]:
-    """Carrega a primeira planilha como lista de tuplas (header + dados)."""
-    _assert_readable_file(path)
+def _load_workbook(path: Path):
+    """Abre OOXML; falha de formato → ``LegacyParseError`` (T025)."""
     try:
-        workbook = load_workbook(path, read_only=True, data_only=True)
+        return load_workbook(path, read_only=True, data_only=True)
     except InvalidFileException as exc:
+        raise LegacyParseError(
+            f"Arquivo OOXML ilegível (não é Excel 2007+ válido): {path}"
+        ) from exc
+    except (zipfile.BadZipFile, zipfile.LargeZipFile) as exc:
         raise LegacyParseError(
             f"Arquivo OOXML ilegível (não é Excel 2007+ válido): {path}"
         ) from exc
     except OSError as exc:
         raise LegacyParseError(f"Arquivo ilegível: {path} ({exc})") from exc
 
+
+def _load_sheet_rows(path: Path) -> list[tuple[Any, ...]]:
+    """Carrega a primeira planilha como lista de tuplas (header + dados).
+
+    Raises:
+        LegacyParseError: arquivo ausente/ilegível, OOXML inválido ou
+            planilha ausente (T025 — fatal, zero writes).
+    """
+    _assert_readable_file(path)
+    workbook = _load_workbook(path)
     try:
-        sheet = workbook.active
-        if sheet is None:
-            raise LegacyParseError(f"Planilha ausente em {path}")
-        rows: list[tuple[Any, ...]] = []
-        for row in sheet.iter_rows(values_only=True):
-            rows.append(tuple(row))
-        return rows
+        try:
+            sheet = workbook.active
+            if sheet is None:
+                raise LegacyParseError(f"Planilha ausente em {path}")
+            rows: list[tuple[Any, ...]] = []
+            for row in sheet.iter_rows(values_only=True):
+                rows.append(tuple(row))
+            return rows
+        except LegacyParseError:
+            raise
+        except (
+            OSError,
+            ValueError,
+            KeyError,
+            zipfile.BadZipFile,
+            zipfile.LargeZipFile,
+        ) as exc:
+            raise LegacyParseError(
+                f"Arquivo OOXML ilegível: {path} ({exc})"
+            ) from exc
     finally:
         workbook.close()
 
@@ -196,6 +262,9 @@ def parse_colaboradores_xlsx(path: str | Path) -> ParsedColaboradores:
 
     Colunas PII (CPF, RG, banco, etc.) são ignoradas — não entram na estrutura.
     Linhas sem ``Nome`` são descartadas. ``Data demissão`` permanece crua.
+
+    Raises:
+        LegacyParseError: arquivo / OOXML / colunas (T025 — fatal).
     """
     path = Path(path)
     raw_rows = _load_sheet_rows(path)
@@ -237,6 +306,9 @@ def parse_avaliacoes_crosswalk_xlsx(path: str | Path) -> ParsedAvaliacoesCrosswa
 
     Demais colunas são ignoradas nesta fatia (column-mapping §avaliações).
     Linhas sem nome ou identificador são descartadas (crosswalk R8).
+
+    Raises:
+        LegacyParseError: arquivo / OOXML / colunas (T025 — fatal).
     """
     path = Path(path)
     raw_rows = _load_sheet_rows(path)

@@ -29,6 +29,7 @@ build/
 # Testes e lint
 .pytest_cache/
 .ruff_cache/
+.mypy_cache/
 .coverage
 htmlcov/
 
