@@ -625,6 +625,112 @@ def test_hierarquia_ciclo_reportado_vinculo_nao_aplicado():
 
 
 @pytest.mark.django_db
+def test_gestor_demitido_com_liderados_nao_aborta_carga(tmp_path: Path):
+    """R11: gestor demitido com liderados ativos → conflito, carga exit 0.
+
+    Reproduz o edge case do dump real: demitido recebe ``line_manager`` na
+    fase B e ainda tem Superior direto id; desativação na fase C é bloqueada
+    por liderados ativos — reporta ``desativacao_bloqueada_liderados`` e
+    mantém o gestor ativo (sem ``LegacyPersistError``).
+    """
+    from openpyxl import Workbook
+
+    colab = tmp_path / 'colaboradores_demitido_gestor.xlsx'
+    aval = tmp_path / 'avaliacoes_demitido_gestor.xlsx'
+    assert 'raw' not in colab.parts
+
+    headers = list(COLABORADORES_COLUMNS)
+    rows = [
+        # Topo ativo
+        [
+            'Boss Topo',
+            'boss.topo@example.com',
+            '',
+            '',
+            None,
+            'Gerente Fixture',
+            '10',
+            'Engenharia Fixture',
+            '',
+        ],
+        # Gestor demitido com superior (o gatilho do bug)
+        [
+            'Gestor Demitido',
+            'gestor.demitido@example.com',
+            '',
+            '',
+            '2024-06-01',
+            'Tech Lead Fixture',
+            '20',
+            'Engenharia Fixture',
+            '1',
+        ],
+        # Liderado ativo → superior = gestor demitido
+        [
+            'Liderado Ativo',
+            'liderado.ativo@example.com',
+            '',
+            '',
+            None,
+            'Dev Fixture',
+            '30',
+            'Engenharia Fixture',
+            '2',
+        ],
+    ]
+    wb = Workbook()
+    ws = wb.active
+    assert ws is not None
+    ws.title = 'sheet1'
+    ws.append(headers)
+    for row in rows:
+        ws.append(row)
+    wb.save(colab)
+
+    wb2 = Workbook()
+    ws2 = wb2.active
+    assert ws2 is not None
+    ws2.title = 'sheet1'
+    ws2.append(['Nome Avaliado', 'Identificador Avaliado'])
+    ws2.append(['Boss Topo', '1'])
+    ws2.append(['Gestor Demitido', '2'])
+    ws2.append(['Liderado Ativo', '3'])
+    wb2.save(aval)
+
+    report = import_colaboradores(colab, avaliacoes_path=aval)
+
+    assert report.modo == 'persist'
+    assert report.usuarios_criados == 3
+    bloqueados = [
+        c
+        for c in report.conflitos
+        if c.label == 'desativacao_bloqueada_liderados'
+    ]
+    assert len(bloqueados) == 1
+    assert 'gestor.demitido@example.com' in bloqueados[0].extra
+
+    boss = CustomUser.objects.get(email='boss.topo@example.com')
+    gestor = CustomUser.objects.get(email='gestor.demitido@example.com')
+    liderado = CustomUser.objects.get(email='liderado.ativo@example.com')
+
+    assert boss.is_active is True
+    assert boss.line_manager_id is None
+    # Mantido ativo: desativação bloqueada por liderado.
+    assert gestor.is_active is True
+    assert gestor.line_manager_id == boss.pk
+    assert liderado.is_active is True
+    assert liderado.line_manager_id == gestor.pk
+    assert report.demitidos_inativos == 0
+
+    # Dry-run do mesmo cenário também conclui (exit 0 / sem persist error).
+    dry = import_colaboradores(colab, avaliacoes_path=aval, dry_run=True)
+    assert dry.modo == 'dry-run'
+    assert any(
+        c.label == 'desativacao_bloqueada_liderados' for c in dry.conflitos
+    )
+
+
+@pytest.mark.django_db
 def test_arquivo_ausente_exit_1_db_inalterado(tmp_path: Path):
     """C4.3: path inexistente → ``CommandError`` exit 1; DB inalterado."""
     _import_samples()

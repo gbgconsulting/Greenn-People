@@ -3,6 +3,9 @@
 Superfície pública: ``import_colaboradores`` (reexportada por ``__init__``).
 Fase A (T018): parse → crosswalk → Area → Cargo → CustomUser upsert.
 Fase B (T022): hierarquia ``line_manager`` após persistir todos os usuários.
+Fase C (R11): demissões diferidas — ``is_active=False`` só depois da
+hierarquia; se ``clean()`` bloquear por liderados ativos, conflito
+``desativacao_bloqueada_liderados`` e mantém ativo (sem abortar).
 T025: ``dry_run`` — parse + totais projetados com ``set_rollback``
 (zero commit); falhas fatais pré-persistência via ``LegacyParseError``.
 T026: idempotência por e-mail normalizado (R12 / FR-013) —
@@ -14,6 +17,7 @@ T027: exit codes 0/1 + rollback em exceção de persistência
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
 
 from django.apps import apps
@@ -49,6 +53,16 @@ from apps.accounts.services.legacy_import.resolve import (
     resolve_email,
     resolve_row,
 )
+
+
+@dataclass(frozen=True)
+class _PendingDismissal:
+    """Demissão a aplicar na fase C (após hierarquia / R11)."""
+
+    email: str
+    nome: str
+    area: str
+    cargo: str
 
 # Models US1 com ``solides_id`` aditivo — checagem pré-persistência (T027).
 _SOLIDES_ID_MODELS: tuple[tuple[str, str], ...] = (
@@ -94,10 +108,12 @@ def import_colaboradores(
        Ausência → ``LegacySchemaError`` (exit 1, zero writes).
     3. **Persist** em ``transaction.atomic()``:
        Area → Cargo → CustomUser (``full_clean`` + ``save`` / ``create_user``
-       + ``set_unusable_password``) e, em 2ª passada, ``line_manager`` via
-       ``apply_hierarchy`` (R5 / FR-009). ``email_confirmado_em=timezone.now()``;
-       sem PII extra; denylist intacta. Exceção → ``LegacyPersistError``,
-       rollback do ``atomic``, exit 1 no command.
+       + ``set_unusable_password``); 2ª passada ``line_manager`` via
+       ``apply_hierarchy`` (R5 / FR-009); 3ª passada demissões diferidas
+       (R11) — nunca ``is_active=False`` antes da hierarquia.
+       ``email_confirmado_em=timezone.now()``; sem PII extra; denylist
+       intacta. Exceção → ``LegacyPersistError``, rollback do ``atomic``,
+       exit 1 no command.
     4. **``dry_run`` (T025)**: executa a mesma lógica de persistência para
        projetar totais no relatório (``modo=dry-run``), mas marca a
        transação com ``set_rollback(True)`` em ``finally`` — **zero commit**.
@@ -133,8 +149,9 @@ def import_colaboradores(
 
     with transaction.atomic():
         try:
-            _persist_phase_a(parsed.rows, crosswalk, report)
+            pending = _persist_phase_a(parsed.rows, crosswalk, report)
             apply_hierarchy(parsed.rows, report)
+            _apply_dismissals(pending, report)
         except LegacyPersistError:
             raise
         except Exception as exc:
@@ -186,11 +203,18 @@ def _persist_phase_a(
     rows: tuple[ColaboradorRow, ...],
     crosswalk: CrosswalkIndex,
     report: ImportReport,
-) -> None:
-    """Fase A: Area → Cargo → CustomUser upsert por e-mail (R5 / R12 / T026)."""
+) -> list[_PendingDismissal]:
+    """Fase A: Area → Cargo → CustomUser upsert por e-mail (R5 / R12 / T026).
+
+    Demissões (``is_active=False``) são **adiadas** para a fase C (R11):
+    gestores demitidos precisam permanecer ativos enquanto a hierarquia
+    grava ``line_manager`` neles; caso contrário ``CustomUser.save`` /
+    ``full_clean`` aborta com liderados ativos.
+    """
     session = ResolveSession(report=report)
     # chave casefold → primeira linha que reivindicou o e-mail no backup.
     claimed_emails: dict[str, int] = {}
+    pending: list[_PendingDismissal] = []
 
     for row in rows:
         email = resolve_email(row)
@@ -217,7 +241,9 @@ def _persist_phase_a(
         claimed_emails[claim] = row.linha
 
         resolved = resolve_row(row, session)
-        _upsert_user(resolved, crosswalk, report)
+        _upsert_user(resolved, crosswalk, report, pending)
+
+    return pending
 
 
 def _email_claim_key(email: str) -> str:
@@ -239,17 +265,18 @@ def _upsert_user(
     resolved: ResolvedRow,
     crosswalk: CrosswalkIndex,
     report: ImportReport,
+    pending: list[_PendingDismissal],
 ) -> CustomUser:
     """Cria ou atualiza ``CustomUser`` pela chave natural e-mail (R12 / T026).
 
     - Lookup: ``email__iexact``; se ausente, ``solides_id`` complementar
       (FR-013 — reexecução não duplica a mesma pessoa).
-    - Create: ``create_user`` + ``set_unusable_password``; confirma e-mail.
+    - Create: ``create_user`` + ``set_unusable_password``; confirma e-mail;
+      demissão diferida (sempre cria ativo se a fonte indicar demissão).
     - Update: campos divergentes via ``full_clean`` + ``save``; noop →
-      ``usuarios_inalterados`` sem ``save``.
+      ``usuarios_inalterados`` sem ``save``; demissão diferida (R11).
     - ``solides_id`` via crosswalk (ambíguo/ausente → null; colisão unique
       reportada sem corromper o dono existente).
-    - Demissão bloqueada por liderados ativos → conflito e mantém ativo (R11).
     """
     assert resolved.email is not None
     email = resolved.email
@@ -275,6 +302,7 @@ def _upsert_user(
             area_nome=area_nome,
             cargo_nome=cargo_nome,
             report=report,
+            pending=pending,
         )
 
     return _update_user(
@@ -284,6 +312,7 @@ def _upsert_user(
         area_nome=area_nome,
         cargo_nome=cargo_nome,
         report=report,
+        pending=pending,
     )
 
 
@@ -326,8 +355,12 @@ def _create_user(
     area_nome: str,
     cargo_nome: str,
     report: ImportReport,
+    pending: list[_PendingDismissal],
 ) -> CustomUser:
-    """Cria usuário com senha inutilizável e e-mail confirmado (R6 / R7)."""
+    """Cria usuário com senha inutilizável e e-mail confirmado (R6 / R7).
+
+    Sempre cria ``is_active=True``; demissão vai para a fase C (R11).
+    """
     assert resolved.email is not None
     user = CustomUser.objects.create_user(
         email=resolved.email,
@@ -335,7 +368,7 @@ def _create_user(
         nome=resolved.nome,
         area=resolved.area,
         cargo=resolved.cargo,
-        is_active=resolved.is_active,
+        is_active=True,
         solides_id=solides_id,
         email_confirmado_em=timezone.now(),
     )
@@ -352,7 +385,14 @@ def _create_user(
     if solides_id:
         note_solides_id_preenchido(report)
     if not resolved.is_active:
-        note_demitido_inativo(report)
+        pending.append(
+            _PendingDismissal(
+                email=resolved.email,
+                nome=resolved.nome,
+                area=area_nome,
+                cargo=cargo_nome,
+            )
+        )
     return user
 
 
@@ -364,12 +404,14 @@ def _update_user(
     area_nome: str,
     cargo_nome: str,
     report: ImportReport,
+    pending: list[_PendingDismissal],
 ) -> CustomUser:
     """Atualiza campos divergentes; conta inalterado se noop (R12 / T026).
 
-    Campos considerados (R12): ``nome``, ``cargo``, ``area``, ``is_active``,
-    ``solides_id``, ``email`` (só se a identidade veio por ``solides_id``)
-    e ``email_confirmado_em`` quando ainda é null. Reexecução idêntica
+    Campos considerados (R12): ``nome``, ``cargo``, ``area``, ``is_active``
+    (só reativação imediata; demissão diferida R11), ``solides_id``,
+    ``email`` (só se a identidade veio por ``solides_id``) e
+    ``email_confirmado_em`` quando ainda é null. Reexecução idêntica
     NÃO chama ``save`` nem bumpa o timestamp (SC-007).
     Crosswalk ausente/ambíguo não apaga ``solides_id`` existente.
     """
@@ -386,65 +428,50 @@ def _update_user(
     desired_cargo_id = resolved.cargo.pk if resolved.cargo else None
     needs_email_confirm = user.email_confirmado_em is None
 
+    # R11: demissão diferida — na fase A só aplica reativação imediata.
+    # Se a fonte pede inativo, mantém ``is_active`` atual até a fase C.
+    defer_dismissal = not resolved.is_active
+    phase_a_is_active = True if resolved.is_active else user.is_active
+
     business_changed = (
         user.nome != resolved.nome
         or user.area_id != desired_area_id
         or user.cargo_id != desired_cargo_id
-        or user.is_active != resolved.is_active
+        or user.is_active != phase_a_is_active
         or user.solides_id != desired_solides
         or user.email != desired_email
         or needs_email_confirm
     )
 
+    if defer_dismissal:
+        pending.append(
+            _PendingDismissal(
+                email=resolved.email,
+                nome=resolved.nome,
+                area=area_nome,
+                cargo=cargo_nome,
+            )
+        )
+
     if not business_changed:
+        # Demissão pendente de quem ainda está ativo: fase C conta atualizado.
+        if defer_dismissal and user.is_active:
+            return user
         report.usuarios_inalterados += 1
         return user
 
     previous_solides = user.solides_id
-    previous_active = user.is_active
-    previous_nome = user.nome
-    previous_area_id = user.area_id
-    previous_cargo_id = user.cargo_id
-    previous_email = user.email
-    previous_confirm = user.email_confirmado_em
 
     user.nome = resolved.nome
     user.email = desired_email
     user.area = resolved.area
     user.cargo = resolved.cargo
-    user.is_active = resolved.is_active
+    user.is_active = phase_a_is_active
     user.solides_id = desired_solides
     user.email_confirmado_em = timezone.now()
 
-    try:
-        user.full_clean()
-        user.save()
-    except ValidationError as exc:
-        if _is_deactivation_blocked(exc) and not resolved.is_active:
-            # R11: reporta e mantém ativo; aplica demais campos se houver.
-            user.is_active = True
-            record_conflito(
-                report,
-                tipo="desativacao_bloqueada_liderados",
-                extra=f"email={resolved.email}",
-                motivo="liderados_ativos",
-            )
-            still_changed = (
-                user.nome != previous_nome
-                or user.area_id != previous_area_id
-                or user.cargo_id != previous_cargo_id
-                or user.solides_id != previous_solides
-                or user.email != previous_email
-                or previous_confirm is None
-            )
-            if not still_changed:
-                user.email_confirmado_em = previous_confirm
-                report.usuarios_inalterados += 1
-                return user
-            user.full_clean()
-            user.save()
-        else:
-            raise
+    user.full_clean()
+    user.save()
 
     record_atualizado(
         report,
@@ -455,9 +482,60 @@ def _update_user(
     )
     if desired_solides and previous_solides != desired_solides:
         note_solides_id_preenchido(report)
-    if previous_active and not user.is_active:
-        note_demitido_inativo(report)
     return user
+
+
+def _apply_dismissals(
+    pending: list[_PendingDismissal],
+    report: ImportReport,
+) -> None:
+    """Fase C (R11): aplica ``is_active=False`` após a hierarquia.
+
+    Se ``clean()``/``save()`` bloquear por liderados ativos → conflito
+    ``desativacao_bloqueada_liderados``, mantém ativo, **não** aborta a
+    carga (edge case do dump real: gestor demitido com Superior direto id
+    e liderados ativos já vinculados na fase B).
+    """
+    seen: set[str] = set()
+    for item in pending:
+        key = _email_claim_key(item.email)
+        if key in seen:
+            continue
+        seen.add(key)
+
+        user = _lookup_user_by_email(item.email)
+        if user is None or not user.is_active:
+            continue
+
+        user.is_active = False
+        try:
+            user.full_clean()
+            user.save()
+        except ValidationError as exc:
+            if _is_deactivation_blocked(exc):
+                user.is_active = True
+                record_conflito(
+                    report,
+                    tipo="desativacao_bloqueada_liderados",
+                    extra=f"email={item.email}",
+                    motivo="liderados_ativos",
+                )
+                continue
+            raise
+
+        note_demitido_inativo(report)
+        # Só demissão (sem outras mudanças na fase A): conta como atualizado.
+        already_counted = any(
+            _emails_match(e.extra, item.email) for e in report.atualizados
+        ) or any(_emails_match(e.extra, item.email) for e in report.criados)
+        if not already_counted:
+            record_atualizado(
+                report,
+                nome=item.nome,
+                email=item.email,
+                area=item.area,
+                cargo=item.cargo,
+            )
 
 
 def _is_deactivation_blocked(exc: ValidationError) -> bool:

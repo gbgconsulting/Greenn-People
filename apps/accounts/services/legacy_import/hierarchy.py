@@ -102,6 +102,9 @@ def _assign_line_manager(
 
     Em ``ValidationError`` de ``line_manager`` (ciclo / auto-gestor):
     restaura o vínculo anterior **sem** ``save`` e registra o ciclo.
+    Em bloqueio de desativação (usuário já inativo com liderados ativos
+    — edge case R11 / reexecução): reativa temporariamente para gravar o
+    vínculo; a fase C do importer tenta demitir de novo ou reporta conflito.
     Demais erros de validação propagam (não silenciar).
     """
     previous = user.line_manager
@@ -110,13 +113,20 @@ def _assign_line_manager(
         user.full_clean()
         user.save()
     except ValidationError as exc:
-        if not _is_line_manager_error(exc):
+        if _is_line_manager_error(exc):
+            label = _cycle_user_label(user, manager)
             user.line_manager = previous
-            raise
-        label = _cycle_user_label(user, manager)
+            record_ciclo_hierarquia(report, usuarios=label)
+            return
+        if _is_deactivation_blocked(exc) and not user.is_active:
+            # Precisa gravar o vínculo sem abortar a carga (R11).
+            user.is_active = True
+            user.full_clean()
+            user.save()
+            note_gestor_vinculado(report)
+            return
         user.line_manager = previous
-        record_ciclo_hierarquia(report, usuarios=label)
-        return
+        raise
 
     note_gestor_vinculado(report)
 
@@ -125,6 +135,12 @@ def _is_line_manager_error(exc: ValidationError) -> bool:
     """True se ``clean()`` rejeitou ``line_manager`` (ciclo ou auto-gestor)."""
     error_dict = getattr(exc, "error_dict", None) or {}
     return "line_manager" in error_dict
+
+
+def _is_deactivation_blocked(exc: ValidationError) -> bool:
+    """True se ``clean()`` bloqueou ``is_active`` (liderados ativos)."""
+    error_dict = getattr(exc, "error_dict", None) or {}
+    return "is_active" in error_dict
 
 
 def _cycle_user_label(user: CustomUser, attempted_manager: CustomUser) -> str:
