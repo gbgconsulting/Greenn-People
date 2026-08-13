@@ -7,10 +7,11 @@ e erros de schema/persistência vivem em ``importer``.
 
 from __future__ import annotations
 
+from apps.accounts.services.legacy_import.parse_xlsx import LegacyParseError
 from apps.accounts.services.legacy_import.report import (
     ImportReport,
     ReportEntry,
-    format_report,
+    format_ciclos_avaliacoes_report,
     mask_email,
     mask_pii,
 )
@@ -22,10 +23,11 @@ from apps.cycles.services.legacy_import.importer import (
 
 __all__ = [
     "ImportReport",
+    "LegacyParseError",
     "LegacyPersistError",
     "LegacySchemaError",
     "ReportEntry",
-    "format_report",
+    "format_ciclos_avaliacoes_report",
     "import_ciclos_avaliacoes",
     "mask_email",
     "mask_pii",
