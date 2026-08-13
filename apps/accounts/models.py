@@ -76,6 +76,14 @@ class CustomUser(AbstractUser):
         null=True,
         blank=True,
     )
+    solides_id = models.CharField(
+        'ID Sólides',
+        max_length=50,
+        blank=True,
+        null=True,
+        unique=True,
+        db_index=True,
+    )
 
     objects = CustomUserManager()
 

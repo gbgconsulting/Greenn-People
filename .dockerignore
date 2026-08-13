@@ -42,3 +42,4 @@ agent-transcripts
 docs
 specs
 scripts/validate_*.py
+data/legado-solides/raw

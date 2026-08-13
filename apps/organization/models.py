@@ -70,6 +70,14 @@ class Cargo(TimeStampedModel):
     nome = models.CharField('nome', max_length=100)
     nivel = models.PositiveSmallIntegerField('nível')
     is_active = models.BooleanField('ativo', default=True)
+    solides_id = models.CharField(
+        'ID Sólides',
+        max_length=50,
+        blank=True,
+        null=True,
+        unique=True,
+        db_index=True,
+    )
 
     class Meta:
         verbose_name = 'cargo'
