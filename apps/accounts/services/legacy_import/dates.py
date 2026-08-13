@@ -1,16 +1,23 @@
 """Parser de datas do legado Sólides (serial Excel + ISO).
 
-Conforme research R10 e ``contracts/column-mapping-contract.md`` §is_active.
-Stdlib apenas — **sem** openpyxl (restrito a ``parse_xlsx.py``).
+Conforme research R10/R6 e ``contracts/column-mapping-contract.md``
+(§is_active / §Normalização de nome). Stdlib + ``display_name`` —
+**sem** openpyxl (restrito a ``parse_xlsx.py``).
 """
 
 from __future__ import annotations
 
+import re
 from datetime import date, datetime, timedelta
 from typing import Any
 
+from apps.competencies.services.catalog_import.normalize import display_name
+
 # Epoch Excel / Lotus 1-2-3 (compat openpyxl.from_excel).
 _EXCEL_EPOCH = date(1899, 12, 30)
+
+# Texto que parece serial Excel / número (ex. ``46113``, ``46113.0``).
+_SERIAL_LIKE_RE = re.compile(r"^[+-]?\d+(?:[.,]\d+)?$")
 
 
 def parse_legacy_date(value: Any) -> date | None:
@@ -54,6 +61,39 @@ def parse_legacy_date(value: Any) -> date | None:
     raise ValueError(f"data legado não suportada: {type(value).__name__}={value!r}")
 
 
+def normalize_ciclo_nome(raw: Any) -> str:
+    """Rótulo estável para ``Ciclo.nome`` (research R6 / column-mapping).
+
+    - ``date`` / ``datetime`` tipados → ISO ``YYYY-MM-DD``.
+    - Numérico / serial Excel-like → ``parse_legacy_date`` → ISO; se não
+      parseável → ``ValueError('nome_serial_ambiguo')`` (não grava bruto).
+    - Demais → ``display_name`` (strip + colapso de whitespace).
+
+    Raises:
+        ValueError: serial-like ambíguo (código ``nome_serial_ambiguo``).
+    """
+    if raw is None:
+        return ""
+
+    if isinstance(raw, datetime):
+        return raw.date().isoformat()
+    if isinstance(raw, date):
+        return raw.isoformat()
+
+    if _is_excel_serial_like(raw):
+        try:
+            parsed = parse_legacy_date(raw)
+        except ValueError as exc:
+            raise ValueError("nome_serial_ambiguo") from exc
+        if parsed is None:
+            raise ValueError("nome_serial_ambiguo")
+        return parsed.isoformat()
+
+    if isinstance(raw, str):
+        return display_name(raw)
+    return display_name(str(raw))
+
+
 def is_dismissal_filled(value: Any) -> bool:
     """``True`` se ``Data demissão`` parseia para uma data (≠ sentinela zero)."""
     return parse_legacy_date(value) is not None
@@ -62,6 +102,20 @@ def is_dismissal_filled(value: Any) -> bool:
 def is_active_from_dismissal(value: Any) -> bool:
     """``is_active(row) = NOT is_dismissal_filled(Data demissão)``."""
     return not is_dismissal_filled(value)
+
+
+def _is_excel_serial_like(value: Any) -> bool:
+    """``True`` se o valor parece serial Excel / número (não bool)."""
+    if isinstance(value, bool):
+        return False
+    if isinstance(value, (int, float)):
+        return True
+    if isinstance(value, str):
+        text = value.strip()
+        return bool(text) and _SERIAL_LIKE_RE.fullmatch(text) is not None
+    if hasattr(value, "__float__") and not isinstance(value, (bytes, bytearray)):
+        return True
+    return False
 
 
 def _from_excel_serial(serial: float | int) -> date | None:

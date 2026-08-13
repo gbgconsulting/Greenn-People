@@ -1,4 +1,4 @@
-"""Leitura OOXML (openpyxl) de backups Sólides — colaboradores e crosswalk.
+"""Leitura OOXML (openpyxl) de backups Sólides — colaboradores, solicitações e crosswalk.
 
 Único módulo da feature autorizado a importar ``openpyxl`` (research R1).
 Colunas: ``contracts/column-mapping-contract.md`` §Obrigatórias;
@@ -42,6 +42,23 @@ AVALIACOES_REQUIRED_COLUMNS: tuple[str, ...] = (
     "Identificador Avaliado",
 )
 
+AVALIACOES_HEADERS_REQUIRED_COLUMNS: tuple[str, ...] = (
+    "Identificador",
+    "Identificador Solicitação",
+    "Identificador Avaliado",
+    "Nome Avaliado",
+    "Nome Avaliador",
+)
+
+SOLICITACOES_REQUIRED_COLUMNS: tuple[str, ...] = (
+    "Identificador",
+    "Nome",
+    "Iniciada em",
+    "Terminada em",
+)
+
+SOLICITACOES_OPTIONAL_COLUMNS: tuple[str, ...] = ("Status",)
+
 
 class LegacyParseError(Exception):
     """Erro fatal de pré-condição de parse (arquivo, OOXML, colunas).
@@ -71,12 +88,46 @@ class ColaboradorRow:
 
 
 @dataclass(frozen=True)
+class SolicitacaoRow:
+    """Linha normalizada de ``backup_solicitacoes_*`` (sem persistência).
+
+    ``nome``, ``iniciada_em`` e ``terminada_em`` permanecem crus (texto /
+    serial Excel / datetime / None) para ``dates.normalize_ciclo_nome`` e
+    ``parse_legacy_date``. ``identificador`` já canônico via
+    ``canonicalize_id``. ``status`` é opcional (contrato: sempre → encerrado).
+    """
+
+    linha: int
+    identificador: str
+    nome: Any
+    iniciada_em: Any
+    terminada_em: Any
+    status: str
+
+
+@dataclass(frozen=True)
 class AvaliacaoCrosswalkRow:
     """Par Nome Avaliado → Identificador Avaliado para crosswalk (R8)."""
 
     linha: int
     nome_avaliado: str
     identificador_avaliado: str
+
+
+@dataclass(frozen=True)
+class AvaliacaoHeaderRow:
+    """Linha de cabeçalho de ``backup_avaliacoes_*`` (pré-agregação).
+
+    IDs já canônicos. Nomes via ``display_name`` para autoavaliação /
+    fallback (``canonical_key``). Demais colunas do backup são ignoradas.
+    """
+
+    linha: int
+    identificador: str
+    identificador_solicitacao: str
+    identificador_avaliado: str
+    nome_avaliado: str
+    nome_avaliador: str
 
 
 @dataclass(frozen=True)
@@ -88,10 +139,26 @@ class ParsedColaboradores:
 
 
 @dataclass(frozen=True)
+class ParsedSolicitacoes:
+    """Resultado do parse de solicitações (sem persistência)."""
+
+    rows: tuple[SolicitacaoRow, ...]
+    path: str
+
+
+@dataclass(frozen=True)
 class ParsedAvaliacoesCrosswalk:
     """Resultado do parse mínimo de avaliações (crosswalk only)."""
 
     rows: tuple[AvaliacaoCrosswalkRow, ...]
+    path: str
+
+
+@dataclass(frozen=True)
+class ParsedAvaliacoesHeaders:
+    """Resultado do parse de cabeçalhos de avaliação (sem agregação)."""
+
+    rows: tuple[AvaliacaoHeaderRow, ...]
     path: str
 
 
@@ -192,8 +259,12 @@ def _as_text(value: Any) -> str:
     return display_name(str(value))
 
 
-def _as_id(value: Any) -> str:
-    """Identificador Sólides como string estável (float 1428115.0 → '1428115')."""
+def canonicalize_id(value: Any) -> str:
+    """Identificador Sólides canônico (contrato §Identificadores).
+
+    ``123.0`` (float/int integral) → ``'123'``; demais → ``strip(str(value))``.
+    Evita duplicatas ``'123'`` vs ``'123.0'`` em ``solides_id``.
+    """
     if value is None:
         return ""
     if isinstance(value, bool):
@@ -205,6 +276,11 @@ def _as_id(value: Any) -> str:
             return str(int(value))
         return str(value).strip()
     return str(value).strip()
+
+
+def _as_id(value: Any) -> str:
+    """Alias interno — preferir ``canonicalize_id`` na API pública."""
+    return canonicalize_id(value)
 
 
 def _load_workbook(path: Path):
@@ -301,6 +377,45 @@ def parse_colaboradores_xlsx(path: str | Path) -> ParsedColaboradores:
     return ParsedColaboradores(rows=tuple(result), path=str(path))
 
 
+def parse_solicitacoes_xlsx(path: str | Path) -> ParsedSolicitacoes:
+    """Lê ``backup_solicitacoes_*`` e valida colunas obrigatórias do contrato.
+
+    Colunas obrigatórias: ``Identificador``, ``Nome``, ``Iniciada em``,
+    ``Terminada em``. ``Status`` é opcional (ignorado na persistência —
+    sempre ``encerrado``). ``Criada em`` e demais colunas são ignoradas.
+    Linhas sem ``Identificador`` canônico são descartadas. Datas e nome
+    permanecem crus para normalização posterior (R6/R7).
+
+    Raises:
+        LegacyParseError: arquivo / OOXML / colunas (T025 — fatal).
+    """
+    path = Path(path)
+    raw_rows = _load_sheet_rows(path)
+    if not raw_rows:
+        raise LegacyParseError(f"Planilha vazia (sem header): {path}")
+
+    header_index = _header_index(raw_rows[0])
+    _require_columns(path, header_index, SOLICITACOES_REQUIRED_COLUMNS)
+
+    result: list[SolicitacaoRow] = []
+    for excel_row, row in enumerate(raw_rows[1:], start=2):
+        identificador = canonicalize_id(_cell(row, header_index, "Identificador"))
+        if not identificador:
+            continue
+        result.append(
+            SolicitacaoRow(
+                linha=excel_row,
+                identificador=identificador,
+                nome=_cell(row, header_index, "Nome"),
+                iniciada_em=_cell(row, header_index, "Iniciada em"),
+                terminada_em=_cell(row, header_index, "Terminada em"),
+                status=_as_text(_cell(row, header_index, "Status")),
+            )
+        )
+
+    return ParsedSolicitacoes(rows=tuple(result), path=str(path))
+
+
 def parse_avaliacoes_crosswalk_xlsx(path: str | Path) -> ParsedAvaliacoesCrosswalk:
     """Lê apenas colunas de crosswalk de ``backup_avaliacoes_*.xlsx``.
 
@@ -321,7 +436,9 @@ def parse_avaliacoes_crosswalk_xlsx(path: str | Path) -> ParsedAvaliacoesCrosswa
     result: list[AvaliacaoCrosswalkRow] = []
     for excel_row, row in enumerate(raw_rows[1:], start=2):
         nome = _as_text(_cell(row, header_index, "Nome Avaliado"))
-        identificador = _as_id(_cell(row, header_index, "Identificador Avaliado"))
+        identificador = canonicalize_id(
+            _cell(row, header_index, "Identificador Avaliado")
+        )
         if not nome or not identificador:
             continue
         result.append(
@@ -333,3 +450,47 @@ def parse_avaliacoes_crosswalk_xlsx(path: str | Path) -> ParsedAvaliacoesCrosswa
         )
 
     return ParsedAvaliacoesCrosswalk(rows=tuple(result), path=str(path))
+
+
+def parse_avaliacoes_headers_xlsx(path: str | Path) -> ParsedAvaliacoesHeaders:
+    """Lê cabeçalhos de ``backup_avaliacoes_*`` para agregação 1:1 (011).
+
+    Colunas obrigatórias: ``Identificador``, ``Identificador Solicitação``,
+    ``Identificador Avaliado``, ``Nome Avaliado``, ``Nome Avaliador``.
+    Linhas sem qualquer dos três IDs canônicos são descartadas (aggregation
+    contract). Demais colunas (ex. ``Avaiação criada em``) são ignoradas.
+
+    Raises:
+        LegacyParseError: arquivo / OOXML / colunas (T025 — fatal).
+    """
+    path = Path(path)
+    raw_rows = _load_sheet_rows(path)
+    if not raw_rows:
+        raise LegacyParseError(f"Planilha vazia (sem header): {path}")
+
+    header_index = _header_index(raw_rows[0])
+    _require_columns(path, header_index, AVALIACOES_HEADERS_REQUIRED_COLUMNS)
+
+    result: list[AvaliacaoHeaderRow] = []
+    for excel_row, row in enumerate(raw_rows[1:], start=2):
+        identificador = canonicalize_id(_cell(row, header_index, "Identificador"))
+        solicitacao = canonicalize_id(
+            _cell(row, header_index, "Identificador Solicitação")
+        )
+        avaliado = canonicalize_id(
+            _cell(row, header_index, "Identificador Avaliado")
+        )
+        if not identificador or not solicitacao or not avaliado:
+            continue
+        result.append(
+            AvaliacaoHeaderRow(
+                linha=excel_row,
+                identificador=identificador,
+                identificador_solicitacao=solicitacao,
+                identificador_avaliado=avaliado,
+                nome_avaliado=_as_text(_cell(row, header_index, "Nome Avaliado")),
+                nome_avaliador=_as_text(_cell(row, header_index, "Nome Avaliador")),
+            )
+        )
+
+    return ParsedAvaliacoesHeaders(rows=tuple(result), path=str(path))
