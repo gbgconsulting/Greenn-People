@@ -13,11 +13,19 @@ T033: migration ``solides_id`` reversível (seed preservado) e diff
 denylist vazio pós-import.
 T034: C5 PII/OPSEC (relatório sem CPF, model sem PII, CI sem ``raw/``)
 e C6 senha unusable (login bloqueado até reset).
+T035: walkthrough quickstart C1–C6 + SC-001…SC-010 aplicáveis (samples;
+smoke ``raw/`` somente staging, fora do CI).
+T036: stdout/``--report-file`` usam amostra mascarada exclusiva
+(``mask_email``/``mask_pii``); CPF/RG/endereço ausentes de logs e
+registros importados (SC-009).
 """
 
 from __future__ import annotations
 
+import logging
 import subprocess
+import time
+from dataclasses import astuple, fields
 from datetime import date
 from io import StringIO
 from pathlib import Path
@@ -40,8 +48,21 @@ from apps.accounts.services.legacy_import.dates import (
     parse_legacy_date,
 )
 from apps.accounts.services.legacy_import.hierarchy import apply_hierarchy
-from apps.accounts.services.legacy_import.parse_xlsx import ColaboradorRow
-from apps.accounts.services.legacy_import.report import ImportReport
+from apps.accounts.services.legacy_import.parse_xlsx import (
+    COLABORADORES_COLUMNS,
+    ColaboradorRow,
+    parse_colaboradores_xlsx,
+)
+from apps.accounts.services.legacy_import.report import (
+    ImportReport,
+    format_report,
+    mask_email,
+    mask_pii,
+    record_ciclo_hierarquia,
+    record_conflito,
+    record_criado,
+    record_nao_importavel,
+)
 from apps.accounts.services.legacy_import.resolve import resolve_email
 from apps.competencies.models import Competencia, Escala
 from apps.cycles.models import Ciclo
@@ -149,6 +170,8 @@ _PII_FIELD_NAMES = frozenset(
     {'cpf', 'rg', 'ctps', 'pis', 'endereco', 'telefone', 'banco'},
 )
 _CPF_SENTINELA = '000.000.000-00'
+_RG_SENTINELA = '12.345.678-9'
+_ENDERECO_SENTINELA = 'Rua Exemplo 100'
 _RAW_PII_DIR = '/'.join(('data', 'legado-solides', 'raw'))
 _BACKUP_COLABORADORES = '_'.join(('backup', 'colaboradores', '20260624'))
 _BACKUP_AVALIACOES = '_'.join(('backup', 'avaliacoes', '20260624'))
@@ -892,3 +915,389 @@ def test_login_bloqueado_sem_reset_ok_apos_set_password():
     client = Client()
     assert client.login(username=_EMAIL_ANA, password=DEFAULT_PASSWORD) is True
     assert client.session.get('_auth_user_id') == str(user.pk)
+
+
+# --- T035: quickstart C1–C6 + SC-001…SC-010 aplicáveis (samples; sem raw/) ---
+
+_SC010_IMPORT_MAX_S = 300  # SC-010: < 5 min de operação humana
+_SC010_REPORT_MAX_S = 120  # SC-010: relatório revisável em < 2 min
+
+
+def test_ignore_files_excluem_raw():
+    """C5 / SC-008: CI e imagem Docker não incluem backups PII."""
+    gitignore = (REPO_ROOT / '.gitignore').read_text(encoding='utf-8')
+    dockerignore = (REPO_ROOT / '.dockerignore').read_text(encoding='utf-8')
+    assert _RAW_PII_DIR in gitignore
+    assert _RAW_PII_DIR in dockerignore
+
+
+@pytest.mark.django_db
+def test_quickstart_c1_c6_end_to_end_samples(tmp_path: Path):
+    """Percorre quickstart C1–C6 com samples; SCs aplicáveis (sem raw/).
+
+    SC-002 / KPIs de dump (~325, ~260, ~187) e smoke ``raw/`` ficam
+    para staging manual — esta suíte cobre o análogo nas fixtures.
+    """
+    assert 'raw' not in COLABORADORES_MIN.parts
+    assert 'raw' not in AVALIACOES_MIN.parts
+
+    cargo = Cargo.objects.create(nome='Cargo Seed T035', nivel=1)
+    user = CustomUser.objects.create_user(
+        email='seed.t035@example.com',
+        password=DEFAULT_PASSWORD,
+        nome='Seed T035',
+        cargo=cargo,
+    )
+    escala = Escala.objects.create(
+        nome='Escala T035',
+        valor_minimo=1,
+        valor_maximo=5,
+    )
+    competencia = Competencia.objects.create(
+        nome='Competencia T035',
+        tipo=Competencia.Tipo.TECNICA,
+        escala=escala,
+    )
+    ciclo = Ciclo.objects.create(
+        nome='Ciclo T035',
+        data_inicio=date(2024, 1, 1),
+        data_fim=date(2024, 12, 31),
+        status=Ciclo.Status.ENCERRADO,
+    )
+    avaliacao = Avaliacao.objects.create(ciclo=ciclo, usuario=user)
+    pdi = PDI.objects.create(usuario=user, titulo='PDI T035')
+
+    # C1 / SC-001: cinco entidades aceitam solides_id null.
+    assert user.solides_id is None
+    assert cargo.solides_id is None
+    assert competencia.solides_id is None
+    assert avaliacao.solides_id is None
+    assert pdi.solides_id is None
+    assert avaliacao.etapa == Avaliacao.Etapa.INPUT_METAS
+
+    user.solides_id = 't035-dup'
+    user.save(update_fields=['solides_id'])
+    other = CustomUser.objects.create_user(
+        email='seed.t035.dup@example.com',
+        password=DEFAULT_PASSWORD,
+        nome='Seed Dup T035',
+    )
+    other.solides_id = 't035-dup'
+    with pytest.raises(IntegrityError):
+        with transaction.atomic():
+            other.save(update_fields=['solides_id'])
+    other.refresh_from_db()
+    assert other.solides_id is None
+
+    assert authenticate(
+        username='seed.t035@example.com',
+        password=DEFAULT_PASSWORD,
+    ) is not None
+
+    before = _db_counts()
+    stdout_dry = StringIO()
+    t_dry = time.perf_counter()
+    result = call_command(
+        'importar_colaboradores',
+        colaboradores=str(COLABORADORES_MIN),
+        avaliacoes=str(AVALIACOES_MIN),
+        dry_run=True,
+        stdout=stdout_dry,
+    )
+    dry_elapsed = time.perf_counter() - t_dry
+    dry_text = stdout_dry.getvalue()
+    assert result in (0, None)
+    assert 'modo: dry-run' in dry_text
+    assert 'usuarios_criados: 7' in dry_text
+    assert _db_counts() == before
+    assert dry_elapsed < _SC010_IMPORT_MAX_S
+
+    report_path = tmp_path / 'relatorio-colaboradores-legado.txt'
+    stdout = StringIO()
+    t_persist = time.perf_counter()
+    result = call_command(
+        'importar_colaboradores',
+        colaboradores=str(COLABORADORES_MIN),
+        avaliacoes=str(AVALIACOES_MIN),
+        report_file=str(report_path),
+        stdout=stdout,
+    )
+    persist_elapsed = time.perf_counter() - t_persist
+    text = stdout.getvalue()
+    assert result in (0, None)
+    assert persist_elapsed < _SC010_IMPORT_MAX_S
+    assert persist_elapsed < _SC010_REPORT_MAX_S
+    assert report_path.is_file()
+    file_text = report_path.read_text(encoding='utf-8')
+    assert file_text == text
+    assert 'modo: persist' in text
+    assert 'usuarios_criados: 7' in text
+    assert 'solides_id_preenchidos: 5' in text
+    assert 'demitidos_inativos: 2' in text
+    assert 'gestores_vinculados: 3' in text
+    assert 'sem_gestor: 4' in text
+    assert 'nao_importaveis: 1' in text
+    assert 'Amostra (mascarada' in text
+
+    # C2.3 / SC-003: demissão → inativo; sem demissão → ativo.
+    carla = CustomUser.objects.get(email=_EMAIL_CARLA)
+    diego = CustomUser.objects.get(email=_EMAIL_DIEGO)
+    ana = CustomUser.objects.get(email=_EMAIL_ANA)
+    assert carla.is_active is False
+    assert diego.is_active is False
+    assert ana.is_active is True
+    gestor = CustomUser.objects.get(email=_EMAIL_GESTOR)
+    assert gestor.is_active is True
+
+    # C2.4 e-mail confirmado na importação.
+    for email in _EMAILS_IMPORTAVEIS:
+        imported = CustomUser.objects.get(email=email)
+        assert imported.email_confirmado_em is not None
+
+    # C2.5 departamentos → Area.
+    area_names = set(Area.objects.values_list('nome', flat=True))
+    assert _AREAS_ESPERADAS <= area_names
+
+    # SC-002 (análogo samples): 7/7 com e-mail válido importados.
+    assert (
+        CustomUser.objects.filter(email__in=_EMAILS_IMPORTAVEIS).count()
+        == _IMPORTAVEIS
+    )
+
+    # C3.1 / SC-005 (análogo samples): match único preenche; parcial/ambíguo vazio.
+    filled = CustomUser.objects.filter(
+        email__in=_EMAILS_IMPORTAVEIS,
+        solides_id__isnull=False,
+    ).exclude(solides_id='').count()
+    assert filled == _SOLIDES_UNICOS
+    fernanda = CustomUser.objects.get(email=_EMAIL_FERNANDA)
+    ambiguo = CustomUser.objects.get(email=_EMAIL_AMBIGUO)
+    assert fernanda.solides_id is None
+    assert ambiguo.solides_id is None
+
+    # C3.2 / SC-004 (análogo samples): 3/3 superiores resolvíveis.
+    assert ana.line_manager_id == gestor.pk
+    assert CustomUser.objects.get(email=_EMAIL_BRUNO).line_manager_id == gestor.pk
+    assert diego.line_manager_id == gestor.pk
+    assert gestor.line_manager_id is None
+
+    # C1.4: seed/login/ciclo intactos após a carga.
+    user.refresh_from_db()
+    avaliacao.refresh_from_db()
+    ciclo.refresh_from_db()
+    assert user.email == 'seed.t035@example.com'
+    assert user.solides_id == 't035-dup'
+    assert avaliacao.etapa == Avaliacao.Etapa.INPUT_METAS
+    assert ciclo.status == Ciclo.Status.ENCERRADO
+    assert authenticate(
+        username='seed.t035@example.com',
+        password=DEFAULT_PASSWORD,
+    ) is not None
+
+    # C4.1 / C4.2 / SC-007: reexecução sem duplicatas.
+    emails_after_first = _user_emails()
+    counts_after_first = _db_counts()
+    stdout_second = StringIO()
+    result = call_command(
+        'importar_colaboradores',
+        colaboradores=str(COLABORADORES_MIN),
+        avaliacoes=str(AVALIACOES_MIN),
+        stdout=stdout_second,
+    )
+    second_text = stdout_second.getvalue()
+    assert result in (0, None)
+    assert 'usuarios_criados: 0' in second_text
+    assert 'usuarios_atualizados: 0' in second_text
+    assert 'usuarios_inalterados: 7' in second_text
+    assert _user_emails() == emails_after_first
+    assert _db_counts() == counts_after_first
+    assert (
+        CustomUser.objects.filter(email__in=_EMAILS_IMPORTAVEIS).count()
+        == _IMPORTAVEIS
+    )
+
+    # C5.2 / SC-009: relatório mascarado, sem CPF.
+    for email in _EMAILS_IMPORTAVEIS:
+        assert email not in text
+        assert email not in file_text
+    assert _CPF_SENTINELA not in text
+    assert _CPF_SENTINELA not in file_text
+    assert '***@example.com' in text
+
+    # C5.3: model sem PII proibida.
+    field_names = {f.name.lower() for f in CustomUser._meta.get_fields()}
+    assert _PII_FIELD_NAMES.isdisjoint(field_names)
+
+    # C6: senha unusable bloqueia login até reset.
+    ana.refresh_from_db()
+    assert not ana.has_usable_password()
+    assert authenticate(username=_EMAIL_ANA, password=DEFAULT_PASSWORD) is None
+
+
+# --- T036: SC-009 amostra mascarada exclusiva + PII ausente de logs/registros ---
+
+_LEGACY_IMPORT_DIR = (
+    REPO_ROOT / 'apps' / 'accounts' / 'services' / 'legacy_import'
+)
+_IMPORT_COMMAND = (
+    REPO_ROOT
+    / 'apps'
+    / 'accounts'
+    / 'management'
+    / 'commands'
+    / 'importar_colaboradores.py'
+)
+_LOG_LEAK_TOKENS = ('import logging', 'getLogger', 'logger.', 'print(')
+_PII_VALUE_TOKENS = (
+    _CPF_SENTINELA,
+    '00000000000',
+    _RG_SENTINELA,
+    _ENDERECO_SENTINELA,
+)
+
+
+def _assert_relatorio_mascarado(text: str) -> None:
+    """Stdout e --report-file: amostra mascarada, sem e-mail/CPF/RG completos."""
+    assert 'Amostra (mascarada' in text
+    assert '***@example.com' in text
+    lower = text.lower()
+    for email in _EMAILS_IMPORTAVEIS:
+        assert email not in text
+        assert email.lower() not in lower
+    for token in _PII_VALUE_TOKENS:
+        assert token.lower() not in lower
+
+
+def test_mask_email_e_mask_pii_nunca_emitem_completo():
+    """T036: mask_email/mask_pii são a superfície exclusiva de redação."""
+    full = _EMAIL_ANA
+    masked = mask_email(full)
+    assert masked == 'a***@example.com'
+    assert full not in masked
+    assert mask_email(None) == ''
+    assert mask_pii(full) == masked
+    assert mask_pii(_CPF_SENTINELA) == '***'
+    assert _CPF_SENTINELA not in mask_pii(_CPF_SENTINELA)
+    assert mask_pii(_RG_SENTINELA) == '***'
+    assert mask_pii('12345678901') == '***'
+
+
+def test_format_report_mascara_amostra_exclusivamente():
+    """T036: format_report redige e-mail/CPF/RG via mask_email/mask_pii."""
+    report = ImportReport(modo='persist', colaboradores_file='samples/x.xlsx')
+    record_criado(
+        report,
+        nome='Ana Silva',
+        email=_EMAIL_ANA,
+        area='Engenharia Fixture',
+        cargo='Desenvolvedor Fixture',
+    )
+    record_nao_importavel(report, linha=9, motivo='sem_email')
+    record_conflito(
+        report,
+        tipo='email_duplicado_backup',
+        extra=f'email={_EMAIL_ANA} | cpf={_CPF_SENTINELA} | rg={_RG_SENTINELA}',
+        motivo='linhas=2,3',
+    )
+    record_ciclo_hierarquia(
+        report,
+        usuarios=f'{_EMAIL_ANA} -> {_EMAIL_GESTOR}',
+    )
+    text = format_report(report)
+
+    _assert_relatorio_mascarado(text)
+    assert 'a***@example.com' in text
+    assert 'g***@example.com' in text
+    assert 'cpf=***' in text.lower()
+    assert 'rg=***' in text.lower()
+    assert _ENDERECO_SENTINELA not in text
+
+
+@pytest.mark.django_db
+def test_stdout_e_report_file_iguais_e_mascarados(tmp_path: Path):
+    """T036 / SC-009: stdout e --report-file são o mesmo texto mascarado."""
+    report_path = tmp_path / 'relatorio-colaboradores-legado.txt'
+    stdout = StringIO()
+    result = call_command(
+        'importar_colaboradores',
+        colaboradores=str(COLABORADORES_MIN),
+        avaliacoes=str(AVALIACOES_MIN),
+        report_file=str(report_path),
+        stdout=stdout,
+    )
+    text = stdout.getvalue()
+    file_text = report_path.read_text(encoding='utf-8')
+
+    assert result in (0, None)
+    assert report_path.is_file()
+    assert file_text == text
+    _assert_relatorio_mascarado(text)
+    _assert_relatorio_mascarado(file_text)
+    assert 'modo: persist' in text
+
+
+def test_parse_ignora_colunas_pii_da_fixture():
+    """T036: ColaboradorRow não captura CPF/RG/endereço da planilha."""
+    parsed = parse_colaboradores_xlsx(COLABORADORES_MIN)
+    field_names = {f.name.lower() for f in fields(ColaboradorRow)}
+    assert _PII_FIELD_NAMES.isdisjoint(field_names)
+    column_names = {col.lower() for col in COLABORADORES_COLUMNS}
+    assert _PII_FIELD_NAMES.isdisjoint(column_names)
+
+    blob = ' '.join(str(value) for row in parsed.rows for value in astuple(row))
+    for token in _PII_VALUE_TOKENS:
+        assert token not in blob
+
+
+@pytest.mark.django_db
+def test_registros_importados_sem_valores_pii():
+    """T036 / C5.3: User/Area/Cargo persistidos sem CPF/RG/endereço."""
+    _import_samples()
+
+    field_names = {f.name.lower() for f in CustomUser._meta.get_fields()}
+    assert _PII_FIELD_NAMES.isdisjoint(field_names)
+    columns = {col.lower() for col in _table_columns('accounts_customuser')}
+    assert _PII_FIELD_NAMES.isdisjoint(columns)
+
+    for user in CustomUser.objects.filter(email__in=_EMAILS_IMPORTAVEIS):
+        for field in user._meta.fields:
+            value = getattr(user, field.attname)
+            if isinstance(value, str):
+                for token in _PII_VALUE_TOKENS:
+                    assert token not in value
+    for nome in Area.objects.values_list('nome', flat=True):
+        for token in _PII_VALUE_TOKENS:
+            assert token not in nome
+    for nome in Cargo.objects.values_list('nome', flat=True):
+        for token in _PII_VALUE_TOKENS:
+            assert token not in nome
+
+
+def test_legacy_import_nao_loga_linha_completa_backup():
+    """T036 / R14: pacote e comando não logam linha completa do backup."""
+    sources = sorted(_LEGACY_IMPORT_DIR.glob('*.py'))
+    sources.append(_IMPORT_COMMAND)
+    for path in sources:
+        text = path.read_text(encoding='utf-8')
+        for token in _LOG_LEAK_TOKENS:
+            assert token not in text, f'{path.name} contém {token}'
+
+
+@pytest.mark.django_db
+def test_import_nao_emite_pii_em_caplog(caplog: pytest.LogCaptureFixture):
+    """T036 / SC-009: logs de execução não carregam CPF nem e-mail completo."""
+    caplog.set_level(logging.DEBUG)
+    stdout = StringIO()
+    call_command(
+        'importar_colaboradores',
+        colaboradores=str(COLABORADORES_MIN),
+        avaliacoes=str(AVALIACOES_MIN),
+        stdout=stdout,
+    )
+    combined = f'{caplog.text}\n{stdout.getvalue()}'
+    _assert_relatorio_mascarado(stdout.getvalue())
+    lower = combined.lower()
+    for token in _PII_VALUE_TOKENS:
+        assert token.lower() not in lower
+    for email in _EMAILS_IMPORTAVEIS:
+        assert email not in caplog.text

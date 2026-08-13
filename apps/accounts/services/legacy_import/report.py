@@ -30,6 +30,11 @@ _EMAIL_IN_TEXT = re.compile(
 # CPF (11) / CNPJ (14) só dígitos, com ou sem máscara tipográfica.
 _DIGITS_ONLY = re.compile(r"\D+")
 
+# PII formatada embutida em campos de amostra (SC-009 / T036).
+_CPF_FMT = re.compile(r"\b\d{3}\.\d{3}\.\d{3}-\d{2}\b")
+_CNPJ_FMT = re.compile(r"\b\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}\b")
+_RG_FMT = re.compile(r"\b\d{1,2}\.\d{3}\.\d{3}-[\dXx]\b")
+
 
 @dataclass
 class ReportEntry:
@@ -266,7 +271,7 @@ def mask_email(value: str | None) -> str:
 def mask_pii(value: str | None) -> str:
     """Mascara PII genérica — CPF/RG/telefone nunca em claro (R14).
 
-    - CPF (11 dígitos) / CNPJ (14): ``***``
+    - CPF (11 dígitos) / CNPJ (14) / RG formatado: ``***``
     - Texto com ``@``: ``mask_email``
     - Demais: primeiro caractere + ``***`` (curtos → ``***``)
     """
@@ -279,6 +284,8 @@ def mask_pii(value: str | None) -> str:
         return text
     if "@" in text:
         return mask_email(text)
+    if _CPF_FMT.fullmatch(text) or _CNPJ_FMT.fullmatch(text) or _RG_FMT.fullmatch(text):
+        return "***"
 
     digits = _DIGITS_ONLY.sub("", text)
     if len(digits) in (11, 14) and sum(c.isdigit() for c in text) >= 11:
@@ -345,18 +352,26 @@ def _sample_lines(
 
 def _format_usuario_amostra(entry: ReportEntry) -> str:
     """Formato criados/atualizados: ``nome=… | email=m***@… | area=…``."""
-    parts = [f"  - nome={entry.label}", f"email={mask_email(entry.extra)}"]
+    parts = [
+        f"  - nome={_mask_emails_in_text(entry.label)}",
+        f"email={mask_email(entry.extra)}",
+    ]
     if entry.motivo.strip():
         parts.append(_mask_emails_in_text(entry.motivo.strip()))
     return " | ".join(parts)
 
 
 def _format_nao_importavel(entry: ReportEntry) -> str:
-    return f"  - linha={entry.label} | motivo={entry.motivo}"
+    parts = [f"  - linha={_mask_emails_in_text(entry.label)}"]
+    if entry.motivo.strip():
+        parts.append(f"motivo={_mask_emails_in_text(entry.motivo.strip())}")
+    if entry.extra.strip():
+        parts.append(_mask_emails_in_text(entry.extra.strip()))
+    return " | ".join(parts)
 
 
 def _format_conflito(entry: ReportEntry) -> str:
-    parts = [f"  - tipo={entry.label}"]
+    parts = [f"  - tipo={_mask_emails_in_text(entry.label)}"]
     if entry.extra.strip():
         parts.append(_mask_emails_in_text(entry.extra.strip()))
     if entry.motivo.strip():
@@ -366,17 +381,24 @@ def _format_conflito(entry: ReportEntry) -> str:
 
 def _format_ciclo(entry: ReportEntry) -> str:
     usuarios = _mask_emails_in_text(entry.label.strip()) if entry.label.strip() else ""
-    return f"  - usuarios={usuarios} | motivo={entry.motivo}"
+    motivo = _mask_emails_in_text(entry.motivo.strip()) if entry.motivo.strip() else ""
+    return f"  - usuarios={usuarios} | motivo={motivo}"
 
 
 def _mask_emails_in_text(text: str) -> str:
-    """Substitui endereços embutidos por ``mask_email``; demais PII via heurística CPF."""
+    """Substitui endereços por ``mask_email`` e CPF/CNPJ/RG por ``mask_pii``."""
 
-    def _repl(match: re.Match[str]) -> str:
+    def _repl_email(match: re.Match[str]) -> str:
         return mask_email(match.group(0))
 
-    masked = _EMAIL_IN_TEXT.sub(_repl, text)
-    # Se o campo inteiro parece CPF/CNPJ sem e-mail, redige.
+    def _repl_pii(match: re.Match[str]) -> str:
+        return mask_pii(match.group(0))
+
+    masked = _EMAIL_IN_TEXT.sub(_repl_email, text)
+    masked = _CPF_FMT.sub(_repl_pii, masked)
+    masked = _CNPJ_FMT.sub(_repl_pii, masked)
+    masked = _RG_FMT.sub(_repl_pii, masked)
+    # Campo inteiro que é CPF/CNPJ sem pontuação (e sem e-mail).
     if "@" not in masked:
         digits = _DIGITS_ONLY.sub("", masked)
         if len(digits) in (11, 14) and sum(c.isdigit() for c in masked) >= 11:
