@@ -3,6 +3,11 @@
 Superfície CLI fina — valida args, chama ``import_ciclos_avaliacoes`` e emite
 o relatório (stdout e opcionalmente ``--report-file``).
 
+Ordem fixa (``contracts/import-command-contract.md`` §Semântica):
+1. Parse solicitações + avaliações (pré-atomic)
+2. ``transaction.atomic()``: fase 1 ciclos → fase 2 cabeçalhos agregados
+3. Relatório com seções ``grupos_agregados`` / ``ids_colapsados`` / ``orfaos_*``
+
 Códigos de saída (``contracts/import-command-contract.md`` §Códigos de saída):
 - ``0`` — sucesso (persistência ok ou dry-run ok; conflitos/órfãos não-fatais ok)
 - ``1`` — erro fatal pré-persistência ou de persistência:
@@ -13,8 +18,9 @@ Códigos de saída (``contracts/import-command-contract.md`` §Códigos de saíd
   - falha inesperada de persistência (``transaction.atomic`` faz rollback)
 - Não há exit ``2`` nesta versão (args inválidos também → ``1``).
 
-T012: fase 1 ciclos funcional via importer; fase 2 cabeçalhos stub até US2.
-Sem UI/DRF/Celery; denylist intacta (não chama stage/open/close/approval).
+T017: fases 1+2 via importer na mesma atomic; relatório via
+``format_ciclos_avaliacoes_report``. Sem UI/DRF/Celery; denylist intacta
+(não chama stage/open/close/approval/evaluation/adherence).
 """
 
 from __future__ import annotations
@@ -34,9 +40,14 @@ from apps.cycles.services.legacy_import import (
 
 
 class Command(BaseCommand):
+    """CLI fina US1+US2 (T017): ciclos → cabeçalhos; relatório com
+    ``grupos_agregados`` / ``ids_colapsados`` / ``orfaos_*``.
+    """
+
     help = (
         "Importa solicitações como ciclos históricos encerrados e cabeçalhos "
-        "de avaliação do backup Sólides (OOXML) para o Greenn People."
+        "de avaliação agregados (1:1) do backup Sólides (OOXML). "
+        "Relatório inclui grupos_agregados, ids_colapsados e orfaos_*."
     )
 
     def create_parser(self, prog_name, subcommand, **kwargs):
@@ -71,10 +82,20 @@ class Command(BaseCommand):
         parser.add_argument(
             "--dry-run",
             action="store_true",
-            help="Parse + totais projetados sem commit no banco.",
+            help=(
+                "Parse + agregação + totais projetados (ciclos/cabeçalhos) "
+                "sem commit no banco."
+            ),
         )
 
     def handle(self, *args, **options) -> int:
+        """Parse → atomic (ciclos → cabeçalhos) → relatório mascarado.
+
+        Persistência e ordem das fases ficam no importer; aqui só args,
+        códigos de saída e emissão de ``format_ciclos_avaliacoes_report``
+        (contadores + amostra ``grupos_agregados`` / ``ids_colapsados`` /
+        ``orfaos_ciclo`` / ``orfaos_usuario``).
+        """
         solicitacoes_path = options["solicitacoes"]
         avaliacoes_path = options["avaliacoes"]
         report_file = options["report_file"]
@@ -107,6 +128,7 @@ class Command(BaseCommand):
         return 0
 
     def _emit_report(self, text: str, report_file: str | None) -> None:
+        """Stdout obrigatório; ``--report-file`` grava o mesmo texto UTF-8."""
         self.stdout.write(text, ending="")
         if report_file:
             Path(report_file).write_text(text, encoding="utf-8")

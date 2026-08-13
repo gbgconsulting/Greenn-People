@@ -4,7 +4,8 @@ Superfície pública: ``import_ciclos_avaliacoes`` (reexportada por ``__init__``
 T011: fase 1 — parse solicitações → upsert ``Ciclo`` (sempre ``encerrado``)
 via ``resolve.upsert_ciclo_from_solicitacao`` + contadores; ``atomic`` no
 modo persist; dry-run com ``set_rollback`` (padrão 010 / R12).
-T016: fase 2 cabeçalhos (stub até US2).
+T016: fase 2 — agregar cabeçalhos → resolve FK → upsert ``Avaliacao``
+(``etapa=feedback``, ``concluida=True``, ``solides_id`` canônico).
 T025/T026: consolidar dry-run / idempotência.
 
 Denylist intacta — **nunca** chama ``open_cycle`` / ``close_cycle`` /
@@ -27,8 +28,20 @@ from apps.accounts.services.legacy_import.parse_xlsx import (
     parse_solicitacoes_xlsx,
     validate_source_paths,
 )
-from apps.accounts.services.legacy_import.report import ImportReport
-from apps.cycles.services.legacy_import.resolve import upsert_ciclo_from_solicitacao
+from apps.accounts.services.legacy_import.report import (
+    ImportReport,
+    note_grupo_agregado,
+    record_ids_colapsados,
+    record_orfao_ciclo,
+    record_orfao_usuario,
+)
+from apps.cycles.services.legacy_import.aggregate import aggregate_avaliacao_headers
+from apps.cycles.services.legacy_import.resolve import (
+    resolve_ciclo,
+    resolve_usuario,
+    upsert_avaliacao_header,
+    upsert_ciclo_from_solicitacao,
+)
 
 # Schema desta feature — checagem pré-persistência (contrato §Pré-condições).
 _SOLIDES_ID_MODELS: tuple[tuple[str, str], ...] = (
@@ -50,7 +63,7 @@ def import_ciclos_avaliacoes(
     *,
     dry_run: bool = False,
 ) -> ImportReport:
-    """Orquestra parse → fase ciclos (+ stub cabeçalhos) ou dry-run.
+    """Orquestra parse → fase ciclos → fase cabeçalhos (ou dry-run).
 
     Assinatura alinhada a ``contracts/import-command-contract.md``.
 
@@ -61,7 +74,8 @@ def import_ciclos_avaliacoes(
     3. **Persist** em ``transaction.atomic()``:
        a. Fase Ciclos — ``upsert_ciclo_from_solicitacao`` (``full_clean`` +
           ``save``; status sempre ``encerrado``; **sem** open/close).
-       b. Fase Avaliações — stub até T016.
+       b. Fase Avaliações — agregar → resolve FK → upsert ``Avaliacao``
+          terminal (T016; **sem** ``advance_stage`` / notas).
     4. **``dry_run``**: mesma lógica para projetar totais, com
        ``set_rollback(True)`` — zero commit.
     """
@@ -156,9 +170,53 @@ def _persist_fase_avaliacoes(
     rows: tuple[AvaliacaoHeaderRow, ...],
     report: ImportReport,
 ) -> None:
-    """Fase 2 (T016): stub — cabeçalhos agregados ainda não persistidos.
+    """Fase 2 (T016): agregar → resolve FK → upsert ``Avaliacao`` terminal.
 
-    Parse já validou o arquivo; a agregação/upsert entra em US2.
-    ``rows`` / ``report`` reservados para a implementação futura.
+    Fluxo normativo (``aggregation-contract.md`` / R8–R11):
+
+    1. ``aggregate_avaliacao_headers`` → grupos ``(solicitacao, avaliado)``
+    2. ``resolve_ciclo`` / ``resolve_usuario`` — órfão → report + skip
+    3. ``upsert_avaliacao_header`` — ``feedback`` + ``concluida`` + canônico;
+       conflitos ``solides_id_divergente`` / ``solides_id_avaliacao_em_uso``
+    4. Contadores ``grupos_agregados`` + amostra ``ids_colapsados``
+
+    **Proibido**: ``advance_stage`` / open/close / approval; preencher
+    ``nota_final_*`` / ``AvaliacaoCompetencia``.
     """
-    _ = (rows, report)
+    groups = aggregate_avaliacao_headers(rows)
+    for group in groups:
+        ciclo = resolve_ciclo(group.solicitacao_id)
+        if ciclo is None:
+            record_orfao_ciclo(
+                report,
+                solicitacao_id=group.solicitacao_id,
+                avaliado_id=group.avaliado_id,
+            )
+            continue
+
+        usuario = resolve_usuario(group.avaliado_id, group.nome_avaliado)
+        if usuario is None:
+            record_orfao_usuario(
+                report,
+                solicitacao_id=group.solicitacao_id,
+                avaliado_id=group.avaliado_id,
+            )
+            continue
+
+        upsert_avaliacao_header(
+            ciclo=ciclo,
+            usuario=usuario,
+            solides_id=group.canonical_id,
+            report=report,
+        )
+
+        note_grupo_agregado(report)
+        if group.collapsed_ids:
+            record_ids_colapsados(
+                report,
+                solicitacao_id=group.solicitacao_id,
+                avaliado_id=group.avaliado_id,
+                canonical_id=group.canonical_id,
+                collapsed_ids=group.collapsed_ids,
+                n_linhas=group.n_linhas,
+            )

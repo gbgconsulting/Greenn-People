@@ -1,14 +1,25 @@
-"""Resolução / upsert de Ciclo histórico a partir de solicitações Sólides.
+"""Resolução / upsert de Ciclo, User e Avaliacao a partir do legado Sólides.
 
-Conforme research R5/R6/R7/R11 e ``contracts/column-mapping-contract.md``
-§solicitações: lookup por ``solides_id``; create/update ``nome`` /
-``data_inicio`` / ``data_fim`` / ``status=encerrado``; datas ambas
-obrigatórias; conflito se inválidas; **nunca** ``aberto``.
+US1 — upsert de ciclo (research R5/R6/R7/R11,
+``contracts/column-mapping-contract.md`` §solicitações): lookup por
+``solides_id``; create/update ``nome`` / ``data_inicio`` / ``data_fim`` /
+``status=encerrado``; datas ambas obrigatórias; conflito se inválidas;
+**nunca** ``aberto``.
+
+US2 — resolução de FKs (research R9, §Resolução de FKs):
+``resolve_ciclo`` / ``resolve_usuario`` — lookup apenas; **nunca** inventar
+Ciclo/User; usuário inativo permitido; fallback de nome só com match único
+via ``canonical_key``.
+
+US2 — upsert de cabeçalho ``Avaliacao`` (research R8/R10/R11,
+``contracts/aggregation-contract.md``): ``etapa=feedback``,
+``concluida=True``, ``solides_id`` canônico; conflitos
+``solides_id_divergente`` / ``solides_id_avaliacao_em_uso``; **não**
+toca ``nota_final_*`` / ``AvaliacaoCompetencia``.
 
 Denylist intacta — **não** chama ``open_cycle`` / ``close_cycle`` /
-``stage`` / approval. Persistência ORM direta + ``full_clean()``/``save()``.
-
-US2 (T015) estende este módulo com ``resolve_ciclo`` / ``resolve_usuario``.
+``advance_stage`` / approval / evaluation. Persistência ORM direta +
+``full_clean()``/``save()``.
 """
 
 from __future__ import annotations
@@ -19,6 +30,7 @@ from typing import Any, Literal
 
 from django.core.exceptions import ValidationError
 
+from apps.accounts.models import CustomUser
 from apps.accounts.services.legacy_import.dates import (
     normalize_ciclo_nome,
     parse_legacy_date,
@@ -26,13 +38,18 @@ from apps.accounts.services.legacy_import.dates import (
 from apps.accounts.services.legacy_import.parse_xlsx import SolicitacaoRow
 from apps.accounts.services.legacy_import.report import (
     ImportReport,
+    note_avaliacao_atualizada,
+    note_avaliacao_criada,
+    note_avaliacao_inalterada,
     note_ciclo_atualizado,
     note_ciclo_conflito,
     note_ciclo_inalterado,
     record_ciclo_criado_amostra,
     record_conflito,
 )
+from apps.competencies.services.catalog_import.normalize import canonical_key
 from apps.cycles.models import Ciclo
+from apps.reviews.models import Avaliacao
 
 # Status Sólides conhecidos (clarification / R5) — qualquer outro ainda
 # vira ``encerrado``, com conflito informativo ``status_legado_desconhecido``.
@@ -41,6 +58,7 @@ _KNOWN_SOLICITACAO_STATUS = frozenset(
 )
 
 CicloUpsertKind = Literal["created", "updated", "unchanged", "conflict"]
+AvaliacaoUpsertKind = Literal["created", "updated", "unchanged", "conflict"]
 
 
 @dataclass(frozen=True)
@@ -50,6 +68,279 @@ class CicloUpsertResult:
     kind: CicloUpsertKind
     ciclo: Ciclo | None = None
     conflict_tipo: str = ""
+
+
+@dataclass(frozen=True)
+class AvaliacaoUpsertResult:
+    """Resultado do upsert de um grupo agregado → ``Avaliacao``."""
+
+    kind: AvaliacaoUpsertKind
+    avaliacao: Avaliacao | None = None
+    conflict_tipo: str = ""
+
+
+# ---------------------------------------------------------------------------
+# US2 — resolução de FKs (lookup puro; órfãos reportados pelo caller)
+# ---------------------------------------------------------------------------
+
+
+def resolve_ciclo(solicitacao_id: str) -> Ciclo | None:
+    """Lookup ``Ciclo`` por ``solides_id`` (= Identificador Solicitação).
+
+    Miss → ``None`` (caller registra ``orfao_ciclo``). **Nunca** cria Ciclo.
+    """
+    sid = str(solicitacao_id or "").strip()
+    if not sid:
+        return None
+    return Ciclo.objects.filter(solides_id=sid).first()
+
+
+def resolve_usuario(avaliado_id: str, nome: str) -> CustomUser | None:
+    """Resolve ``CustomUser`` do avaliado (research R9).
+
+    1. Primário: ``CustomUser.solides_id == avaliado_id``.
+    2. Fallback (só se passo 1 falhar): match **único** por
+       ``canonical_key(nome) == canonical_key(user.nome)``.
+    3. Miss / ambíguo → ``None`` (caller registra ``orfao_usuario``).
+
+    Usuário inativo é permitido. **Nunca** inventa User nem altera
+    ``solides_id`` do existente.
+    """
+    sid = str(avaliado_id or "").strip()
+    if sid:
+        by_id = CustomUser.objects.filter(solides_id=sid).first()
+        if by_id is not None:
+            return by_id
+
+    return _lookup_user_by_canonical_key_unique(nome)
+
+
+def _lookup_user_by_canonical_key_unique(nome: str) -> CustomUser | None:
+    """Match único por ``canonical_key(nome)``; 0 ou >1 → ``None`` (R9).
+
+    Inclui inativos (histórico). Não filtra ``is_active``.
+    """
+    key = canonical_key(nome) if nome else ""
+    if not key:
+        return None
+
+    match: CustomUser | None = None
+    for user in CustomUser.objects.only("id", "nome", "solides_id", "is_active").iterator():
+        if not user.nome:
+            continue
+        if canonical_key(user.nome) != key:
+            continue
+        if match is not None:
+            return None  # ambíguo
+        match = user
+    return match
+
+
+def upsert_avaliacao_header(
+    *,
+    ciclo: Ciclo,
+    usuario: CustomUser,
+    solides_id: str,
+    report: ImportReport | None = None,
+) -> AvaliacaoUpsertResult:
+    """Cria/atualiza ``Avaliacao`` terminal por ``(ciclo, usuario)`` (R10/R11).
+
+    Persistência direta: ``etapa=feedback``, ``concluida=True``,
+    ``solides_id`` canônico. **Não** altera ``nota_final_*`` nem cria
+    ``AvaliacaoCompetencia``. **Não** chama ``advance_stage`` / open/close.
+
+    Conflitos não-fatais:
+    - ``solides_id_divergente`` — par já tem outro ``solides_id`` non-null
+    - ``solides_id_avaliacao_em_uso`` — canônico já pertence a outra Avaliacao
+    """
+    canonical = str(solides_id or "").strip()
+    if not canonical:
+        _record_avaliacao_conflito(
+            report,
+            tipo="identificador_canonico_ausente",
+            canonical="",
+            ciclo=ciclo,
+            usuario=usuario,
+        )
+        return AvaliacaoUpsertResult(
+            kind="conflict",
+            conflict_tipo="identificador_canonico_ausente",
+        )
+
+    existing_pair = Avaliacao.objects.filter(
+        ciclo=ciclo, usuario=usuario
+    ).first()
+    existing_by_sid = Avaliacao.objects.filter(solides_id=canonical).first()
+
+    if existing_pair is not None:
+        return _upsert_existing_avaliacao_pair(
+            existing_pair,
+            existing_by_sid=existing_by_sid,
+            canonical=canonical,
+            ciclo=ciclo,
+            usuario=usuario,
+            report=report,
+        )
+
+    if existing_by_sid is not None:
+        _record_avaliacao_conflito(
+            report,
+            tipo="solides_id_avaliacao_em_uso",
+            canonical=canonical,
+            ciclo=ciclo,
+            usuario=usuario,
+        )
+        return AvaliacaoUpsertResult(
+            kind="conflict",
+            conflict_tipo="solides_id_avaliacao_em_uso",
+            avaliacao=existing_by_sid,
+        )
+
+    return _create_avaliacao_header(
+        ciclo=ciclo,
+        usuario=usuario,
+        solides_id=canonical,
+        report=report,
+    )
+
+
+def _upsert_existing_avaliacao_pair(
+    existing: Avaliacao,
+    *,
+    existing_by_sid: Avaliacao | None,
+    canonical: str,
+    ciclo: Ciclo,
+    usuario: CustomUser,
+    report: ImportReport | None,
+) -> AvaliacaoUpsertResult:
+    """Update/inalterado/conflito quando já existe Avaliacao no par."""
+    current_sid = (existing.solides_id or "").strip()
+    if current_sid and current_sid != canonical:
+        _record_avaliacao_conflito(
+            report,
+            tipo="solides_id_divergente",
+            canonical=canonical,
+            ciclo=ciclo,
+            usuario=usuario,
+            motivo=f"existente={current_sid}",
+        )
+        return AvaliacaoUpsertResult(
+            kind="conflict",
+            conflict_tipo="solides_id_divergente",
+            avaliacao=existing,
+        )
+
+    if existing_by_sid is not None and existing_by_sid.pk != existing.pk:
+        _record_avaliacao_conflito(
+            report,
+            tipo="solides_id_avaliacao_em_uso",
+            canonical=canonical,
+            ciclo=ciclo,
+            usuario=usuario,
+        )
+        return AvaliacaoUpsertResult(
+            kind="conflict",
+            conflict_tipo="solides_id_avaliacao_em_uso",
+            avaliacao=existing,
+        )
+
+    desired_etapa = Avaliacao.Etapa.FEEDBACK
+    desired_concluida = True
+    unchanged = (
+        existing.etapa == desired_etapa
+        and existing.concluida is True
+        and current_sid == canonical
+    )
+    if unchanged:
+        if report is not None:
+            note_avaliacao_inalterada(report)
+        return AvaliacaoUpsertResult(kind="unchanged", avaliacao=existing)
+
+    # Não tocar nota_final_* — só cabeçalho terminal + solides_id.
+    existing.etapa = desired_etapa
+    existing.concluida = desired_concluida
+    existing.solides_id = canonical
+    try:
+        existing.full_clean()
+        existing.save()
+    except ValidationError:
+        _record_avaliacao_conflito(
+            report,
+            tipo="validacao_avaliacao",
+            canonical=canonical,
+            ciclo=ciclo,
+            usuario=usuario,
+        )
+        return AvaliacaoUpsertResult(
+            kind="conflict",
+            conflict_tipo="validacao_avaliacao",
+            avaliacao=existing,
+        )
+
+    if report is not None:
+        note_avaliacao_atualizada(report)
+    return AvaliacaoUpsertResult(kind="updated", avaliacao=existing)
+
+
+def _create_avaliacao_header(
+    *,
+    ciclo: Ciclo,
+    usuario: CustomUser,
+    solides_id: str,
+    report: ImportReport | None,
+) -> AvaliacaoUpsertResult:
+    """Create Avaliacao em estado terminal; nota_final_* permanecem null."""
+    avaliacao = Avaliacao(
+        ciclo=ciclo,
+        usuario=usuario,
+        solides_id=solides_id,
+        etapa=Avaliacao.Etapa.FEEDBACK,
+        concluida=True,
+    )
+    try:
+        avaliacao.full_clean()
+        avaliacao.save()
+    except ValidationError:
+        _record_avaliacao_conflito(
+            report,
+            tipo="validacao_avaliacao",
+            canonical=solides_id,
+            ciclo=ciclo,
+            usuario=usuario,
+        )
+        return AvaliacaoUpsertResult(
+            kind="conflict",
+            conflict_tipo="validacao_avaliacao",
+        )
+
+    if report is not None:
+        note_avaliacao_criada(report)
+    return AvaliacaoUpsertResult(kind="created", avaliacao=avaliacao)
+
+
+def _record_avaliacao_conflito(
+    report: ImportReport | None,
+    *,
+    tipo: str,
+    canonical: str,
+    ciclo: Ciclo,
+    usuario: CustomUser,
+    motivo: str = "",
+) -> None:
+    """Conflito não-fatal de cabeçalho (R7/R11) — amostra no relatório."""
+    if report is None:
+        return
+    extras = [
+        f"canonical={canonical}" if canonical else "",
+        f"ciclo={ciclo.solides_id or ciclo.pk}",
+        f"usuario={usuario.solides_id or usuario.pk}",
+    ]
+    record_conflito(
+        report,
+        tipo=tipo,
+        extra=" | ".join(part for part in extras if part),
+        motivo=motivo,
+    )
 
 
 def upsert_ciclo_from_solicitacao(
