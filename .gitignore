@@ -13,6 +13,9 @@ env/
 # Banco de dados e logs
 db.sqlite3
 *.log
+celerybeat-schedule
+celerybeat-schedule.*
+celerybeat.pid
 
 # Cache do Python
 __pycache__/

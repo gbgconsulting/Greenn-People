@@ -8,6 +8,9 @@ US2 (T017): contadores ``areas_*`` / ``cargos_*`` / ``usuarios_*`` /
 ``solides_id_preenchidos`` / ``demitidos_inativos`` + seções
 ``criados`` / ``atualizados`` / ``nao_importaveis`` / ``conflitos``
 com helpers ``record_*`` e formatação mascarada.
+
+US3 (T022): contadores ``gestores_vinculados`` / ``sem_gestor`` e seção
+``ciclos_hierarquia`` (amostra mascarada; contador = ``len``).
 """
 
 from __future__ import annotations
@@ -72,7 +75,7 @@ class ImportReport:
     solides_id_preenchidos: int = 0
     demitidos_inativos: int = 0
 
-    # --- US3: hierarquia (preenchidos em T022) ---
+    # --- US3: hierarquia (fase B / T022) ---
     gestores_vinculados: int = 0
     sem_gestor: int = 0
 
@@ -198,6 +201,34 @@ def note_solides_id_preenchido(report: ImportReport, n: int = 1) -> None:
 def note_demitido_inativo(report: ImportReport, n: int = 1) -> None:
     """Incrementa ``demitidos_inativos`` (``is_active=False`` por Data demissão)."""
     report.demitidos_inativos += n
+
+
+# ---------------------------------------------------------------------------
+# Helpers US3 — hierarquia (importer fase B / hierarchy.py)
+# ---------------------------------------------------------------------------
+
+
+def note_gestor_vinculado(report: ImportReport, n: int = 1) -> None:
+    """Incrementa ``gestores_vinculados`` (``line_manager`` aplicado ou já correto)."""
+    report.gestores_vinculados += n
+
+
+def note_sem_gestor(report: ImportReport, n: int = 1) -> None:
+    """Incrementa ``sem_gestor`` (``Superior direto id`` vazio no backup)."""
+    report.sem_gestor += n
+
+
+def record_ciclo_hierarquia(
+    report: ImportReport,
+    *,
+    usuarios: str,
+    motivo: str = "ciclo_detectado",
+) -> None:
+    """Acrescenta ciclo reportado (contador = ``len``; vínculo NÃO aplicado).
+
+    ``usuarios`` = cadeia de e-mails (mascarados em ``format_report``).
+    """
+    report.ciclos_hierarquia.append(ReportEntry(label=usuarios, motivo=motivo))
 
 
 def _area_cargo_motivo(area: str, cargo: str) -> str:

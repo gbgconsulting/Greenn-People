@@ -117,9 +117,9 @@ Monólito Django na raiz: allowlist em `contracts/model-allowlist.md`. Parse XLS
 
 ### Implementation for User Story 3
 
-- [ ] T021 [US3] Implementar fase B (`Superior direto id` → lookup `CustomUser.solides_id`, `full_clean()` + `save()`, detecção aciclicidade/ciclo) em `apps/accounts/services/legacy_import/hierarchy.py` conforme research R5/R11 e `contracts/column-mapping-contract.md` §line_manager (persistência via save()/clean(); denylist intacta)
-- [ ] T022 [US3] Integrar fase hierarquia após persistência de todos os usuários em `apps/accounts/services/legacy_import/importer.py` e contadores `gestores_vinculados`/`sem_gestor`/`ciclos_hierarquia` em `report.py` (allowlist; denylist intacta)
-- [ ] T023 [US3] Validar US3 via `specs/010-import-colaboradores-legado/quickstart.md` C3 (crosswalk + gestores, superior inexistente, ciclo artificial); confirmar denylist diff vazio
+- [X] T021 [US3] Implementar fase B (`Superior direto id` → lookup `CustomUser.solides_id`, `full_clean()` + `save()`, detecção aciclicidade/ciclo) em `apps/accounts/services/legacy_import/hierarchy.py` conforme research R5/R11 e `contracts/column-mapping-contract.md` §line_manager (persistência via save()/clean(); denylist intacta)
+- [X] T022 [US3] Integrar fase hierarquia após persistência de todos os usuários em `apps/accounts/services/legacy_import/importer.py` e contadores `gestores_vinculados`/`sem_gestor`/`ciclos_hierarquia` em `report.py` (allowlist; denylist intacta)
+- [X] T023 [US3] Validar US3 via `specs/010-import-colaboradores-legado/quickstart.md` C3 (crosswalk + gestores, superior inexistente, ciclo artificial); confirmar denylist diff vazio
 
 **Checkpoint**: US3 independentemente testável; hierarquia acíclica ou conflitos reportados (SC-004 parcial)
 

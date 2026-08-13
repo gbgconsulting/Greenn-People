@@ -76,7 +76,17 @@ services:
   beat:
     build: .
     entrypoint: ['celery', '-A', 'config']
-    command: ['beat', '-l', 'info']
+    # Schedule/pid em /tmp: o bind mount .:/app é do host (uid diferente de appuser).
+    command:
+      [
+        'beat',
+        '-l',
+        'info',
+        '--schedule',
+        '/tmp/celerybeat-schedule',
+        '--pidfile',
+        '/tmp/celerybeat.pid',
+      ]
     environment:
       <<: *app-environment
     depends_on:

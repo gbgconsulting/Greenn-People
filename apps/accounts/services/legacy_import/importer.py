@@ -2,7 +2,7 @@
 
 Superfície pública: ``import_colaboradores`` (reexportada por ``__init__``).
 Fase A (T018): parse → crosswalk → Area → Cargo → CustomUser upsert.
-Fase B (T022): hierarquia ``line_manager``.
+Fase B (T022): hierarquia ``line_manager`` após persistir todos os usuários.
 Dry-run/exit codes (T025–T027).
 """
 
@@ -19,6 +19,7 @@ from apps.accounts.services.legacy_import.crosswalk import (
     CrosswalkIndex,
     build_crosswalk,
 )
+from apps.accounts.services.legacy_import.hierarchy import apply_hierarchy
 from apps.accounts.services.legacy_import.parse_xlsx import (
     ColaboradorRow,
     parse_avaliacoes_crosswalk_xlsx,
@@ -47,13 +48,14 @@ def import_colaboradores(
     avaliacoes_path: str | Path | None = None,
     dry_run: bool = False,
 ) -> ImportReport:
-    """Orquestra parse → crosswalk → persistência fase A (ou dry-run).
+    """Orquestra parse → crosswalk → fase A → fase B (ou dry-run).
 
     Assinatura alinhada a ``contracts/import-command-contract.md``.
     Persistência: ``transaction.atomic()`` — Area → Cargo → CustomUser
-    (``full_clean`` + ``save`` / ``create_user`` + ``set_unusable_password``);
+    (``full_clean`` + ``save`` / ``create_user`` + ``set_unusable_password``)
+    e, em 2ª passada, ``line_manager`` via ``apply_hierarchy`` (R5 / FR-009);
     ``email_confirmado_em=timezone.now()``; sem PII extra; denylist intacta.
-    Hierarquia (fase B): T022. Dry-run completo / exit codes: T025–T027.
+    Dry-run completo / exit codes: T025–T027.
     """
     parsed = parse_colaboradores_xlsx(colaboradores_path)
     report = ImportReport(
@@ -71,6 +73,7 @@ def import_colaboradores(
     with transaction.atomic():
         try:
             _persist_phase_a(parsed.rows, crosswalk, report)
+            apply_hierarchy(parsed.rows, report)
         finally:
             # T025 refinará dry-run; por ora garante zero commit se dry_run.
             if dry_run:
