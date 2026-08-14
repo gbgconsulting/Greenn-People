@@ -114,7 +114,7 @@ Monólito Django na raiz. Parse XLSX (openpyxl) **somente** em `apps/accounts/se
 **Purpose**: Fechar o **mínimo indispensável** (Sprint 6.5.4 + pré-requisito ciclos) antes de P2  
 **Pré-requisito**: **obrigatório** antes de demo MVP / seguir para US3
 
-- [ ] T019 Gate MVP / regressão denylist: `git diff` vs base da feature nos paths denylist = **vazio** (`apps/cycles/services/stage.py`, `apps/cycles/services/cycle.py`, `apps/goals/services/approval.py`, `apps/accounts/services/scope.py`, `apps/reviews/services/evaluation.py`, `apps/dashboard/services/adherence.py`) **e** suíte stage/scope verde: `pytest tests/test_stage_machine tests/test_scope tests/test_reject_stage_invariant -q`. Diff allowlist MUST restringir-se a `Ciclo.solides_id`, `cycles/services/legacy_import/**`, comando, extensão `parse_xlsx`/`dates`/`report`, `samples/**`. Migration: **somente** AddField `Ciclo.solides_id`.
+- [X] T019 Gate MVP / regressão denylist: `git diff` vs base da feature nos paths denylist = **vazio** (`apps/cycles/services/stage.py`, `apps/cycles/services/cycle.py`, `apps/goals/services/approval.py`, `apps/accounts/services/scope.py`, `apps/reviews/services/evaluation.py`, `apps/dashboard/services/adherence.py`) **e** suíte stage/scope verde: `pytest tests/test_stage_machine tests/test_scope tests/test_reject_stage_invariant -q`. Diff allowlist MUST restringir-se a `Ciclo.solides_id`, `cycles/services/legacy_import/**`, comando, extensão `parse_xlsx`/`dates`/`report`, `samples/**`. Migration: **somente** AddField `Ciclo.solides_id`.
 
 **Checkpoint MVP**: US1+US2 entregáveis; denylist intacta; stage/scope PASS — **release mínimo viável**
 
@@ -130,17 +130,17 @@ Monólito Django na raiz. Parse XLSX (openpyxl) **somente** em `apps/accounts/se
 
 > **NOTE**: Escrever testes com fixtures samples; garantir falha até implementação completa de dry-run/idempotência quando aplicável.
 
-- [ ] T020 [P] [US3] Criar fixtures XLSX anonimizadas `data/legado-solides/samples/solicitacoes_min.xlsx` e `avaliacoes_headers_min.xlsx` — subset: finished/draft/active/canceled, nome serial Excel, datas serial+ISO, multi-avaliador (com e sem autoavaliação), órfão sem usuário, solicitação órfã; **sem PII real**; **proibido** `raw/`; denylist intacta
-- [ ] T021 [P] [US3] Criar `tests/test_import_ciclos_avaliacoes_legado.py` com testes de dry-run (zero writes em Ciclo/Avaliacao) e status sempre encerrado usando **somente** `data/legado-solides/samples/` (SC-005/SC-007; **proibido** `raw/`; denylist intacta)
-- [ ] T022 [P] [US3] Adicionar testes de agregação multi-avaliador (1 Avaliacao, canônico auto/`min_id`, `ids_colapsados`), órfãos (usuário/ciclo) e `etapa=feedback`/`concluida=True` sem notes em `tests/test_import_ciclos_avaliacoes_legado.py` conforme `contracts/aggregation-contract.md` (denylist intacta)
-- [ ] T023 [P] [US3] Adicionar testes de idempotência (2ª execução delta Ciclo/`Avaliacao` = 0), arquivo inválido/args faltando (exit 1, DB inalterado) e assert nenhum path `raw/` na suíte em `tests/test_import_ciclos_avaliacoes_legado.py` (SC-006; denylist intacta)
-- [ ] T024 [US3] Adicionar teste migration reversível `Ciclo.solides_id` (forward/backward preserva seed; unique non-null → IntegrityError) em `tests/test_import_ciclos_avaliacoes_legado.py` conforme `contracts/migration-safety.md` §4 (denylist intacta)
+- [X] T020 [P] [US3] Criar fixtures XLSX anonimizadas `data/legado-solides/samples/solicitacoes_min.xlsx` e `avaliacoes_headers_min.xlsx` — subset: finished/draft/active/canceled, nome serial Excel, datas serial+ISO, multi-avaliador (com e sem autoavaliação), órfão sem usuário, solicitação órfã; **sem PII real**; **proibido** `raw/`; denylist intacta
+- [X] T021 [P] [US3] Criar `tests/test_import_ciclos_avaliacoes_legado.py` com testes de dry-run (zero writes em Ciclo/Avaliacao) e status sempre encerrado usando **somente** `data/legado-solides/samples/` (SC-005/SC-007; **proibido** `raw/`; denylist intacta)
+- [X] T022 [P] [US3] Adicionar testes de agregação multi-avaliador (1 Avaliacao, canônico auto/`min_id`, `ids_colapsados`), órfãos (usuário/ciclo) e `etapa=feedback`/`concluida=True` sem notes em `tests/test_import_ciclos_avaliacoes_legado.py` conforme `contracts/aggregation-contract.md` (denylist intacta)
+- [X] T023 [P] [US3] Adicionar testes de idempotência (2ª execução delta Ciclo/`Avaliacao` = 0), arquivo inválido/args faltando (exit 1, DB inalterado) e assert nenhum path `raw/` na suíte em `tests/test_import_ciclos_avaliacoes_legado.py` (SC-006; denylist intacta)
+- [X] T024 [US3] Adicionar teste migration reversível `Ciclo.solides_id` (forward/backward preserva seed; unique non-null → IntegrityError) em `tests/test_import_ciclos_avaliacoes_legado.py` conforme `contracts/migration-safety.md` §4 (denylist intacta)
 
 ### Implementation for User Story 3
 
-- [ ] T025 [US3] Consolidar `--dry-run` (parse + agregação + totais projetados, zero commit), falha fatal pré-persistência (arquivo ausente/OOXML ilegível/colunas ausentes/migration pré-requisito) e rollback em exceção (`transaction.atomic()`) em `apps/cycles/services/legacy_import/importer.py` e `apps/cycles/management/commands/importar_ciclos_avaliacoes.py` conforme research R12 e `contracts/import-command-contract.md` §Códigos de saída (denylist intacta)
-- [ ] T026 [US3] Consolidar idempotência Ciclo por `solides_id` e Avaliacao por `(ciclo, usuario)` / canônico (update campos permitidos; conflitos sem sobrescrever silenciosamente) em `apps/cycles/services/legacy_import/importer.py` conforme research R11 (denylist intacta)
-- [ ] T027 [US3] Validar US3 via `specs/011-import-ciclos-avaliacoes-legado/quickstart.md` C2 + C6 + C7 (`pytest tests/test_import_ciclos_avaliacoes_legado.py -q` verde; CI não lê `raw/`); confirmar denylist diff vazio
+- [X] T025 [US3] Consolidar `--dry-run` (parse + agregação + totais projetados, zero commit), falha fatal pré-persistência (arquivo ausente/OOXML ilegível/colunas ausentes/migration pré-requisito) e rollback em exceção (`transaction.atomic()`) em `apps/cycles/services/legacy_import/importer.py` e `apps/cycles/management/commands/importar_ciclos_avaliacoes.py` conforme research R12 e `contracts/import-command-contract.md` §Códigos de saída (denylist intacta)
+- [X] T026 [US3] Consolidar idempotência Ciclo por `solides_id` e Avaliacao por `(ciclo, usuario)` / canônico (update campos permitidos; conflitos sem sobrescrever silenciosamente) em `apps/cycles/services/legacy_import/importer.py` conforme research R11 (denylist intacta)
+- [X] T027 [US3] Validar US3 via `specs/011-import-ciclos-avaliacoes-legado/quickstart.md` C2 + C6 + C7 (`pytest tests/test_import_ciclos_avaliacoes_legado.py -q` verde; CI não lê `raw/`); confirmar denylist diff vazio
 
 **Checkpoint**: SC-005…SC-008 atendidos; suite CI segura
 

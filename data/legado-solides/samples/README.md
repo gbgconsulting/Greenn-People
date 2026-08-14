@@ -1,15 +1,19 @@
-# Fixtures anonimizadas — import de colaboradores (US5 / T029)
+# Fixtures anonimizadas — legado Sólides (CI / pytest)
 
-Subset mínimo OOXML de `backup_colaboradores` / `backup_avaliacoes` para CI e
-pytest. **Sem PII real.** Nenhum teste deve ler `data/legado-solides/raw/`.
+Subset mínimo OOXML para CI e pytest. **Sem PII real.** Nenhum teste deve
+ler `data/legado-solides/raw/`.
 
-| Arquivo | Papel |
-|---|---|
-| `colaboradores_min.xlsx` | Layout de colaboradores |
-| `avaliacoes_crosswalk_min.xlsx` | Crosswalk `Nome Avaliado` → `Identificador Avaliado` |
+| Arquivo | Feature | Papel |
+|---|---|---|
+| `colaboradores_min.xlsx` | 010 | Layout de colaboradores |
+| `avaliacoes_crosswalk_min.xlsx` | 010 | Crosswalk `Nome Avaliado` → `Identificador Avaliado` |
+| `solicitacoes_min.xlsx` | 011 | Solicitações → ciclos históricos |
+| `avaliacoes_headers_min.xlsx` | 011 | Cabeçalhos de avaliação (agregação 1:1) |
 
 E-mails: `@example.com` (RFC 2606). CPF sentinela `000.000.000-00` (coluna
-presente só para provar que PII é ignorada — **não** persistida).
+presente só para provar que PII é ignorada — **não** persistida). Nomes de
+fixture alinhados ao crosswalk 010 (`Gestor Alpha`/`100`, `Ana Silva`/`101`,
+`Bruno Costa`/`102`, `Carla Dias`/`103`).
 
 ## `colaboradores_min.xlsx`
 
@@ -39,3 +43,31 @@ Planilha ativa `sheet1`. Colunas de domínio + `CPF` / `Unidade` (ignoradas).
 | Nome Ambiguo | 901 | `crosswalk_ambiguo` |
 
 Fernanda Lima e Elena Sem Email **não** aparecem aqui (crosswalk parcial).
+
+## `solicitacoes_min.xlsx` (011 / T020)
+
+Planilha `sheet1`. Colunas: `Identificador`, `Nome`, `Iniciada em`,
+`Terminada em`, `Status` (+ `Criada em` ignorada).
+
+| ID | Nome | Datas | Status | Nota |
+|---|---|---|---|---|
+| 10 | Ciclo Finished Alpha | ISO | finished | Base multi-avaliador |
+| 20 | Ciclo Draft Beta | serial Excel | draft | Cabeçalho simples |
+| 30 | Ciclo Active Gamma | ISO + serial | active | → sempre `encerrado` |
+| 40 | Ciclo Canceled Delta | serial + ISO | canceled | → sempre `encerrado` |
+| 50 | `46113.0` (serial) | serial | finished | Nome → rótulo ISO `2026-04-01` |
+| 60 | Ciclo Sem Datas | ausentes | finished | Conflito `datas_ausentes_ou_invalidas` |
+
+## `avaliacoes_headers_min.xlsx` (011 / T020)
+
+Planilha `sheet1`. Colunas obrigatórias + `Avaiação criada em` (typo legado,
+ignorada).
+
+| Grupo | Solicitação | Avaliado | Linhas | Canônico / órfão |
+|---|---|---|---|---|
+| Multi **com** auto | 10 | Ana Silva `101` | 1001 (auto), 1002, 1003 | canônico `1001`; colapsados `1002`,`1003` |
+| Multi **sem** auto | 10 | Bruno Costa `102` | 2001, 2003, 2005 | canônico `min_id`=`2001` |
+| Simples | 20 | Gestor Alpha `100` | 3001 | 1:1 |
+| Órfão usuário | 10 | `99999` / Usuario Orfao Fixture | 4001 | `orfaos_usuario` |
+| Solicitação órfã | `999` (ausente) | Ana Silva `101` | 5001 | `orfaos_ciclo` |
+| 1:1 canceled | 40 | Carla Dias `103` | 6001 | ciclo canceled no sample |

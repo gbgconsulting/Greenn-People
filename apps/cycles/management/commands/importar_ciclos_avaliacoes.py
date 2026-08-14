@@ -8,18 +8,20 @@ Ordem fixa (``contracts/import-command-contract.md`` §Semântica):
 2. ``transaction.atomic()``: fase 1 ciclos → fase 2 cabeçalhos agregados
 3. Relatório com seções ``grupos_agregados`` / ``ids_colapsados`` / ``orfaos_*``
 
-Códigos de saída (``contracts/import-command-contract.md`` §Códigos de saída):
+Códigos de saída (``contracts/import-command-contract.md`` §Códigos de saída / T025):
 - ``0`` — sucesso (persistência ok ou dry-run ok; conflitos/órfãos não-fatais ok)
 - ``1`` — erro fatal pré-persistência ou de persistência:
   - args inválidos / ausentes
   - arquivo ausente ou ilegível / OOXML inválido
   - colunas obrigatórias ausentes
-  - falha de migration pré-requisito (``Ciclo.solides_id`` ausente)
+  - falha de migration pré-requisito (``Ciclo``/``Avaliacao.solides_id``)
   - falha inesperada de persistência (``transaction.atomic`` faz rollback)
 - Não há exit ``2`` nesta versão (args inválidos também → ``1``).
 
 T017: fases 1+2 via importer na mesma atomic; relatório via
-``format_ciclos_avaliacoes_report``. Sem UI/DRF/Celery; denylist intacta
+``format_ciclos_avaliacoes_report``.
+T025: ``--dry-run`` (zero commit), falhas pré-persistência e rollback
+em exceção — R12. Sem UI/DRF/Celery; denylist intacta
 (não chama stage/open/close/approval/evaluation/adherence).
 """
 
@@ -40,9 +42,7 @@ from apps.cycles.services.legacy_import import (
 
 
 class Command(BaseCommand):
-    """CLI fina US1+US2 (T017): ciclos → cabeçalhos; relatório com
-    ``grupos_agregados`` / ``ids_colapsados`` / ``orfaos_*``.
-    """
+    """CLI fina US1+US2+US3 (T017/T025): ciclos → cabeçalhos; dry-run/exit 0|1."""
 
     help = (
         "Importa solicitações como ciclos históricos encerrados e cabeçalhos "
@@ -92,9 +92,8 @@ class Command(BaseCommand):
         """Parse → atomic (ciclos → cabeçalhos) → relatório mascarado.
 
         Persistência e ordem das fases ficam no importer; aqui só args,
-        códigos de saída e emissão de ``format_ciclos_avaliacoes_report``
-        (contadores + amostra ``grupos_agregados`` / ``ids_colapsados`` /
-        ``orfaos_ciclo`` / ``orfaos_usuario``).
+        códigos de saída (T025 / R12) e emissão de
+        ``format_ciclos_avaliacoes_report``.
         """
         solicitacoes_path = options["solicitacoes"]
         avaliacoes_path = options["avaliacoes"]
@@ -108,10 +107,13 @@ class Command(BaseCommand):
                 dry_run=dry_run,
             )
         except LegacyParseError as exc:
+            # T025: arquivo / OOXML / colunas — zero writes (parse pré-DB).
             raise CommandError(str(exc), returncode=1) from exc
         except LegacySchemaError as exc:
+            # T025: migration pré-requisito ausente — zero writes (pré-atomic).
             raise CommandError(str(exc), returncode=1) from exc
         except LegacyPersistError as exc:
+            # T025: exceção na persistência — atomic já fez rollback.
             raise CommandError(
                 f"Falha na persistência: {exc}",
                 returncode=1,
@@ -119,12 +121,14 @@ class Command(BaseCommand):
         except CommandError:
             raise
         except Exception as exc:
+            # Cinto e suspensório: qualquer outra falha → exit 1.
             raise CommandError(
                 f"Falha na importação: {exc}",
                 returncode=1,
             ) from exc
 
         self._emit_report(format_ciclos_avaliacoes_report(report), report_file)
+        # T025: sucesso (persist ou dry-run, conflitos/órfãos não-fatais ok) → 0.
         return 0
 
     def _emit_report(self, text: str, report_file: str | None) -> None:
