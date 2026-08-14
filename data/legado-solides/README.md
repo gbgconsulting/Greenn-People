@@ -2,7 +2,7 @@
 
 **Data do dump:** 2026-06-24 (prefixo `20260624` nos nomes dos arquivos)  
 **Origem:** exportação/backup Sólides Performance  
-**Status:** inventário e mapeamento documentados (Decisão #22 / PRD Sprint 6.5) — **comandos de import ainda não implementados** (exceto catálogo parcial, spec `003-import-catalogo-legado`)
+**Status:** inventário e mapeamento documentados (Decisão #22 / PRD Sprint 6.5). Comandos de import: `importar_competencias_cargo` (003), `importar_colaboradores` (010), **`importar_ciclos_avaliacoes` (011 — passos 4→5 no mesmo comando)**. Notas/comentários (6.5.5) e PDI (6.5.6) ainda não implementados.
 
 Este diretório alimenta a especificação e os management commands da Sprint 6.5 (PRD §6.5). Não executar writes de produção a partir destes arquivos sem `--dry-run` e banco descartável/staging.
 
@@ -13,6 +13,12 @@ Este diretório alimenta a especificação e os management commands da Sprint 6.
 ```text
 data/legado-solides/
 ├── README.md          ← este arquivo
+├── samples/           ← fixtures anonimizadas (CI / pytest — **sem PII real**)
+│   ├── README.md
+│   ├── colaboradores_min.xlsx
+│   ├── avaliacoes_crosswalk_min.xlsx
+│   ├── solicitacoes_min.xlsx           ← 011
+│   └── avaliacoes_headers_min.xlsx     ← 011
 └── raw/               ← backups completos (contêm PII — ver § Segurança)
     ├── backup_colaboradores_*.xlsx
     ├── backup_habilidades_*.xlsx
@@ -51,8 +57,8 @@ file data/legado-solides/raw/*.xlsx
 | `backup_colaboradores_*.xlsx` | 325 | 6.5.2 | `importar_colaboradores` |
 | `backup_habilidades_*.xlsx` | 100 | 6.5.3 (extensão) | reutilizar / estender `importar_competencias_cargo` |
 | `backup_habilidades_cargo_*.xlsx` | 2.720 | 6.5.3 | idem |
-| `backup_solicitacoes_avalicaoes_*.xlsx` | 57 | pré-6.5.4 | mapeamento → `Ciclo` |
-| `backup_avaliacoes_*.xlsx` | 1.925 | 6.5.4 | `importar_avaliacoes` |
+| `backup_solicitacoes_avalicaoes_*.xlsx` | 57 | pré-6.5.4 | `importar_ciclos_avaliacoes` (fase 1 — ciclos) |
+| `backup_avaliacoes_*.xlsx` | 1.925 | 6.5.4 | `importar_ciclos_avaliacoes` (fase 2 — cabeçalhos) |
 | `backup_notas_avaliacoes_*.xlsx` | 7.360 | 6.5.5 | `importar_notas` |
 | `backup_comentarios_avaliacoes_*.xlsx` | 1.494 | 6.5.5 | `importar_comentarios` |
 | `backup_pdi_*.xlsx` | 86 | 6.5.6 | `importar_pdi` |
@@ -110,24 +116,42 @@ Os arquivos em `raw/` contêm **dados pessoais sensíveis**, incluindo:
 Ordem segura para não quebrar FKs nem regras de domínio:
 
 ```text
-1. [6.5.1] Migration solides_id (CustomUser, Cargo, Competencia, Avaliacao, PDI) — ainda não existe
+1. [6.5.1] Migration solides_id (CustomUser, Cargo, Competencia, Avaliacao, PDI — 010; Ciclo — 011)
 2. [6.5.3] Catálogo cargos/competências — importar_competencias_cargo (003) OU extensão via backup_habilidades*
-3. [6.5.2] Colaboradores + áreas + hierarquia — backup_colaboradores (+ crosswalk de IDs)
-4. Solicitações → Ciclo (status encerrado; histórico não abre ciclo ativo)
-5. [6.5.4] Cabeçalhos Avaliacao — backup_avaliacoes
-6. [6.5.5] Notas — backup_notas_avaliacoes
-7. [6.5.5] Comentários / feedback — backup_comentarios_avaliacoes
-8. [6.5.6] PDI — backup_pdi
+3. [6.5.2] Colaboradores + áreas + hierarquia — importar_colaboradores (010)
+4. Solicitações → Ciclo (status **sempre** encerrado; histórico **não** abre ciclo ativo)
+5. [6.5.4] Cabeçalhos Avaliacao — backup_avaliacoes (agregação 1:1; estado terminal; **sem** notas)
+6. [6.5.5] Notas — backup_notas_avaliacoes          ← ainda não implementado
+7. [6.5.5] Comentários / feedback — backup_comentarios_avaliacoes ← ainda não implementado
+8. [6.5.6] PDI — backup_pdi                         ← ainda não implementado
 9. Homologação — contagens, FKs, pytest stage/scope
 ```
 
-**Denylist (não alterar na importação):** `stage.py`, `approval.py`, fórmulas de nota/aderência, `scope.py`, regras de avanço de etapa. Import **persiste histórico**; não simula POSTs de ciclo.
+**Passos 4→5:** um único comando `importar_ciclos_avaliacoes` (spec 011). Ambos os paths são obrigatórios; a ordem interna é **sempre** ciclos depois cabeçalhos, na mesma `transaction.atomic()`. Não existe `importar_avaliacoes` separado nesta fatia — pular o passo 4 quebraria FKs.
+
+```bash
+# CI / local — somente samples (sem PII)
+python manage.py importar_ciclos_avaliacoes \
+  --solicitacoes data/legado-solides/samples/solicitacoes_min.xlsx \
+  --avaliacoes data/legado-solides/samples/avaliacoes_headers_min.xlsx \
+  --dry-run
+
+# Staging — backups raw (PII; nunca no CI)
+python manage.py importar_ciclos_avaliacoes \
+  --solicitacoes data/legado-solides/raw/backup_solicitacoes_avalicaoes_20260624.xlsx \
+  --avaliacoes data/legado-solides/raw/backup_avaliacoes_20260624.xlsx \
+  --report-file /tmp/relatorio-ciclos-avaliacoes-legado.txt
+```
+
+Contrato: `specs/011-import-ciclos-avaliacoes-legado/contracts/import-command-contract.md`. Relatório com amostra **mascarada** (máx. 5 por seção; sem dump de nomes/e-mails).
+
+**Denylist (não alterar na importação):** `stage.py`, `cycle.py` (`open_cycle` / `close_cycle`), `approval.py`, fórmulas de nota/aderência (`evaluation.py` / `adherence.py`), `scope.py`, regras de avanço de etapa. Import **persiste histórico**; não simula POSTs de ciclo nem preenche `nota_final_*`.
 
 ---
 
 ## Identificadores Sólides (`solides_id`)
 
-PRD 6.5.1 prevê `solides_id` em `CustomUser`, `Cargo`, `Competencia`, `Avaliacao`, `PDI`. **Campo ainda não existe nos models** (2026-08-12).
+PRD 6.5.1 prevê `solides_id` em `CustomUser`, `Cargo`, `Competencia`, `Avaliacao`, `PDI`. **Já aplicados** em CustomUser / Cargo / Competencia / Avaliacao / PDI (010) e **`Ciclo.solides_id`** (011).
 
 | Entidade | Coluna(s) no backup | Estratégia proposta |
 |---|---|---|
@@ -135,8 +159,8 @@ PRD 6.5.1 prevê `solides_id` em `CustomUser`, `Cargo`, `Competencia`, `Avaliaca
 | **Competência** | `Identificador` (habilidades) | Idem; 43 já importáveis via 003 por nome |
 | **Usuário** | **Ausente** em colaboradores | Crosswalk: `Nome` → `Identificador Avaliado` em `backup_avaliacoes` (~187 matches, 0 conflitos de ID); demais usuários: **`solides_id` nullable**, chave natural = **e-mail** |
 | **Gestor** | `Superior direto id` | ID Sólides; resolver para `CustomUser` após import de usuários (29/31 IDs batem com avaliações) |
-| **Ciclo** | `Identificador Solicitação` (avaliações) / `Identificador` (solicitações) | Mapear para `Ciclo`; solicitações `finished` → `status=encerrado` |
-| **Avaliação** | `Identificador` (avaliações) | FK composta lógica: solicitação + avaliado + avaliador |
+| **Ciclo** | `Identificador` (solicitações) / `Identificador Solicitação` (avaliações) | `Ciclo.solides_id`; **sempre** `status=encerrado` (finished/draft/active/canceled) |
+| **Avaliação** | `Identificador` (avaliações) | `Avaliacao.solides_id` **canônico** (autoavaliação ou `min_id`); N linhas → 1 cabeçalho por `(ciclo, usuario)` |
 | **Nota** | `Identificador Avaliação` + `Identificador Habilidade` | Join avaliação + competência |
 | **PDI** | (sem ID explícito no export) | Chave composta: `Nome` + `Título do PDI` + `Criado em` ou gerar hash determinístico |
 
@@ -186,21 +210,21 @@ PRD 6.5.1 prevê `solides_id` em `CustomUser`, `Cargo`, `Competencia`, `Avaliaca
 
 | Coluna | Campo | Notas |
 |---|---|---|
-| `Identificador` | `solides_id` (futuro) | |
-| `Nome` | `Ciclo.nome` | Cuidado: algumas linhas podem vir como serial Excel (ex. `46113.0`) — normalizar |
-| `Iniciada em` / `Terminada em` | `data_inicio` / `data_fim` | Serial Excel → date |
-| `Status` | `Ciclo.status` | `finished`/`canceled`/`draft` → `encerrado`; `active` → decisão explícita (provavelmente `encerrado` no histórico) |
-| `Criada em` | — | Auditoria |
+| `Identificador` | `Ciclo.solides_id` | Chave de upsert (011) |
+| `Nome` | `Ciclo.nome` | Serial Excel (ex. `46113.0`) → rótulo ISO `YYYY-MM-DD`; senão `display_name` |
+| `Iniciada em` / `Terminada em` | `data_inicio` / `data_fim` | Serial Excel ou ISO; **ambas obrigatórias** — inválidas → conflito (não persiste) |
+| `Status` | `Ciclo.status` | **Sempre** `encerrado` (finished/draft/active/canceled). **Proibido** `open_cycle`/`close_cycle` |
+| `Criada em` | — | Auditoria; ignorada |
 
 ### `backup_avaliacoes_*.xlsx` → `reviews.Avaliacao`
 
 | Coluna | Campo | Notas |
 |---|---|---|
-| `Identificador Solicitação` | FK `Ciclo` | |
-| `Identificador Avaliado` | FK `usuario` | crosswalk e-mail/nome |
-| `Identificador` | `solides_id` (futuro) | |
-| `Avaiação criada em` | — | Referência temporal; etapa importada como **concluída** ou derivada do status Sólides (definir na spec) |
-| — | `etapa` | Histórico: preferir estado terminal coerente (`feedback` + `concluida=True`) sem reexecutar máquina de estados |
+| `Identificador Solicitação` | FK `Ciclo` | via `Ciclo.solides_id`; órfão → relatório, **não** inventa ciclo |
+| `Identificador Avaliado` | FK `usuario` | `CustomUser.solides_id`; fallback `canonical_key(nome)` único; **não** inventa User |
+| `Identificador` | `Avaliacao.solides_id` | ID **canônico** do grupo (autoavaliação ou `min_id`); IDs colapsados só no relatório |
+| `Avaiação criada em` | — | Typo legado; ignorada |
+| — | `etapa` / `concluida` | Sempre `feedback` + `True`; **sem** `advance_stage`; **não** preenche `nota_final_*` |
 
 ### `backup_notas_avaliacoes_*.xlsx` → `reviews.AvaliacaoCompetencia`
 
@@ -258,6 +282,8 @@ python manage.py importar_competencias_cargo \
 
 Contrato: `specs/003-import-catalogo-legado/contracts/import-command-contract.md`
 
+Passos 4→5 (ciclos + cabeçalhos): ver § Ordem de importação — comando `importar_ciclos_avaliacoes`.
+
 ---
 
 ## Padrões de implementação (espelhar 003)
@@ -281,15 +307,18 @@ Todo comando novo SHOULD:
 | `SOLIDES.md` | Checklist Sprint 6.5 |
 | `specs/003-import-catalogo-legado/` | Catálogo implementado (CSV disfarçado) |
 | `specs/003-import-catalogo-legado/contracts/legado-domain-mapping-contract.md` | `canonical_key`, senioridade, KPI |
-| `apps/competencies/management/commands/importar_competencias_cargo.py` | Único comando legado existente |
+| `specs/010-import-colaboradores-legado/` | Colaboradores + schema `solides_id` (implementado) |
+| `specs/011-import-ciclos-avaliacoes-legado/` | Ciclos históricos + cabeçalhos (implementado) |
+| `apps/competencies/management/commands/importar_competencias_cargo.py` | Comando 003 |
+| `apps/accounts/management/commands/importar_colaboradores.py` | Comando 010 |
+| `apps/cycles/management/commands/importar_ciclos_avaliacoes.py` | Comando 011 (passos 4→5) |
 
 ---
 
 ## Próximos passos (fora deste README)
 
-1. Spec dedicada (ex. `010-import-legado-solides`) fatiada por comando
-2. Migration `solides_id`
-3. Implementação `importar_colaboradores` (primeira fatia de maior valor)
-4. Fixtures anonimizadas em `data/legado-solides/samples/` para CI
+1. [6.5.5] Notas + comentários — consome `ids_colapsados` do relatório 011 (handoff; **não** reabre agregação)
+2. [6.5.6] PDI
+3. Homologação staging com `raw/` (**manual**, fora do CI) após `--dry-run`
 
-*Última atualização do inventário: 2026-08-12 — inspeção read-only dos arquivos em `raw/`.*
+*Última atualização: 2026-08-14 — ponteiro `importar_ciclos_avaliacoes` e ordem segura 4→5. Inventário raw: inspeção read-only 2026-08-12.*
