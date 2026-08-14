@@ -515,8 +515,9 @@ def format_report(report: ImportReport) -> str:
 def format_ciclos_avaliacoes_report(report: ImportReport) -> str:
     """Serializa o relatório 011 (ciclos/avaliações) — contrato §Formato.
 
-    Contadores + amostra mascarada (max 5). NEVER dump de nomes/e-mails
-    em massa; IDs Sólides via ``mask_solides_id``.
+    Contadores + amostra mascarada (max 5 por seção, T029 / SC-010).
+    NEVER dump de nomes/e-mails em massa; IDs Sólides via
+    ``mask_solides_id``. Superfície exclusiva de stdout/``--report-file``.
     """
     lines: list[str] = [
         "=== Importação ciclos/avaliações legado Sólides ===",

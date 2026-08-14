@@ -22,10 +22,18 @@ ausentes / schema pré-requisito (exit 1) e rollback atômico em
 T026: consolidar idempotência R11 — update campos permitidos (Ciclo /
 Avaliacao) e conflitos ``solides_id_divergente`` /
 ``solides_id_avaliacao_em_uso`` sem sobrescrita silenciosa.
+
+T028: percorrer quickstart C0–C7 / SC-001 — schema ``solides_id`` null/unique
+e fluxo manual ``open_cycle``/``close_cycle`` intacto após import samples.
+
+T029: stdout/``--report-file`` usam amostra mascarada exclusiva (máx. 5
+por seção; sem nomes/e-mails em massa; IDs via ``mask_solides_id``) —
+SC-010 / ``contracts/import-command-contract.md`` §Formato.
 """
 
 from __future__ import annotations
 
+import logging
 from datetime import date, timedelta
 from io import StringIO
 from pathlib import Path
@@ -40,7 +48,21 @@ from django.utils import timezone
 from openpyxl import Workbook
 
 from apps.accounts.models import CustomUser
+from apps.accounts.services.legacy_import.report import (
+    ImportReport,
+    format_ciclos_avaliacoes_report,
+    mask_email,
+    mask_pii,
+    mask_solides_id,
+    record_ciclo_criado_amostra,
+    record_conflito,
+    record_ids_colapsados,
+    record_orfao_ciclo,
+    record_orfao_usuario,
+)
+from apps.cycles.exceptions import CycleAlreadyOpenError, CycleNotOpenError
 from apps.cycles.models import Ciclo
+from apps.cycles.services.cycle import close_cycle, open_cycle
 from apps.cycles.services.legacy_import import (
     LegacyParseError,
     LegacyPersistError,
@@ -77,6 +99,50 @@ _EMAIL_GESTOR = 'gestor.alpha@example.com'
 _EMAIL_ANA = 'ana.silva@example.com'
 _EMAIL_BRUNO = 'bruno.costa@example.com'
 _EMAIL_CARLA = 'carla.dias@example.com'
+_EMAILS_SEED = (_EMAIL_GESTOR, _EMAIL_ANA, _EMAIL_BRUNO, _EMAIL_CARLA)
+
+# Nomes da coluna ``Nome Avaliado`` / ``Nome Avaliador`` — não devem ir ao relatório.
+_NOMES_AVALIADOS_FIXTURE = (
+    'Ana Silva',
+    'Bruno Costa',
+    'Carla Dias',
+    'Gestor Alpha',
+    'Usuario Orfao Fixture',
+)
+_IDS_AVALIACAO_FIXTURE = (
+    '1001',
+    '1002',
+    '1003',
+    '2001',
+    '2003',
+    '2005',
+    '3001',
+    '4001',
+    '5001',
+    '6001',
+    '99999',
+)
+_PII_SENTINELS = (
+    '000.000.000-00',
+    '00000000000',
+    '12.345.678-X',
+)
+_SAMPLE_MAX = 5
+_LOG_LEAK_TOKENS = ('import logging', 'getLogger', 'logger.', 'print(')
+_CYCLES_LEGACY_IMPORT_DIR = (
+    REPO_ROOT / 'apps' / 'cycles' / 'services' / 'legacy_import'
+)
+_IMPORT_CICLOS_COMMAND = (
+    REPO_ROOT
+    / 'apps'
+    / 'cycles'
+    / 'management'
+    / 'commands'
+    / 'importar_ciclos_avaliacoes.py'
+)
+_REPORT_MODULE = (
+    REPO_ROOT / 'apps' / 'accounts' / 'services' / 'legacy_import' / 'report.py'
+)
 
 _SEED_USERS = (
     (_EMAIL_GESTOR, 'Gestor Alpha', '100'),
@@ -147,6 +213,45 @@ def _assert_samples_only_paths() -> None:
         assert path.exists()
         assert 'raw' not in path.parts
         assert _RAW_PII_DIR not in str(path)
+
+
+def _amostra_items_by_section(text: str) -> dict[str, list[str]]:
+    """Itens ``- …`` de cada seção da amostra mascarada (SC-010)."""
+    marker = '--- Amostra (mascarada, max 5 por seção) ---'
+    assert marker in text
+    body = text.split(marker, 1)[1].split('=== Fim ===', 1)[0]
+    sections: dict[str, list[str]] = {}
+    current: str | None = None
+    for raw in body.splitlines():
+        stripped = raw.strip()
+        if not stripped:
+            continue
+        if stripped.endswith(':') and not stripped.startswith('-'):
+            current = stripped
+            sections[current] = []
+            continue
+        if current is not None and stripped.startswith('-'):
+            sections[current].append(stripped)
+    return sections
+
+
+def _assert_relatorio_ciclos_mascarado(text: str) -> None:
+    """Stdout e --report-file: totais + amostra mascarada, sem dump PII."""
+    assert 'Amostra (mascarada, max 5 por seção)' in text
+    lower = text.lower()
+    for email in _EMAILS_SEED:
+        assert email not in text
+        assert email.lower() not in lower
+    for nome in _NOMES_AVALIADOS_FIXTURE:
+        assert nome not in text
+    for token in _PII_SENTINELS:
+        assert token.lower() not in lower
+    for aval_id in _IDS_AVALIACAO_FIXTURE:
+        assert aval_id not in text
+    sections = _amostra_items_by_section(text)
+    assert sections
+    for header, items in sections.items():
+        assert len(items) <= _SAMPLE_MAX, header
 
 
 def _table_columns(table: str) -> set[str]:
@@ -262,6 +367,57 @@ def test_persist_status_sempre_encerrado_e_ciclo_aberto_intacto():
     serial = Ciclo.objects.get(solides_id='50')
     assert serial.nome == '2026-04-01'
     assert serial.status == Ciclo.Status.ENCERRADO
+
+
+@pytest.mark.django_db
+def test_c1_schema_null_unique_e_open_close_intacto_apos_import():
+    """T028 / C1 / SC-001: ``solides_id`` null/unique; abrir/encerrar intactos."""
+    _seed_avaliados()
+    report = _import_samples()
+    assert report.ciclos_criados == _CICLOS_OK
+
+    importados = list(Ciclo.objects.filter(solides_id__in=_SOLIDES_CICLOS))
+    assert len(importados) == _CICLOS_OK
+    assert all(c.status == Ciclo.Status.ENCERRADO for c in importados)
+
+    nulo = Ciclo.objects.create(
+        nome='Ciclo Manual Sem Solides',
+        data_inicio=date.today() - timedelta(days=5),
+        data_fim=date.today() + timedelta(days=25),
+        status=Ciclo.Status.ENCERRADO,
+    )
+    assert nulo.solides_id is None
+
+    nulo.solides_id = 'c1-dup'
+    nulo.save(update_fields=['solides_id'])
+    outro = Ciclo.objects.create(
+        nome='Ciclo Dup C1',
+        data_inicio=date(2025, 1, 1),
+        data_fim=date(2025, 6, 30),
+        status=Ciclo.Status.ENCERRADO,
+    )
+    outro.solides_id = 'c1-dup'
+    with pytest.raises(IntegrityError):
+        with transaction.atomic():
+            outro.save(update_fields=['solides_id'])
+    outro.refresh_from_db()
+    assert outro.solides_id is None
+
+    nulo.solides_id = None
+    nulo.save(update_fields=['solides_id'])
+
+    opened = open_cycle(nulo)
+    assert opened.status == Ciclo.Status.ABERTO
+    with pytest.raises(CycleAlreadyOpenError):
+        open_cycle(outro)
+    closed = close_cycle(opened)
+    assert closed.status == Ciclo.Status.ENCERRADO
+    with pytest.raises(CycleNotOpenError):
+        close_cycle(closed)
+
+    for ciclo in Ciclo.objects.filter(solides_id__in=_SOLIDES_CICLOS):
+        assert ciclo.status == Ciclo.Status.ENCERRADO
+        assert ciclo.solides_id in _SOLIDES_CICLOS
 
 
 # --- T022: agregação, órfãos, feedback sem notas ---
@@ -769,3 +925,156 @@ def test_conflito_solides_id_avaliacao_em_uso_nao_sobrescreve():
     assert all(
         entry.extra != '1001' for entry in report.ids_colapsados
     )
+
+
+# --- T029: SC-010 amostra mascarada exclusiva + PII ausente de stdout/arquivo ---
+
+
+def test_mask_solides_id_nunca_emite_completo():
+    """T029: IDs Sólides na amostra são ``***`` + sufixo; nunca o valor cru."""
+    full = 'SOLIDES-ABC12345'
+    masked = mask_solides_id(full)
+    assert masked == '***345'
+    assert full not in masked
+    assert mask_solides_id('10') == '***10'
+    assert mask_solides_id(None) == '***'
+    assert mask_solides_id('') == '***'
+    assert mask_email(_EMAIL_ANA) == 'a***@example.com'
+    assert _EMAIL_ANA not in mask_email(_EMAIL_ANA)
+    assert mask_pii('000.000.000-00') == '***'
+
+
+def test_format_ciclos_avaliacoes_report_mascara_e_trunca_max_5():
+    """T029 / SC-010: amostra ≤ 5; e-mail/CPF/RG/ID completos não saem."""
+    report = ImportReport(
+        modo='persist',
+        solicitacoes_file='samples/solicitacoes_min.xlsx',
+        avaliacoes_file='samples/avaliacoes_headers_min.xlsx',
+    )
+    cpf = _PII_SENTINELS[0]
+    rg = _PII_SENTINELS[2]
+    record_ciclo_criado_amostra(
+        report,
+        solides_id='SOLIDES-ABC12345',
+        nome=_EMAIL_ANA,
+        status='encerrado',
+    )
+    record_conflito(
+        report,
+        tipo='datas_ausentes_ou_invalidas',
+        extra=(
+            f'solicitacao=SOLIDES-ABC12345 | email={_EMAIL_ANA} | cpf={cpf}'
+        ),
+        motivo=f'linha=12 | rg={rg}',
+    )
+    for i in range(8):
+        record_orfao_usuario(
+            report,
+            solicitacao_id=f'sol{i:04d}',
+            avaliado_id=f'av{i:04d}',
+        )
+        record_orfao_ciclo(
+            report,
+            solicitacao_id=f'cs{i:04d}',
+            avaliado_id=f'ua{i:04d}',
+        )
+        record_ids_colapsados(
+            report,
+            solicitacao_id=f'g{i:04d}',
+            avaliado_id=f'u{i:04d}',
+            canonical_id=f'can{i:04d}',
+            collapsed_ids=[f'col{i}a', f'col{i}b'],
+            n_linhas=3,
+        )
+        if i == 0:
+            continue
+        record_ciclo_criado_amostra(
+            report,
+            solides_id=f'ciclo{i:04d}',
+            nome=f'Ciclo Extra {i}',
+        )
+        record_conflito(
+            report,
+            tipo='status_legado_desconhecido',
+            extra=f'solicitacao=ciclo{i:04d}',
+            motivo=f'status=weird | linha={i}',
+        )
+
+    text = format_ciclos_avaliacoes_report(report)
+
+    _assert_relatorio_ciclos_mascarado(text)
+    assert 'a***@example.com' in text
+    assert 'cpf=***' in text.lower()
+    assert 'rg=***' in text.lower()
+    assert 'SOLIDES-ABC12345' not in text
+    assert mask_solides_id('SOLIDES-ABC12345') in text
+    assert report.n_orfaos_usuario == 8
+    assert 'orfaos_usuario: 8' in text
+    assert 'orfaos_ciclo: 8' in text
+    sections = _amostra_items_by_section(text)
+    assert len(sections['ciclos_criados:']) == _SAMPLE_MAX
+    assert len(sections['orfaos_usuario:']) == _SAMPLE_MAX
+    assert len(sections['orfaos_ciclo:']) == _SAMPLE_MAX
+    assert len(sections['conflitos:']) == _SAMPLE_MAX
+    assert len(sections['grupos_agregados / ids_colapsados:']) == _SAMPLE_MAX
+
+
+@pytest.mark.django_db
+def test_stdout_e_report_file_iguais_e_mascarados(tmp_path: Path):
+    """T029 / SC-010: stdout e ``--report-file`` são o mesmo texto mascarado."""
+    _seed_avaliados()
+    report_path = tmp_path / 'relatorio-ciclos-avaliacoes-legado.txt'
+    stdout = StringIO()
+    result = call_command(
+        'importar_ciclos_avaliacoes',
+        solicitacoes=str(SOLICITACOES_MIN),
+        avaliacoes=str(AVALIACOES_HEADERS_MIN),
+        report_file=str(report_path),
+        stdout=stdout,
+    )
+    text = stdout.getvalue()
+    file_text = report_path.read_text(encoding='utf-8')
+
+    assert result in (0, None)
+    assert report_path.is_file()
+    assert file_text == text
+    _assert_relatorio_ciclos_mascarado(text)
+    _assert_relatorio_ciclos_mascarado(file_text)
+    assert 'modo: persist' in text
+    assert f'ciclos_criados: {_CICLOS_OK}' in text
+    assert 'Ciclo Sem Datas' not in text
+    assert 'raw' not in SOLICITACOES_MIN.parts
+
+
+def test_legacy_import_ciclos_nao_loga_linha_completa_backup():
+    """T029: pacote cycles/legacy_import, comando e report.py sem dump via log."""
+    sources = sorted(_CYCLES_LEGACY_IMPORT_DIR.glob('*.py'))
+    sources.append(_IMPORT_CICLOS_COMMAND)
+    sources.append(_REPORT_MODULE)
+    for path in sources:
+        text = path.read_text(encoding='utf-8')
+        for token in _LOG_LEAK_TOKENS:
+            assert token not in text, f'{path.name} contém {token}'
+
+
+@pytest.mark.django_db
+def test_import_ciclos_nao_emite_pii_em_caplog(caplog: pytest.LogCaptureFixture):
+    """T029 / SC-010: logs de execução não carregam e-mail nem nome de avaliado."""
+    _seed_avaliados()
+    caplog.set_level(logging.DEBUG)
+    stdout = StringIO()
+    call_command(
+        'importar_ciclos_avaliacoes',
+        solicitacoes=str(SOLICITACOES_MIN),
+        avaliacoes=str(AVALIACOES_HEADERS_MIN),
+        stdout=stdout,
+    )
+    combined = f'{caplog.text}\n{stdout.getvalue()}'
+    _assert_relatorio_ciclos_mascarado(stdout.getvalue())
+    lower = combined.lower()
+    for token in _PII_SENTINELS:
+        assert token.lower() not in lower
+    for email in _EMAILS_SEED:
+        assert email not in caplog.text
+    for nome in _NOMES_AVALIADOS_FIXTURE:
+        assert nome not in caplog.text
