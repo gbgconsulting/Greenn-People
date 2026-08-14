@@ -14,7 +14,8 @@
       </p>
       <h1 class="font-display text-2xl font-semibold text-slate-800">{{ ciclo.nome }}</h1>
       <p class="mt-1 text-sm text-slate-500">
-        Progresso, cobertura e aderência deste ciclo — com avisos operacionais no final.
+        Pipeline de etapas é a leitura principal. Cobertura, aderência e
+        desempenho só aparecem com dado real — sem inventar nota.
       </p>
     </div>
     <div class="flex flex-wrap items-center gap-2">
@@ -40,7 +41,7 @@
       Onde o ciclo está
     </h2>
     <p class="mt-0.5 text-sm text-slate-500">
-      Resumo do ciclo: se uma seção não tiver dados, ela aparece vazia sem inventar números.
+      Totais de processo e etapa, depois o pipeline — não saúde de nota.
     </p>
   </div>
 
@@ -48,7 +49,11 @@
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores do ciclo">
       {% if avaliacoes_resumo.percentual_concluidas is not None %}
         {% with val=avaliacoes_resumo.percentual_concluidas|stringformat:"d"|add:"%" %}
-        {% include "components/card.html" with label="Avaliações concluídas" value=val body="Feedback líder + ciência neste ciclo." %}
+        {% if avaliacoes_resumo.sem_desempenho %}
+        {% include "components/card.html" with label="Avaliações concluídas" value=val body="Processo e etapa — não significa desempenho completo." %}
+        {% else %}
+        {% include "components/card.html" with label="Avaliações concluídas" value=val body="Conclusão de etapa (processo), não nota de desempenho." %}
+        {% endif %}
         {% endwith %}
       {% else %}
         {% include "components/card.html" with label="Avaliações concluídas" value="—" body="Ainda não há avaliações neste ciclo." %}
@@ -83,11 +88,11 @@
           Progresso das avaliações
         </h3>
         <p class="mt-0.5 text-sm text-slate-500">
-          Quantidade de avaliações em cada etapa do ciclo.
+          Leitura principal do ciclo — processo e etapa, não nota.
         </p>
       </div>
       {% if chart_ciclo_progresso.has_data %}
-        {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" kpi_label="Total" kpi_value=chart_ciclo_progresso.total kpi_body="avaliações no ciclo" insight="A etapa com mais avaliações fica em destaque." %}
+        {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" kpi_label="Total" kpi_value=chart_ciclo_progresso.total kpi_body="avaliações no ciclo" insight="Quantidade de avaliações em cada etapa — não é saúde de desempenho." %}
       {% else %}
         {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" %}
       {% endif %}
@@ -123,10 +128,11 @@
           Aderência da liderança
         </h3>
         <p class="mt-0.5 text-sm text-slate-500">
-          Como anda a aderência dos líderes neste ciclo.
+          Só com snapshot real. Sem nota de desempenho, a seção fica vazia.
         </p>
       </div>
 
+      {% if chart_aderencia_distribuicao.has_data %}
       <div class="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2" aria-label="Resumo de aderência">
         {% if aderencia_resumo.media is not None %}
           {% with val=aderencia_resumo.media|stringformat:"d"|add:"%" %}
@@ -137,13 +143,25 @@
         {% endif %}
         {% include "components/card.html" with label="Líderes com aderência" value=aderencia_resumo.total_lideres body="Líderes com aderência registrada neste ciclo." %}
       </div>
-
-      {% if chart_aderencia_distribuicao.has_data %}
         {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" kpi_label="Líderes" kpi_value=chart_aderencia_distribuicao.total kpi_body="com aderência no ciclo" insight="Distribuição em alta, média e baixa — o centro mostra o total." %}
       {% else %}
         {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" %}
       {% endif %}
     </div>
+
+    {% if chart_gaps_competencia %}
+    <div class="min-w-0" aria-labelledby="gaps-ciclo-heading">
+      <div class="mb-3">
+        <h3 id="gaps-ciclo-heading" class="font-display text-lg font-medium text-slate-800">
+          Gap esperado × nota
+        </h3>
+        <p class="mt-0.5 text-sm text-slate-500">
+          Sem nota de desempenho, o gap não é inventado.
+        </p>
+      </div>
+      {% include "dashboard/_chart_block.html" with chart=chart_gaps_competencia script_id="chart-gaps-competencia" %}
+    </div>
+    {% endif %}
 
     <div class="min-w-0" aria-labelledby="checklist-ciclo-heading">
       <div class="mb-3">

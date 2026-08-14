@@ -1,8 +1,12 @@
-"""T003 (densidade) + T006 (empty kinds) + T013 [US1] — catálogo, empty honesto e Top-N.
+"""T003 (densidade) + T006 (empty kinds) + T013 [US1] — catálogo, empty e Top-N.
 
-Asserts só de presentation payload (`apps/dashboard/chart_payloads.py`).
-Não altera asserts de stage/scope; sem formulas/AuthZ/models.
-Fixtures sintéticas in-memory (12–20 categorias); sem dump legado.
+T003/T006: asserts de presentation payload (`chart_payloads.py`).
+T013: gap pessoal via ``PersonalDashboardView._chart_gaps_competencia``
+(Top-N por |gap| com nota; resto omitido; ``null`` ≠ 0; sem
+``visao=historico``).
+
+Não altera asserts de stage/scope; sem fórmulas/AuthZ/models.
+Fixtures sintéticas (12–20 categorias); MUST NOT ``data/legado-solides/raw/``.
 Contratos: chart-catalog.md, chart-baseline.md, density-history-empty.md.
 """
 
@@ -822,3 +826,138 @@ def test_status_triad_doughnut_does_not_apply_density_cut():
     assert payload['values'] == [8, 5, 4]
     assert len(payload['labels']) == 3
     assert others_label not in payload['labels']
+
+
+# --- T013 [US1]: gap pessoal Top-N + sem ``visao=historico`` ---------------
+
+
+def _series_values(payload: dict, key: str) -> list:
+    for serie in payload.get('series') or []:
+        if serie.get('key') == key:
+            return list(serie.get('values') or [])
+    return []
+
+
+def _personal_gap_resumo(
+    *,
+    n_com_nota: int = 12,
+    n_sem_nota: int = 3,
+    esperado: float = 12.0,
+) -> list[dict]:
+    """12–20 competências sintéticas; inserção deliberadamente fora da ordem |gap|."""
+    from types import SimpleNamespace
+
+    without_nota = [
+        {
+            'competencia': SimpleNamespace(nome=f'SemNota-{i}'),
+            'nivel_esperado': esperado,
+            'nota_atual': None,
+        }
+        for i in range(n_sem_nota)
+    ]
+    # |gap| = n_com_nota .. 1; nomes Comp-12 .. Comp-01. Ordem de inserção: menor gap primeiro.
+    with_nota = [
+        {
+            'competencia': SimpleNamespace(nome=f'Comp-{gap:02d}'),
+            'nivel_esperado': esperado,
+            'nota_atual': esperado - gap,
+        }
+        for gap in range(1, n_com_nota + 1)
+    ]
+    items = without_nota + with_nota
+    assert 12 <= len(items) <= 20
+    return items
+
+
+def _personal_gap_chart(resumo: list[dict]) -> dict:
+    from apps.dashboard.views import PersonalDashboardView
+
+    return PersonalDashboardView()._chart_gaps_competencia({
+        'vinculo_pendente': False,
+        'competencias_resumo': resumo,
+    })
+
+
+def test_personal_gap_top_n_by_abs_gap_omits_rest():
+    """T013: Top-N por |gap| entre competências **com nota**; resto omitido.
+
+    Sem rótulo ``Outros`` (estratégia gap). N = ``DENSITY_TOP_N`` (8).
+    """
+    density_n, others_label, _ = _density_api()
+    payload = _personal_gap_chart(_personal_gap_resumo())
+
+    assert payload['has_data'] is True
+    assert payload['type'] == CHART_TYPE_BAR_GROUPED
+    labels = list(payload['labels'])
+    assert others_label not in labels
+    assert len(labels) == density_n
+    assert labels == [f'Comp-{gap:02d}' for gap in range(12, 12 - density_n, -1)]
+    assert {f'SemNota-{i}' for i in range(3)}.isdisjoint(set(labels))
+    omitted = {f'Comp-{gap:02d}' for gap in range(1, 5)}
+    assert omitted.isdisjoint(set(labels))
+
+    notas = _series_values(payload, 'nota_atual')
+    assert len(notas) == density_n
+    assert None not in notas
+    esperados = _series_values(payload, 'nivel_esperado')
+    gaps = [abs(esp - nota) for esp, nota in zip(esperados, notas)]
+    assert gaps == sorted(gaps, reverse=True)
+    assert min(gaps) >= 5
+
+
+def test_personal_gap_null_nota_is_not_zero():
+    """T013: ``null`` ≠ 0 — competência sem nota não entra como gap inventado."""
+    from types import SimpleNamespace
+
+    _, others_label, _ = _density_api()
+    resumo = [
+        {
+            'competencia': SimpleNamespace(nome='Com nota'),
+            'nivel_esperado': 3,
+            'nota_atual': 3,
+        },
+        {
+            'competencia': SimpleNamespace(nome='Sem nota'),
+            'nivel_esperado': 12,
+            'nota_atual': None,
+        },
+    ]
+    payload = _personal_gap_chart(resumo)
+
+    assert payload['has_data'] is True
+    labels = list(payload['labels'])
+    assert labels == ['Com nota']
+    assert others_label not in labels
+    assert _series_values(payload, 'nota_atual') == [3]
+    assert None not in _series_values(payload, 'nota_atual')
+    assert 0 not in _series_values(payload, 'nota_atual')
+
+
+@pytest.mark.django_db
+def test_personal_dashboard_does_not_honor_visao_historico(
+    colaborador,
+    ciclo_aberto,
+):
+    """T013 / FR-016: pessoal MUST NOT ganhar série ``visao=historico``."""
+    from django.test import Client
+    from django.urls import reverse
+
+    from apps.cycles.models import Ciclo
+
+    assert ciclo_aberto.status == Ciclo.Status.ABERTO
+    client = Client()
+    client.force_login(colaborador)
+    url = reverse('dashboard:personal')
+
+    resp_hist = client.get(url, {'visao': 'historico', 'ciclos': '1,2,3'})
+    assert resp_hist.status_code == 200
+    chart = resp_hist.context['chart_gaps_competencia']
+    assert chart['type'] == CHART_TYPE_BAR_GROUPED
+    assert chart['type'] != CHART_TYPE_AREA
+
+    html = resp_hist.content.decode()
+    assert 'visao=historico' not in html
+    assert '/historico/' not in html
+    assert 'data-chart-payload="chart-stage-history"' not in html
+    assert resp_hist.context.get('chart_stage_history') is None
+    assert resp_hist.context.get('visao') != 'historico'

@@ -17,14 +17,23 @@ from apps.dashboard.chart_payloads import (
     CHART_TYPE_BAR_GROUPED,
     CHART_TYPE_BAR_HORIZONTAL,
     CHART_TYPE_DOUGHNUT,
+    DENSITY_TOP_N,
+    EMPTY_KIND_OPERACIONAL,
+    EMPTY_KIND_SEM_DADO,
     SEM_AVALIACAO_KEY,
     SEM_AVALIACAO_LABEL,
     aderencia_distribution_payload,
     categorical_counts_payload,
+    empty_kind_payload,
     empty_series_payload,
     grouped_series_payload,
+    top_n_with_others,
 )
 from apps.dashboard.models import AderenciaSnapshot
+from apps.dashboard.services.ciclo_options import (
+    grouped_ciclo_options,
+    resolve_operational_ciclo,
+)
 from apps.dashboard.services.structure import (
     build_structure_coverage,
     gaps_by_area,
@@ -127,7 +136,10 @@ class PersonalDashboardView(LoginRequiredMixin, TemplateView):
         Type canônico ``bar_grouped`` (chart-catalog) — só apresentação.
         Empty honesto (has_data false + empty_state via _chart_block):
         vínculo pendente / lista vazia / nenhuma nota comparável.
-        ``null`` em ``nota_atual`` permanece null — não vira 0 (FR-006).
+        Densidade: Top-N por |gap| só entre competências **com nota**;
+        resto omitido (sem média / sem rótulo ``Outros``). ``null`` em
+        ``nota_atual`` permanece null — não vira 0 (FR-006). MUST NOT
+        ler ``visao=`` (FR-016 — pessoal sem tendência).
         """
         title = 'Esperado × nota por competência'
         chart_type = CHART_TYPE_BAR_GROUPED
@@ -177,10 +189,17 @@ class PersonalDashboardView(LoginRequiredMixin, TemplateView):
                 has_data=False,
             )
 
+        # Top-N por |gap| com nota; resto omitido (sem média inventada).
+        dense = top_n_with_others(
+            competencias,
+            n=DENSITY_TOP_N,
+            strategy='gap',
+        )
+
         labels: list[str] = []
         esperado_values: list[float | None] = []
         nota_values: list[float | None] = []
-        for item in competencias:
+        for item in dense:
             competencia = item.get('competencia')
             labels.append(
                 getattr(competencia, 'nome', '') if competencia is not None else '',
@@ -693,53 +712,101 @@ class StructureDashboardView(LoginRequiredMixin, RequiresManagerOrAdminMixin, Te
 
 
 class AdminDashboardView(LoginRequiredMixin, RequiresAdminMixin, TemplateView):
-    """Painel RH: conclusão do ciclo e aderência via snapshots (SC-006 / FR-018)."""
+    """Painel RH: pipeline do ciclo operacional (FR-004 / SC-006)."""
 
     template_name = 'dashboard/admin.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        # Badge / “há aberto?” — nunca o ciclo só porque veio em ?ciclo=.
         ciclo_aberto = get_open_ciclo()
-        ciclo_indicador = ciclo_aberto or (
-            Ciclo.objects.filter(status=Ciclo.Status.ENCERRADO)
-            .order_by('-data_fim', '-pk')
-            .first()
-        )
+        # Dados da home: aberto, ou arquivo só com ?ciclo= explícito (T008).
+        # MUST NOT cair no último encerrado em silêncio (FR-001 / FR-002).
+        ciclo = resolve_operational_ciclo(self.request)
         context['ciclo_aberto'] = ciclo_aberto
-        context['ciclo_indicador'] = ciclo_indicador
+        context['ciclo_indicador'] = ciclo
+        # Seletor agrupado (T017): ?ciclo= só na query; não persiste na home.
+        context['grouped_ciclo_options'] = grouped_ciclo_options(
+            q=self.request.GET.get('q'),
+        )
+        context['ciclo_selecionado'] = ciclo
         context['ciclos_resumo'] = self._ciclos_resumo()
-        context['avaliacoes_resumo'] = self._avaliacoes_resumo(ciclo_indicador)
-        ciclo_aderencia = ciclo_aberto or ciclo_indicador
-        context['aderencia_resumo'] = self._aderencia_resumo(ciclo_aderencia)
-        context['snapshots_destaque'] = self._snapshots_destaque(ciclo_aderencia)
+        context['ciclo_kpis'] = self._ciclo_kpis(ciclo)
+        context['avaliacoes_resumo'] = self._avaliacoes_resumo(ciclo)
+        context['aderencia_resumo'] = self._aderencia_resumo(ciclo)
+        context['snapshots_destaque'] = self._snapshots_destaque(ciclo)
         context['chart_aderencia_distribuicao'] = (
-            self._chart_aderencia_distribuicao(ciclo_aderencia)
+            self._chart_aderencia_distribuicao(ciclo)
         )
-        context['chart_ciclo_progresso'] = self._chart_ciclo_progresso(
-            ciclo_indicador,
-        )
+        context['chart_ciclo_progresso'] = self._chart_ciclo_progresso(ciclo)
         return context
 
     def _ciclos_resumo(self) -> dict:
-        totals = Ciclo.objects.aggregate(
+        """Copy de arquivo — nunca % de governança (FR-004 / T015)."""
+        return {
+            'arquivo_total': Ciclo.objects.filter(
+                status=Ciclo.Status.ENCERRADO,
+            ).count(),
+        }
+
+    def _ciclo_kpis(self, ciclo: Ciclo | None) -> dict:
+        """1–3 KPIs do ciclo resolvido (aberto ou ``?ciclo=``) — FR-004.
+
+        Totais/gargalo de pipeline, pendências e sem avaliação. Sem
+        ``percentual_encerrados``. Não chama ``get_visible_users``: o
+        universo é o mesmo de ``open_cycle`` (usuários ativos).
+        """
+        if ciclo is None:
+            return {
+                'has_ciclo': False,
+                'total': None,
+                'gargalo_label': None,
+                'gargalo_count': None,
+                'pendencias': None,
+                'sem_avaliacao': None,
+            }
+
+        totals = Avaliacao.objects.filter(ciclo=ciclo).aggregate(
             total=Count('pk'),
-            abertos=Count('pk', filter=Q(status=Ciclo.Status.ABERTO)),
-            encerrados=Count('pk', filter=Q(status=Ciclo.Status.ENCERRADO)),
+            concluidas=Count('pk', filter=Q(concluida=True)),
         )
         total = totals['total'] or 0
-        encerrados = totals['encerrados'] or 0
-        percentual = (
-            (Decimal(encerrados) * Decimal('100') / Decimal(total)).quantize(
-                Decimal('0.01'),
+        concluidas = totals['concluidas'] or 0
+
+        etapa_counts = {
+            row['etapa']: int(row['total'])
+            for row in (
+                Avaliacao.objects.filter(ciclo=ciclo)
+                .values('etapa')
+                .annotate(total=Count('pk'))
             )
-            if total
-            else None
+            if row['etapa']
+        }
+        gargalo_label = None
+        gargalo_count = None
+        if etapa_counts:
+            gargalo_key = max(etapa_counts, key=etapa_counts.get)
+            if etapa_counts[gargalo_key] > 0:
+                gargalo_label = dict(Avaliacao.Etapa.choices).get(
+                    gargalo_key,
+                    gargalo_key,
+                )
+                gargalo_count = etapa_counts[gargalo_key]
+
+        eligible = CustomUser.objects.filter(is_active=True).count()
+        cobertos = (
+            Avaliacao.objects.filter(ciclo=ciclo, usuario__is_active=True)
+            .values('usuario_id')
+            .distinct()
+            .count()
         )
         return {
+            'has_ciclo': True,
             'total': total,
-            'abertos': totals['abertos'] or 0,
-            'encerrados': encerrados,
-            'percentual_encerrados': percentual,
+            'gargalo_label': gargalo_label,
+            'gargalo_count': gargalo_count,
+            'pendencias': total - concluidas,
+            'sem_avaliacao': max(0, eligible - cobertos),
         }
 
     def _avaliacoes_resumo(self, ciclo: Ciclo | None) -> dict:
@@ -808,32 +875,36 @@ class AdminDashboardView(LoginRequiredMixin, RequiresAdminMixin, TemplateView):
         ]
 
     def _chart_aderencia_distribuicao(self, ciclo: Ciclo | None) -> dict:
-        """Conta snapshots do ciclo por faixa via `aderencia_status` (US1).
+        """Doughnut só com ``AderenciaSnapshot`` real (T016).
 
-        Type canônico ``doughnut`` + ``total`` no centro (chart-catalog /
-        data-model) — Status Triad inalterada; só type/apresentação.
+        Type canônico ``doughnut`` + ``total`` no centro — Status Triad
+        inalterada. Sem snapshot: empty ``sem_dado`` (não inventa fatias).
+        Sem ciclo resolvido: empty ``operacional`` (não plota arquivo).
+        MUST NOT chamar ``compute_adherence``.
         """
         chart_type = CHART_TYPE_DOUGHNUT
         title = 'Distribuição de aderência'
         if ciclo is None:
-            # Sem ciclo: empty honesto — sem faixas zeradas inventadas (FR-006).
-            return empty_series_payload(
+            return empty_kind_payload(
+                kind=EMPTY_KIND_OPERACIONAL,
                 chart_id='chart-aderencia-distribuicao',
                 chart_type=chart_type,
                 title=title,
-                empty_message=(
-                    'Não há ciclo disponível para exibir a distribuição '
-                    'de aderência.'
-                ),
             )
-        status_keys = [
-            aderencia_status(percentual)
-            for percentual in AderenciaSnapshot.objects.filter(
-                ciclo=ciclo,
-            ).values_list('percentual', flat=True)
-        ]
-        # Zero snapshots → has_data false + empty_message PT-BR do helper.
-        # ``total`` no payload alimenta o valor central do doughnut no JS.
+        percentuais = list(
+            AderenciaSnapshot.objects.filter(ciclo=ciclo).values_list(
+                'percentual',
+                flat=True,
+            )
+        )
+        if not percentuais:
+            return empty_kind_payload(
+                kind=EMPTY_KIND_SEM_DADO,
+                chart_id='chart-aderencia-distribuicao',
+                chart_type=chart_type,
+                title=title,
+            )
+        status_keys = [aderencia_status(percentual) for percentual in percentuais]
         return aderencia_distribution_payload(
             status_keys,
             chart_type=chart_type,
@@ -849,15 +920,12 @@ class AdminDashboardView(LoginRequiredMixin, RequiresAdminMixin, TemplateView):
         chart_type = CHART_TYPE_BAR_HORIZONTAL
         title = 'Progresso das avaliações no ciclo'
         if ciclo is None:
-            # Sem ciclo: empty honesto — sem barras de etapa inventadas (FR-006).
-            return empty_series_payload(
+            # Sem aberto / sem ?ciclo=: empty operacional (não plota arquivo).
+            return empty_kind_payload(
+                kind=EMPTY_KIND_OPERACIONAL,
                 chart_id='chart-ciclo-progresso',
                 chart_type=chart_type,
                 title=title,
-                empty_message=(
-                    'Não há ciclo disponível para exibir o progresso '
-                    'das avaliações.'
-                ),
             )
         etapa_keys = [choice.value for choice in Avaliacao.Etapa]
         labels_by_key = dict(Avaliacao.Etapa.choices)
