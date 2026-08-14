@@ -42,6 +42,53 @@ SEM_AVALIACAO_KEY = 'sem_avaliacao'
 SEM_AVALIACAO_LABEL = 'Sem avaliação'
 
 # ---------------------------------------------------------------------------
+# Densidade (Top-N + Outros) e janela histórica — spec 012
+# Pipeline de etapas e Status Triad NÃO passam por este corte.
+# ---------------------------------------------------------------------------
+DENSITY_TOP_N = 8
+HISTORY_DEFAULT_N = 8
+OTHERS_LABEL = 'Outros'
+
+# ---------------------------------------------------------------------------
+# Empty kinds canônicos (spec 012) — cópia para views / empty_message.
+# _chart_block: has_data !== true → empty_state (sem gráfico fantasma).
+# ---------------------------------------------------------------------------
+EMPTY_KIND_OPERACIONAL = 'operacional'
+EMPTY_KIND_ESCOPO = 'escopo'
+EMPTY_KIND_SEM_DADO = 'sem_dado'
+EMPTY_KIND_SEM_NOTA = 'sem_nota'
+
+EMPTY_KINDS: frozenset[str] = frozenset({
+    EMPTY_KIND_OPERACIONAL,
+    EMPTY_KIND_ESCOPO,
+    EMPTY_KIND_SEM_DADO,
+    EMPTY_KIND_SEM_NOTA,
+})
+
+EMPTY_KIND_COPY: dict[str, str] = {
+    EMPTY_KIND_OPERACIONAL: (
+        'Não há ciclo aberto. O arquivo histórico continua acessível '
+        'pelo seletor.'
+    ),
+    EMPTY_KIND_ESCOPO: (
+        'Não há colaboradores no seu escopo para exibir.'
+    ),
+    EMPTY_KIND_SEM_DADO: (
+        'Ainda não há dados nesta seção para exibir.'
+    ),
+    EMPTY_KIND_SEM_NOTA: (
+        'Ainda não há notas de desempenho para exibir. Andamento por etapa '
+        'não significa desempenho completo.'
+    ),
+}
+
+_COVERAGE_COM_KEY = 'com_avaliacao'
+_COVERAGE_TOTAL_KEY = 'total'
+_COVERAGE_PCT_KEY = 'percentual'
+_GAP_ESPERADO_KEY = 'nivel_esperado'
+_GAP_NOTA_KEY = 'nota_atual'
+
+# ---------------------------------------------------------------------------
 # Types canônicos (chart-catalog.md) — emitidos como first-class no Python
 # ---------------------------------------------------------------------------
 CHART_TYPE_BAR = 'bar'
@@ -131,6 +178,123 @@ def mono_finish_colors(
     ):
         colors[highlight_index] = highlight
     return colors
+
+
+def _as_number(value: Any) -> float:
+    """Converte valor numérico; ausência / bool não viram ranking inventado."""
+    if value is None or isinstance(value, bool):
+        return 0.0
+    return float(value)
+
+
+def _gap_abs(row: Mapping[str, Any]) -> float | None:
+    """|esperado − nota|; ``None`` se faltar nota (null ≠ 0)."""
+    nota = row.get(_GAP_NOTA_KEY)
+    esperado = row.get(_GAP_ESPERADO_KEY)
+    if nota is None or esperado is None:
+        return None
+    return abs(_as_number(esperado) - _as_number(nota))
+
+
+def _sum_numeric(values: Iterable[Any]) -> int | float:
+    """Soma residual; preserva int quando todos os valores são int."""
+    materialized = list(values)
+    total = sum(_as_number(value) for value in materialized)
+    if all(
+        isinstance(value, int) and not isinstance(value, bool)
+        for value in materialized
+        if value is not None
+    ):
+        return int(total)
+    return total
+
+
+def _others_sum_row(
+    residual: Sequence[Mapping[str, Any]],
+    *,
+    label_key: str,
+    value_key: str,
+) -> dict[str, Any]:
+    return {
+        label_key: OTHERS_LABEL,
+        value_key: _sum_numeric(row.get(value_key) for row in residual),
+    }
+
+
+def _others_coverage_row(
+    residual: Sequence[Mapping[str, Any]],
+    *,
+    label_key: str,
+) -> dict[str, Any]:
+    """% do residual = sum(com) / sum(total) — nunca média de percentuais."""
+    com = int(_sum_numeric(row.get(_COVERAGE_COM_KEY) or 0 for row in residual))
+    total = int(_sum_numeric(row.get(_COVERAGE_TOTAL_KEY) or 0 for row in residual))
+    percentual = (com / total * 100) if total else 0.0
+    return {
+        label_key: OTHERS_LABEL,
+        _COVERAGE_COM_KEY: com,
+        _COVERAGE_TOTAL_KEY: total,
+        _COVERAGE_PCT_KEY: percentual,
+    }
+
+
+def top_n_with_others(
+    items: Sequence[Mapping[str, Any]],
+    *,
+    n: int = DENSITY_TOP_N,
+    strategy: str = 'sum',
+    label_key: str = 'label',
+    value_key: str = 'value',
+) -> list[dict[str, Any]]:
+    """Corta eixo categórico em Top-N; residual vira ``Outros`` (ou é omitido).
+
+    Não muta ``items``. Shape de cada linha é o da entrada (não o payload 009).
+    N default ``DENSITY_TOP_N`` (8). Etapas e Status Triad não usam este helper.
+
+    ``strategy``
+        ``sum`` — ranking por ``value_key``; residual somado em ``Outros``.
+        ``coverage`` — ranking por ``total``; % residual = sum(com)/sum(total).
+        ``gap`` — Top-N por |esperado − nota| só com nota; resto omitido
+        (sem média inventada, sem rótulo ``Outros``).
+    """
+    if strategy not in ('sum', 'coverage', 'gap'):
+        raise ValueError(f'strategy inválida: {strategy!r}')
+
+    rows = [dict(row) for row in items]
+
+    if strategy == 'gap':
+        with_nota = [row for row in rows if _gap_abs(row) is not None]
+        ranked = sorted(
+            with_nota,
+            key=lambda row: _gap_abs(row) or 0.0,
+            reverse=True,
+        )
+        return ranked[:n]
+
+    if strategy == 'coverage':
+        ranked = sorted(
+            rows,
+            key=lambda row: _as_number(row.get(_COVERAGE_TOTAL_KEY)),
+            reverse=True,
+        )
+    else:
+        ranked = sorted(
+            rows,
+            key=lambda row: _as_number(row.get(value_key)),
+            reverse=True,
+        )
+
+    if len(ranked) <= n:
+        return ranked
+
+    kept = ranked[:n]
+    residual = ranked[n:]
+    others = (
+        _others_coverage_row(residual, label_key=label_key)
+        if strategy == 'coverage'
+        else _others_sum_row(residual, label_key=label_key, value_key=value_key)
+    )
+    return kept + [others]
 
 
 def _legend_items_single(
@@ -255,6 +419,38 @@ def empty_series_payload(
         colors=None,
         has_data=False,
         total=0,
+    )
+
+
+def empty_kind_message(kind: str) -> str:
+    """Cópia canônica do empty kind (012) para ``empty_message`` do payload."""
+    try:
+        return EMPTY_KIND_COPY[kind]
+    except KeyError as exc:
+        raise ValueError(f'empty kind inválido: {kind!r}') from exc
+
+
+def empty_kind_payload(
+    *,
+    kind: str,
+    chart_id: str,
+    chart_type: str,
+    title: str,
+    keys: Sequence[str] | None = None,
+    labels: Sequence[str] | None = None,
+) -> dict[str, Any]:
+    """Payload ``has_data: false`` com cópia canônica — sem série fictícia.
+
+    Views reusam ``EMPTY_KIND_COPY`` via este helper; ``_chart_block``
+    continua renderizando ``empty_state`` quando ``has_data`` é falso.
+    """
+    return empty_series_payload(
+        chart_id=chart_id,
+        chart_type=chart_type,
+        title=title,
+        empty_message=empty_kind_message(kind),
+        keys=keys,
+        labels=labels,
     )
 
 
@@ -401,8 +597,11 @@ def coverage_bar_payload(
     """Payload ``bar_horizontal`` de cobertura (% ou totais) — FR-006 / Freeze B.
 
     ``rows`` vêm de ``coverage_by_area`` / ``coverage_by_cargo`` (composição).
+    Eixo longo: Top-N por volume (``total``) **antes** de emitir labels;
+    residual vira ``Outros`` com % = ``sum(com)/sum(total)`` (nunca média).
     Amber no índice de **menor** cobertura só quando há gargalo real
     (mínimo estritamente menor que o máximo) — sem inventar métrica.
+    Etapas e doughnut de aderência não usam este builder.
     """
     usable = [
         row for row in rows
@@ -416,8 +615,14 @@ def coverage_bar_payload(
             empty_message=empty_message,
         )
 
-    labels = [str(row.get(label_key) or '') for row in usable]
-    values: list[float] = [float(row[value_key]) for row in usable]
+    dense = top_n_with_others(
+        usable,
+        n=DENSITY_TOP_N,
+        strategy='coverage',
+        label_key=label_key,
+    )
+    labels = [str(row.get(label_key) or '') for row in dense]
+    values: list[float] = [float(row[value_key]) for row in dense]
 
     highlight_index: int | None = None
     if highlight_lowest and values:
@@ -438,5 +643,5 @@ def coverage_bar_payload(
         values=values,
         empty_message=empty_message,
         colors=colors,
-        total=len(usable),
+        total=len(dense),
     )

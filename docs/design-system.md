@@ -15,9 +15,9 @@ Não criar `DESIGN.md` na raiz: a documentação de design deste projeto vive aq
 
 ## Freeze
 
-**Status:** **Freeze v2** (base `007-design-system-v2` · FR-009 / SC-004; **reabertura A/B/C** em `009-persona-visual-redesign`, decisão visual 2026-08-11 via Canvas). Twin técnico: `static/src/input.css` (+ components/templates/JS tocados na mesma entrega).
+**Status:** **Freeze v2** (base `007-design-system-v2` · FR-009 / SC-004; **reabertura A/B/C** em `009-persona-visual-redesign`, decisão visual 2026-08-11 via Canvas; **incrementação D** em `012-gerencial-historico-legado`, FR-019). Twin técnico: `static/src/input.css` (+ components/templates/JS tocados na mesma entrega).
 
-Este documento é a **fonte da verdade** de tokens e padrões de UI do Greenn People. O v2 **reabriu** tipografia e acabamento visual no app autenticado com decisão explícita da feature 007; login/`base_auth` ficam **fora** (isolamento). Em 009, há **reabertura formal A/B/C** (tabela abaixo). Demais superfícies devem **consumir** o conjunto documentado (e os includes em `templates/components/`), sem inventar ilhas de estilo.
+Este documento é a **fonte da verdade** de tokens e padrões de UI do Greenn People. O v2 **reabriu** tipografia e acabamento visual no app autenticado com decisão explícita da feature 007; login/`base_auth` ficam **fora** (isolamento). Em 009, há **reabertura formal A/B/C** (tabela abaixo). Em 012, há **incrementação D** (densidade / histórico / empty / leveza) — **sem** reabrir paleta, shell, nav, login nem o catálogo 009. Demais superfícies devem **consumir** o conjunto documentado (e os includes em `templates/components/`), sem inventar ilhas de estilo.
 
 ### Reabertura formal A/B/C (`009-persona-visual-redesign`)
 
@@ -29,7 +29,15 @@ Decisão de produto (Canvas 2026-08-11). Documentação canônica = esta seção
 | **B** | Slice de gráficos | **Incluir** `templates/dashboard/structure.html` (`dashboard:structure`) no slice Chart.js | Visual principal = **cobertura** área/cargo; lacunas/pendências = secundário acionável; cobertura ≠ aderência (FR-006) |
 | **C** | Padrão **painel gerencial** | Composição canônica **KPI(s) + visualização + tabela/drill-down** (+ ações) para líder e RH | Tabela **não** é visão principal; reutiliza tipografia, `card`/KPI, `.table-frame`, `empty_state` v2 |
 
-Contratos de referência: `specs/009-persona-visual-redesign/contracts/chart-catalog.md`, `managerial-panel.md`, `cycle-managerial-detail.md`.
+Contratos de referência (009 — **intactos**): `specs/009-persona-visual-redesign/contracts/chart-catalog.md`, `managerial-panel.md`, `cycle-managerial-detail.md`.
+
+### Incrementação D (`012-gerencial-historico-legado`)
+
+Decisão de produto (FR-019). Documentação canônica = esta tabela + seção **Densidade, histórico e empty (DS v2 · Freeze D)**. Contrato: `specs/012-gerencial-historico-legado/contracts/density-history-empty.md`. **Não** reabre Freeze A/B/C (paleta de acabamento, slice de `structure.html`, composição KPI → visual → drill). **Não** redesenha nav / shell / `base_auth` / login. Tokens CSS novos **só** se toggle/seletor exigir classe em `static/src/input.css` (rebuild Tailwind na mesma entrega); esta incrementação documental **não** exige token novo.
+
+| # | Ponto | Decisão | Limite |
+|---|---|---|---|
+| **D** | Densidade + histórico + empty + leveza | Teto Top-N + `"Outros"` (`DENSITY_TOP_N = 8`); default operacional (ciclo **aberto**) vs modo `?visao=historico`; taxonomia de empty (`operacional` / `escopo` / `sem_dado` / `sem_nota`); estética leve (grid off, pouco ink, `area` tendência, `bar_horizontal` ranking, doughnut + centro) | Chart.js **4.5.1**; catálogo 009 = referência; sem rota `/historico/`; pessoal **sem** tendência; pipeline de etapas e Status Triad **fora** do corte Top-N; sem reabrir A/B/C |
 
 ### Cobertura Freeze v2
 
@@ -40,6 +48,7 @@ Contratos de referência: `specs/009-persona-visual-redesign/contracts/chart-cat
 | Cards / KPI / table-frame / empty | Densidade/hierarquia v2; composição limpa (sem sombra excessiva) — seções **KPI / cartões**, **Table-frame**, **Empty states** |
 | Charts (polish + catálogo 009) | Options Chart.js + tipos expressivos + paleta/hierarquia — seção **Charts polish (DS v2)** (+ reabertura A) |
 | Painel gerencial | KPI → visual → drill-down → ações — seção **Painel gerencial (DS v2 · Freeze C)** |
+| Densidade / histórico / empty | Top-N + `"Outros"`, default operacional vs `visao=historico`, empty kinds, leveza — seção **Densidade, histórico e empty (DS v2 · Freeze D)** |
 | Ninebox polish | Visual-only (grade, cards, drawer domínio, drag/ARIA); contratos 006 intactos — seção **Ninebox polish (DS v2)** |
 | Shell | Estrutura IA Governança/Cadastros/Sistema **inalterada**; densidade/tipografia no chrome (`sidebar` / `topbar` / `.shell-brand` / `.nav-link*`) sob `.app-shell` (T044) |
 | Auth | Login / `base_auth` **OUT** desta feature — isolamento documentado; `--font-sans` / `body { font-sans }` não mudam |
@@ -65,21 +74,22 @@ Referência visual: [Verdee \| Guia de Estilo](https://www.figma.com/design/LqU1
 | Botões, inputs, badges, empty states, KPI/cards, table-frame | Seções DS v2 acima + componentes; inputs baseline; badges Status Triad intacto |
 | Charts polish + catálogo expressivo (tipos/paleta/barras limpas) | Seção **Charts polish (DS v2)**; contratos 005 + `specs/009-persona-visual-redesign/contracts/chart-catalog.md` |
 | Painel gerencial (KPI + visual + tabela) | Seção **Painel gerencial (DS v2 · Freeze C)**; `contracts/managerial-panel.md` |
+| Densidade, histórico, empty, leveza (Freeze D) | Seção **Densidade, histórico e empty (DS v2 · Freeze D)**; `specs/012-gerencial-historico-legado/contracts/density-history-empty.md` |
 | Ninebox polish (grade, cards, drawer domínio, drag/empty) | Seção **Ninebox polish (DS v2)**; contrato consumo 006 abaixo |
 | Focus-visible, skip link, modal trap, indicador HTMX | Seção Focus-visible e a11y |
 
-Evidência before/after das telas-piloto v2: `specs/007-design-system-v2/evidence/before-after/` (baseline 004 permanece em `specs/004-ux-visual-foundation/evidence/before-after/`). Reabertura A/B/C (009): `specs/009-persona-visual-redesign/evidence/before-after/` (SC-003/SC-006 · T042).
+Evidência before/after das telas-piloto v2: `specs/007-design-system-v2/evidence/before-after/` (baseline 004 permanece em `specs/004-ux-visual-foundation/evidence/before-after/`). Reabertura A/B/C (009): `specs/009-persona-visual-redesign/evidence/before-after/` (SC-003/SC-006 · T042). Incrementação D (012): contrato `density-history-empty.md` (FR-019) — **não** reabre evidência visual A/B/C.
 
 ### Regras após o freeze
 
 1. **Consumir, não reinventar** — novos gráficos, matriz 9-box e demais telas reutilizam tokens, hierarquia tipográfica/espacial e componentes canônicos deste doc.
 2. **Doc ↔ CSS juntos** — mudança de token ou padrão atualiza `docs/design-system.md` e `static/src/input.css` (e components afetados) na mesma entrega.
-3. **Sem reabrir Freeze v2 fora do contrato** — não reinventar tipografia display/UI, variantes de botão, chrome de KPI/table-frame/empty ou ninebox polish; charts e painel gerencial só evoluem dentro das seções **Charts polish** / **Painel gerencial** (reabertura A/B/C de 009 já incorporada). Não reaplicar WIP Impeccable nem redesenhar nav/login.
+3. **Sem reabrir Freeze v2 fora do contrato** — não reinventar tipografia display/UI, variantes de botão, chrome de KPI/table-frame/empty ou ninebox polish; charts e painel gerencial só evoluem dentro das seções **Charts polish** / **Painel gerencial** (reabertura A/B/C de 009 já incorporada) e da incrementação **D** (densidade/histórico/empty/leveza — **sem** reabrir paleta/shell). Não reaplicar WIP Impeccable nem redesenhar nav/login.
 4. **Exceções** — só com decisão explícita de produto que atualize este Freeze (status + tabela de cobertura) na mesma mudança.
 
-### Gráficos no dashboard (consumo · 005 + reabertura A/B · 009)
+### Gráficos no dashboard (consumo · 005 + reabertura A/B · 009 + incrementação D · 012)
 
-Feature `005-dashboard-charts` (consumo) + `009-persona-visual-redesign` (catálogo expressivo). Visualizações **consomem** Status Triad **só onde a semântica de aderência/status exige**; contagens e rankings usam paleta de acabamento monocromática (ver **Charts polish**). **Não** reabre marca, shell, nav, topbar nem inventa ilha de estilo.
+Feature `005-dashboard-charts` (consumo) + `009-persona-visual-redesign` (catálogo expressivo) + `012-gerencial-historico-legado` (densidade/histórico/empty — Freeze D). Visualizações **consomem** Status Triad **só onde a semântica de aderência/status exige**; contagens e rankings usam paleta de acabamento monocromática (ver **Charts polish**). Teto Top-N, modo `visao=historico` e empty kinds: seção **Densidade, histórico e empty (DS v2 · Freeze D)**. **Não** reabre marca, shell, nav, topbar nem inventa ilha de estilo.
 
 | Campo | Valor |
 |---|---|
@@ -472,7 +482,7 @@ Piloto: listas `templates/cycles/ciclo_list.html` / `ciclo_list_partial.html` (e
 
 ## Charts polish (DS v2)
 
-**Status:** Parte do **Freeze v2**. Base visual da feature `005` + **reabertura A** (`009-persona-visual-redesign`, decisão Canvas 2026-08-11). Catálogo de tipos/payloads: `specs/009-persona-visual-redesign/contracts/chart-catalog.md`. Lib permanece Chart.js **4.5.1** — sem lib nova / plugin npm.
+**Status:** Parte do **Freeze v2**. Base visual da feature `005` + **reabertura A** (`009-persona-visual-redesign`, decisão Canvas 2026-08-11). Catálogo de tipos/payloads: `specs/009-persona-visual-redesign/contracts/chart-catalog.md` — **referência intacta**. Densidade, modo histórico e empty kinds **não** reabrem este catálogo: ver **Densidade, histórico e empty (DS v2 · Freeze D)**. Lib permanece Chart.js **4.5.1** — sem lib nova / plugin npm.
 
 ### Artefatos
 
@@ -633,7 +643,7 @@ A tabela **não** é a visão principal: se remover KPIs/chart, a pergunta “on
 
 ### Empty
 
-Cada seção com empty próprio (`empty_state`); sem inventar ranking/cobertura/séries fictícias (FR-003).
+Cada seção com empty próprio (`empty_state`); sem inventar ranking/cobertura/séries fictícias (FR-003). Kinds canônicos (`operacional` / `escopo` / `sem_dado` / `sem_nota`) e quando cada um dispara: seção **Densidade, histórico e empty (DS v2 · Freeze D)**.
 
 ### Paleta no painel
 
@@ -642,6 +652,100 @@ Contagens / cobertura / etapas = teal/cyan **monocromático** (+ amber no below-
 ### Intocado
 
 Nav / shell IA / `base_auth` / login; AuthZ (`get_visible_users` / scope); stage / approval / fórmulas; models / migrations. Ouro: desligar CSS/charts/painel ⇒ mesmos POSTs e resultados de negócio.
+
+---
+
+## Densidade, histórico e empty (DS v2 · Freeze D)
+
+**Status:** Parte do **Freeze v2** — incrementação **D** (`012-gerencial-historico-legado`, FR-019). Contrato: `specs/012-gerencial-historico-legado/contracts/density-history-empty.md`. Constantes de apresentação em `apps/dashboard/chart_payloads.py` (`DENSITY_TOP_N`, `HISTORY_DEFAULT_N`, `OTHERS_LABEL`, `EMPTY_KIND_COPY`).
+
+Esta seção **acresce** regras de densidade, default operacional vs modo histórico, taxonomia de empty e leveza. **Não** reabre Freeze A (tipos/paleta Chart.js), B (slice estrutura / cobertura ≠ aderência) nem C (composição KPI → visual → drill). Catálogo 009 permanece a referência de tipos e storytelling.
+
+### Intocado (A/B/C + shell)
+
+| Área | Regra |
+|---|---|
+| Paleta / Status Triad / tipos Chart.js | Freeze A — **inalterados** |
+| Cobertura ≠ aderência; `structure.html` no slice | Freeze B — **inalterado** |
+| Hierarquia 1–3 KPIs → visual → drill | Freeze C — **inalterada**; D só define **qual** ciclo/modo alimenta os slots |
+| Shell / nav / login / `base_auth` | **Fora** — denylist |
+| Lib | Chart.js **4.5.1**; sem plugin npm; init `DOMContentLoaded` (sem `htmx:afterSwap` no canvas) |
+| Tokens CSS | **Não** exige classe nova nesta incrementação; toggle/seletor só ganha token se a implementação exigir (`input.css` + rebuild na mesma entrega) |
+
+### Constantes
+
+| Constante | Valor | Uso |
+|---|---|---|
+| `DENSITY_TOP_N` | **8** | Teto de categorias no eixo (Top-N) |
+| `HISTORY_DEFAULT_N` | **8** | Default e cap da janela de tendência |
+| `OTHERS_LABEL` | `"Outros"` | Rótulo do residual (soma ou cobertura ponderada) |
+| Query modo | `visao=historico` | Ativa tendência nas URLs **já existentes** |
+| Query janela | `ciclos=<ids>` | Recorte explícito; cap = `HISTORY_DEFAULT_N` |
+
+Calibrar N 8→5 ou 8→10 é apresentação — **não** reabre spec nem este Freeze.
+
+### Teto de densidade (100% dos charts da fatia)
+
+MUST NOT renderizar dezenas de rótulos crus. Viewport ~375px: sem scroll horizontal do canvas (pilha KPI → visual → drill).
+
+| Chart | Corte |
+|---|---|
+| Cobertura área/cargo, rankings, eixos longos | Top-N + `"Outros"` (soma, ou cobertura ponderada `sum(com)/sum(total)` — **não** média de percentuais) |
+| Gap pessoal `bar_grouped` | Top-N por \|gap\| **com nota**; resto **omitido** (sem média inventada, sem `"Outros"`) |
+| Pipeline de etapas | Conjunto fechado — **sem** Top-N |
+| Doughnut de aderência | 3 fatias Status Triad — **sem** Top-N |
+
+Helper: `top_n_with_others` em `apps/dashboard/chart_payloads.py`. Shape JSON 009 (`has_data` / `labels` / `values` / `series`) permanece.
+
+### Default operacional vs `visao=historico`
+
+O seletor de um ciclo **não** substitui a superfície de tendência. Histórico **não** é a home.
+
+| Superfície | Default | Modo `?visao=historico` |
+|---|---|---|
+| `dashboard/admin`, `dashboard/team` | Ciclo **aberto** (`get_open_ciclo()`); sem aberto → empty `operacional` (**não** encerrado implícito) | `area` de etapa/conclusão, últimos `HISTORY_DEFAULT_N` ciclos do escopo |
+| `dashboard/structure`, `dashboard/adherence` | Mesmo default aberto + empty operacional | **Fora** desta fatia |
+| `cycles/<pk>/` | Pipeline **daquele** ciclo (pk já é escolha explícita) | Tendência na **mesma** URL; sem path novo |
+| `dashboard/personal` | Densidade + empty + leveza | **MUST NOT** honrar `visao=historico` |
+
+MUST NOT: rota `/historico/`; item de nav “Histórico”; plotar o arquivo completo; `?ciclo=` virar default da próxima visita sem query.
+
+KPIs de operação refletem o ciclo aberto (ou o explicitamente escolhido). Arquivo, se aparecer, é copy/seletor (“N ciclos no arquivo”) — **nunca** `percentual_encerrados` como saúde.
+
+### Taxonomia de empty
+
+Cópias canônicas: `EMPTY_KIND_COPY` em `chart_payloads.py`. `_chart_block.html` continua: `has_data !== true` → `templates/components/empty_state.html` — **sem** gráfico cinza fantasma nem série fictícia.
+
+| Kind | Trigger | Série | Copy |
+|---|---|---|---|
+| `operacional` | Sem ciclo aberto na home gerencial | Nenhuma (não plotar arquivo) | Não há ciclo aberto. O arquivo histórico continua acessível pelo seletor. |
+| `escopo` | Visible vazio | Nenhuma | Não há colaboradores no seu escopo para exibir. |
+| `sem_dado` | Sem avaliações / sem snapshot na seção | Só aquela seção | Ainda não há dados nesta seção para exibir. |
+| `sem_nota` | Desempenho/gap/aderência sem dado (legado 011) | Só a série de desempenho; pipeline de etapa MAY permanecer | Ainda não há notas de desempenho para exibir. Andamento por etapa não significa desempenho completo. |
+
+Cabeçalho `etapa=feedback` + `concluida=True` **sem nota** ≠ “ciclo 100% saudável de desempenho”. Lacuna em série temporal = `null` no ponto — MUST NOT 0 de desempenho.
+
+### Leveza (estética)
+
+Alinhado ao catálogo 009 / **Charts polish**; esta fatia **exige** cumprimento em 100% das superfícies com chart (admin, time, estrutura, aderência, lista/detalhe de ciclo, pessoal):
+
+- Grid de valor / eixos ruidosos **off** (já em `dashboard_charts.js`)
+- Pouco ink; sem sombra extra no frame
+- Datalabel só com N baixo; barras longas → tooltip + Top-N
+- Doughnut: valor central + legenda texto (Status Triad intacta; informação não depende só da cor)
+- Ranking / atenção: `bar_horizontal`
+- Tendência: `area` suave
+- Grouped só para duas séries já existentes (esperado × nota)
+- Sem figcaption que repita label+valor em `bar` / `bar_horizontal`
+- Pipeline de etapas = visual principal **operacional** (não a tabela); tendência `area` = visual principal **só** com `visao=historico`
+
+### HTMX
+
+Partials de lista (`team_list_partial`, `adherence_list_partial`, `ciclo_list_partial`) MUST NOT incluir `_chart_block`. Swap de lista MUST deixar o canvas da página íntegro. Toggle histórico / troca de ciclo = GET completo da página — **não** HTMX no chart.
+
+### Ouro
+
+Desligar CSS / charts / toggle **não** muda etapa, aprovação, notas, visible, open/close nem snapshots.
 
 ---
 

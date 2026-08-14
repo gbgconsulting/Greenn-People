@@ -1,0 +1,93 @@
+{% comment %}
+  Seletor agrupado Operacional / Arquivo (T009).
+
+  Consome `grouped_ciclo_options` de `apps/dashboard/services/ciclo_options.py`.
+  GET completo da página — sem HTMX no chart (FR-017 / Freeze D).
+
+  Uso:
+    {% include "dashboard/_ciclo_selector.html" %}
+
+  Em form GET já existente (ex. estrutura: ciclo + área + cargo):
+    {% include "dashboard/_ciclo_selector.html" with ciclo_selector_embed=True %}
+
+  Contexto:
+    grouped_ciclo_options — operacional, arquivo, arquivo_total, q, show_q_filter
+    ciclo_filtro / ciclo_selecionado — ciclo atualmente exibido (opcional)
+    request — preserva query (visao, ciclos, área, cargo…), exceto ciclo / q / page
+
+  Parâmetros:
+    ciclo_selector_embed — só os campos, sem <form> (default: form GET próprio)
+    extra_class          — classes extras no wrapper
+{% endcomment %}
+{% with opts=grouped_ciclo_options field_id=ciclo_field_id|default:"ciclo" %}
+{% with embed=ciclo_selector_embed|default:False %}
+{% firstof ciclo_selecionado.pk ciclo_filtro.pk request.GET.ciclo as selected_pk %}
+{% if not embed %}
+<form
+  method="get"
+  class="grid grid-cols-1 gap-3 sm:flex sm:flex-wrap sm:items-end{% if extra_class %} {{ extra_class }}{% endif %}"
+  role="search"
+  aria-label="Selecionar ciclo"
+>
+  {% if request %}{% for key, value in request.GET.items %}{% if key != "ciclo" and key != "q" and key != "page" %}
+  <input type="hidden" name="{{ key }}" value="{{ value }}">
+  {% endif %}{% endfor %}{% endif %}
+{% endif %}
+
+  <div class="min-w-0 sm:min-w-[12rem]">
+    <label for="{{ field_id }}" class="mb-1 block font-ui text-xs font-medium uppercase tracking-wide text-ink-muted">Ciclo</label>
+    <select
+      id="{{ field_id }}"
+      name="ciclo"
+      class="form-control w-full"
+      onchange="this.form.submit()"
+      aria-describedby="{{ field_id }}-arquivo-hint"
+    >
+      <optgroup label="Operacional">
+        {% for c in opts.operacional %}
+        <option value="{{ c.pk }}"{% if selected_pk == c.pk or selected_pk == c.pk|stringformat:"d" or not selected_pk %} selected{% endif %}>{{ c.nome }}</option>
+        {% empty %}
+        <option value=""{% if not selected_pk %} selected{% endif %}>Nenhum ciclo aberto</option>
+        {% endfor %}
+      </optgroup>
+      <optgroup label="Arquivo">
+        {% for c in opts.arquivo %}
+        <option value="{{ c.pk }}"{% if selected_pk == c.pk or selected_pk == c.pk|stringformat:"d" %} selected{% endif %}>{{ c.nome }}{% if c.data_inicio %} · {{ c.data_inicio|date:"d/m/Y" }}{% endif %}</option>
+        {% empty %}
+        {% if opts.q %}
+        <option value="" disabled>Nenhum ciclo no arquivo com esse nome</option>
+        {% endif %}
+        {% endfor %}
+      </optgroup>
+    </select>
+    <p id="{{ field_id }}-arquivo-hint" class="mt-1 font-ui text-xs text-ink-muted">
+      {{ opts.arquivo_total|default:0 }} ciclo{{ opts.arquivo_total|default:0|pluralize }} no arquivo
+    </p>
+  </div>
+
+  {% if opts.show_q_filter %}
+  <div class="min-w-0 sm:min-w-[12rem]">
+    <label for="{{ field_id }}-q" class="mb-1 block font-ui text-xs font-medium uppercase tracking-wide text-ink-muted">Buscar arquivo</label>
+    <input
+      type="search"
+      id="{{ field_id }}-q"
+      name="q"
+      value="{{ opts.q }}"
+      class="form-control w-full"
+      placeholder="Filtrar por nome"
+      autocomplete="off"
+    >
+  </div>
+  {% endif %}
+
+  {% if not embed or opts.show_q_filter %}
+  <div>
+    {% include "components/button.html" with label="Aplicar" type="submit" variant="secondary" %}
+  </div>
+  {% endif %}
+
+{% if not embed %}
+</form>
+{% endif %}
+{% endwith %}
+{% endwith %}
