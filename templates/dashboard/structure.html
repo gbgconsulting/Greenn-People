@@ -9,14 +9,19 @@
     <div>
       <h1 class="font-display text-2xl font-semibold text-slate-800">Estrutura</h1>
       <p class="mt-1 text-sm text-slate-500">
-        Cobertura por área e cargo no seu escopo — lacunas de competência aparecem mais abaixo.
+        Veja quantas pessoas da sua equipe já têm avaliação, por área e por cargo.
       </p>
+      {% if grouped_ciclo_options.arquivo_total %}
+        <p class="mt-1 text-xs text-slate-500">
+          {{ grouped_ciclo_options.arquivo_total }} ciclo{{ grouped_ciclo_options.arquivo_total|pluralize }} encerrado{{ grouped_ciclo_options.arquivo_total|pluralize }} disponíveis no seletor
+        </p>
+      {% endif %}
     </div>
     <div class="flex flex-wrap items-center gap-2">
-      {% if ciclo_filtro %}
-        {% include "components/badge_status.html" with status="ativo" label=ciclo_filtro.nome extra_class="mt-1" %}
+      {% if ciclo_aberto %}
+        {% include "components/badge_status.html" with status="ativo" label=ciclo_aberto.nome extra_class="mt-1" %}
       {% else %}
-        {% include "components/badge_status.html" with status="arquivado" label="Nenhum ciclo selecionado" extra_class="mt-1" %}
+        {% include "components/badge_status.html" with status="arquivado" label="Sem ciclo aberto" extra_class="mt-1" %}
       {% endif %}
       {% url 'dashboard:adherence' as adherence_url %}
       {% include "components/button.html" with label="Ver aderência" href=adherence_url variant="secondary" %}
@@ -29,27 +34,12 @@
     <h2 id="filtros-heading" class="font-display text-lg font-medium text-slate-800">
       Filtros
     </h2>
-    <p class="mt-0.5 text-sm text-slate-500">
-      Ajuste ciclo, área e cargo — a visão atualiza ao trocar cada filtro.
-    </p>
+        <p class="mt-0.5 text-sm text-slate-500">
+          Escolha o ciclo, a área e o cargo para ajustar a visão.
+        </p>
   </div>
   <form method="get" class="grid grid-cols-1 gap-3 sm:flex sm:flex-wrap sm:items-end" role="search" aria-label="Filtrar estrutura">
-    <div class="min-w-0 sm:min-w-[10rem]">
-      <label for="ciclo" class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Ciclo</label>
-      <select
-        id="ciclo"
-        name="ciclo"
-        class="form-control"
-        onchange="this.form.submit()"
-      >
-        <option value="">Ciclo aberto{% if ciclo_aberto %} ({{ ciclo_aberto.nome }}){% else %} (nenhum){% endif %}</option>
-        {% for c in ciclos %}
-        <option value="{{ c.pk }}" {% if ciclo_filtro and ciclo_filtro.pk == c.pk %}selected{% endif %}>
-          {{ c.nome }} — {{ c.get_status_display }}
-        </option>
-        {% endfor %}
-      </select>
-    </div>
+    {% include "dashboard/_ciclo_selector.html" with ciclo_selector_embed=True %}
     <div class="min-w-0 sm:min-w-[10rem]">
       <label for="area" class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Área</label>
       <select
@@ -84,10 +74,14 @@
 <section class="mb-8 min-w-0" aria-labelledby="cobertura-heading">
   <div class="mb-3">
     <h2 id="cobertura-heading" class="font-display text-lg font-medium text-slate-800">
-      Cobertura no escopo
+      Cobertura da equipe
     </h2>
     <p class="mt-0.5 text-sm text-slate-500">
-      Quem no escopo já tem avaliação neste ciclo.
+      {% if ciclo_filtro %}
+        Quem da equipe já tem avaliação em {{ ciclo_filtro.nome }}.
+      {% else %}
+        Quem da equipe já tem avaliação neste ciclo.
+      {% endif %}
     </p>
   </div>
 
@@ -95,49 +89,50 @@
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores de cobertura">
       {% if cobertura_resumo.has_ciclo and cobertura_resumo.percentual is not None %}
         {% with val=cobertura_resumo.percentual|stringformat:"d"|add:"%" %}
-        {% include "components/card.html" with label="Cobertura" value=val body="Com avaliação no ciclo filtrado." %}
+        {% include "components/card.html" with label="Cobertura" value=val body="Percentual de pessoas com avaliação neste ciclo." %}
         {% endwith %}
       {% elif cobertura_resumo.has_ciclo %}
-        {% include "components/card.html" with label="Cobertura" value="—" body="Sem colaboradores no escopo filtrado." %}
+        {% include "components/card.html" with label="Cobertura" value="—" body="Não há pessoas para calcular a cobertura com esses filtros." %}
       {% else %}
-        {% include "components/card.html" with label="Cobertura" value="—" body="Selecione ou abra um ciclo nos filtros." %}
+        {% include "components/card.html" with label="Cobertura" value="—" body="Abra ou escolha um ciclo nos filtros acima." %}
       {% endif %}
 
       {% if cobertura_resumo.has_ciclo and cobertura_resumo.com_avaliacao is not None %}
-        {% include "components/card.html" with label="Com avaliação" value=cobertura_resumo.com_avaliacao body="Colaboradores cobertos no escopo." %}
+        {% include "components/card.html" with label="Com avaliação" value=cobertura_resumo.com_avaliacao body="Pessoas que já entraram no ciclo." %}
       {% else %}
-        {% include "components/card.html" with label="Com avaliação" value="—" body="Disponível quando houver ciclo." %}
+        {% include "components/card.html" with label="Com avaliação" value="—" body="Disponível quando houver um ciclo." %}
       {% endif %}
 
       {% if cobertura_resumo.has_ciclo and cobertura_resumo.sem_avaliacao is not None %}
         {% if cobertura_resumo.sem_avaliacao > 0 %}
-          {% include "components/card.html" with label="Sem avaliação" value=cobertura_resumo.sem_avaliacao badge_status="pendente" badge_label="Lacuna" body="No escopo ainda sem avaliação neste ciclo." %}
+          {% include "components/card.html" with label="Sem avaliação" value=cobertura_resumo.sem_avaliacao badge_status="pendente" badge_label="Atenção" body="Ainda não iniciaram a avaliação neste ciclo." %}
         {% else %}
-          {% include "components/card.html" with label="Sem avaliação" value=cobertura_resumo.sem_avaliacao badge_status="concluida" badge_label="Completo" body="Todos no escopo já têm avaliação." %}
+          {% include "components/card.html" with label="Sem avaliação" value=cobertura_resumo.sem_avaliacao badge_status="concluida" badge_label="Completo" body="Todos já têm avaliação neste ciclo." %}
         {% endif %}
       {% else %}
-        {% include "components/card.html" with label="Sem avaliação" value="—" body="Disponível quando houver ciclo." %}
+        {% include "components/card.html" with label="Sem avaliação" value="—" body="Disponível quando houver um ciclo." %}
       {% endif %}
     </div>
 
+    {% if cobertura_resumo.has_ciclo %}
     <div class="min-w-0" aria-labelledby="cobertura-charts-heading">
       <div class="mb-3">
         <h3 id="cobertura-charts-heading" class="font-display text-lg font-medium text-slate-800">
-          Cobertura por dimensão
+          Cobertura por área e cargo
         </h3>
         <p class="mt-0.5 text-sm text-slate-500">
-          Percentual com avaliação por área e por cargo — a menor cobertura fica em destaque.
+          Percentual de pessoas com avaliação. Quem está mais atrás aparece em destaque.
         </p>
       </div>
       <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {% if chart_cobertura_area.has_data %}
-          {% include "dashboard/_chart_block.html" with chart=chart_cobertura_area script_id="chart-cobertura-area" insight="Cobertura por área no escopo dos filtros." %}
+          {% include "dashboard/_chart_block.html" with chart=chart_cobertura_area script_id="chart-cobertura-area" insight="Quanto por cento das pessoas de cada área já têm avaliação. Áreas menores ficam em Outros." %}
         {% else %}
           {% include "dashboard/_chart_block.html" with chart=chart_cobertura_area script_id="chart-cobertura-area" %}
         {% endif %}
 
         {% if chart_cobertura_cargo.has_data %}
-          {% include "dashboard/_chart_block.html" with chart=chart_cobertura_cargo script_id="chart-cobertura-cargo" insight="Cobertura por cargo no mesmo escopo." %}
+          {% include "dashboard/_chart_block.html" with chart=chart_cobertura_cargo script_id="chart-cobertura-cargo" insight="Quanto por cento das pessoas de cada cargo já têm avaliação. Cargos menores ficam em Outros." %}
         {% else %}
           {% include "dashboard/_chart_block.html" with chart=chart_cobertura_cargo script_id="chart-cobertura-cargo" %}
         {% endif %}
@@ -150,7 +145,7 @@
           Líderes da estrutura
         </h3>
         <p class="mt-0.5 text-sm text-slate-500">
-          Referência de aderência por líder — detalhe em Ver aderência.
+          Aderência de cada líder. Para o detalhe completo, use Ver aderência.
         </p>
       </div>
       <div class="table-frame">
@@ -183,7 +178,7 @@
             {% empty %}
             <tr>
               <td colspan="4" class="px-4 py-8">
-                {% include "components/empty_state.html" with title="Sem líderes no escopo" message="Nenhum líder no escopo para os filtros atuais. Ajuste ciclo, área ou cargo acima." %}
+                {% include "components/empty_state.html" with title="Nenhum líder encontrado" message="Não há líderes para os filtros atuais. Tente outro ciclo, área ou cargo." %}
               </td>
             </tr>
             {% endfor %}
@@ -195,10 +190,10 @@
     <div class="min-w-0" aria-labelledby="lacunas-area-heading">
       <div class="mb-3">
         <h3 id="lacunas-area-heading" class="font-display text-lg font-medium text-slate-800">
-          Lacunas por área
+          Diferenças por área
         </h3>
         <p class="mt-0.5 text-sm text-slate-500">
-          Lacuna = nível esperado − nota do líder (valores positivos = abaixo do esperado).
+          Onde a nota do líder ficou abaixo do esperado, agrupado por área.
         </p>
       </div>
       <div class="table-frame">
@@ -228,11 +223,7 @@
             {% empty %}
             <tr>
               <td colspan="6" class="px-4 py-8">
-                {% if ciclo_filtro %}
-                  {% include "components/empty_state.html" with title="Sem lacunas por área" message="Ainda não há notas de líder para agregar lacunas por área neste ciclo." %}
-                {% else %}
-                  {% include "components/empty_state.html" with title="Ciclo necessário" message="Selecione ou abra um ciclo nos filtros acima para ver lacunas por área." %}
-                {% endif %}
+                {% include "components/empty_state.html" with title="Sem diferenças por área" message="Ainda não há notas do líder para comparar com o esperado por área." %}
               </td>
             </tr>
             {% endfor %}
@@ -244,10 +235,10 @@
     <div class="min-w-0" aria-labelledby="lacunas-cargo-heading">
       <div class="mb-3">
         <h3 id="lacunas-cargo-heading" class="font-display text-lg font-medium text-slate-800">
-          Lacunas por cargo
+          Diferenças por cargo
         </h3>
         <p class="mt-0.5 text-sm text-slate-500">
-          Mesmo critério de lacuna, agrupado por cargo.
+          Onde a nota do líder ficou abaixo do esperado, agrupado por cargo.
         </p>
       </div>
       <div class="table-frame">
@@ -277,11 +268,7 @@
             {% empty %}
             <tr>
               <td colspan="6" class="px-4 py-8">
-                {% if ciclo_filtro %}
-                  {% include "components/empty_state.html" with title="Sem lacunas por cargo" message="Ainda não há notas de líder para agregar lacunas por cargo neste ciclo." %}
-                {% else %}
-                  {% include "components/empty_state.html" with title="Ciclo necessário" message="Selecione ou abra um ciclo nos filtros acima para ver lacunas por cargo." %}
-                {% endif %}
+                {% include "components/empty_state.html" with title="Sem diferenças por cargo" message="Ainda não há notas do líder para comparar com o esperado por cargo." %}
               </td>
             </tr>
             {% endfor %}
@@ -289,6 +276,11 @@
         </table>
       </div>
     </div>
+    {% else %}
+    <div class="min-w-0">
+      {% include "components/empty_state.html" with title="Sem ciclo aberto" message=chart_cobertura_area.empty_message %}
+    </div>
+    {% endif %}
   </div>
 </section>
 {% endblock %}

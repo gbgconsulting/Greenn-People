@@ -11,6 +11,11 @@
       <p class="mt-1 text-sm text-slate-500">
         Onde o time está no ciclo — e quem precisa da sua ação agora.
       </p>
+      {% if grouped_ciclo_options.arquivo_total %}
+        <p class="mt-1 text-xs text-slate-500">
+          {{ grouped_ciclo_options.arquivo_total }} ciclo{{ grouped_ciclo_options.arquivo_total|pluralize }} encerrado{{ grouped_ciclo_options.arquivo_total|pluralize }} disponíveis no seletor
+        </p>
+      {% endif %}
     </div>
     {% if ciclo_aberto %}
       {% include "components/badge_status.html" with status="ativo" label=ciclo_aberto.nome extra_class="mt-1" %}
@@ -20,42 +25,61 @@
   </div>
 </header>
 
+<section class="mb-6 min-w-0" aria-label="Selecionar ciclo">
+  {% include "dashboard/_ciclo_selector.html" %}
+</section>
+
 <section class="mb-8 min-w-0" aria-labelledby="team-status-heading">
   <div class="mb-3">
     <h2 id="team-status-heading" class="font-display text-lg font-medium text-slate-800">
       Status no ciclo
     </h2>
     <p class="mt-0.5 text-sm text-slate-500">
-      Contagens e distribuição no escopo — a tabela no final detalha cada pessoa.
+      {% if ciclo_selecionado %}
+        Contagens de {{ ciclo_selecionado.nome }} no escopo — a tabela no final detalha cada pessoa.
+      {% else %}
+        Contagens e distribuição no escopo — a tabela no final detalha cada pessoa.
+      {% endif %}
     </p>
   </div>
 
   <div class="managerial-panel">
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores do time">
-      {% include "components/card.html" with label="No escopo" value=team_resumo.total_escopo body="Colaboradores no seu escopo hierárquico." %}
+      {% include "components/card.html" with label="No escopo" value=team_resumo.total_escopo body="Pessoas da sua equipe." %}
 
       {% if team_resumo.has_ciclo and team_resumo.aguardando_acao is not None %}
         {% if team_resumo.aguardando_acao > 0 %}
-          {% include "components/card.html" with label="Aguardando ação" value=team_resumo.aguardando_acao badge_status="pendente" badge_label="Prioridade" body="Avaliação ou aprovação de metas/resultados." %}
+          {% include "components/card.html" with label="Aguardando ação" value=team_resumo.aguardando_acao badge_status="pendente" badge_label="Prioridade" body="Precisam da sua avaliação ou aprovação." %}
         {% else %}
-          {% include "components/card.html" with label="Aguardando ação" value=team_resumo.aguardando_acao badge_status="concluida" badge_label="Em dia" body="Ninguém na fila de aprovação ou avaliação." %}
+          {% include "components/card.html" with label="Aguardando ação" value=team_resumo.aguardando_acao badge_status="concluida" badge_label="Em dia" body="Ninguém espera sua ação no momento." %}
         {% endif %}
       {% else %}
-        {% include "components/card.html" with label="Aguardando ação" value="—" body="Abra um ciclo para ver pendências do líder." %}
+        {% include "components/card.html" with label="Aguardando ação" value="—" body="Abra um ciclo para ver quem precisa de você." %}
       {% endif %}
 
       {% if team_resumo.has_ciclo and team_resumo.sem_avaliacao is not None %}
-        {% include "components/card.html" with label="Sem avaliação" value=team_resumo.sem_avaliacao body="No escopo sem avaliação neste ciclo." %}
+        {% include "components/card.html" with label="Sem avaliação" value=team_resumo.sem_avaliacao body="Ainda não iniciaram a avaliação neste ciclo." %}
       {% else %}
         {% include "components/card.html" with label="Sem avaliação" value="—" body="Disponível quando houver ciclo aberto." %}
       {% endif %}
     </div>
 
-    {% if chart_escopo_status.has_data %}
-      {% include "dashboard/_chart_block.html" with chart=chart_escopo_status script_id="chart-escopo-status" insight=chart_escopo_status.insight %}
-    {% else %}
-      {% include "dashboard/_chart_block.html" with chart=chart_escopo_status script_id="chart-escopo-status" %}
-    {% endif %}
+    {% if team_resumo.has_ciclo %}
+    <div class="min-w-0" aria-labelledby="pipeline-heading">
+      <div class="mb-3">
+        <h3 id="pipeline-heading" class="font-display text-lg font-medium text-slate-800">
+          Andamento por etapa
+        </h3>
+        <p class="mt-0.5 text-sm text-slate-500">
+          Onde cada pessoa do escopo está hoje — etapas do ciclo e quem ainda não entrou.
+        </p>
+      </div>
+      {% if chart_escopo_status.has_data %}
+        {% include "dashboard/_chart_block.html" with chart=chart_escopo_status script_id="chart-escopo-status" kpi_label="No escopo" kpi_value=team_resumo.total_escopo kpi_body="pessoas neste ciclo" insight=chart_escopo_status.insight %}
+      {% else %}
+        {% include "dashboard/_chart_block.html" with chart=chart_escopo_status script_id="chart-escopo-status" %}
+      {% endif %}
+    </div>
 
     <div class="min-w-0" aria-labelledby="team-destaque-heading">
       <div class="mb-3">
@@ -117,9 +141,7 @@
         </table>
       </div>
       {% else %}
-        {% if not ciclo_aberto %}
-          {% include "components/empty_state.html" with title="Sem ciclo aberto" message="Quando houver ciclo aberto, quem aguarda sua ação aparece aqui." %}
-        {% elif team_resumo.total_escopo == 0 %}
+        {% if team_resumo.total_escopo == 0 %}
           {% include "components/empty_state.html" with title="Sem colaboradores no escopo" message="Quando houver subordinados ativos, pendências do líder aparecem neste destaque." %}
         {% else %}
           {% include "components/empty_state.html" with title="Ninguém aguardando ação" message="Ninguém no escopo está em avaliação ou aprovação de metas/resultados no momento." %}
@@ -138,6 +160,11 @@
       </div>
       {% include "dashboard/team_list_partial.html" %}
     </div>
+    {% else %}
+    <div class="min-w-0">
+      {% include "components/empty_state.html" with title="Sem ciclo aberto" message=chart_escopo_status.empty_message %}
+    </div>
+    {% endif %}
   </div>
 </section>
 {% endblock %}

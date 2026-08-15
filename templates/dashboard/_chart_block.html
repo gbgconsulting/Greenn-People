@@ -31,18 +31,20 @@
 
   Anatomia: title → insight → (mini-KPI | canvas) → figcaption / empty_state.
   Mobile (~375px / SC-007): empilha KPI full-width → chart; sm+ lado a lado.
+  Com mini-KPI: CSS grid (não flex+stretch) para o canvas ter largura real no
+  init do Chart.js — evita gráfico em branco com card KPI gigante.
   Sem sombra; empty honesto.
 {% endcomment %}
 {% with payload_id=script_id|default:chart.id chart_title=title|default:chart.title %}
 {% firstof insight chart.insight "" as chart_insight %}
-<div class="{% if kpi_label %}flex w-full min-w-0 flex-col gap-4 sm:flex-row sm:items-stretch{% else %}min-w-0 w-full{% endif %} {{ extra_class }}">
+<div class="{% if kpi_label %}grid w-full min-w-0 grid-cols-1 gap-4 sm:grid-cols-[10rem_minmax(0,1fr)] lg:grid-cols-[11rem_minmax(0,1fr)] sm:items-start{% else %}min-w-0 w-full{% endif %} {{ extra_class }}">
   {% if kpi_label %}
-  <div class="w-full shrink-0 sm:w-40 lg:w-44">
-    {% include "components/card.html" with label=kpi_label value=kpi_value body=kpi_body badge_status=kpi_badge_status badge_label=kpi_badge_label extra_class="h-full" only %}
+  <div class="min-w-0 w-full">
+    {% include "components/card.html" with label=kpi_label value=kpi_value body=kpi_body badge_status=kpi_badge_status badge_label=kpi_badge_label only %}
   </div>
   {% endif %}
 
-  <figure class="min-w-0 w-full rounded-xl border border-line bg-surface-card p-4 sm:p-5{% if kpi_label %} flex-1{% endif %}"{% if payload_id %} aria-labelledby="{{ payload_id }}-heading"{% endif %}>
+  <figure class="min-w-0 w-full rounded-xl border border-line bg-surface-card p-4 sm:p-5"{% if payload_id %} aria-labelledby="{{ payload_id }}-heading"{% endif %}>
     {% if chart_title %}
     <h3 id="{{ payload_id }}-heading" class="font-display text-lg font-medium tracking-tight text-slate-800">{{ chart_title }}</h3>
     {% endif %}

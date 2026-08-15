@@ -50,7 +50,7 @@
           {% if ciclo_filtro %}
             {% include "components/empty_state.html" with title="Sem dados de aderência" message="Nenhum líder com aderência neste escopo para o ciclo filtrado. Os índices são atualizados diariamente." %}
           {% else %}
-            {% include "components/empty_state.html" with title="Ciclo necessário" message="Selecione ou abra um ciclo nos filtros acima para ver aderência da liderança." %}
+            {% include "components/empty_state.html" with title="Sem ciclo aberto" message="Não há ciclo aberto. Você pode escolher outro ciclo pelo seletor." %}
           {% endif %}
         </td>
       </tr>

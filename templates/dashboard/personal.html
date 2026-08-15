@@ -10,7 +10,7 @@
       <h1 class="font-display text-2xl font-semibold tracking-tight text-slate-800">Meu painel</h1>
       <p class="mt-1 font-ui text-sm text-slate-500">
         Bem-vindo{% if user.nome %}, {{ user.nome }}{% endif %}.
-        Seu ponto de partida no ciclo vigente — densidade e empty honestos, sem tendência entre ciclos.
+        Veja sua nota, o que o cargo espera de você e o próximo passo no ciclo.
       </p>
     </div>
     {% if ciclo_aberto %}
@@ -33,8 +33,7 @@
       Meu desempenho
     </h2>
     <p class="mt-0.5 font-ui text-sm text-slate-500">
-      KPIs em destaque, depois o comparativo por competência (Top-N por gap) e o detalhe na tabela —
-      sem inventar nota nem série histórica neste painel.
+      Sua nota e o nível esperado do cargo. Em seguida, o comparativo por competência.
     </p>
   </div>
 
@@ -42,24 +41,24 @@
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2" aria-label="Indicadores pessoais">
       {% if nota_atual is not None %}
         {% if nota_atual_origem == "lider" %}
-          {% include "components/card.html" with label="Nota atual" value=nota_atual badge_status="concluida" badge_label="Nota do líder" body="Nota consolidada do líder." %}
+          {% include "components/card.html" with label="Nota atual" value=nota_atual badge_status="concluida" badge_label="Nota do líder" body="Nota dada pelo seu líder neste ciclo." %}
         {% elif nota_atual_origem == "autoavaliacao" %}
-          {% include "components/card.html" with label="Nota atual" value=nota_atual badge_status="em_andamento" badge_label="Autoavaliação" body="Referência da autoavaliação." %}
+          {% include "components/card.html" with label="Nota atual" value=nota_atual badge_status="em_andamento" badge_label="Autoavaliação" body="Nota da sua autoavaliação neste ciclo." %}
         {% else %}
-          {% include "components/card.html" with label="Nota atual" value=nota_atual badge_status="arquivado" badge_label="Sem nota" body="Ainda não há nota consolidada neste ciclo." %}
+          {% include "components/card.html" with label="Nota atual" value=nota_atual badge_status="arquivado" badge_label="Sem nota" body="Ainda não há nota neste ciclo." %}
         {% endif %}
       {% elif nota_atual_origem == "lider" %}
-        {% include "components/card.html" with label="Nota atual" value="—" badge_status="concluida" badge_label="Nota do líder" body="Nota consolidada do líder." %}
+        {% include "components/card.html" with label="Nota atual" value="—" badge_status="concluida" badge_label="Nota do líder" body="Nota dada pelo seu líder neste ciclo." %}
       {% elif nota_atual_origem == "autoavaliacao" %}
-        {% include "components/card.html" with label="Nota atual" value="—" badge_status="em_andamento" badge_label="Autoavaliação" body="Referência da autoavaliação." %}
+        {% include "components/card.html" with label="Nota atual" value="—" badge_status="em_andamento" badge_label="Autoavaliação" body="Nota da sua autoavaliação neste ciclo." %}
       {% else %}
-        {% include "components/card.html" with label="Nota atual" value="—" badge_status="arquivado" badge_label="Sem nota" body="Ainda não há nota consolidada neste ciclo." %}
+        {% include "components/card.html" with label="Nota atual" value="—" badge_status="arquivado" badge_label="Sem nota" body="Ainda não há nota neste ciclo." %}
       {% endif %}
 
       {% if vinculo_pendente %}
-        {% include "components/card.html" with label="Nível esperado" value="—" badge_status="pendente" badge_label="Vínculo pendente" body="Vínculo de cargo/competências pendente." %}
+        {% include "components/card.html" with label="Nível esperado" value="—" badge_status="pendente" badge_label="Cadastro incompleto" body="Seu cargo ou competências ainda não foram definidos." %}
       {% else %}
-        {% include "components/card.html" with label="Nível esperado" value=competencias_resumo|length badge_status="ativo" badge_label="Competências do cargo" body="Competências do seu cargo com nível definido." %}
+        {% include "components/card.html" with label="Nível esperado" value=competencias_resumo|length badge_status="ativo" badge_label="Competências do cargo" body="Quantas competências o seu cargo avalia." %}
       {% endif %}
     </div>
 
@@ -69,11 +68,11 @@
           Esperado × nota
         </h3>
         <p class="mt-0.5 font-ui text-sm text-slate-500">
-          Visual principal do desempenho — só competências com nota; teto Top-N por gap.
+          Compara o nível do cargo com a sua nota. O gráfico destaca as maiores diferenças.
         </p>
       </div>
       {% if chart_gaps_competencia.has_data %}
-        {% include "dashboard/_chart_block.html" with chart=chart_gaps_competencia script_id="chart-gaps-competencia" kpi_label="Competências" kpi_value=chart_gaps_competencia.total kpi_body="no gráfico (Top-N por gap)" insight="Maiores gaps com nota — o restante fica na tabela; sem inventar série." %}
+        {% include "dashboard/_chart_block.html" with chart=chart_gaps_competencia script_id="chart-gaps-competencia" kpi_label="Competências" kpi_value=chart_gaps_competencia.total kpi_body="mostradas no gráfico" insight="Maiores diferenças entre o esperado e a sua nota. O restante está na tabela abaixo." %}
       {% else %}
         {% include "dashboard/_chart_block.html" with chart=chart_gaps_competencia script_id="chart-gaps-competencia" %}
       {% endif %}
@@ -87,7 +86,7 @@
             Níveis esperados
           </h3>
           <p class="mt-0.5 font-ui text-sm text-slate-500">
-            Detalhe completo do cargo — o gráfico acima destaca só o Top-N de gaps.
+            Lista completa das competências do seu cargo.
           </p>
         </div>
         {% if cargo %}
@@ -130,12 +129,12 @@
     <div class="min-w-0" aria-labelledby="vinculo-pendente-heading">
       <h3 id="vinculo-pendente-heading" class="sr-only">Níveis esperados</h3>
       {% if not cargo %}
-        {% include "components/empty_state.html" with title="Vínculo pendente" message="Seu perfil ainda não possui cargo definido. Peça ao administrador para concluir o vínculo antes de visualizar o nível esperado." %}
+        {% include "components/empty_state.html" with title="Cadastro incompleto" message="Seu perfil ainda não tem cargo. Peça ao RH para concluir o cadastro antes de ver o nível esperado." %}
       {% else %}
         <p class="mb-1 text-center font-ui text-sm text-slate-500">
           Cargo: <span class="font-medium text-slate-700">{{ cargo.nome }}</span>
         </p>
-        {% include "components/empty_state.html" with title="Vínculo pendente" message="Este cargo ainda não possui competências vinculadas. Peça ao administrador para concluir o vínculo." %}
+        {% include "components/empty_state.html" with title="Cadastro incompleto" message="Este cargo ainda não tem competências definidas. Peça ao RH para concluir o cadastro." %}
       {% endif %}
     </div>
     {% endif %}

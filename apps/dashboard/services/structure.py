@@ -305,7 +305,13 @@ def build_structure_coverage(
     ``chart_payloads.coverage_bar_payload``.
     """
     # Import local evita ciclo com views/payloads em startup.
-    from apps.dashboard.chart_payloads import coverage_bar_payload
+    from apps.dashboard.chart_payloads import (
+        EMPTY_KIND_COPY,
+        EMPTY_KIND_ESCOPO,
+        EMPTY_KIND_OPERACIONAL,
+        EMPTY_KIND_SEM_DADO,
+        coverage_bar_payload,
+    )
 
     resumo = coverage_summary(
         visible,
@@ -326,9 +332,10 @@ def build_structure_coverage(
         cargo_id=cargo_id,
     )
 
-    empty_ciclo = 'Não há ciclo selecionado para exibir cobertura.'
-    empty_escopo = 'Não há colaboradores no escopo para exibir cobertura.'
-    empty_dados = 'Não há dados de cobertura para os filtros atuais.'
+    # Empty canônico (T006): operacional / escopo / sem_dado — sem série fictícia.
+    empty_ciclo = EMPTY_KIND_COPY[EMPTY_KIND_OPERACIONAL]
+    empty_escopo = EMPTY_KIND_COPY[EMPTY_KIND_ESCOPO]
+    empty_dados = EMPTY_KIND_COPY[EMPTY_KIND_SEM_DADO]
 
     if ciclo is None:
         chart_area = coverage_bar_payload(

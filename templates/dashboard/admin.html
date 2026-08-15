@@ -9,11 +9,11 @@
     <div>
       <h1 class="font-display text-2xl font-semibold text-slate-800">Painel administrativo</h1>
       <p class="mt-1 text-sm text-slate-500">
-        Pipeline e pendências do ciclo vigente. O arquivo histórico não conta como saúde da operação.
+        Acompanhe o ciclo em andamento: quem já iniciou, quem está parado e o que ainda falta.
       </p>
       {% if ciclos_resumo.arquivo_total %}
         <p class="mt-1 text-xs text-slate-500">
-          {{ ciclos_resumo.arquivo_total }} ciclo{{ ciclos_resumo.arquivo_total|pluralize }} no arquivo
+          {{ ciclos_resumo.arquivo_total }} ciclo{{ ciclos_resumo.arquivo_total|pluralize }} encerrado{{ ciclos_resumo.arquivo_total|pluralize }} disponíveis no seletor
         </p>
       {% endif %}
     </div>
@@ -42,9 +42,9 @@
     </h2>
     <p class="mt-0.5 text-sm text-slate-500">
       {% if ciclo_indicador %}
-        Totais, gargalo e pendências de {{ ciclo_indicador.nome }} — não o percentual de encerrados do arquivo.
+        Números de {{ ciclo_indicador.nome }} — só deste ciclo, não dos ciclos antigos.
       {% else %}
-        Totais, gargalo e pendências deste ciclo — não o percentual de encerrados do arquivo.
+        Números deste ciclo — só do ciclo escolhido, não dos ciclos antigos.
       {% endif %}
     </p>
   </div>
@@ -53,24 +53,24 @@
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores do ciclo">
       {% if ciclo_kpis.has_ciclo %}
         {% if ciclo_kpis.gargalo_label %}
-          {% with body="Maior volume em "|add:ciclo_kpis.gargalo_label|add:"." %}
-          {% include "components/card.html" with label="No pipeline" value=ciclo_kpis.total body=body %}
+          {% with body="Mais gente parada em "|add:ciclo_kpis.gargalo_label|add:"." %}
+          {% include "components/card.html" with label="Em avaliação" value=ciclo_kpis.total body=body %}
           {% endwith %}
         {% else %}
-          {% include "components/card.html" with label="No pipeline" value=ciclo_kpis.total body="Avaliações com cabeçalho neste ciclo." %}
+          {% include "components/card.html" with label="Em avaliação" value=ciclo_kpis.total body="Pessoas com avaliação neste ciclo." %}
         {% endif %}
 
         {% if ciclo_kpis.pendencias > 0 %}
-          {% include "components/card.html" with label="Pendências" value=ciclo_kpis.pendencias badge_status="pendente" badge_label="Em fluxo" body="Ainda em fluxo neste ciclo — processo e etapa, não nota." %}
+          {% include "components/card.html" with label="Pendências" value=ciclo_kpis.pendencias badge_status="pendente" badge_label="Em andamento" body="Ainda não terminaram todas as etapas." %}
         {% else %}
-          {% include "components/card.html" with label="Pendências" value=ciclo_kpis.pendencias badge_status="concluida" badge_label="Em dia" body="Nenhuma avaliação em fluxo neste ciclo." %}
+          {% include "components/card.html" with label="Pendências" value=ciclo_kpis.pendencias badge_status="concluida" badge_label="Em dia" body="Ninguém com etapa em aberto neste ciclo." %}
         {% endif %}
 
-        {% include "components/card.html" with label="Sem avaliação" value=ciclo_kpis.sem_avaliacao body="Pessoas ativas sem avaliação neste ciclo." %}
+        {% include "components/card.html" with label="Sem avaliação" value=ciclo_kpis.sem_avaliacao body="Pessoas ativas que ainda não entraram no ciclo." %}
       {% else %}
-        {% include "components/card.html" with label="No pipeline" value="—" body="Abra um ciclo para ver o pipeline." %}
-        {% include "components/card.html" with label="Pendências" value="—" body="Disponível quando houver ciclo aberto." %}
-        {% include "components/card.html" with label="Sem avaliação" value="—" body="Disponível quando houver ciclo aberto." %}
+        {% include "components/card.html" with label="Em avaliação" value="—" body="Abra ou escolha um ciclo para ver os números." %}
+        {% include "components/card.html" with label="Pendências" value="—" body="Disponível quando houver um ciclo selecionado." %}
+        {% include "components/card.html" with label="Sem avaliação" value="—" body="Disponível quando houver um ciclo selecionado." %}
       {% endif %}
     </div>
 
@@ -81,11 +81,11 @@
           Andamento por etapa
         </h3>
         <p class="mt-0.5 text-sm text-slate-500">
-          Leitura principal do ciclo — processo e etapa, não nota.
+          Onde cada avaliação está hoje — metas, aprovação, resultados e feedback.
         </p>
       </div>
       {% if chart_ciclo_progresso.has_data %}
-        {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" kpi_label="Total" kpi_value=chart_ciclo_progresso.total kpi_body="avaliações no ciclo" insight="Quantidade de avaliações em cada etapa." %}
+        {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" kpi_label="Total" kpi_value=chart_ciclo_progresso.total kpi_body="avaliações neste ciclo" insight="Quantas avaliações estão em cada etapa." %}
       {% else %}
         {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" %}
       {% endif %}
@@ -97,11 +97,11 @@
           Distribuição de aderência
         </h3>
         <p class="mt-0.5 text-sm text-slate-500">
-          Como anda a aderência dos líderes neste ciclo.
+          Quantos líderes estão com aderência alta, média ou baixa neste ciclo.
         </p>
       </div>
       {% if chart_aderencia_distribuicao.has_data %}
-        {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" kpi_label="Líderes" kpi_value=chart_aderencia_distribuicao.total kpi_body="com aderência no ciclo" insight="Distribuição em alta, média e baixa — o centro mostra o total." %}
+        {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" kpi_label="Líderes" kpi_value=chart_aderencia_distribuicao.total kpi_body="com índice neste ciclo" insight="Alta, média e baixa — o número no centro é o total de líderes." %}
       {% else %}
         {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" %}
       {% endif %}
@@ -114,7 +114,7 @@
             Líderes com menor aderência
           </h3>
           <p class="mt-0.5 text-sm text-slate-500">
-            Priorize quem está abaixo do esperado na distribuição.
+            Quem precisa de mais atenção neste ciclo.
           </p>
         </div>
         <a href="{% url 'dashboard:adherence' %}" class="text-sm font-medium text-emerald-700 hover:text-emerald-800">
@@ -130,7 +130,7 @@
               <th>Área</th>
               <th>Percentual</th>
               <th>Status</th>
-              <th>Calculado em</th>
+              <th>Atualizado em</th>
             </tr>
           </thead>
           <tbody>
@@ -151,7 +151,7 @@
             <tr>
               <td colspan="5" class="!py-8">
                 {% url 'dashboard:adherence' as adherence_url %}
-                {% include "components/empty_state.html" with title="Sem dados de aderência" message="Ainda não há aderência registrada para este ciclo. Os índices são atualizados diariamente." cta_label="Ver aderência" cta_href=adherence_url %}
+                {% include "components/empty_state.html" with title="Sem dados de aderência" message="Ainda não há índices de aderência neste ciclo. Eles são atualizados todos os dias." cta_label="Ver aderência" cta_href=adherence_url %}
               </td>
             </tr>
             {% endfor %}

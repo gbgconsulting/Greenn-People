@@ -140,17 +140,38 @@
     return value;
   }
 
+  function formatChartValue(raw, valueUnit) {
+    if (raw === null || raw === undefined) {
+      return '—';
+    }
+    var text = String(raw);
+    if (valueUnit) {
+      return text + valueUnit;
+    }
+    return text;
+  }
+
+  function chartValueUnit(chart) {
+    return (chart && chart.options && chart.options.greennValueUnit) || '';
+  }
+
   function tooltipLabel(ctx) {
     var datasetLabel = ctx.dataset && ctx.dataset.label ? ctx.dataset.label : '';
     var categoryLabel = ctx.label || '';
     var parsed = ctx.parsed;
     var value;
+    var unit = chartValueUnit(ctx.chart);
 
     if (parsed === null || parsed === undefined) {
       return datasetLabel || categoryLabel || '';
     }
     if (typeof parsed === 'object') {
-      value = parsed.y !== undefined ? parsed.y : parsed;
+      // bar_horizontal (indexAxis y): valor em parsed.x
+      if (ctx.chart && ctx.chart.options && ctx.chart.options.indexAxis === 'y') {
+        value = parsed.x;
+      } else {
+        value = parsed.y !== undefined ? parsed.y : parsed.x;
+      }
     } else {
       value = parsed;
     }
@@ -159,13 +180,14 @@
       return (datasetLabel || categoryLabel) + ': —';
     }
 
+    var formatted = formatChartValue(value, unit);
     if (datasetLabel && categoryLabel && ctx.chart.config.type === 'bar') {
-      return datasetLabel + ': ' + value;
+      return datasetLabel + ': ' + formatted;
     }
     if (datasetLabel) {
-      return datasetLabel + ': ' + value;
+      return datasetLabel + ': ' + formatted;
     }
-    return categoryLabel + ': ' + value;
+    return categoryLabel + ': ' + formatted;
   }
 
   function isNarrowViewport() {
@@ -296,6 +318,7 @@
         var ctx = chart.ctx;
         var narrow = isNarrowViewport();
         var fontSize = narrow ? 11 : 12;
+        var unit = chartValueUnit(chart);
         ctx.save();
         ctx.font = '600 ' + fontSize + 'px ' + FONT_UI;
         ctx.fillStyle = COLOR_INK;
@@ -309,7 +332,7 @@
             if (raw === null || raw === undefined) {
               return;
             }
-            var text = String(raw);
+            var text = formatChartValue(raw, unit);
             var pos = element.tooltipPosition();
             if (horizontal) {
               ctx.textAlign = 'left';
@@ -417,6 +440,7 @@
       payload.colors && payload.colors.length ? payload.colors : STATUS_TRIAD;
     var isDoughnut = type === 'doughnut';
     var horizontal = payload.type === 'bar_horizontal';
+    var valueUnit = payload.value_unit || '';
     // Barra categórica: cores por faixa quando o payload traz triad/lista;
     // legenda Chart.js oculta (datalabel + figcaption). Doughnut: legenda com texto.
     var perCategoryColors =
@@ -440,10 +464,19 @@
       maintainAspectRatio: false,
       plugins: basePlugins(isDoughnut),
       scales: isDoughnut ? undefined : cleanScales(horizontal, 'bar'),
+      greennValueUnit: valueUnit,
     };
     if (horizontal) {
       options.indexAxis = 'y';
-      options.layout = { padding: { top: 4, right: 32, bottom: 4, left: 4 } };
+      // Folga extra quando o datalabel leva sufixo (ex. "100%").
+      options.layout = {
+        padding: {
+          top: 4,
+          right: valueUnit ? 44 : 32,
+          bottom: 4,
+          left: 4,
+        },
+      };
     } else if (!isDoughnut) {
       options.layout = { padding: { top: 18, right: 8, bottom: 4, left: 4 } };
     }
@@ -574,6 +607,12 @@
     }
 
     canvas.chartInstance = new Chart(canvas, buildConfig(payload));
+    // Re-mede após o layout (grid/flex) assentar — evita canvas 0×N em branco.
+    requestAnimationFrame(function () {
+      if (canvas.chartInstance) {
+        canvas.chartInstance.resize();
+      }
+    });
   }
 
   function initAll() {

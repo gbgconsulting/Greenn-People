@@ -517,11 +517,15 @@ def test_coverage_bar_payload_applies_top_n_weighted_others():
     assert OTHERS_LABEL not in payload['labels'][:-1]
     assert set(payload['labels'][:-1]) == {f'Area-{i}' for i in range(1, 9)}
 
-    weighted = (20 + 10 + 5) / (20 + 10 + 5 + 4 + 3 + 2 + 1) * 100
+    # 35/45 → 77.777… → 78 (inteiro half-up no chart).
+    weighted_int = 78
     mean_of_pct = (100.0 + 100.0 + 100.0 + 0.0 + 0.0 + 0.0 + 0.0) / 7
-    others_pct = float(payload['values'][-1])
-    assert others_pct == pytest.approx(weighted)
+    others_pct = payload['values'][-1]
+    assert others_pct == weighted_int
+    assert isinstance(others_pct, int)
+    assert payload.get('value_unit') == '%'
     assert others_pct != pytest.approx(mean_of_pct)
+    assert all(isinstance(v, int) for v in payload['values'])
     assert len(payload['values']) == len(payload['labels'])
     assert len(payload['values']) <= DENSITY_TOP_N + 1
 
@@ -658,7 +662,7 @@ def test_top_n_coverage_residual_is_weighted_not_mean_of_percentuais():
         }
         for i, total in enumerate((100, 90, 80, 70, 60, 50, 40, 30), start=1)
     ]
-    # Residual: % médios ≈ 42.86; ponderado = 35/45 ≈ 77.78.
+    # Residual: % médios ≈ 42.86; ponderado = 35/45 → 78 inteiro.
     residual_rows = [
         {'area_nome': 'R-100a', 'com_avaliacao': 20, 'total': 20, 'percentual': 100.0},
         {'area_nome': 'R-100b', 'com_avaliacao': 10, 'total': 10, 'percentual': 100.0},
@@ -688,10 +692,12 @@ def test_top_n_coverage_residual_is_weighted_not_mean_of_percentuais():
 
     com_residual = 20 + 10 + 5
     total_residual = 20 + 10 + 5 + 4 + 3 + 2 + 1
-    weighted = com_residual / total_residual * 100
+    # 35/45 → 78 (inteiro half-up no residual de cobertura).
+    weighted_int = 78
     mean_of_pct = (100.0 + 100.0 + 100.0 + 0.0 + 0.0 + 0.0 + 0.0) / 7
-    others_pct = float(others['percentual'])
-    assert others_pct == pytest.approx(weighted)
+    others_pct = others['percentual']
+    assert others_pct == weighted_int
+    assert isinstance(others_pct, int)
     assert others_pct != pytest.approx(mean_of_pct)
     assert int(others['com_avaliacao']) == com_residual
     assert int(others['total']) == total_residual

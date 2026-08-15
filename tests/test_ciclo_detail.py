@@ -116,7 +116,7 @@ def test_ciclo_detail_quickstart_s3_painel_secoes(admin, ciclo_aberto):
     for needle in (
         'managerial-panel',
         'Progresso das avaliações',
-        'Cobertura por dimensão',
+        'Cobertura por área e cargo',
         'Aderência da liderança',
         'Checklist operacional',
         'chart.js@4.5.1',

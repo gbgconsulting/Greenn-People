@@ -11,7 +11,11 @@ from __future__ import annotations
 
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
+
+# Percentuais em chart: sempre inteiro 0–100 (sem casas no datalabel).
+_CHART_PERCENT_QUANT = Decimal('1')
 
 # ---------------------------------------------------------------------------
 # Status Triad — alta / média / baixa (emerald-600 / amber-600 / rose-600)
@@ -67,17 +71,17 @@ EMPTY_KINDS: frozenset[str] = frozenset({
 
 EMPTY_KIND_COPY: dict[str, str] = {
     EMPTY_KIND_OPERACIONAL: (
-        'Não há ciclo aberto. O arquivo histórico continua acessível '
+        'Não há ciclo aberto. Você pode escolher outro ciclo '
         'pelo seletor.'
     ),
     EMPTY_KIND_ESCOPO: (
-        'Não há colaboradores no seu escopo para exibir.'
+        'Não há pessoas na sua equipe para mostrar aqui.'
     ),
     EMPTY_KIND_SEM_DADO: (
-        'Ainda não há dados nesta seção para exibir.'
+        'Ainda não há informações nesta seção.'
     ),
     EMPTY_KIND_SEM_NOTA: (
-        'Ainda não há notas de desempenho para exibir. Andamento por etapa '
+        'Ainda não há notas de desempenho. Terminar as etapas do ciclo '
         'não significa desempenho completo.'
     ),
 }
@@ -187,6 +191,18 @@ def _as_number(value: Any) -> float:
     return float(value)
 
 
+def _as_chart_percent_int(value: Any) -> int:
+    """Percentual 0–100 para rótulo de gráfico: inteiro half-up, sem decimal."""
+    if value is None or isinstance(value, bool):
+        return 0
+    return int(
+        Decimal(str(value)).quantize(
+            _CHART_PERCENT_QUANT,
+            rounding=ROUND_HALF_UP,
+        )
+    )
+
+
 def _gap_abs(row: Mapping[str, Any]) -> float | None:
     """|esperado − nota|; ``None`` se faltar nota (null ≠ 0)."""
     nota = row.get(_GAP_NOTA_KEY)
@@ -226,10 +242,17 @@ def _others_coverage_row(
     *,
     label_key: str,
 ) -> dict[str, Any]:
-    """% do residual = sum(com) / sum(total) — nunca média de percentuais."""
+    """% do residual = sum(com) / sum(total) — nunca média de percentuais.
+
+    Percentual emitido como **inteiro** (half-up) para datalabel sem decimal.
+    """
     com = int(_sum_numeric(row.get(_COVERAGE_COM_KEY) or 0 for row in residual))
     total = int(_sum_numeric(row.get(_COVERAGE_TOTAL_KEY) or 0 for row in residual))
-    percentual = (com / total * 100) if total else 0.0
+    if total:
+        raw = Decimal(com) * Decimal(100) / Decimal(total)
+        percentual = _as_chart_percent_int(raw)
+    else:
+        percentual = 0
     return {
         label_key: OTHERS_LABEL,
         _COVERAGE_COM_KEY: com,
@@ -358,12 +381,14 @@ def series_payload(
     has_data: bool | None = None,
     total: int | None = None,
     center_text: str | None = None,
+    value_unit: str | None = None,
 ) -> dict[str, Any]:
     """Monta payload de série única no shape dos contratos.
 
     Types suportados (catálogo): ``bar``, ``doughnut``, ``doughnut_or_bar``,
     ``bar_horizontal``, ``area``. ``total`` alimenta o valor central do doughnut
     no init JS quando ``center_text`` não é informado.
+    ``value_unit`` (ex. ``'%'``) instrui o JS a sufixar datalabel/tooltip.
     """
     numeric_values = [0 if v is None else v for v in values]
     computed_total = int(sum(numeric_values)) if total is None else int(total)
@@ -395,6 +420,11 @@ def series_payload(
     # Texto opcional do centro (doughnut) — JS: center_text || total.
     if center_text is not None and resolved_has_data:
         payload['center_text'] = center_text
+    if value_unit and resolved_has_data:
+        payload['value_unit'] = value_unit
+        for item in payload['legend_items']:
+            if item.get('value') is not None:
+                item['value'] = f'{item["value"]}{value_unit}'
     return payload
 
 
@@ -622,7 +652,8 @@ def coverage_bar_payload(
         label_key=label_key,
     )
     labels = [str(row.get(label_key) or '') for row in dense]
-    values: list[float] = [float(row[value_key]) for row in dense]
+    # Charts de %: sempre inteiro no payload (datalabel / legend sem decimal).
+    values: list[int] = [_as_chart_percent_int(row[value_key]) for row in dense]
 
     highlight_index: int | None = None
     if highlight_lowest and values:
@@ -644,4 +675,5 @@ def coverage_bar_payload(
         empty_message=empty_message,
         colors=colors,
         total=len(dense),
+        value_unit='%',
     )
