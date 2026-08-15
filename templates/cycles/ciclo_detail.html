@@ -35,13 +35,24 @@
 </header>
 
 <section class="mb-8 min-w-0" aria-labelledby="ciclo-detail-heading">
-  <div class="mb-3">
-    <h2 id="ciclo-detail-heading" class="font-display text-lg font-medium text-slate-800">
-      Onde o ciclo está
-    </h2>
-    <p class="mt-0.5 text-sm text-slate-500">
-      Resumo do andamento e da cobertura das pessoas neste ciclo.
-    </p>
+  <div class="mb-3 flex flex-wrap items-start justify-between gap-3">
+    <div class="min-w-0">
+      <h2 id="ciclo-detail-heading" class="font-display text-lg font-medium text-slate-800">
+        {% if visao == 'historico' %}
+          Tendência e andamento
+        {% else %}
+          Onde o ciclo está
+        {% endif %}
+      </h2>
+      <p class="mt-0.5 text-sm text-slate-500">
+        {% if visao == 'historico' %}
+          Tendência de etapa/conclusão na janela — pipeline e cobertura deste ciclo permanecem abaixo.
+        {% else %}
+          Resumo do andamento e da cobertura das pessoas neste ciclo.
+        {% endif %}
+      </p>
+    </div>
+    {% include "dashboard/_visao_toggle.html" %}
   </div>
 
   <div class="managerial-panel">
@@ -80,6 +91,24 @@
         {% include "components/card.html" with label="Pendências do checklist" value="—" body="Checklist indisponível nesta página." %}
       {% endif %}
     </div>
+
+    {% if visao == 'historico' and chart_stage_history %}
+    <div class="min-w-0" aria-labelledby="tendencia-ciclo-heading">
+      <div class="mb-3">
+        <h3 id="tendencia-ciclo-heading" class="font-display text-lg font-medium text-slate-800">
+          Tendência de etapa e conclusão
+        </h3>
+        <p class="mt-0.5 text-sm text-slate-500">
+          Contagens por ciclo na janela do escopo — lacunas aparecem como ausência, não como zero.
+        </p>
+      </div>
+      {% if chart_stage_history.has_data %}
+        {% include "dashboard/_chart_block.html" with chart=chart_stage_history script_id="chart-stage-history" kpi_label="Janela" kpi_value=chart_stage_history.labels|length kpi_body="ciclos nesta tendência" insight="Etapa e conclusão ao longo do tempo." %}
+      {% else %}
+        {% include "dashboard/_chart_block.html" with chart=chart_stage_history script_id="chart-stage-history" %}
+      {% endif %}
+    </div>
+    {% endif %}
 
     <div class="min-w-0" aria-labelledby="progresso-heading">
       <div class="mb-3">

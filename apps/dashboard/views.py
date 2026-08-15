@@ -22,6 +22,7 @@ from apps.dashboard.chart_payloads import (
     EMPTY_KIND_ESCOPO,
     EMPTY_KIND_OPERACIONAL,
     EMPTY_KIND_SEM_DADO,
+    EMPTY_KIND_SEM_NOTA,
     SEM_AVALIACAO_KEY,
     SEM_AVALIACAO_LABEL,
     aderencia_distribution_payload,
@@ -34,6 +35,12 @@ from apps.dashboard.models import AderenciaSnapshot
 from apps.dashboard.services.ciclo_options import (
     grouped_ciclo_options,
     resolve_operational_ciclo,
+)
+from apps.dashboard.services.history import (
+    build_history_kpis,
+    build_stage_history,
+    is_history_mode,
+    resolve_history_ciclos,
 )
 from apps.dashboard.services.structure import (
     build_structure_coverage,
@@ -281,6 +288,9 @@ class TeamDashboardView(
         context['grouped_ciclo_options'] = grouped_ciclo_options(
             q=self.request.GET.get('q'),
         )
+        context['visao'] = None
+        context['chart_stage_history'] = None
+        context['history_kpis'] = None
 
         membros: list[CustomUser] = list(context['object_list'])
         avaliacoes_por_usuario: dict[int, Avaliacao] = {}
@@ -300,6 +310,30 @@ class TeamDashboardView(
             }
             for membro in membros
         ]
+
+        # US3 / T031: tendência etapa/conclusão só com intenção explícita (GET).
+        if is_history_mode(self.request):
+            visible = self.get_queryset()
+            janela = resolve_history_ciclos(self.request)
+            context['visao'] = 'historico'
+            context['chart_stage_history'] = build_stage_history(visible, janela)
+            context['history_kpis'] = build_history_kpis(visible, janela)
+            # Aderência/gap não são o visual principal nesta fatia.
+            context['chart_escopo_status'] = empty_kind_payload(
+                kind=EMPTY_KIND_SEM_NOTA,
+                chart_id='chart-escopo-status',
+                chart_type=CHART_TYPE_BAR_HORIZONTAL,
+                title='Status do escopo no ciclo',
+            )
+            context['team_resumo'] = {
+                'total_escopo': visible.count(),
+                'aguardando_acao': None,
+                'sem_avaliacao': None,
+                'has_ciclo': False,
+            }
+            context['destaque_atencao'] = []
+            return context
+
         # Agregação do chart/KPIs/destaque usa queryset completo (R2/R3) — não object_list.
         key_counts, etapa_por_usuario, membro_ids = self._scope_status_counts(ciclo)
         context['chart_escopo_status'] = self._chart_escopo_status(
@@ -740,6 +774,43 @@ class AdminDashboardView(LoginRequiredMixin, RequiresAdminMixin, TemplateView):
         )
         context['ciclo_selecionado'] = ciclo
         context['ciclos_resumo'] = self._ciclos_resumo()
+        context['visao'] = None
+        context['chart_stage_history'] = None
+        context['history_kpis'] = None
+
+        # US3 / T031: tendência org só com GET ``visao=historico`` (sem path novo).
+        if is_history_mode(self.request):
+            visible = get_visible_users(self.request.user).filter(is_active=True)
+            janela = resolve_history_ciclos(self.request)
+            context['visao'] = 'historico'
+            context['chart_stage_history'] = build_stage_history(visible, janela)
+            context['history_kpis'] = build_history_kpis(visible, janela)
+            # KPIs operacionais / pipeline do aberto ficam de lado no modo.
+            context['ciclo_kpis'] = {
+                'has_ciclo': False,
+                'total': None,
+                'gargalo_label': None,
+                'gargalo_count': None,
+                'pendencias': None,
+                'sem_avaliacao': None,
+            }
+            context['avaliacoes_resumo'] = self._avaliacoes_resumo(None)
+            context['aderencia_resumo'] = self._aderencia_resumo(None)
+            context['snapshots_destaque'] = []
+            context['chart_ciclo_progresso'] = empty_kind_payload(
+                kind=EMPTY_KIND_SEM_NOTA,
+                chart_id='chart-ciclo-progresso',
+                chart_type=CHART_TYPE_BAR_HORIZONTAL,
+                title='Progresso das avaliações no ciclo',
+            )
+            context['chart_aderencia_distribuicao'] = empty_kind_payload(
+                kind=EMPTY_KIND_SEM_NOTA,
+                chart_id='chart-aderencia-distribuicao',
+                chart_type=CHART_TYPE_DOUGHNUT,
+                title='Distribuição de aderência',
+            )
+            return context
+
         context['ciclo_kpis'] = self._ciclo_kpis(ciclo)
         context['avaliacoes_resumo'] = self._avaliacoes_resumo(ciclo)
         context['aderencia_resumo'] = self._aderencia_resumo(ciclo)

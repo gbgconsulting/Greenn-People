@@ -36,45 +36,82 @@
 </section>
 
 <section class="mb-8 min-w-0" aria-labelledby="indicadores-heading">
-  <div class="mb-3">
-    <h2 id="indicadores-heading" class="font-display text-lg font-medium text-slate-800">
-      Indicadores do ciclo
-    </h2>
-    <p class="mt-0.5 text-sm text-slate-500">
-      {% if ciclo_indicador %}
-        Números de {{ ciclo_indicador.nome }} — só deste ciclo, não dos ciclos antigos.
-      {% else %}
-        Números deste ciclo — só do ciclo escolhido, não dos ciclos antigos.
-      {% endif %}
-    </p>
+  <div class="mb-3 flex flex-wrap items-start justify-between gap-3">
+    <div class="min-w-0">
+      <h2 id="indicadores-heading" class="font-display text-lg font-medium text-slate-800">
+        {% if visao == 'historico' %}
+          Tendência histórica
+        {% else %}
+          Indicadores do ciclo
+        {% endif %}
+      </h2>
+      <p class="mt-0.5 text-sm text-slate-500">
+        {% if visao == 'historico' %}
+          Evoluiu, estável ou sem dado nos últimos ciclos do escopo — etapa e conclusão, não nota.
+        {% elif ciclo_indicador %}
+          Números de {{ ciclo_indicador.nome }} — só deste ciclo, não dos ciclos antigos.
+        {% else %}
+          Números deste ciclo — só do ciclo escolhido, não dos ciclos antigos.
+        {% endif %}
+      </p>
+    </div>
+    {% include "dashboard/_visao_toggle.html" %}
   </div>
 
   <div class="managerial-panel">
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores do ciclo">
-      {% if ciclo_kpis.has_ciclo %}
-        {% if ciclo_kpis.gargalo_label %}
-          {% with body="Mais gente parada em "|add:ciclo_kpis.gargalo_label|add:"." %}
-          {% include "components/card.html" with label="Em avaliação" value=ciclo_kpis.total body=body %}
-          {% endwith %}
-        {% else %}
-          {% include "components/card.html" with label="Em avaliação" value=ciclo_kpis.total body="Pessoas com avaliação neste ciclo." %}
-        {% endif %}
+    {% if visao == 'historico' %}
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores da janela histórica">
+      {% include "components/card.html" with label="Evoluiu" value=history_kpis.evoluiu body="Avançaram de etapa ou concluíram na janela." %}
+      {% include "components/card.html" with label="Estável" value=history_kpis.estavel body="Mesma etapa/conclusão entre o primeiro e o último ponto." %}
+      {% include "components/card.html" with label="Sem dado" value=history_kpis.sem_dado body="Sem cabeçalho útil na janela do escopo." %}
+    </div>
 
-        {% if ciclo_kpis.pendencias > 0 %}
-          {% include "components/card.html" with label="Pendências" value=ciclo_kpis.pendencias badge_status="pendente" badge_label="Em andamento" body="Ainda não terminaram todas as etapas." %}
-        {% else %}
-          {% include "components/card.html" with label="Pendências" value=ciclo_kpis.pendencias badge_status="concluida" badge_label="Em dia" body="Ninguém com etapa em aberto neste ciclo." %}
-        {% endif %}
-
-        {% include "components/card.html" with label="Sem avaliação" value=ciclo_kpis.sem_avaliacao body="Pessoas ativas que ainda não entraram no ciclo." %}
+    <div class="min-w-0" aria-labelledby="pipeline-heading">
+      <div class="mb-3">
+        <h3 id="pipeline-heading" class="font-display text-lg font-medium text-slate-800">
+          Tendência de etapa e conclusão
+        </h3>
+        <p class="mt-0.5 text-sm text-slate-500">
+          Contagens por ciclo na janela — lacunas aparecem como ausência, não como zero.
+        </p>
+      </div>
+      {% if chart_stage_history.has_data %}
+        {% include "dashboard/_chart_block.html" with chart=chart_stage_history script_id="chart-stage-history" kpi_label="Janela" kpi_value=chart_stage_history.labels|length kpi_body="ciclos nesta tendência" insight="Etapa e conclusão ao longo do tempo." %}
       {% else %}
-        {% include "components/card.html" with label="Em avaliação" value="—" body="Abra ou escolha um ciclo para ver os números." %}
-        {% include "components/card.html" with label="Pendências" value="—" body="Disponível quando houver um ciclo selecionado." %}
-        {% include "components/card.html" with label="Sem avaliação" value="—" body="Disponível quando houver um ciclo selecionado." %}
+        {% include "dashboard/_chart_block.html" with chart=chart_stage_history script_id="chart-stage-history" %}
       {% endif %}
     </div>
 
-    {% if ciclo_kpis.has_ciclo %}
+    <div class="min-w-0" aria-labelledby="aderencia-heading">
+      <div class="mb-3">
+        <h3 id="aderencia-heading" class="font-display text-lg font-medium text-slate-800">
+          Distribuição de aderência
+        </h3>
+        <p class="mt-0.5 text-sm text-slate-500">
+          Aderência e gap ficam vazios até haver nota/snapshot — não substituem a tendência.
+        </p>
+      </div>
+      {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" %}
+    </div>
+    {% elif ciclo_kpis.has_ciclo %}
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores do ciclo">
+      {% if ciclo_kpis.gargalo_label %}
+        {% with body="Mais gente parada em "|add:ciclo_kpis.gargalo_label|add:"." %}
+        {% include "components/card.html" with label="Em avaliação" value=ciclo_kpis.total body=body %}
+        {% endwith %}
+      {% else %}
+        {% include "components/card.html" with label="Em avaliação" value=ciclo_kpis.total body="Pessoas com avaliação neste ciclo." %}
+      {% endif %}
+
+      {% if ciclo_kpis.pendencias > 0 %}
+        {% include "components/card.html" with label="Pendências" value=ciclo_kpis.pendencias badge_status="pendente" badge_label="Em andamento" body="Ainda não terminaram todas as etapas." %}
+      {% else %}
+        {% include "components/card.html" with label="Pendências" value=ciclo_kpis.pendencias badge_status="concluida" badge_label="Em dia" body="Ninguém com etapa em aberto neste ciclo." %}
+      {% endif %}
+
+      {% include "components/card.html" with label="Sem avaliação" value=ciclo_kpis.sem_avaliacao body="Pessoas ativas que ainda não entraram no ciclo." %}
+    </div>
+
     <div class="min-w-0" aria-labelledby="pipeline-heading">
       <div class="mb-3">
         <h3 id="pipeline-heading" class="font-display text-lg font-medium text-slate-800">
@@ -160,6 +197,11 @@
       </div>
     </div>
     {% else %}
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores do ciclo">
+      {% include "components/card.html" with label="Em avaliação" value="—" body="Abra ou escolha um ciclo para ver os números." %}
+      {% include "components/card.html" with label="Pendências" value="—" body="Disponível quando houver um ciclo selecionado." %}
+      {% include "components/card.html" with label="Sem avaliação" value="—" body="Disponível quando houver um ciclo selecionado." %}
+    </div>
     <div class="min-w-0">
       {% url 'cycles:ciclo_list' as ciclos_url %}
       {% include "components/empty_state.html" with title="Sem ciclo aberto" message=chart_ciclo_progresso.empty_message cta_label="Gerenciar ciclos" cta_href=ciclos_url %}
