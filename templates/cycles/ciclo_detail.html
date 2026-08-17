@@ -14,7 +14,7 @@
       </p>
       <h1 class="font-display text-2xl font-semibold text-slate-800">{{ ciclo.nome }}</h1>
       <p class="mt-1 text-sm text-slate-500">
-        Progresso, cobertura e aderência deste ciclo — com avisos operacionais no final.
+        Visão geral deste ciclo: andamento das avaliações, quem já entrou e a aderência dos líderes.
       </p>
     </div>
     <div class="flex flex-wrap items-center gap-2">
@@ -35,20 +35,35 @@
 </header>
 
 <section class="mb-8 min-w-0" aria-labelledby="ciclo-detail-heading">
-  <div class="mb-3">
-    <h2 id="ciclo-detail-heading" class="font-display text-lg font-medium text-slate-800">
-      Onde o ciclo está
-    </h2>
-    <p class="mt-0.5 text-sm text-slate-500">
-      Resumo do ciclo: se uma seção não tiver dados, ela aparece vazia sem inventar números.
-    </p>
+  <div class="mb-3 flex flex-wrap items-start justify-between gap-3">
+    <div class="min-w-0">
+      <h2 id="ciclo-detail-heading" class="font-display text-lg font-medium text-slate-800">
+        {% if visao == 'historico' %}
+          Como os ciclos avançaram
+        {% else %}
+          Onde o ciclo está
+        {% endif %}
+      </h2>
+      <p class="mt-0.5 text-sm text-slate-500">
+        {% if visao == 'historico' %}
+          Andamento dos últimos ciclos. Abaixo, o detalhe deste ciclo continua igual.
+        {% else %}
+          Resumo do andamento e da cobertura das pessoas neste ciclo.
+        {% endif %}
+      </p>
+    </div>
+    {% include "dashboard/_visao_toggle.html" %}
   </div>
 
   <div class="managerial-panel">
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores do ciclo">
       {% if avaliacoes_resumo.percentual_concluidas is not None %}
         {% with val=avaliacoes_resumo.percentual_concluidas|stringformat:"d"|add:"%" %}
-        {% include "components/card.html" with label="Avaliações concluídas" value=val body="Feedback líder + ciência neste ciclo." %}
+        {% if avaliacoes_resumo.sem_desempenho %}
+        {% include "components/card.html" with label="Avaliações concluídas" value=val body="Concluíram as etapas — não significa desempenho completo." %}
+        {% else %}
+        {% include "components/card.html" with label="Avaliações concluídas" value=val body="Concluíram as etapas deste ciclo." %}
+        {% endif %}
         {% endwith %}
       {% else %}
         {% include "components/card.html" with label="Avaliações concluídas" value="—" body="Ainda não há avaliações neste ciclo." %}
@@ -56,94 +71,86 @@
 
       {% if cobertura_resumo.has_ciclo and cobertura_resumo.percentual is not None %}
         {% with val=cobertura_resumo.percentual|stringformat:"d"|add:"%" %}
-        {% include "components/card.html" with label="Cobertura" value=val body="Colaboradores ativos com avaliação neste ciclo." %}
+        {% include "components/card.html" with label="Cobertura" value=val body="Percentual de pessoas ativas que já têm avaliação." %}
         {% endwith %}
       {% elif cobertura_resumo.has_ciclo %}
-        {% include "components/card.html" with label="Cobertura" value="—" body="Sem colaboradores ativos no escopo." %}
+        {% include "components/card.html" with label="Cobertura" value="—" body="Não há pessoas ativas para calcular a cobertura." %}
       {% else %}
-        {% include "components/card.html" with label="Cobertura" value="—" body="Ciclo indisponível para cobertura." %}
+        {% include "components/card.html" with label="Cobertura" value="—" body="Não foi possível calcular a cobertura neste ciclo." %}
       {% endif %}
 
       {% if rh_pre_open_checklist %}
         {% if rh_checklist_has_blockers %}
           {% with blockers=rh_pre_open_checklist.items|length %}
-          {% include "components/card.html" with label="Pendências do checklist" value=blockers badge_status="pendente" badge_label="Revisar" body="Não impede abrir o ciclo — veja o checklist abaixo." %}
+          {% include "components/card.html" with label="Pendências do checklist" value=blockers badge_status="pendente" badge_label="Revisar" body="Há avisos de cadastro — você ainda pode abrir o ciclo." %}
           {% endwith %}
         {% else %}
-          {% include "components/card.html" with label="Pendências do checklist" value="0" badge_status="concluida" badge_label="Em dia" body="Sem pendências de cadastro no momento." %}
+          {% include "components/card.html" with label="Pendências do checklist" value="0" badge_status="concluida" badge_label="Em dia" body="Cadastros em ordem no momento." %}
         {% endif %}
       {% else %}
-        {% include "components/card.html" with label="Pendências do checklist" value="—" body="Checklist operacional indisponível." %}
+        {% include "components/card.html" with label="Pendências do checklist" value="—" body="Checklist indisponível nesta página." %}
       {% endif %}
     </div>
 
-    <div class="min-w-0" aria-labelledby="progresso-heading">
-      <div class="mb-3">
-        <h3 id="progresso-heading" class="font-display text-lg font-medium text-slate-800">
-          Progresso das avaliações
-        </h3>
-        <p class="mt-0.5 text-sm text-slate-500">
-          Quantidade de avaliações em cada etapa do ciclo.
-        </p>
+    {% if visao == 'historico' and chart_stage_history %}
+      {% include "dashboard/_chart_block.html" with chart=chart_stage_history script_id="chart-stage-history" %}
+    {% endif %}
+
+    <div class="grid min-w-0 grid-cols-1 gap-4 {% if chart_aderencia_distribuicao.has_data %}lg:grid-cols-2 lg:items-start{% endif %}">
+      <div class="min-w-0" id="progresso-heading">
+        {% if chart_ciclo_progresso.has_data %}
+          {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" insight="Quantas avaliações estão em cada etapa." %}
+        {% else %}
+          {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" %}
+        {% endif %}
       </div>
-      {% if chart_ciclo_progresso.has_data %}
-        {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" kpi_label="Total" kpi_value=chart_ciclo_progresso.total kpi_body="avaliações no ciclo" insight="A etapa com mais avaliações fica em destaque." %}
-      {% else %}
-        {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" %}
+      {% if chart_aderencia_distribuicao.has_data %}
+      <div class="min-w-0" id="aderencia-ciclo-heading">
+        {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" insight="Alta, média e baixa — o número no centro é o total de líderes." %}
+      </div>
+      {% elif chart_aderencia_distribuicao %}
+      <div class="min-w-0" id="aderencia-ciclo-heading">
+        <h3 class="font-display text-lg font-medium text-slate-800">Aderência da liderança</h3>
+        <p class="mt-1 text-sm text-slate-500">{{ chart_aderencia_distribuicao.empty_message }}</p>
+      </div>
       {% endif %}
     </div>
 
+    {% if chart_cobertura_area.has_data or chart_cobertura_cargo.has_data %}
     <div class="min-w-0" aria-labelledby="cobertura-ciclo-heading">
       <div class="mb-3">
         <h3 id="cobertura-ciclo-heading" class="font-display text-lg font-medium text-slate-800">
-          Cobertura por dimensão
+          Cobertura por área e cargo
         </h3>
         <p class="mt-0.5 text-sm text-slate-500">
-          Percentual de pessoas com avaliação, por área e por cargo.
+          Percentual de pessoas que já têm avaliação, por área e por cargo.
         </p>
       </div>
-      <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div class="grid grid-cols-1 gap-4 {% if chart_cobertura_area.has_data and chart_cobertura_cargo.has_data %}lg:grid-cols-2{% endif %}">
         {% if chart_cobertura_area.has_data %}
-          {% include "dashboard/_chart_block.html" with chart=chart_cobertura_area script_id="chart-cobertura-area" insight="Áreas com menor cobertura ficam em destaque." %}
-        {% else %}
-          {% include "dashboard/_chart_block.html" with chart=chart_cobertura_area script_id="chart-cobertura-area" %}
+          {% include "dashboard/_chart_block.html" with chart=chart_cobertura_area script_id="chart-cobertura-area" insight="Quanto por cento das pessoas de cada área já têm avaliação. As áreas menores ficam agrupadas em Outros." %}
         {% endif %}
 
         {% if chart_cobertura_cargo.has_data %}
-          {% include "dashboard/_chart_block.html" with chart=chart_cobertura_cargo script_id="chart-cobertura-cargo" insight="Cargos com menor cobertura ficam em destaque." %}
-        {% else %}
-          {% include "dashboard/_chart_block.html" with chart=chart_cobertura_cargo script_id="chart-cobertura-cargo" %}
+          {% include "dashboard/_chart_block.html" with chart=chart_cobertura_cargo script_id="chart-cobertura-cargo" insight="Quanto por cento das pessoas de cada cargo já têm avaliação. Os cargos menores ficam agrupados em Outros." %}
         {% endif %}
       </div>
     </div>
+    {% endif %}
 
-    <div class="min-w-0" aria-labelledby="aderencia-ciclo-heading">
+    {% if chart_gaps_competencia %}
+    <div class="min-w-0" aria-labelledby="gaps-ciclo-heading">
       <div class="mb-3">
-        <h3 id="aderencia-ciclo-heading" class="font-display text-lg font-medium text-slate-800">
-          Aderência da liderança
+        <h3 id="gaps-ciclo-heading" class="font-display text-lg font-medium text-slate-800">
+          Esperado × nota
         </h3>
         <p class="mt-0.5 text-sm text-slate-500">
-          Como anda a aderência dos líderes neste ciclo.
+          Comparativo entre o nível esperado e a nota — aparece só quando há notas.
         </p>
       </div>
-
-      <div class="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2" aria-label="Resumo de aderência">
-        {% if aderencia_resumo.media is not None %}
-          {% with val=aderencia_resumo.media|stringformat:"d"|add:"%" %}
-          {% include "components/card.html" with label="Aderência média" value=val badge_status=aderencia_resumo.status body="Média dos líderes neste ciclo." %}
-          {% endwith %}
-        {% else %}
-          {% include "components/card.html" with label="Aderência média" value="—" body="Ainda não há dados de aderência neste ciclo." %}
-        {% endif %}
-        {% include "components/card.html" with label="Líderes com aderência" value=aderencia_resumo.total_lideres body="Líderes com aderência registrada neste ciclo." %}
-      </div>
-
-      {% if chart_aderencia_distribuicao.has_data %}
-        {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" kpi_label="Líderes" kpi_value=chart_aderencia_distribuicao.total kpi_body="com aderência no ciclo" insight="Distribuição em alta, média e baixa — o centro mostra o total." %}
-      {% else %}
-        {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" %}
-      {% endif %}
+      {% include "dashboard/_chart_block.html" with chart=chart_gaps_competencia script_id="chart-gaps-competencia" %}
     </div>
+    {% endif %}
 
     <div class="min-w-0" aria-labelledby="checklist-ciclo-heading">
       <div class="mb-3">

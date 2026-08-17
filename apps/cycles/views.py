@@ -18,15 +18,26 @@ from apps.cycles.forms import CicloForm
 from apps.cycles.models import Ciclo
 from apps.cycles.services.cycle import close_cycle, open_cycle
 from apps.dashboard.chart_payloads import (
+    CHART_TYPE_BAR_GROUPED,
     CHART_TYPE_BAR_HORIZONTAL,
     CHART_TYPE_DOUGHNUT,
+    EMPTY_KIND_SEM_DADO,
+    EMPTY_KIND_SEM_NOTA,
     aderencia_distribution_payload,
     categorical_counts_payload,
+    empty_kind_message,
+    empty_kind_payload,
+    grouped_series_payload,
 )
 from apps.dashboard.models import AderenciaSnapshot
+from apps.dashboard.services.history import (
+    build_stage_history,
+    is_history_mode,
+    resolve_history_ciclos,
+)
 from apps.dashboard.services.structure import build_structure_coverage
 from apps.dashboard.views import aderencia_status
-from apps.goals.forms import ObjetivoEstrategicoForm
+from apps.goals.forms import ObjetivoEstrategicoForm, get_open_ciclo
 from apps.goals.models import ObjetivoEstrategico
 from apps.reviews.models import Avaliacao
 from apps.reviews.services.guidance import build_rh_pre_open_checklist
@@ -75,25 +86,38 @@ class CicloNestedMixin(AdminCyclesMixin):
         )
 
 
+def _annotated_ciclos():
+    return Ciclo.objects.annotate(avaliacoes_count=Count('avaliacoes'))
+
+
 class CicloListView(AdminCyclesMixin, HtmxPaginatedListMixin, ListView):
     model = Ciclo
     template_name = 'cycles/ciclo_list.html'
     partial_template_name = 'cycles/ciclo_list_partial.html'
     context_object_name = 'ciclos'
+    # paginate_by = 20 vem de HtmxPaginatedListMixin — não redefinir.
 
     def get_queryset(self):
+        """Arquivo paginado; o aberto vai para ``ciclo_operacional``."""
         return (
-            Ciclo.objects.annotate(avaliacoes_count=Count('avaliacoes'))
+            _annotated_ciclos()
+            .filter(status=Ciclo.Status.ENCERRADO)
             .order_by('-data_inicio', 'nome')
         )
 
     def get_context_data(self, **kwargs):
-        """Injeta checklist RH avisório (FR-011/012) — só apresentação.
+        """Checklist RH avisório + destaque do ciclo aberto (T018).
 
         Não condiciona Abrir / ``CicloOpenView`` / ``open_cycle``.
         """
         context = super().get_context_data(**kwargs)
         context.update(_rh_pre_open_checklist_context())
+        aberto = get_open_ciclo()
+        if aberto is not None:
+            aberto = _annotated_ciclos().filter(pk=aberto.pk).first()
+        context['ciclo_operacional'] = aberto
+        paginator = context.get('paginator')
+        context['arquivo_total'] = paginator.count if paginator is not None else 0
         return context
 
 
@@ -141,11 +165,12 @@ class CicloDeleteView(AdminCyclesMixin, DeleteView):
 
 
 class CicloDetailView(AdminCyclesMixin, DetailView):
-    """Painel gerencial read-only do ciclo (US3 / FR-007).
+    """Painel gerencial read-only do ciclo (US1 T019 / US3 T032).
 
     AuthZ = ``AdminCyclesMixin`` (LoginRequired + RequiresAdmin). Sem
     ``ScopedObjectMixin`` — Ciclo não tem dono; precedente admin-only.
-    Não toca ``CicloOpenView`` / ``close`` / ``cycle.py``.
+    Não toca ``CicloOpenView`` / ``close`` / ``cycle.py``. Sem rota nova
+    (``apps/cycles/urls.py`` intocável): histórico só via ``?visao=historico``.
     """
 
     model = Ciclo
@@ -153,10 +178,15 @@ class CicloDetailView(AdminCyclesMixin, DetailView):
     context_object_name = 'ciclo'
 
     def get_context_data(self, **kwargs):
-        """Composição read-only: progresso + cobertura + aderência + checklist.
+        """KPI → pipeline do ``pk`` → cobertura → empty desempenho.
 
         Checklist = reuse T026 de ``build_rh_pre_open_checklist`` (008 / FR-008);
         avisório — não condiciona Abrir ciclo / ``open_cycle``.
+        Cobertura já corta Top-N via ``coverage_bar_payload`` (T005).
+
+        US3 / T032: com ``?visao=historico``, tendência org (``area``, cap N)
+        no visual principal; pipeline do ``pk`` permanece; aderência/gap
+        ficam empty ``sem_nota`` (MUST NOT inventar nota).
         """
         context = super().get_context_data(**kwargs)
         ciclo = self.object
@@ -164,20 +194,75 @@ class CicloDetailView(AdminCyclesMixin, DetailView):
         # Escopo já resolvido pelo AuthZ admin — builder só recebe visible.
         visible = get_visible_users(self.request.user).filter(is_active=True)
         cobertura = build_structure_coverage(visible, ciclo)
+        sem_desempenho = self._cabecalhos_sem_desempenho(ciclo)
 
+        context['visao'] = None
+        context['chart_stage_history'] = None
+        # Pipeline do ``pk`` sempre (modo operacional e histórico).
         context['chart_ciclo_progresso'] = self._chart_ciclo_progresso(ciclo)
-        context['avaliacoes_resumo'] = self._avaliacoes_resumo(ciclo)
+        context['avaliacoes_resumo'] = self._avaliacoes_resumo(
+            ciclo,
+            sem_desempenho=sem_desempenho,
+        )
         context['cobertura_resumo'] = cobertura['resumo']
         context['chart_cobertura_area'] = cobertura['chart_por_area']
         context['chart_cobertura_cargo'] = cobertura['chart_por_cargo']
         context['aderencia_resumo'] = self._aderencia_resumo(ciclo)
+
+        if is_history_mode(self.request):
+            janela = resolve_history_ciclos(self.request)
+            context['visao'] = 'historico'
+            context['chart_stage_history'] = build_stage_history(
+                visible,
+                janela,
+            )
+            # Séries de nota/gap/aderência: empty até haver dado (clarification).
+            context['chart_aderencia_distribuicao'] = empty_kind_payload(
+                kind=EMPTY_KIND_SEM_NOTA,
+                chart_id='chart-aderencia-distribuicao',
+                chart_type=CHART_TYPE_DOUGHNUT,
+                title='Distribuição de aderência',
+            )
+            context['chart_gaps_competencia'] = grouped_series_payload(
+                chart_id='chart-gaps-competencia',
+                chart_type=CHART_TYPE_BAR_GROUPED,
+                title='Esperado × nota por competência',
+                labels=[],
+                series=[],
+                empty_message=empty_kind_message(EMPTY_KIND_SEM_NOTA),
+                has_data=False,
+            )
+            context.update(_rh_pre_open_checklist_context())
+            return context
+
         context['chart_aderencia_distribuicao'] = (
-            self._chart_aderencia_distribuicao(ciclo)
+            self._chart_aderencia_distribuicao(
+                ciclo,
+                sem_desempenho=sem_desempenho,
+            )
+        )
+        context['chart_gaps_competencia'] = self._chart_gaps_competencia(
+            sem_desempenho=sem_desempenho,
         )
         context.update(_rh_pre_open_checklist_context())
         return context
 
-    def _avaliacoes_resumo(self, ciclo: Ciclo) -> dict:
+    def _cabecalhos_sem_desempenho(self, ciclo: Ciclo) -> bool:
+        """True se há cabeçalhos e nenhum tem nota (legado 011 / FR-009)."""
+        qs = Avaliacao.objects.filter(ciclo=ciclo)
+        if not qs.exists():
+            return False
+        return not qs.filter(
+            Q(nota_final_lider__isnull=False)
+            | Q(nota_final_autoavaliacao__isnull=False),
+        ).exists()
+
+    def _avaliacoes_resumo(
+        self,
+        ciclo: Ciclo,
+        *,
+        sem_desempenho: bool,
+    ) -> dict:
         totals = Avaliacao.objects.filter(ciclo=ciclo).aggregate(
             total=Count('pk'),
             concluidas=Count('pk', filter=Q(concluida=True)),
@@ -195,6 +280,7 @@ class CicloDetailView(AdminCyclesMixin, DetailView):
             'total': total,
             'concluidas': concluidas,
             'percentual_concluidas': percentual,
+            'sem_desempenho': sem_desempenho,
         }
 
     def _aderencia_resumo(self, ciclo: Ciclo) -> dict:
@@ -236,21 +322,58 @@ class CicloDetailView(AdminCyclesMixin, DetailView):
             highlight_max=True,
         )
 
-    def _chart_aderencia_distribuicao(self, ciclo: Ciclo) -> dict:
-        """``AderenciaSnapshot`` do ciclo → doughnut (Status Triad)."""
-        status_keys = [
-            aderencia_status(percentual)
-            for percentual in AderenciaSnapshot.objects.filter(
-                ciclo=ciclo,
-            ).values_list('percentual', flat=True)
-        ]
+    def _chart_aderencia_distribuicao(
+        self,
+        ciclo: Ciclo,
+        *,
+        sem_desempenho: bool,
+    ) -> dict:
+        """Doughnut só com ``AderenciaSnapshot`` real (T019).
+
+        Sem snapshot: empty ``sem_nota`` se cabeçalho legado sem desempenho,
+        senão ``sem_dado``. MUST NOT chamar ``compute_adherence``.
+        """
+        chart_type = CHART_TYPE_DOUGHNUT
+        title = 'Distribuição de aderência'
+        percentuais = list(
+            AderenciaSnapshot.objects.filter(ciclo=ciclo).values_list(
+                'percentual',
+                flat=True,
+            )
+        )
+        if not percentuais:
+            kind = (
+                EMPTY_KIND_SEM_NOTA if sem_desempenho else EMPTY_KIND_SEM_DADO
+            )
+            return empty_kind_payload(
+                kind=kind,
+                chart_id='chart-aderencia-distribuicao',
+                chart_type=chart_type,
+                title=title,
+            )
+        status_keys = [aderencia_status(percentual) for percentual in percentuais]
         return aderencia_distribution_payload(
             status_keys,
-            chart_type=CHART_TYPE_DOUGHNUT,
-            title='Distribuição de aderência',
-            empty_message=(
-                'Ainda não há dados de aderência para este ciclo.'
-            ),
+            chart_type=chart_type,
+            title=title,
+        )
+
+    def _chart_gaps_competencia(self, *, sem_desempenho: bool) -> dict | None:
+        """Gap esperado×nota: empty ``sem_nota`` no legado sem desempenho.
+
+        Sem builder de gap no detalhe do ciclo — não inventa série. Ausente
+        quando há nota (T020 cobre o recorte pessoal).
+        """
+        if not sem_desempenho:
+            return None
+        return grouped_series_payload(
+            chart_id='chart-gaps-competencia',
+            chart_type=CHART_TYPE_BAR_GROUPED,
+            title='Esperado × nota por competência',
+            labels=[],
+            series=[],
+            empty_message=empty_kind_message(EMPTY_KIND_SEM_NOTA),
+            has_data=False,
         )
 
 

@@ -5,6 +5,7 @@
  *
  * Catálogo (contratos/chart-catalog.md · Freeze A):
  *   bar | doughnut | doughnut_or_bar | bar_grouped | bar_horizontal | area
+ * Histórico US3: type bar + stacked (100% categórico) + overlay line — sem lib nova.
  * Valor central no doughnut + datalabels em barras: plugins inline (afterDraw /
  * afterDatasetsDraw) — sem plugin npm / lib nova.
  * Barras limpas (DS): grid e ticks de valor off; leitura via datalabel / legend / KPI.
@@ -33,6 +34,17 @@
   var COLOR_FINISH_TEAL = '#0d9488';
   var BAR_RADIUS = 6;
   var BAR_MAX_THICKNESS = 40;
+  /* Barras verticais categóricas (histórico empilhado): ocupam a largura do slot. */
+  var BAR_MAX_THICKNESS_DENSE = 72;
+  var BAR_CATEGORY_PERCENTAGE = 0.82;
+  var BAR_PERCENTAGE = 0.9;
+  /* Altura do plot: barras horizontais cabem no nº de categorias; doughnut compacto. */
+  var CANVAS_ROW_PX = 36;
+  var CANVAS_PAD_PX = 16;
+  var CANVAS_MIN_PX = 160;
+  var CANVAS_MAX_PX = 304;
+  var CANVAS_DOUGHNUT_PX = 208;
+  var CANVAS_STACKED_PX = 232;
   var DOUGHNUT_CUTOUT = '68%';
   var AREA_TENSION = 0.35;
   var AREA_FILL_ALPHA = 0.22;
@@ -140,17 +152,38 @@
     return value;
   }
 
+  function formatChartValue(raw, valueUnit) {
+    if (raw === null || raw === undefined) {
+      return '—';
+    }
+    var text = String(raw);
+    if (valueUnit) {
+      return text + valueUnit;
+    }
+    return text;
+  }
+
+  function chartValueUnit(chart) {
+    return (chart && chart.options && chart.options.greennValueUnit) || '';
+  }
+
   function tooltipLabel(ctx) {
     var datasetLabel = ctx.dataset && ctx.dataset.label ? ctx.dataset.label : '';
     var categoryLabel = ctx.label || '';
     var parsed = ctx.parsed;
     var value;
+    var unit = chartValueUnit(ctx.chart);
 
     if (parsed === null || parsed === undefined) {
       return datasetLabel || categoryLabel || '';
     }
     if (typeof parsed === 'object') {
-      value = parsed.y !== undefined ? parsed.y : parsed;
+      // bar_horizontal (indexAxis y): valor em parsed.x
+      if (ctx.chart && ctx.chart.options && ctx.chart.options.indexAxis === 'y') {
+        value = parsed.x;
+      } else {
+        value = parsed.y !== undefined ? parsed.y : parsed.x;
+      }
     } else {
       value = parsed;
     }
@@ -159,13 +192,14 @@
       return (datasetLabel || categoryLabel) + ': —';
     }
 
+    var formatted = formatChartValue(value, unit);
     if (datasetLabel && categoryLabel && ctx.chart.config.type === 'bar') {
-      return datasetLabel + ': ' + value;
+      return datasetLabel + ': ' + formatted;
     }
     if (datasetLabel) {
-      return datasetLabel + ': ' + value;
+      return datasetLabel + ': ' + formatted;
     }
-    return categoryLabel + ': ' + value;
+    return categoryLabel + ': ' + formatted;
   }
 
   function isNarrowViewport() {
@@ -296,6 +330,7 @@
         var ctx = chart.ctx;
         var narrow = isNarrowViewport();
         var fontSize = narrow ? 11 : 12;
+        var unit = chartValueUnit(chart);
         ctx.save();
         ctx.font = '600 ' + fontSize + 'px ' + FONT_UI;
         ctx.fillStyle = COLOR_INK;
@@ -309,7 +344,7 @@
             if (raw === null || raw === undefined) {
               return;
             }
-            var text = String(raw);
+            var text = formatChartValue(raw, unit);
             var pos = element.tooltipPosition();
             if (horizontal) {
               ctx.textAlign = 'left';
@@ -417,6 +452,7 @@
       payload.colors && payload.colors.length ? payload.colors : STATUS_TRIAD;
     var isDoughnut = type === 'doughnut';
     var horizontal = payload.type === 'bar_horizontal';
+    var valueUnit = payload.value_unit || '';
     // Barra categórica: cores por faixa quando o payload traz triad/lista;
     // legenda Chart.js oculta (datalabel + figcaption). Doughnut: legenda com texto.
     var perCategoryColors =
@@ -432,7 +468,13 @@
     };
     if (!isDoughnut) {
       dataset.borderRadius = BAR_RADIUS;
-      dataset.maxBarThickness = BAR_MAX_THICKNESS;
+      // Horizontal (pipeline / cobertura): espessura fixa — a altura do canvas
+      // acompanha o nº de categorias. Vertical: preenche a largura do slot.
+      dataset.maxBarThickness = horizontal
+        ? BAR_MAX_THICKNESS
+        : BAR_MAX_THICKNESS_DENSE;
+      dataset.categoryPercentage = BAR_CATEGORY_PERCENTAGE;
+      dataset.barPercentage = BAR_PERCENTAGE;
     }
 
     var options = {
@@ -440,10 +482,19 @@
       maintainAspectRatio: false,
       plugins: basePlugins(isDoughnut),
       scales: isDoughnut ? undefined : cleanScales(horizontal, 'bar'),
+      greennValueUnit: valueUnit,
     };
     if (horizontal) {
       options.indexAxis = 'y';
-      options.layout = { padding: { top: 4, right: 32, bottom: 4, left: 4 } };
+      // Folga extra quando o datalabel leva sufixo (ex. "100%").
+      options.layout = {
+        padding: {
+          top: 4,
+          right: valueUnit ? 44 : 32,
+          bottom: 4,
+          left: 4,
+        },
+      };
     } else if (!isDoughnut) {
       options.layout = { padding: { top: 18, right: 8, bottom: 4, left: 4 } };
     }
@@ -544,6 +595,159 @@
     };
   }
 
+  function formatIsoDatePt(iso) {
+    if (!iso) {
+      return '';
+    }
+    var parts = String(iso).split('-');
+    if (parts.length < 3) {
+      return String(iso);
+    }
+    var months = [
+      'jan', 'fev', 'mar', 'abr', 'mai', 'jun',
+      'jul', 'ago', 'set', 'out', 'nov', 'dez',
+    ];
+    var monthIndex = parseInt(parts[1], 10) - 1;
+    var month = months[monthIndex] || parts[1];
+    return parts[2] + ' ' + month + ' ' + parts[0];
+  }
+
+  /**
+   * Barra 100% empilhada (ciclos categóricos) + linha de conclusão no mesmo eixo.
+   * Sem segundo eixo; sem plugin npm. Legenda nativa off — HTML em _chart_block.
+   */
+  function buildStackedPercentConfig(payload) {
+    var labels = payload.labels || [];
+    var seriesList = payload.series || [];
+    var unit = payload.value_unit || '%';
+    var xMeta = payload.x_meta || [];
+    var points = payload.points || [];
+    var detalheLabels = payload.detalhe_labels || {};
+    var datasets = seriesList.map(function (serie, index) {
+      var color =
+        serie.color ||
+        (payload.colors && payload.colors[index]) ||
+        COLOR_FINISH_TEAL;
+      var isLine = serie.kind === 'line';
+      var data = (serie.values || []).map(asNullableNumber);
+      if (isLine) {
+        return {
+          type: 'line',
+          label: serie.label || serie.key || 'Série ' + (index + 1),
+          data: data,
+          borderColor: color,
+          backgroundColor: color,
+          fill: false,
+          tension: 0.25,
+          borderWidth: 2,
+          pointRadius: isNarrowViewport() ? 2 : 3,
+          pointHoverRadius: 5,
+          pointBackgroundColor: color,
+          stack: 'trend',
+          order: 1,
+          yAxisID: 'y',
+          spanGaps: false,
+        };
+      }
+      return {
+        type: 'bar',
+        label: serie.label || serie.key || 'Série ' + (index + 1),
+        data: data,
+        backgroundColor: color,
+        borderColor: color,
+        borderWidth: 0,
+        borderRadius: 4,
+        maxBarThickness: BAR_MAX_THICKNESS_DENSE,
+        categoryPercentage: BAR_CATEGORY_PERCENTAGE,
+        barPercentage: BAR_PERCENTAGE,
+        stack: 'status',
+        order: 2,
+        skipNull: true,
+      };
+    });
+
+    var plugins = basePlugins(false);
+    plugins.tooltip.callbacks.title = function (items) {
+      if (!items || !items.length) {
+        return '';
+      }
+      var idx = items[0].dataIndex;
+      var meta = xMeta[idx] || {};
+      var name = meta.ciclo || items[0].label || '';
+      var when = formatIsoDatePt(meta.data);
+      if (name && when) {
+        return name + ' · ' + when;
+      }
+      return name || when;
+    };
+    plugins.tooltip.callbacks.afterBody = function (items) {
+      if (!items || !items.length) {
+        return [];
+      }
+      var idx = items[0].dataIndex;
+      var point = points[idx] || {};
+      var detalhe = point.detalhe_etapas || {};
+      var lines = [];
+      Object.keys(detalhe).forEach(function (key) {
+        var count = detalhe[key];
+        if (!count) {
+          return;
+        }
+        var label = detalheLabels[key] || key;
+        lines.push(label + ': ' + count);
+      });
+      return lines;
+    };
+
+    var narrow = isNarrowViewport();
+    var tickFont = chartFont({ size: narrow ? 10 : 12, weight: '400' });
+
+    return {
+      type: 'bar',
+      data: { labels: labels, datasets: datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: plugins,
+        greennValueUnit: unit,
+        scales: {
+          x: {
+            stacked: true,
+            grid: { display: false },
+            border: axisBorderHidden(),
+            ticks: {
+              autoSkip: true,
+              maxRotation: narrow ? 45 : 0,
+              minRotation: 0,
+              color: COLOR_INK_MUTED,
+              font: tickFont,
+              padding: 6,
+            },
+          },
+          y: {
+            stacked: true,
+            min: 0,
+            max: 100,
+            beginAtZero: true,
+            border: axisBorderHidden(),
+            grid: { display: false },
+            ticks: {
+              display: true,
+              stepSize: 50,
+              color: COLOR_INK_MUTED,
+              font: tickFont,
+              callback: function (value) {
+                return String(value) + unit;
+              },
+            },
+          },
+        },
+        layout: { padding: { top: 8, right: 8, bottom: 4, left: 4 } },
+      },
+    };
+  }
+
   function buildConfig(payload) {
     if (payload.type === 'bar_grouped') {
       return buildGroupedConfig(payload);
@@ -551,7 +755,38 @@
     if (payload.type === 'area') {
       return buildAreaConfig(payload);
     }
+    if (payload.stacked === true) {
+      return buildStackedPercentConfig(payload);
+    }
     return buildSingleSeriesConfig(payload);
+  }
+
+  /**
+   * Ajusta a altura do wrapper ao conteúdo — evita canvas 19rem com 5–7 barras.
+   * Default CSS (15.5 / 17 / 19 rem) permanece como teto e fallback.
+   */
+  function fitCanvasFrame(canvas, payload) {
+    var wrap = canvas.parentElement;
+    if (!wrap) {
+      return;
+    }
+    var heightPx = null;
+    var type = payload.type;
+    if (type === 'doughnut' || type === 'doughnut_or_bar') {
+      heightPx = isNarrowViewport() ? 192 : CANVAS_DOUGHNUT_PX;
+    } else if (type === 'bar_horizontal') {
+      var n = (payload.labels || []).length;
+      heightPx = Math.min(
+        CANVAS_MAX_PX,
+        Math.max(CANVAS_MIN_PX, n * CANVAS_ROW_PX + CANVAS_PAD_PX),
+      );
+    } else if (payload.stacked === true) {
+      heightPx = isNarrowViewport() ? 208 : CANVAS_STACKED_PX;
+    }
+    if (heightPx) {
+      wrap.style.height = heightPx + 'px';
+      wrap.style.minHeight = heightPx + 'px';
+    }
   }
 
   function initCanvas(canvas) {
@@ -573,7 +808,14 @@
       canvas.chartInstance.destroy();
     }
 
+    fitCanvasFrame(canvas, payload);
     canvas.chartInstance = new Chart(canvas, buildConfig(payload));
+    // Re-mede após o layout (grid/flex) assentar — evita canvas 0×N em branco.
+    requestAnimationFrame(function () {
+      if (canvas.chartInstance) {
+        canvas.chartInstance.resize();
+      }
+    });
   }
 
   function initAll() {
