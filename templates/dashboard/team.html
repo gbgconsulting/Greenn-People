@@ -34,14 +34,14 @@
     <div class="min-w-0">
       <h2 id="team-status-heading" class="font-display text-lg font-medium text-slate-800">
         {% if visao == 'historico' %}
-          Tendência histórica
+          Como o time avançou
         {% else %}
           Status no ciclo
         {% endif %}
       </h2>
       <p class="mt-0.5 text-sm text-slate-500">
         {% if visao == 'historico' %}
-          Evoluiu, estável ou sem dado nos últimos ciclos do seu escopo — etapa e conclusão.
+          Quem avançou, quem ficou no mesmo ponto e quem ainda não entrou.
         {% elif ciclo_selecionado %}
           Contagens de {{ ciclo_selecionado.nome }} no escopo — a tabela no final detalha cada pessoa.
         {% else %}
@@ -54,38 +54,26 @@
 
   <div class="managerial-panel">
     {% if visao == 'historico' %}
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores da janela histórica">
-      {% include "components/card.html" with label="Evoluiu" value=history_kpis.evoluiu body="Avançaram de etapa ou concluíram na janela." %}
-      {% include "components/card.html" with label="Estável" value=history_kpis.estavel body="Mesma etapa/conclusão entre o primeiro e o último ponto." %}
-      {% include "components/card.html" with label="Sem dado" value=history_kpis.sem_dado body="Sem cabeçalho útil na janela do escopo." %}
+    <div class="flex flex-col gap-4">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Resumo destes ciclos">
+      {% include "components/card.html" with label="Avançaram" value=history_kpis.evoluiu body="Pessoas da equipe que avançaram de etapa ou concluíram." %}
+      {% include "components/card.html" with label="No mesmo ponto" value=history_kpis.estavel body="Pessoas da equipe que não mudaram de etapa nesses ciclos." %}
+      {% include "components/card.html" with label="Sem registro" value=history_kpis.sem_dado body="Pessoas da equipe que não chegaram a entrar nesses ciclos." %}
     </div>
 
-    <div class="min-w-0" aria-labelledby="pipeline-heading">
-      <div class="mb-3">
-        <h3 id="pipeline-heading" class="font-display text-lg font-medium text-slate-800">
-          Tendência de etapa e conclusão
-        </h3>
-        <p class="mt-0.5 text-sm text-slate-500">
-          Só pessoas do seu escopo — lacunas como ausência, nunca zero de desempenho.
-        </p>
-      </div>
-      {% if chart_stage_history.has_data %}
-        {% include "dashboard/_chart_block.html" with chart=chart_stage_history script_id="chart-stage-history" kpi_label="Janela" kpi_value=chart_stage_history.labels|length kpi_body="ciclos nesta tendência" insight="Etapa e conclusão ao longo do tempo." %}
-      {% else %}
-        {% include "dashboard/_chart_block.html" with chart=chart_stage_history script_id="chart-stage-history" %}
-      {% endif %}
-    </div>
+    {% include "dashboard/_chart_block.html" with chart=chart_stage_history script_id="chart-stage-history" %}
 
     <div class="min-w-0" aria-labelledby="team-drilldown-heading">
       <div class="mb-3">
         <h3 id="team-drilldown-heading" class="font-display text-lg font-medium text-slate-800">
-          Todos no escopo
+          Todo o time
         </h3>
         <p class="mt-0.5 text-sm text-slate-500">
-          Lista completa — etapa, nota e ações por colaborador.
+          Etapa, nota e ações de cada pessoa.
         </p>
       </div>
       {% include "dashboard/team_list_partial.html" %}
+    </div>
     </div>
     {% else %}
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores do time">
@@ -109,17 +97,9 @@
     </div>
 
     {% if team_resumo.has_ciclo %}
-    <div class="min-w-0" aria-labelledby="pipeline-heading">
-      <div class="mb-3">
-        <h3 id="pipeline-heading" class="font-display text-lg font-medium text-slate-800">
-          Andamento por etapa
-        </h3>
-        <p class="mt-0.5 text-sm text-slate-500">
-          Onde cada pessoa do escopo está hoje — etapas do ciclo e quem ainda não entrou.
-        </p>
-      </div>
+    <div class="min-w-0" id="pipeline-heading">
       {% if chart_escopo_status.has_data %}
-        {% include "dashboard/_chart_block.html" with chart=chart_escopo_status script_id="chart-escopo-status" kpi_label="No escopo" kpi_value=team_resumo.total_escopo kpi_body="pessoas neste ciclo" insight=chart_escopo_status.insight %}
+        {% include "dashboard/_chart_block.html" with chart=chart_escopo_status script_id="chart-escopo-status" insight=chart_escopo_status.insight %}
       {% else %}
         {% include "dashboard/_chart_block.html" with chart=chart_escopo_status script_id="chart-escopo-status" %}
       {% endif %}

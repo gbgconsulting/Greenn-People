@@ -37,7 +37,7 @@ Decisão de produto (FR-019). Documentação canônica = esta tabela + seção *
 
 | # | Ponto | Decisão | Limite |
 |---|---|---|---|
-| **D** | Densidade + histórico + empty + leveza | Teto Top-N + `"Outros"` (`DENSITY_TOP_N = 8`); default operacional (ciclo **aberto**) vs modo `?visao=historico`; taxonomia de empty (`operacional` / `escopo` / `sem_dado` / `sem_nota`); estética leve (grid off, pouco ink, `area` tendência, `bar_horizontal` ranking, doughnut + centro) | Chart.js **4.5.1**; catálogo 009 = referência; sem rota `/historico/`; pessoal **sem** tendência; pipeline de etapas e Status Triad **fora** do corte Top-N; sem reabrir A/B/C |
+| **D** | Densidade + histórico + empty + leveza | Teto Top-N + `"Outros"` (`DENSITY_TOP_N = 8`); default operacional (ciclo **aberto**) vs modo `?visao=historico`; taxonomia de empty (`operacional` / `escopo` / `sem_dado` / `sem_nota`); estética leve (grid off, pouco ink, barra 100% empilhada na tendência histórica, `bar_horizontal` ranking, doughnut + centro) | Chart.js **4.5.1**; catálogo 009 = referência; sem rota `/historico/`; pessoal **sem** tendência; pipeline de etapas e Status Triad **fora** do corte Top-N; sem reabrir A/B/C |
 
 ### Cobertura Freeze v2
 
@@ -703,7 +703,7 @@ O seletor de um ciclo **não** substitui a superfície de tendência. Histórico
 
 | Superfície | Default | Modo `?visao=historico` |
 |---|---|---|
-| `dashboard/admin`, `dashboard/team` | Ciclo **aberto** (`get_open_ciclo()`); sem aberto → empty `operacional` (**não** encerrado implícito) | `area` de etapa/conclusão, últimos `HISTORY_DEFAULT_N` ciclos do escopo |
+| `dashboard/admin`, `dashboard/team` | Ciclo **aberto** (`get_open_ciclo()`); sem aberto → empty `operacional` (**não** encerrado implícito) | barra 100% empilhada (3 status) + linha de conclusão, últimos `HISTORY_DEFAULT_N` ciclos do escopo |
 | `dashboard/structure`, `dashboard/adherence` | Mesmo default aberto + empty operacional | **Fora** desta fatia |
 | `cycles/<pk>/` | Pipeline **daquele** ciclo (pk já é escolha explícita) | Tendência na **mesma** URL; sem path novo |
 | `dashboard/personal` | Densidade + empty + leveza | **MUST NOT** honrar `visao=historico` |
@@ -723,7 +723,7 @@ Cópias canônicas: `EMPTY_KIND_COPY` em `chart_payloads.py`. `_chart_block.html
 | `sem_dado` | Sem avaliações / sem snapshot na seção | Só aquela seção | Ainda não há dados nesta seção para exibir. |
 | `sem_nota` | Desempenho/gap/aderência sem dado (legado 011) | Só a série de desempenho; pipeline de etapa MAY permanecer | Ainda não há notas de desempenho para exibir. Andamento por etapa não significa desempenho completo. |
 
-Cabeçalho `etapa=feedback` + `concluida=True` **sem nota** ≠ “ciclo 100% saudável de desempenho”. Lacuna em série temporal = `null` no ponto — MUST NOT 0 de desempenho.
+Cabeçalho `etapa=feedback` + `concluida=True` **sem nota** ≠ “ciclo 100% saudável de desempenho”. No histórico empilhado, ciclo sem cabeçalho no escopo = 100% `sem_avaliacao` (pessoas paradas) — não é 0 de nota. Séries de desempenho/gap/aderência continuam empty `sem_nota`.
 
 ### Leveza (estética)
 
@@ -734,10 +734,10 @@ Alinhado ao catálogo 009 / **Charts polish**; esta fatia **exige** cumprimento 
 - Datalabel só com N baixo; barras longas → tooltip + Top-N
 - Doughnut: valor central + legenda texto (Status Triad intacta; informação não depende só da cor)
 - Ranking / atenção: `bar_horizontal`
-- Tendência: `area` suave
+- Tendência histórica: barra 100% empilhada (ciclos categóricos) + linha de conclusão no mesmo eixo 0–100%; `area` permanece no catálogo 009 para série temporal contínua
 - Grouped só para duas séries já existentes (esperado × nota)
-- Sem figcaption que repita label+valor em `bar` / `bar_horizontal`
-- Pipeline de etapas = visual principal **operacional** (não a tabela); tendência `area` = visual principal **só** com `visao=historico`
+- Sem figcaption que repita label+valor em `bar` / `bar_horizontal`; `area` usa legenda Chart.js (multi-série) + tooltip — sem figcaption de pontos; histórico empilhado usa legenda HTML (dot + % do ciclo mais recente)
+- Pipeline de etapas = visual principal **operacional** (não a tabela); tendência empilhada = visual principal **só** com `visao=historico`
 
 ### HTMX
 

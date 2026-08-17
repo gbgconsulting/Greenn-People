@@ -226,6 +226,37 @@ def test_build_structure_coverage_empty_escopo(ciclo_aberto):
 
 
 @pytest.mark.django_db
+def test_build_structure_coverage_zero_percent_sem_grafico(
+    lider,
+    colaborador,
+):
+    """Pessoas no escopo e 0% com avaliação → charts empty (não plota barras 0%)."""
+    from datetime import date, timedelta
+
+    from apps.cycles.models import Ciclo
+
+    ciclo = Ciclo.objects.create(
+        nome='Ciclo cobertura zero',
+        data_inicio=date.today(),
+        data_fim=date.today() + timedelta(days=30),
+        status=Ciclo.Status.ENCERRADO,
+    )
+    visible = _visible_ativos(lider)
+    assert visible.filter(pk=colaborador.pk).exists()
+    assert not Avaliacao.objects.filter(ciclo=ciclo).exists()
+
+    pack = build_structure_coverage(visible, ciclo)
+    assert pack['resumo']['has_ciclo'] is True
+    assert pack['resumo']['total'] > 0
+    assert pack['resumo']['com_avaliacao'] == 0
+    assert pack['resumo']['percentual'] == 0
+    for chart in (pack['chart_por_area'], pack['chart_por_cargo']):
+        assert chart['has_data'] is False
+        assert chart['labels'] == []
+        assert chart['values'] == []
+
+
+@pytest.mark.django_db
 def test_coverage_summary_empty_escopo_com_ciclo(ciclo_aberto):
     resumo = coverage_summary(CustomUser.objects.none(), ciclo_aberto)
     assert resumo == {

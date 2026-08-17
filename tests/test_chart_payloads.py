@@ -470,6 +470,48 @@ def test_coverage_bar_no_highlight_when_all_equal():
     assert payload['colors'] == [FINISH_TEAL, FINISH_TEAL]
 
 
+def test_coverage_bar_all_zero_percent_is_empty():
+    """0% em todas as categorias → sem gráfico (não ocupa tela com barras zeradas)."""
+    from apps.dashboard.chart_payloads import coverage_bar_payload
+
+    payload = coverage_bar_payload(
+        [
+            {'area_nome': 'A', 'total': 4, 'com_avaliacao': 0, 'percentual': 0},
+            {'area_nome': 'B', 'total': 2, 'com_avaliacao': 0, 'percentual': 0.0},
+        ],
+        chart_id='chart-cobertura-area',
+        title='Cobertura por área',
+        label_key='area_nome',
+        empty_message='Sem cobertura.',
+    )
+    _assert_empty_honest(
+        payload,
+        chart_type=CHART_TYPE_BAR_HORIZONTAL,
+        chart_id='chart-cobertura-area',
+    )
+    assert payload['labels'] == []
+    assert payload['values'] == []
+
+
+def test_coverage_bar_keeps_zero_when_mixed_with_progress():
+    """Mistura 0% + cobertura real → gráfico permanece (0% é o gargalo)."""
+    from apps.dashboard.chart_payloads import coverage_bar_payload
+
+    payload = coverage_bar_payload(
+        [
+            {'area_nome': 'A', 'total': 4, 'com_avaliacao': 0, 'percentual': 0},
+            {'area_nome': 'B', 'total': 2, 'com_avaliacao': 1, 'percentual': 50},
+        ],
+        chart_id='chart-cobertura-area',
+        title='Cobertura por área',
+        label_key='area_nome',
+        empty_message='Sem cobertura.',
+    )
+    assert payload['has_data'] is True
+    assert 0 in payload['values']
+    assert 50 in payload['values'] or 50.0 in payload['values']
+
+
 def _coverage_rows_over_n() -> list[dict]:
     """15 áreas: Top-8 por volume (todas 50%) + 7 residuais (isca de média)."""
     top_rows = [

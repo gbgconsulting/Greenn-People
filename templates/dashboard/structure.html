@@ -115,6 +115,7 @@
     </div>
 
     {% if cobertura_resumo.has_ciclo %}
+    {% if chart_cobertura_area.has_data or chart_cobertura_cargo.has_data %}
     <div class="min-w-0" aria-labelledby="cobertura-charts-heading">
       <div class="mb-3">
         <h3 id="cobertura-charts-heading" class="font-display text-lg font-medium text-slate-800">
@@ -124,20 +125,17 @@
           Percentual de pessoas com avaliação. Quem está mais atrás aparece em destaque.
         </p>
       </div>
-      <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div class="grid grid-cols-1 gap-4 {% if chart_cobertura_area.has_data and chart_cobertura_cargo.has_data %}lg:grid-cols-2{% endif %}">
         {% if chart_cobertura_area.has_data %}
           {% include "dashboard/_chart_block.html" with chart=chart_cobertura_area script_id="chart-cobertura-area" insight="Quanto por cento das pessoas de cada área já têm avaliação. Áreas menores ficam em Outros." %}
-        {% else %}
-          {% include "dashboard/_chart_block.html" with chart=chart_cobertura_area script_id="chart-cobertura-area" %}
         {% endif %}
 
         {% if chart_cobertura_cargo.has_data %}
           {% include "dashboard/_chart_block.html" with chart=chart_cobertura_cargo script_id="chart-cobertura-cargo" insight="Quanto por cento das pessoas de cada cargo já têm avaliação. Cargos menores ficam em Outros." %}
-        {% else %}
-          {% include "dashboard/_chart_block.html" with chart=chart_cobertura_cargo script_id="chart-cobertura-cargo" %}
         {% endif %}
       </div>
     </div>
+    {% endif %}
 
     <div class="min-w-0" aria-labelledby="lideres-heading">
       <div class="mb-3">

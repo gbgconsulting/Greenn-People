@@ -29,10 +29,10 @@ Seletor: operacional em destaque (`<optgroup>`); arquivo agrupado, ordenado por 
 | Ativação | GET `visao=historico` na mesma URL (toggle). Sem rota nova, sem item de nav “Histórico” |
 | Superfícies | `dashboard/admin`, `dashboard/team`, `cycles/<pk>/` |
 | Fora | `dashboard/personal`, e nesta fatia **não** estrutura/aderência |
-| Visual | `area` de **etapa/conclusão** nos últimos `HISTORY_DEFAULT_N = 8` ciclos do escopo |
+| Visual | barra 100% empilhada de **3 status** (`sem_avaliacao` / `em_andamento` / `concluida`) + linha de `concluida_pct` no mesmo eixo 0–100%, nos últimos `HISTORY_DEFAULT_N = 8` ciclos do escopo. Ciclo é categórico — não `area` contínua. |
 | Cap | MUST NOT plotar o arquivo completo; `?ciclos=` honra o mesmo teto |
 | Aderência / gap | `has_data: false` + empty `sem_nota` até existir dado — MUST NOT ser o visual principal agora |
-| Lacuna na série | `null` no ponto; MUST NOT 0 de desempenho |
+| Lacuna na série | ciclo sem cabeçalho no escopo → 100% `sem_avaliacao` (parados); MUST NOT tratar isso como 0 de nota/desempenho |
 | Home | Permanece operacional até o toggle |
 
 O seletor de um ciclo **não** substitui esta superfície de tendência (FR-003).
@@ -78,10 +78,10 @@ Alinhado ao catálogo 009 / Charts polish; esta fatia **exige** cumprimento em 1
 - Datalabel só com N baixo; barras longas → tooltip + Top-N
 - Doughnut: valor central + legenda texto
 - Ranking/atenção: `bar_horizontal`
-- Tendência: `area` suave
+- Tendência histórica: barra 100% empilhada + linha de conclusão (mesmo eixo); `area` permanece no catálogo para série temporal contínua
 - Grouped só para duas séries já existentes (esperado × nota)
 - Status Triad intacta; informação não depende só da cor
-- Sem figcaption que repita label+valor em `bar` / `bar_horizontal`
+- Sem figcaption que repita label+valor em `bar` / `bar_horizontal`; `area` usa legenda Chart.js (multi-série) + tooltip — sem figcaption de pontos; histórico empilhado usa legenda HTML (dot + % do ciclo mais recente)
 - Pipeline = visual principal operacional (não a tabela)
 
 Documentar estas regras em `docs/design-system.md` na mesma entrega (FR-019).

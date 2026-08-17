@@ -654,6 +654,15 @@ def coverage_bar_payload(
     labels = [str(row.get(label_key) or '') for row in dense]
     # Charts de %: sempre inteiro no payload (datalabel / legend sem decimal).
     values: list[int] = [_as_chart_percent_int(row[value_key]) for row in dense]
+    # 0% em todas as categorias não responde pergunta — o KPI já mostra 0%.
+    # Sem série de barras zeradas (mesmo critério de series_payload soma 0).
+    if not values or max(values) <= 0:
+        return empty_series_payload(
+            chart_id=chart_id,
+            chart_type=chart_type,
+            title=title,
+            empty_message=empty_message,
+        )
 
     highlight_index: int | None = None
     if highlight_lowest and values:

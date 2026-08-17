@@ -40,14 +40,14 @@
     <div class="min-w-0">
       <h2 id="indicadores-heading" class="font-display text-lg font-medium text-slate-800">
         {% if visao == 'historico' %}
-          Tendência histórica
+          Como as pessoas avançaram
         {% else %}
           Indicadores do ciclo
         {% endif %}
       </h2>
       <p class="mt-0.5 text-sm text-slate-500">
         {% if visao == 'historico' %}
-          Evoluiu, estável ou sem dado nos últimos ciclos do escopo — etapa e conclusão, não nota.
+          Quem avançou, quem ficou no mesmo ponto e quem ainda não entrou.
         {% elif ciclo_indicador %}
           Números de {{ ciclo_indicador.nome }} — só deste ciclo, não dos ciclos antigos.
         {% else %}
@@ -60,38 +60,20 @@
 
   <div class="managerial-panel">
     {% if visao == 'historico' %}
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores da janela histórica">
-      {% include "components/card.html" with label="Evoluiu" value=history_kpis.evoluiu body="Avançaram de etapa ou concluíram na janela." %}
-      {% include "components/card.html" with label="Estável" value=history_kpis.estavel body="Mesma etapa/conclusão entre o primeiro e o último ponto." %}
-      {% include "components/card.html" with label="Sem dado" value=history_kpis.sem_dado body="Sem cabeçalho útil na janela do escopo." %}
+    <div class="flex flex-col gap-4">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Resumo destes ciclos">
+      {% include "components/card.html" with label="Avançaram" value=history_kpis.evoluiu body="Pessoas que avançaram de etapa ou concluíram." %}
+      {% include "components/card.html" with label="No mesmo ponto" value=history_kpis.estavel body="Pessoas que não mudaram de etapa nesses ciclos." %}
+      {% include "components/card.html" with label="Sem registro" value=history_kpis.sem_dado body="Pessoas que não chegaram a entrar nesses ciclos." %}
     </div>
 
-    <div class="min-w-0" aria-labelledby="pipeline-heading">
-      <div class="mb-3">
-        <h3 id="pipeline-heading" class="font-display text-lg font-medium text-slate-800">
-          Tendência de etapa e conclusão
-        </h3>
-        <p class="mt-0.5 text-sm text-slate-500">
-          Contagens por ciclo na janela — lacunas aparecem como ausência, não como zero.
-        </p>
-      </div>
-      {% if chart_stage_history.has_data %}
-        {% include "dashboard/_chart_block.html" with chart=chart_stage_history script_id="chart-stage-history" kpi_label="Janela" kpi_value=chart_stage_history.labels|length kpi_body="ciclos nesta tendência" insight="Etapa e conclusão ao longo do tempo." %}
-      {% else %}
-        {% include "dashboard/_chart_block.html" with chart=chart_stage_history script_id="chart-stage-history" %}
-      {% endif %}
-    </div>
+    {% include "dashboard/_chart_block.html" with chart=chart_stage_history script_id="chart-stage-history" %}
 
-    <div class="min-w-0" aria-labelledby="aderencia-heading">
-      <div class="mb-3">
-        <h3 id="aderencia-heading" class="font-display text-lg font-medium text-slate-800">
-          Distribuição de aderência
-        </h3>
-        <p class="mt-0.5 text-sm text-slate-500">
-          Aderência e gap ficam vazios até haver nota/snapshot — não substituem a tendência.
-        </p>
-      </div>
+    {% if chart_aderencia_distribuicao.has_data %}
       {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" %}
+    {% elif chart_aderencia_distribuicao %}
+    <p class="text-sm text-slate-500">{{ chart_aderencia_distribuicao.empty_message }}</p>
+    {% endif %}
     </div>
     {% elif ciclo_kpis.has_ciclo %}
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores do ciclo">
@@ -112,35 +94,20 @@
       {% include "components/card.html" with label="Sem avaliação" value=ciclo_kpis.sem_avaliacao body="Pessoas ativas que ainda não entraram no ciclo." %}
     </div>
 
-    <div class="min-w-0" aria-labelledby="pipeline-heading">
-      <div class="mb-3">
-        <h3 id="pipeline-heading" class="font-display text-lg font-medium text-slate-800">
-          Andamento por etapa
-        </h3>
-        <p class="mt-0.5 text-sm text-slate-500">
-          Onde cada avaliação está hoje — metas, aprovação, resultados e feedback.
-        </p>
-      </div>
-      {% if chart_ciclo_progresso.has_data %}
-        {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" kpi_label="Total" kpi_value=chart_ciclo_progresso.total kpi_body="avaliações neste ciclo" insight="Quantas avaliações estão em cada etapa." %}
-      {% else %}
-        {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" %}
-      {% endif %}
-    </div>
-
-    <div class="min-w-0" aria-labelledby="aderencia-heading">
-      <div class="mb-3">
-        <h3 id="aderencia-heading" class="font-display text-lg font-medium text-slate-800">
-          Distribuição de aderência
-        </h3>
-        <p class="mt-0.5 text-sm text-slate-500">
-          Quantos líderes estão com aderência alta, média ou baixa neste ciclo.
-        </p>
+    <div class="grid min-w-0 grid-cols-1 gap-4 {% if chart_aderencia_distribuicao.has_data %}lg:grid-cols-2 lg:items-start{% endif %}">
+      <div class="min-w-0" id="pipeline-heading">
+        {% if chart_ciclo_progresso.has_data %}
+          {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" insight="Quantas avaliações estão em cada etapa." %}
+        {% else %}
+          {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" %}
+        {% endif %}
       </div>
       {% if chart_aderencia_distribuicao.has_data %}
-        {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" kpi_label="Líderes" kpi_value=chart_aderencia_distribuicao.total kpi_body="com índice neste ciclo" insight="Alta, média e baixa — o número no centro é o total de líderes." %}
-      {% else %}
-        {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" %}
+      <div class="min-w-0" id="aderencia-heading">
+        {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" insight="Alta, média e baixa — o número no centro é o total de líderes." %}
+      </div>
+      {% elif chart_aderencia_distribuicao %}
+      <p class="text-sm text-slate-500">{{ chart_aderencia_distribuicao.empty_message }}</p>
       {% endif %}
     </div>
 

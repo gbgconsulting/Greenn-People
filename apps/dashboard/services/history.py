@@ -2,23 +2,30 @@
 
 Recebe o QS ``visible`` já resolvido pela view e a janela de ciclos (≤ N).
 Este módulo **MUST NOT** chamar ``get_visible_users`` nem ``compute_adherence``.
+
+O gráfico histórico agrupa as etapas do pipeline em 3 status mutuamente
+exclusivos (``sem_avaliacao`` / ``em_andamento`` / ``concluida``) e emite
+percentuais 0–100 por ciclo — barra categórica empilhada, não área contínua.
 """
 
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from django.db.models import Count, Q
 
 from apps.cycles.models import Ciclo
 from apps.dashboard.chart_payloads import (
-    CHART_TYPE_AREA,
+    CHART_TYPE_BAR,
     EMPTY_KIND_ESCOPO,
     EMPTY_KIND_SEM_DADO,
+    FINISH_SLATE,
     HISTORY_DEFAULT_N,
     SEM_AVALIACAO_KEY,
     SEM_AVALIACAO_LABEL,
+    STATUS_TRIAD_ALTA,
+    STATUS_TRIAD_MEDIA,
     empty_kind_message,
     empty_kind_payload,
     grouped_series_payload,
@@ -32,9 +39,46 @@ if TYPE_CHECKING:
     from apps.accounts.models import CustomUser
 
 _CHART_ID = 'chart-stage-history'
-_CHART_TITLE = 'Tendência de etapa e conclusão'
-_CONCLUIDA_KEY = 'concluida'
-_CONCLUIDA_LABEL = 'Concluídas'
+_CHART_TITLE = 'Andamento ao longo dos ciclos'
+_CHART_INSIGHT = (
+    'Quem ainda não começou, quem está no meio e quem já concluiu. '
+    'A linha mostra se mais gente está terminando.'
+)
+
+_STATUS_SEM = SEM_AVALIACAO_KEY
+_STATUS_ANDAMENTO = 'em_andamento'
+_STATUS_CONCLUIDA = 'concluida'
+# Empilhamento de baixo → cima: conclusão cresce a partir do 0, alinhada à linha.
+_STATUS_STACK_ORDER: tuple[str, str, str] = (
+    _STATUS_CONCLUIDA,
+    _STATUS_ANDAMENTO,
+    _STATUS_SEM,
+)
+_STATUS_LABELS: dict[str, str] = {
+    _STATUS_SEM: SEM_AVALIACAO_LABEL,
+    _STATUS_ANDAMENTO: 'Em andamento',
+    _STATUS_CONCLUIDA: 'Concluídas',
+}
+# Tokens já usados em badge_status (concluida / em_andamento / neutro).
+_STATUS_COLORS: dict[str, str] = {
+    _STATUS_SEM: FINISH_SLATE,
+    _STATUS_ANDAMENTO: STATUS_TRIAD_MEDIA,
+    _STATUS_CONCLUIDA: STATUS_TRIAD_ALTA,
+}
+_LINE_KEY = 'taxa_conclusao'
+_LINE_LABEL = 'Quem concluiu'
+
+# Etapa do domínio → status de visão. ``concluida`` não é etapa: vem do flag.
+# ``input_metas`` é o valor real de ``Avaliacao.Etapa`` (proposta usava "metas").
+STATUS_MAP: dict[str, str] = {
+    Avaliacao.Etapa.INPUT_METAS: _STATUS_ANDAMENTO,
+    Avaliacao.Etapa.APROVACAO_METAS: _STATUS_ANDAMENTO,
+    Avaliacao.Etapa.RESULTADOS: _STATUS_ANDAMENTO,
+    Avaliacao.Etapa.APROVACAO_RESULTADOS: _STATUS_ANDAMENTO,
+    Avaliacao.Etapa.AVALIACAO: _STATUS_ANDAMENTO,
+    Avaliacao.Etapa.FEEDBACK: _STATUS_ANDAMENTO,
+    SEM_AVALIACAO_KEY: _STATUS_SEM,
+}
 
 # Ordem de pipeline para comparar “evoluiu” entre ciclos da janela.
 _ETAPA_RANK: dict[str, int] = {
@@ -70,7 +114,7 @@ def parse_history_ciclos(
     Retorna ``None`` se ``raw`` estiver vazio (caller usa
     ``default_history_ciclos``). Ids inválidos / inexistentes são ignorados.
     """
-    if raw is None or not str(raw).strip():
+    if raw is None or str(raw).strip() == '':
         return None
     n = max(0, min(int(limit), HISTORY_DEFAULT_N))
     if n == 0:
@@ -117,11 +161,33 @@ def is_history_mode(request: HttpRequest) -> bool:
     return request.GET.get('visao') == 'historico'
 
 
+def _distribute_int_percents(counts: dict[str, int], total: int) -> dict[str, int]:
+    """Percentuais inteiros 0–100 cuja soma é 100 (resto para as maiores frações)."""
+    keys = list(counts)
+    if total <= 0 or not keys:
+        return dict.fromkeys(keys, 0)
+
+    scaled = {key: counts[key] * 100 for key in keys}
+    floors = {key: scaled[key] // total for key in keys}
+    remainder = 100 - sum(floors.values())
+    ranked = sorted(
+        keys,
+        key=lambda key: (scaled[key] % total, counts[key]),
+        reverse=True,
+    )
+    for key in ranked:
+        if remainder <= 0:
+            break
+        floors[key] += 1
+        remainder -= 1
+    return floors
+
+
 def build_stage_history(
     visible: QuerySet[CustomUser],
     ciclos: Sequence[Ciclo],
 ) -> dict:
-    """Monta o payload de tendência ``area`` de etapa/conclusão no escopo.
+    """Monta o payload de tendência empilhada 100% no escopo.
 
     ``visible``
         QuerySet já autorizado pela view. Este builder **nunca** chama
@@ -134,11 +200,11 @@ def build_stage_history(
         ``?ciclos=``). Cap defensivo aplicado aqui; **não** plota o arquivo.
 
     Retorno
-        Payload canônico 009 via ``grouped_series_payload`` com ``type: area``.
-        Contagens de ``Avaliacao.etapa`` (+ ``sem_avaliacao``) e série
-        ``concluida`` por ciclo. Lacuna (ciclo sem cabeçalho útil no escopo) =
-        ``null`` em todas as séries (nunca 0 de desempenho).
-        ``has_data=false`` se a janela no escopo não tem cabeçalhos úteis.
+        Payload canônico 009 via ``grouped_series_payload`` com ``type: bar``
+        empilhado. Três séries de status (percentual do escopo) + overlay de
+        linha com ``concluida_pct``. Ciclo sem cabeçalho no escopo = 100%
+        ``sem_avaliacao`` (pessoas paradas), não 0 de nota. ``has_data=false``
+        se a janela no escopo não tem cabeçalhos úteis.
         **MUST NOT** chamar ``compute_adherence`` nem inventar nota.
     """
     window = list(ciclos)[:HISTORY_DEFAULT_N]
@@ -149,7 +215,7 @@ def build_stage_history(
         return empty_kind_payload(
             kind=EMPTY_KIND_ESCOPO,
             chart_id=_CHART_ID,
-            chart_type=CHART_TYPE_AREA,
+            chart_type=CHART_TYPE_BAR,
             title=_CHART_TITLE,
         )
 
@@ -157,21 +223,16 @@ def build_stage_history(
         return empty_kind_payload(
             kind=EMPTY_KIND_SEM_DADO,
             chart_id=_CHART_ID,
-            chart_type=CHART_TYPE_AREA,
+            chart_type=CHART_TYPE_BAR,
             title=_CHART_TITLE,
         )
 
     etapa_keys = [choice.value for choice in Avaliacao.Etapa]
-    labels_by_key = dict(Avaliacao.Etapa.choices)
-    series_keys = [*etapa_keys, SEM_AVALIACAO_KEY, _CONCLUIDA_KEY]
-    series_labels = {
-        **labels_by_key,
-        SEM_AVALIACAO_KEY: SEM_AVALIACAO_LABEL,
-        _CONCLUIDA_KEY: _CONCLUIDA_LABEL,
-    }
-
+    for etapa in etapa_keys:
+        if STATUS_MAP.get(etapa) != _STATUS_ANDAMENTO:
+            raise ValueError(f'etapa sem mapeamento em_andamento: {etapa!r}')
+    etapa_labels = dict(Avaliacao.Etapa.choices)
     ciclo_ids = [c.pk for c in window]
-    # Contagens por ciclo × etapa e concluídas — só no escopo já autorizado.
     rows = (
         Avaliacao.objects.filter(
             ciclo_id__in=ciclo_ids,
@@ -184,7 +245,6 @@ def build_stage_history(
         )
     )
 
-    # ciclo_id → {etapa: count}; ciclo_id → concluídas
     by_ciclo_etapa: dict[int, dict[str, int]] = {cid: {} for cid in ciclo_ids}
     by_ciclo_concluidas: dict[int, int] = dict.fromkeys(ciclo_ids, 0)
     by_ciclo_headers: dict[int, int] = dict.fromkeys(ciclo_ids, 0)
@@ -197,61 +257,113 @@ def build_stage_history(
         by_ciclo_headers[cid] += total
         by_ciclo_concluidas[cid] += int(row['concluidas'] or 0)
 
-    labels = [c.nome for c in window]
-    values_by_key: dict[str, list[int | None]] = {
-        key: [] for key in series_keys
+    labels: list[str] = []
+    values_by_status: dict[str, list[int]] = {
+        key: [] for key in _STATUS_STACK_ORDER
     }
+    points: list[dict[str, Any]] = []
     any_header = False
 
     for ciclo in window:
         cid = ciclo.pk
-        headers = by_ciclo_headers.get(cid, 0)
-        if headers <= 0:
-            # Lacuna: sem cabeçalho útil no escopo → null em todas as séries.
-            for key in series_keys:
-                values_by_key[key].append(None)
-            continue
-
-        any_header = True
-        etapa_counts = by_ciclo_etapa.get(cid, {})
-        covered = 0
-        for etapa in etapa_keys:
-            count = int(etapa_counts.get(etapa, 0))
-            values_by_key[etapa].append(count)
-            covered += count
-        values_by_key[SEM_AVALIACAO_KEY].append(
-            max(0, visible_total - covered),
-        )
-        values_by_key[_CONCLUIDA_KEY].append(
-            int(by_ciclo_concluidas.get(cid, 0)),
+        headers = int(by_ciclo_headers.get(cid, 0))
+        if headers > 0:
+            any_header = True
+        concluida_count = int(by_ciclo_concluidas.get(cid, 0))
+        andamento_count = max(0, headers - concluida_count)
+        sem_count = max(0, visible_total - headers)
+        totais = {
+            _STATUS_SEM: sem_count,
+            _STATUS_ANDAMENTO: andamento_count,
+            _STATUS_CONCLUIDA: concluida_count,
+        }
+        pcts = _distribute_int_percents(totais, visible_total)
+        etapa_counts = {
+            etapa: int(by_ciclo_etapa.get(cid, {}).get(etapa, 0))
+            for etapa in etapa_keys
+        }
+        labels.append(ciclo.nome)
+        for key in _STATUS_STACK_ORDER:
+            values_by_status[key].append(int(pcts[key]))
+        points.append(
+            {
+                'ciclo': ciclo.nome,
+                'data': ciclo.data_inicio.isoformat(),
+                'sem_avaliacao_pct': pcts[_STATUS_SEM],
+                'em_andamento_pct': pcts[_STATUS_ANDAMENTO],
+                'concluida_pct': pcts[_STATUS_CONCLUIDA],
+                'totais': totais,
+                'detalhe_etapas': etapa_counts,
+            },
         )
 
     if not any_header:
         return empty_kind_payload(
             kind=EMPTY_KIND_SEM_DADO,
             chart_id=_CHART_ID,
-            chart_type=CHART_TYPE_AREA,
+            chart_type=CHART_TYPE_BAR,
             title=_CHART_TITLE,
         )
 
-    series = [
+    series: list[dict[str, Any]] = [
         {
             'key': key,
-            'label': series_labels[key],
-            'values': values_by_key[key],
+            'label': _STATUS_LABELS[key],
+            'values': values_by_status[key],
+            'color': _STATUS_COLORS[key],
+            'kind': 'bar',
         }
-        for key in series_keys
+        for key in _STATUS_STACK_ORDER
     ]
+    series.append(
+        {
+            'key': _LINE_KEY,
+            'label': _LINE_LABEL,
+            'values': list(values_by_status[_STATUS_CONCLUIDA]),
+            'color': _STATUS_COLORS[_STATUS_CONCLUIDA],
+            'kind': 'line',
+        },
+    )
 
-    return grouped_series_payload(
+    payload = grouped_series_payload(
         chart_id=_CHART_ID,
         title=_CHART_TITLE,
         labels=labels,
         series=series,
         empty_message=empty_kind_message(EMPTY_KIND_SEM_DADO),
         has_data=True,
-        chart_type=CHART_TYPE_AREA,
+        chart_type=CHART_TYPE_BAR,
     )
+    latest = points[-1]
+    payload['stacked'] = True
+    payload['html_legend'] = True
+    payload['value_unit'] = '%'
+    payload['insight'] = _CHART_INSIGHT
+    payload['points'] = points
+    payload['x_meta'] = [
+        {'ciclo': point['ciclo'], 'data': point['data']} for point in points
+    ]
+    payload['detalhe_labels'] = etapa_labels
+    payload['legend_items'] = [
+        {
+            'label': _STATUS_LABELS[key],
+            'value': f'{latest[_pct_key(key)]}%',
+            'color': _STATUS_COLORS[key],
+        }
+        for key in (_STATUS_SEM, _STATUS_ANDAMENTO, _STATUS_CONCLUIDA)
+    ]
+    payload['legend_caption'] = (
+        f'No ciclo mais recente ({latest["ciclo"]})'
+    )
+    return payload
+
+
+def _pct_key(status: str) -> str:
+    return {
+        _STATUS_SEM: 'sem_avaliacao_pct',
+        _STATUS_ANDAMENTO: 'em_andamento_pct',
+        _STATUS_CONCLUIDA: 'concluida_pct',
+    }[status]
 
 
 def _progress_score(etapa: str | None, concluida: bool) -> tuple[int, int]:

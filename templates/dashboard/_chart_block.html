@@ -30,9 +30,13 @@
     {{ chart|json_script:"script-id" }}
 
   Anatomia: title → insight → (mini-KPI | canvas) → figcaption / empty_state.
-  Mobile (~375px / SC-007): empilha KPI full-width → chart; sm+ lado a lado.
+  Mobile (~375px / SC-006): empilha KPI full-width → chart; sm+ lado a lado.
   Com mini-KPI: CSS grid (não flex+stretch) para o canvas ter largura real no
   init do Chart.js — evita gráfico em branco com card KPI gigante.
+  Figcaption: doughnut (+ valor além da cor); bar_grouped com parts se útil.
+  Sem figcaption em bar / bar_horizontal / area (datalabel, tooltip ou
+  legenda Chart.js — Freeze D / chart-catalog 009), salvo html_legend
+  (barra 100% empilhada do histórico: dot + % do ciclo mais recente).
   Sem sombra; empty honesto.
 {% endcomment %}
 {% with payload_id=script_id|default:chart.id chart_title=title|default:chart.title %}
@@ -62,9 +66,12 @@
       ></canvas>
     </div>
 
-    {% if chart.legend_items and chart.type != "bar" and chart.type != "bar_horizontal" %}
+    {% if chart.html_legend and chart.legend_items or chart.legend_items and chart.type != "bar" and chart.type != "bar_horizontal" and chart.type != "area" %}
     <figcaption class="mt-4 border-t border-line pt-3.5">
       <p class="sr-only">Resumo textual das séries (além da cor):</p>
+      {% if chart.legend_caption %}
+      <p class="mb-2 font-ui text-xs text-slate-500">{{ chart.legend_caption }}</p>
+      {% endif %}
       <ul class="flex flex-wrap gap-x-5 gap-y-2.5 text-sm leading-snug text-slate-600" role="list">
         {% for item in chart.legend_items %}
           {% if item.parts %}

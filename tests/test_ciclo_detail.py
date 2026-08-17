@@ -9,9 +9,9 @@ T012: cabeçalho ``concluida`` sem nota → empty ``sem_nota`` em
 desempenho/gap/aderência; pipeline de etapa MAY permanecer; copy não trata
 como desempenho 100% saudável; AuthZ ``AdminCyclesMixin`` intacta.
 
-T029: ``?visao=historico`` na URL existente ``cycles/<pk>/`` → ``area`` de
-etapa/conclusão cap ``HISTORY_DEFAULT_N``; empty local de desempenho;
-resto da página intacto; AuthZ intacta. Sem rota ``/historico/``.
+T029: ``?visao=historico`` na URL existente ``cycles/<pk>/`` → barra 100%
+empilhada de status/conclusão cap ``HISTORY_DEFAULT_N``; empty local de
+desempenho; resto da página intacto; AuthZ intacta. Sem rota ``/historico/``.
 
 Só view GET. Não altera asserts de negócio open/close / ``cycle.py``.
 MUST NOT ``data/legado-solides/raw/``.
@@ -30,6 +30,7 @@ from apps.cycles.models import Ciclo
 from apps.cycles.views import AdminCyclesMixin, CicloDetailView
 from apps.dashboard.chart_payloads import (
     CHART_TYPE_AREA,
+    CHART_TYPE_BAR,
     CHART_TYPE_BAR_HORIZONTAL,
     EMPTY_KIND_COPY,
     EMPTY_KIND_SEM_NOTA,
@@ -167,9 +168,14 @@ def test_ciclo_detail_quickstart_s3_empty_local_sem_inventar(admin, db):
 
     assert resp.context['chart_ciclo_progresso']['has_data'] is False
     assert resp.context['chart_aderencia_distribuicao']['has_data'] is False
+    assert resp.context['chart_cobertura_area']['has_data'] is False
+    assert resp.context['chart_cobertura_cargo']['has_data'] is False
     html = resp.content.decode()
     # Empty via _chart_block / empty_state — sem série inventada no canvas.
     assert 'chart-ciclo-progresso' in html or 'Não há avaliações' in html
+    assert 'data-chart-payload="chart-cobertura-area"' not in html
+    assert 'data-chart-payload="chart-cobertura-cargo"' not in html
+    assert 'Cobertura por área e cargo' not in html
 
 
 # --- T012 [US1] / quickstart §1.5 (empty ``sem_nota``) ----------------------
@@ -359,10 +365,11 @@ def _seed_arquivo_detalhe(
     return ciclos
 
 
-def _assert_history_area(chart: dict | None, *, max_labels: int = HISTORY_DEFAULT_N) -> None:
+def _assert_history_stacked(chart: dict | None, *, max_labels: int = HISTORY_DEFAULT_N) -> None:
     assert chart is not None
     assert chart.get('has_data') is True
-    assert chart.get('type') == CHART_TYPE_AREA
+    assert chart.get('type') == CHART_TYPE_BAR
+    assert chart.get('stacked') is True
     labels = list(chart.get('labels') or [])
     assert 1 <= len(labels) <= max_labels
     assert len(labels) <= HISTORY_DEFAULT_N
@@ -396,11 +403,11 @@ def test_ciclo_detail_sem_visao_permanece_operacional_nao_tendencia(
 
 
 @pytest.mark.django_db
-def test_ciclo_detail_visao_historico_area_cap_n(
+def test_ciclo_detail_visao_historico_stacked_cap_n(
     admin,
     colaborador,
 ):
-    """``?visao=historico`` em ``cycles/<pk>/``: ``area`` ≤ ``HISTORY_DEFAULT_N``."""
+    """``?visao=historico`` em ``cycles/<pk>/``: barra empilhada ≤ ``HISTORY_DEFAULT_N``."""
     arquivo = _seed_arquivo_detalhe(n=_N_ARQUIVO_CAP, usuario=colaborador)
     assert len(arquivo) == _N_ARQUIVO_CAP
     assert _N_ARQUIVO_CAP > HISTORY_DEFAULT_N
@@ -415,7 +422,7 @@ def test_ciclo_detail_visao_historico_area_cap_n(
     assert _detail_url(ancora) == f'/cycles/{ancora.pk}/'
     assert resp.context.get('visao') == 'historico'
     history = resp.context['chart_stage_history']
-    _assert_history_area(history)
+    _assert_history_stacked(history)
     labels = list(history['labels'])
     assert len(labels) == HISTORY_DEFAULT_N
     assert len(labels) < len(arquivo)
@@ -442,7 +449,7 @@ def test_ciclo_detail_visao_historico_empty_desempenho_local(
 
     assert resp.status_code == 200
     history = resp.context['chart_stage_history']
-    _assert_history_area(history)
+    _assert_history_stacked(history)
 
     for key in _DESEMPENHO_CHART_KEYS:
         chart = resp.context.get(key)
@@ -537,7 +544,7 @@ def test_ciclo_detail_visao_historico_ciclos_cap_n(
 
     assert resp.status_code == 200
     history = resp.context['chart_stage_history']
-    _assert_history_area(history)
+    _assert_history_stacked(history)
     labels = list(history['labels'])
     assert len(labels) == HISTORY_DEFAULT_N
     assert labels == [c.nome for c in pedidos[:HISTORY_DEFAULT_N]]

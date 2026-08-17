@@ -69,15 +69,15 @@ Pré-condição B: **um** ciclo aberto operacional.
 | # | Ação | Esperado |
 |---|------|----------|
 | 3.1 | Admin ou time **sem** `visao=` | Home continua operacional (não tendência) |
-| 3.2 | `?visao=historico` | `area` de etapa/conclusão dos últimos **8** ciclos do escopo; evoluiu / estável / sem dado |
+| 3.2 | `?visao=historico` | barra 100% empilhada (3 status) + linha de conclusão dos últimos **8** ciclos do escopo; evoluiu / estável / sem dado |
 | 3.3 | `?visao=historico&ciclos=` | Só os ids pedidos, ainda cap 8; nunca ~57 séries |
-| 3.4 | Série de nota/gap/aderência | Empty `sem_nota` até haver dado; `null` ≠ 0 |
+| 3.4 | Série de nota/gap/aderência | Empty `sem_nota` até haver dado; ciclo sem cabeçalho = 100% sem avaliação (não 0 de nota) |
 | 3.5 | Pessoal | MUST NOT expor `visao=historico` |
 | 3.6 | Sem página `/historico/` | Toggle/query nas URLs já existentes |
 
 ### 4) 100% charts + Freeze D
 
-- Todas as superfícies com chart (admin, time, estrutura, aderência, detalhe/lista ciclo, pessoal) passam densidade + empty + leveza (grid off, pouco ink, doughnut+centro, `bar_horizontal` ranking, `area` tendência).
+- Todas as superfícies com chart (admin, time, estrutura, aderência, detalhe/lista ciclo, pessoal) passam densidade + empty + leveza (grid off, pouco ink, doughnut+centro, `bar_horizontal` ranking, tendência histórica empilhada 100%).
 - `docs/design-system.md` contém Freeze D (FR-019) se o contrato entrou no Freeze — esperado: **sim**.
 - Network: Chart.js **4.5.1**; sem lib adicional; `base.html` sem Chart.js.
 
