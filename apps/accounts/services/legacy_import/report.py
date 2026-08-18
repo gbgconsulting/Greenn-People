@@ -3,7 +3,8 @@
 Superfície pública reexportada por ``legacy_import.__init__``.
 Totais + amostra mascarada (max 5 por seção) conforme
 ``contracts/import-command-contract.md`` §Formato do relatório
-(010 colaboradores + 011 ciclos/avaliações) e research R12/R14.
+(010 colaboradores + 011 ciclos/avaliações + 013 notas/comentários)
+e research R12/R14 (010/011) / R13 (013).
 
 US2 (T017/010): contadores ``areas_*`` / ``cargos_*`` / ``usuarios_*`` /
 ``solides_id_preenchidos`` / ``demitidos_inativos`` + seções
@@ -16,6 +17,12 @@ US3 (T022/010): contadores ``gestores_vinculados`` / ``sem_gestor`` e seção
 011 (T007): contadores ``ciclos_*`` / ``avaliacoes_*`` / ``grupos_agregados``
 + seções ``orfaos_ciclo`` / ``orfaos_usuario`` / ``ids_colapsados`` via
 ``format_ciclos_avaliacoes_report``.
+
+013 (T006): contadores ``notas_*`` / ``comentarios_*`` / ``orfaos_*`` /
+``conflitos_lider_divergente`` / ``conflitos_ciclo_aberto`` /
+``habilidades_extras_criadas`` / ``ids_colapsados_resolvidos`` via
+``format_notas_comentarios_report``. NEVER emite comentário completo,
+nome ou e-mail; IDs via ``mask_solides_id``.
 """
 
 from __future__ import annotations
@@ -57,6 +64,17 @@ class ReportEntry:
     - 011 orfaos_*: ``label`` / ``extra`` = ids; ``motivo`` = código.
     - 011 ids_colapsados: ``label`` = group_key; ``extra`` = canonical;
       ``motivo`` = colapsados / n_linhas.
+    - 013 notas_*: ``label`` = avaliacao_id; ``extra`` = competencia_id;
+      ``motivo`` = lado (``auto`` / ``lider``).
+    - 013 comentarios_*: ``label`` = avaliacao_id; ``extra`` = autor_id;
+      ``motivo`` = tipo (``colaborador`` / ``lider``). NEVER ``conteudo``.
+    - 013 orfaos_avaliacao: ``label`` = id_legado; ``motivo`` = código.
+    - 013 orfaos_competencia: ``label`` = habilidade_id; ``motivo`` = código.
+    - 013 orfaos_autor: ``label`` = avaliador_id; ``motivo`` = código.
+    - 013 conflitos_lider_divergente: ``label`` / ``extra`` = ids.
+    - 013 conflitos_ciclo_aberto: ``label`` = avaliacao_id; ``extra`` = ciclo.
+    - 013 habilidades_extras: ``label`` = solides_id; ``extra`` = tipo.
+    - 013 ids_colapsados_resolvidos: ``label`` = colapsado; ``extra`` = canônico.
     """
 
     label: str
@@ -71,8 +89,9 @@ class ImportReport:
     Contadores de persistência são preenchidos pelo importer (T018+) /
     resolve (áreas/cargos). Contadores ``nao_importaveis`` / ``conflitos`` /
     ``ciclos_hierarquia`` alinham a ``len`` das listas detalhadas.
-    Amostra em ``format_report`` / ``format_ciclos_avaliacoes_report``
-    trunca a 5 por seção (documentado no header).
+    Amostra em ``format_report`` / ``format_ciclos_avaliacoes_report`` /
+    ``format_notas_comentarios_report`` trunca a 5 por seção (documentado
+    no header). NEVER dump de comentário completo / nome / e-mail.
     """
 
     modo: str = "persist"
@@ -106,6 +125,17 @@ class ImportReport:
     avaliacoes_inalteradas: int = 0
     grupos_agregados: int = 0
 
+    # --- 013: notas por competência + comentários qualitativos ---
+    notas_file: str = ""
+    comentarios_file: str = ""
+    habilidades_file: str = ""
+    notas_criadas: int = 0
+    notas_atualizadas: int = 0
+    notas_inalteradas: int = 0
+    comentarios_criados: int = 0
+    comentarios_inalterados: int = 0
+    habilidades_extras_criadas: int = 0
+
     criados: list[ReportEntry] = field(default_factory=list)
     atualizados: list[ReportEntry] = field(default_factory=list)
     nao_importaveis: list[ReportEntry] = field(default_factory=list)
@@ -116,6 +146,19 @@ class ImportReport:
     orfaos_ciclo: list[ReportEntry] = field(default_factory=list)
     orfaos_usuario: list[ReportEntry] = field(default_factory=list)
     ids_colapsados: list[ReportEntry] = field(default_factory=list)
+
+    amostra_notas_criadas: list[ReportEntry] = field(default_factory=list)
+    amostra_notas_atualizadas: list[ReportEntry] = field(default_factory=list)
+    amostra_notas_inalteradas: list[ReportEntry] = field(default_factory=list)
+    amostra_comentarios_criados: list[ReportEntry] = field(default_factory=list)
+    amostra_comentarios_inalterados: list[ReportEntry] = field(default_factory=list)
+    orfaos_avaliacao: list[ReportEntry] = field(default_factory=list)
+    orfaos_competencia: list[ReportEntry] = field(default_factory=list)
+    orfaos_autor: list[ReportEntry] = field(default_factory=list)
+    conflitos_lider_divergente: list[ReportEntry] = field(default_factory=list)
+    conflitos_ciclo_aberto: list[ReportEntry] = field(default_factory=list)
+    amostra_habilidades_extras: list[ReportEntry] = field(default_factory=list)
+    ids_colapsados_resolvidos: list[ReportEntry] = field(default_factory=list)
 
     @property
     def n_nao_importaveis(self) -> int:
@@ -141,6 +184,36 @@ class ImportReport:
     def n_orfaos_usuario(self) -> int:
         """Contador alinhado à seção órfãos de usuário (011)."""
         return len(self.orfaos_usuario)
+
+    @property
+    def n_orfaos_avaliacao(self) -> int:
+        """Contador alinhado à seção órfãos de avaliação (013)."""
+        return len(self.orfaos_avaliacao)
+
+    @property
+    def n_orfaos_competencia(self) -> int:
+        """Contador alinhado à seção órfãos de competência (013)."""
+        return len(self.orfaos_competencia)
+
+    @property
+    def n_orfaos_autor(self) -> int:
+        """Contador alinhado à seção órfãos de autor (013)."""
+        return len(self.orfaos_autor)
+
+    @property
+    def n_conflitos_lider_divergente(self) -> int:
+        """Contador alinhado à seção dois líderes divergentes (013)."""
+        return len(self.conflitos_lider_divergente)
+
+    @property
+    def n_conflitos_ciclo_aberto(self) -> int:
+        """Contador alinhado à seção ciclo aberto (013)."""
+        return len(self.conflitos_ciclo_aberto)
+
+    @property
+    def n_ids_colapsados_resolvidos(self) -> int:
+        """Contador alinhado à seção IDs colapsados resolvidos (013)."""
+        return len(self.ids_colapsados_resolvidos)
 
 
 # ---------------------------------------------------------------------------
@@ -393,6 +466,225 @@ def record_ids_colapsados(
     )
 
 
+# ---------------------------------------------------------------------------
+# Helpers 013 — notas / comentários / órfãos / conflitos
+# ---------------------------------------------------------------------------
+
+
+def _nota_entry(avaliacao_id: str, competencia_id: str, lado: str) -> ReportEntry:
+    return ReportEntry(
+        label=str(avaliacao_id),
+        extra=str(competencia_id),
+        motivo=str(lado).strip(),
+    )
+
+
+def _comentario_entry(avaliacao_id: str, autor_id: str, tipo: str) -> ReportEntry:
+    """Amostra de comentário — só IDs e tipo; NEVER ``conteudo``/nome/e-mail."""
+    return ReportEntry(
+        label=str(avaliacao_id),
+        extra=str(autor_id),
+        motivo=str(tipo).strip(),
+    )
+
+
+def note_nota_criada(report: ImportReport, n: int = 1) -> None:
+    """Incrementa ``notas_criadas``."""
+    report.notas_criadas += n
+
+
+def note_nota_atualizada(report: ImportReport, n: int = 1) -> None:
+    """Incrementa ``notas_atualizadas``."""
+    report.notas_atualizadas += n
+
+
+def note_nota_inalterada(report: ImportReport, n: int = 1) -> None:
+    """Incrementa ``notas_inalteradas``."""
+    report.notas_inalteradas += n
+
+
+def note_comentario_criado(report: ImportReport, n: int = 1) -> None:
+    """Incrementa ``comentarios_criados``."""
+    report.comentarios_criados += n
+
+
+def note_comentario_inalterado(report: ImportReport, n: int = 1) -> None:
+    """Incrementa ``comentarios_inalterados``."""
+    report.comentarios_inalterados += n
+
+
+def note_habilidade_extra_criada(report: ImportReport, n: int = 1) -> None:
+    """Incrementa ``habilidades_extras_criadas``."""
+    report.habilidades_extras_criadas += n
+
+
+def record_nota_criada(
+    report: ImportReport,
+    *,
+    avaliacao_id: str,
+    competencia_id: str,
+    lado: str,
+    increment_counter: bool = True,
+) -> None:
+    """Amostra de nota criada (IDs mascarados na formatação)."""
+    report.amostra_notas_criadas.append(
+        _nota_entry(avaliacao_id, competencia_id, lado)
+    )
+    if increment_counter:
+        report.notas_criadas += 1
+
+
+def record_nota_atualizada(
+    report: ImportReport,
+    *,
+    avaliacao_id: str,
+    competencia_id: str,
+    lado: str,
+    increment_counter: bool = True,
+) -> None:
+    """Amostra de nota atualizada (só ``nota_*``; snapshots write-once)."""
+    report.amostra_notas_atualizadas.append(
+        _nota_entry(avaliacao_id, competencia_id, lado)
+    )
+    if increment_counter:
+        report.notas_atualizadas += 1
+
+
+def record_nota_inalterada(
+    report: ImportReport,
+    *,
+    avaliacao_id: str,
+    competencia_id: str,
+    lado: str,
+    increment_counter: bool = True,
+) -> None:
+    """Amostra de nota já equivalente na 2ª run."""
+    report.amostra_notas_inalteradas.append(
+        _nota_entry(avaliacao_id, competencia_id, lado)
+    )
+    if increment_counter:
+        report.notas_inalteradas += 1
+
+
+def record_comentario_criado(
+    report: ImportReport,
+    *,
+    avaliacao_id: str,
+    autor_id: str,
+    tipo: str,
+    increment_counter: bool = True,
+) -> None:
+    """Amostra de feedback criado — sem ``conteudo``, nome ou e-mail."""
+    report.amostra_comentarios_criados.append(
+        _comentario_entry(avaliacao_id, autor_id, tipo)
+    )
+    if increment_counter:
+        report.comentarios_criados += 1
+
+
+def record_comentario_inalterado(
+    report: ImportReport,
+    *,
+    avaliacao_id: str,
+    autor_id: str,
+    tipo: str,
+    increment_counter: bool = True,
+) -> None:
+    """Amostra de feedback já existente pela chave natural (não reescrito)."""
+    report.amostra_comentarios_inalterados.append(
+        _comentario_entry(avaliacao_id, autor_id, tipo)
+    )
+    if increment_counter:
+        report.comentarios_inalterados += 1
+
+
+def record_orfao_avaliacao(
+    report: ImportReport,
+    *,
+    id_legado: str,
+    motivo: str = "avaliacao_nao_resolvida",
+) -> None:
+    """Órfão: ID de avaliação irresolvível (contador = ``len``)."""
+    report.orfaos_avaliacao.append(
+        ReportEntry(label=str(id_legado), motivo=motivo)
+    )
+
+
+def record_orfao_competencia(
+    report: ImportReport,
+    *,
+    habilidade_id: str,
+    motivo: str = "kpi_ou_sem_nota",
+) -> None:
+    """Órfão: habilidade KPI/ambígua ou sem FK de nota (contador = ``len``)."""
+    report.orfaos_competencia.append(
+        ReportEntry(label=str(habilidade_id), motivo=motivo)
+    )
+
+
+def record_orfao_autor(
+    report: ImportReport,
+    *,
+    avaliador_id: str,
+    motivo: str = "usuario_nao_resolvido",
+) -> None:
+    """Órfão: autor irresolvível — nunca inventa User (contador = ``len``)."""
+    report.orfaos_autor.append(
+        ReportEntry(label=str(avaliador_id), motivo=motivo)
+    )
+
+
+def record_conflito_lider_divergente(
+    report: ImportReport,
+    *,
+    avaliacao_id: str,
+    competencia_id: str,
+) -> None:
+    """Dois líderes, sem média e sem persistir líder (contador = ``len``)."""
+    report.conflitos_lider_divergente.append(
+        ReportEntry(label=str(avaliacao_id), extra=str(competencia_id))
+    )
+
+
+def record_conflito_ciclo_aberto(
+    report: ImportReport,
+    *,
+    avaliacao_id: str,
+    ciclo: str = "aberto",
+) -> None:
+    """Skip: ciclo ``status=aberto`` (contador = ``len``)."""
+    report.conflitos_ciclo_aberto.append(
+        ReportEntry(label=str(avaliacao_id), extra=str(ciclo))
+    )
+
+
+def record_habilidade_extra_criada(
+    report: ImportReport,
+    *,
+    solides_id: str,
+    tipo: str = "tecnica",
+    increment_counter: bool = True,
+) -> None:
+    """Amostra de ``Competencia`` extra mínima (FK de nota; R11)."""
+    report.amostra_habilidades_extras.append(
+        ReportEntry(label=str(solides_id), extra=str(tipo).strip())
+    )
+    if increment_counter:
+        report.habilidades_extras_criadas += 1
+
+
+def record_id_colapsado_resolvido(
+    report: ImportReport,
+    *,
+    colapsado: str,
+    canonico: str,
+) -> None:
+    """Amostra mascarada ``colapsado → canônico`` (contador = ``len``)."""
+    report.ids_colapsados_resolvidos.append(
+        ReportEntry(label=str(colapsado), extra=str(canonico))
+    )
+
+
 def _area_cargo_motivo(area: str, cargo: str) -> str:
     parts: list[str] = []
     if area.strip():
@@ -557,6 +849,100 @@ def format_ciclos_avaliacoes_report(report: ImportReport) -> str:
     return "\n".join(lines) + "\n"
 
 
+def format_notas_comentarios_report(report: ImportReport) -> str:
+    """Serializa o relatório 013 (notas/comentários) — contrato §Formato.
+
+    Contadores + amostra mascarada (max 5 por seção, T006 / SC-010).
+    NEVER emite comentário completo, nome ou e-mail; IDs via
+    ``mask_solides_id``. Superfície exclusiva de stdout/``--report-file``.
+    """
+    habilidades = report.habilidades_file.strip() or "(omitido)"
+    lines: list[str] = [
+        "=== Importação notas/comentários legado Sólides ===",
+        f"modo: {report.modo}",
+        f"notas_file: {report.notas_file}",
+        f"comentarios_file: {report.comentarios_file}",
+        f"avaliacoes_file: {report.avaliacoes_file}",
+        f"habilidades_file: {habilidades}",
+        "",
+        "--- Resumo ---",
+        f"notas_criadas: {report.notas_criadas}",
+        f"notas_atualizadas: {report.notas_atualizadas}",
+        f"notas_inalteradas: {report.notas_inalteradas}",
+        f"comentarios_criados: {report.comentarios_criados}",
+        f"comentarios_inalterados: {report.comentarios_inalterados}",
+        f"orfaos_avaliacao: {report.n_orfaos_avaliacao}",
+        f"orfaos_competencia: {report.n_orfaos_competencia}",
+        f"orfaos_autor: {report.n_orfaos_autor}",
+        f"conflitos_lider_divergente: {report.n_conflitos_lider_divergente}",
+        f"conflitos_ciclo_aberto: {report.n_conflitos_ciclo_aberto}",
+        f"habilidades_extras_criadas: {report.habilidades_extras_criadas}",
+        f"ids_colapsados_resolvidos: {report.n_ids_colapsados_resolvidos}",
+        f"conflitos: {report.n_conflitos}",
+        "",
+        "--- Amostra (mascarada, max 5 por seção) ---",
+        "notas_criadas:",
+    ]
+    lines.extend(_sample_lines(report.amostra_notas_criadas, _format_nota_amostra))
+    lines.append("notas_atualizadas:")
+    lines.extend(
+        _sample_lines(report.amostra_notas_atualizadas, _format_nota_amostra)
+    )
+    lines.append("notas_inalteradas:")
+    lines.extend(
+        _sample_lines(report.amostra_notas_inalteradas, _format_nota_amostra)
+    )
+    lines.append("comentarios_criados:")
+    lines.extend(
+        _sample_lines(
+            report.amostra_comentarios_criados, _format_comentario_amostra
+        )
+    )
+    lines.append("comentarios_inalterados:")
+    lines.extend(
+        _sample_lines(
+            report.amostra_comentarios_inalterados, _format_comentario_amostra
+        )
+    )
+    lines.append("orfaos_avaliacao:")
+    lines.extend(
+        _sample_lines(report.orfaos_avaliacao, _format_orfao_avaliacao)
+    )
+    lines.append("orfaos_competencia:")
+    lines.extend(
+        _sample_lines(report.orfaos_competencia, _format_orfao_competencia)
+    )
+    lines.append("orfaos_autor:")
+    lines.extend(_sample_lines(report.orfaos_autor, _format_orfao_autor))
+    lines.append("conflitos_lider_divergente:")
+    lines.extend(
+        _sample_lines(
+            report.conflitos_lider_divergente, _format_lider_divergente
+        )
+    )
+    lines.append("conflitos_ciclo_aberto:")
+    lines.extend(
+        _sample_lines(report.conflitos_ciclo_aberto, _format_ciclo_aberto)
+    )
+    lines.append("habilidades_extras_criadas:")
+    lines.extend(
+        _sample_lines(
+            report.amostra_habilidades_extras, _format_habilidade_extra
+        )
+    )
+    lines.append("ids_colapsados_resolvidos:")
+    lines.extend(
+        _sample_lines(
+            report.ids_colapsados_resolvidos, _format_id_colapsado_resolvido
+        )
+    )
+    lines.append("conflitos:")
+    lines.extend(_sample_lines(report.conflitos, _format_conflito_notas))
+    lines.append("")
+    lines.append("=== Fim ===")
+    return "\n".join(lines) + "\n"
+
+
 def _sample_lines(
     entries: list[ReportEntry],
     formatter: Callable[[ReportEntry], str],
@@ -591,6 +977,21 @@ def _format_conflito(entry: ReportEntry) -> str:
     if entry.motivo.strip():
         parts.append(_mask_solides_ids_in_text(entry.motivo.strip()))
     return " | ".join(parts)
+
+
+def _format_conflito_notas(entry: ReportEntry) -> str:
+    """Conflito 013: além de IDs/e-mail/CPF, redige nome e texto livre."""
+    line = _format_conflito(entry)
+
+    def _repl_pii_field(match: re.Match[str]) -> str:
+        return f"{match.group(1)}={mask_pii(match.group(2).strip())}"
+
+    return re.sub(
+        r"\b(nome|comentario|comentário|conteudo|conteúdo)=([^|]+)",
+        _repl_pii_field,
+        line,
+        flags=re.IGNORECASE,
+    )
 
 
 def _format_ciclo(entry: ReportEntry) -> str:
@@ -631,6 +1032,78 @@ def _format_ids_colapsados(entry: ReportEntry) -> str:
     return f"  - grupo=({group}) | canonical={canonical} | {motivo}"
 
 
+def _format_nota_amostra(entry: ReportEntry) -> str:
+    lado = _mask_emails_in_text(entry.motivo.strip()) if entry.motivo.strip() else ""
+    parts = [
+        f"  - avaliacao={mask_solides_id(entry.label)}",
+        f"competencia={mask_solides_id(entry.extra)}",
+    ]
+    if lado:
+        parts.append(f"lado={lado}")
+    return " | ".join(parts)
+
+
+def _format_comentario_amostra(entry: ReportEntry) -> str:
+    tipo = _mask_emails_in_text(entry.motivo.strip()) if entry.motivo.strip() else ""
+    parts = [
+        f"  - avaliacao={mask_solides_id(entry.label)}",
+        f"autor={mask_solides_id(entry.extra)}",
+    ]
+    if tipo:
+        parts.append(f"tipo={tipo}")
+    return " | ".join(parts)
+
+
+def _format_orfao_avaliacao(entry: ReportEntry) -> str:
+    return (
+        f"  - id_legado={mask_solides_id(entry.label)}"
+        f" | motivo={entry.motivo.strip() or 'avaliacao_nao_resolvida'}"
+    )
+
+
+def _format_orfao_competencia(entry: ReportEntry) -> str:
+    return (
+        f"  - habilidade_id={mask_solides_id(entry.label)}"
+        f" | motivo={entry.motivo.strip() or 'kpi_ou_sem_nota'}"
+    )
+
+
+def _format_orfao_autor(entry: ReportEntry) -> str:
+    return (
+        f"  - avaliador_id={mask_solides_id(entry.label)}"
+        f" | motivo={entry.motivo.strip() or 'usuario_nao_resolvido'}"
+    )
+
+
+def _format_lider_divergente(entry: ReportEntry) -> str:
+    return (
+        f"  - avaliacao={mask_solides_id(entry.label)}"
+        f" | competencia={mask_solides_id(entry.extra)}"
+    )
+
+
+def _format_ciclo_aberto(entry: ReportEntry) -> str:
+    return (
+        f"  - avaliacao={mask_solides_id(entry.label)}"
+        f" | ciclo={mask_solides_id(entry.extra)}"
+    )
+
+
+def _format_habilidade_extra(entry: ReportEntry) -> str:
+    tipo = entry.extra.strip() or "tecnica"
+    return (
+        f"  - solides_id={mask_solides_id(entry.label)}"
+        f" | tipo={_mask_emails_in_text(tipo)}"
+    )
+
+
+def _format_id_colapsado_resolvido(entry: ReportEntry) -> str:
+    return (
+        f"  - colapsado={mask_solides_id(entry.label)}"
+        f" → canônico={mask_solides_id(entry.extra)}"
+    )
+
+
 def _mask_group_key(label: str) -> str:
     """``sol=123, av=456`` → ``sol=***123, av=***456``."""
     parts: list[str] = []
@@ -669,7 +1142,9 @@ def _mask_solides_ids_in_text(text: str) -> str:
         return f"{match.group(1)}={mask_solides_id(match.group(2))}"
 
     return re.sub(
-        r"\b(solicitacao|sol|av|avaliado_id|canonical|usuario|ciclo|"
+        r"\b(solicitacao|sol|av|avaliado_id|avaliador_id|avaliacao|"
+        r"competencia|id_legado|habilidade_id|autor|colapsado|"
+        r"can[oô]nico|canonical|solides_id|usuario|ciclo|"
         r"superior_id|ids)=([^\s|,]+)",
         _repl_kv,
         masked,
