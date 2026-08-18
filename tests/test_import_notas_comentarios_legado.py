@@ -31,7 +31,29 @@ T015: validação US2 via quickstart C6 (líder com ciência; auto sem
 ciência; autor inativo ok; autor irresolvível órfão; N textos;
 etapa/concluída intactas; ``git diff`` denylist).
 
-T018–T023 estendem esta suíte (dry-run, IDs, conflitos, comentários).
+T018: ``--dry-run`` (SC-008), ID canônico/colapsado/órfão (SC-006) e
+args/arquivo inválido (exit 1) usando **somente**
+``data/legado-solides/samples/``. **Proibido** ``raw/``.
+
+T019: dois líderes (sem média), ciclo ``aberto`` (SC-012), write-once
+2ª run (SC-005; ``CargoCompetencia`` vigente divergente não copiada),
+habilidade extra vs órfão KPI (SC-014), spy ``create_competency_lines``
+**não** chamado, ``calcular_nota_final_lider`` **é** chamado,
+``CalculationError`` → conflito sem média. **Proibido** ``raw/``.
+
+T020: comentários (tipo, ``ciente_em`` líder, colaborador null, N textos,
+chave natural sem duplicata), mascaramento PII (máx. 5; sem
+comentário/nome/e-mail), zero path ``raw/`` na suíte, teste de ouro
+denylist (``git diff`` vazio / import não muta ``etapa``/``concluida``)
+— SC-007/SC-009/SC-010/SC-013. **Proibido** ``raw/``.
+
+T021–T023 estendem esta suíte (dry-run consolidado, idempotência).
+
+T022: idempotência consolidada (SC-005 / C7) — unique
+``(avaliacao, competencia)`` atualiza só ``nota_*``; snapshots
+bit-a-bit; ``snapshot_divergente`` sem apagar; Feedback chave natural
+sem reescrever ``conteudo``; delta ``Avaliacao`` por
+``(ciclo, usuario)`` = 0. **Proibido** ``raw/``.
 """
 
 from __future__ import annotations
@@ -53,6 +75,7 @@ from django.utils import timezone
 from openpyxl import Workbook
 
 from apps.accounts.models import CustomUser
+from apps.accounts.services.legacy_import.dates import parse_legacy_datetime
 from apps.accounts.services.legacy_import.report import (
     ImportReport,
     format_notas_comentarios_report,
@@ -73,11 +96,16 @@ from apps.accounts.services.legacy_import.report import (
 )
 from apps.competencies.models import CargoCompetencia, Competencia, Escala
 from apps.cycles.models import Ciclo
+from apps.organization.models import Cargo
 from apps.reviews.exceptions import CalculationError
 from apps.reviews.models import Avaliacao, AvaliacaoCompetencia, Feedback
 from apps.reviews.services.evaluation import calcular_nota_final_lider
 from apps.reviews.services.legacy_import import format_notas_comentarios_report as _reexport
-from apps.reviews.services.legacy_import.importer import import_notas_comentarios
+from apps.reviews.services.legacy_import.importer import (
+    LegacyParseError,
+    LegacyPersistError,
+    import_notas_comentarios,
+)
 from apps.reviews.services.legacy_import.resolve import (
     build_collapsed_id_map,
     is_auto,
@@ -105,6 +133,63 @@ _COMPETENCIA_ID = 'HAB12'
 _AUTOR_ID = 'USR88'
 _SAMPLES_DIR = Path(__file__).resolve().parents[1] / 'data' / 'legado-solides' / 'samples'
 _AVALIACOES_HEADERS_MIN = _SAMPLES_DIR / 'avaliacoes_headers_min.xlsx'
+_NOTAS_MIN = _SAMPLES_DIR / 'notas_min.xlsx'
+_COMENTARIOS_MIN = _SAMPLES_DIR / 'comentarios_min.xlsx'
+_RAW_PII_DIR = '/'.join(('data', 'legado-solides', 'raw'))
+_T018_SEED_USERS = (
+    ('gestor.alpha@example.com', 'Gestor Alpha', '100'),
+    ('ana.silva@example.com', 'Ana Silva', '101'),
+    ('bruno.costa@example.com', 'Bruno Costa', '102'),
+    ('carla.dias@example.com', 'Carla Dias', '103'),
+)
+_T018_PII = (
+    'ana.silva@example.com',
+    '000.000.000-00',
+    'Ana Silva',
+    'Gestor Alpha',
+    'Bruno Costa',
+    'Carla Dias',
+    'Ninguem Desconhecido Fixture',
+    'Feedback fixture lider A',
+    'Feedback fixture autoavaliacao',
+)
+_T018_NOTAS_CRIADAS = 4
+_T018_COMENTARIOS_CRIADOS = 4
+_T018_ORFAOS_AVALIACAO = 1
+_T018_ORFAOS_AUTOR = 1
+_T018_IDS_COLAPSADOS = 2
+_T019_LIDER_DIVERGENTE = 1
+_T019_ORFAOS_COMPETENCIA = 2
+_T019_EXTRAS = 1
+_T019_MEDIA_PROIBIDA = Decimal('4.50')
+_T019_CARGO_PESO_VIGENTE = Decimal('99.00')
+_T019_CARGO_NIVEL_VIGENTE = Decimal('9.00')
+_T020_LIDER_A = 'Feedback fixture lider A. Nunca vazar no relatorio.'
+_T020_LIDER_B = 'Feedback fixture lider B distinto.'
+_T020_AUTO = 'Feedback fixture autoavaliacao.'
+_T020_COLAPSADO = 'Feedback fixture colapsado 1002.'
+_T020_ORFAO_TEXTO = 'Feedback orfao autor fixture.'
+_T020_PII = (
+    *_T018_PII,
+    _T020_LIDER_A,
+    _T020_LIDER_B,
+    _T020_AUTO,
+    _T020_COLAPSADO,
+    _T020_ORFAO_TEXTO,
+    'Nunca vazar no relatorio.',
+)
+_T020_ALLOWLIST_PY = (
+    'apps/reviews/services/legacy_import',
+    'apps/reviews/management/commands/importar_notas_comentarios.py',
+    'apps/accounts/services/legacy_import/parse_xlsx.py',
+    'apps/accounts/services/legacy_import/dates.py',
+    'apps/accounts/services/legacy_import/report.py',
+)
+_STAGE_SCOPE_REJECT_TESTS = (
+    'tests/test_stage_machine.py',
+    'tests/test_scope.py',
+    'tests/test_reject_stage_invariant.py',
+)
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _IMPORT_NOTAS_COMMAND = (
     _REPO_ROOT
@@ -2101,5 +2186,1195 @@ def test_t015_c6_git_diff_denylist_vazio():
             vs_base = _git_diff(base, '--', *_DENYLIST_PATHS)
             assert vs_base == '', vs_base
             break
+
+
+# --- T018: dry-run + IDs + args inválidos (samples-only / SC-006 / SC-008) ---
+
+
+def _t018_assert_samples_only() -> None:
+    for path in (
+        _NOTAS_MIN,
+        _COMENTARIOS_MIN,
+        _AVALIACOES_HEADERS_MIN,
+        _SAMPLES_DIR,
+    ):
+        assert path.exists(), path
+        assert 'raw' not in path.parts
+        assert _RAW_PII_DIR not in str(path)
+
+
+def _t018_write_counts() -> tuple[int, int, int, int]:
+    """Linhas, feedbacks e notas finais — SC-008."""
+    return (
+        AvaliacaoCompetencia.objects.count(),
+        Feedback.objects.count(),
+        Avaliacao.objects.exclude(nota_final_lider__isnull=True).count(),
+        Avaliacao.objects.exclude(
+            nota_final_autoavaliacao__isnull=True
+        ).count(),
+    )
+
+
+def _t018_nota_final_snapshot() -> set[tuple]:
+    return set(
+        Avaliacao.objects.values_list(
+            'pk', 'nota_final_lider', 'nota_final_autoavaliacao'
+        )
+    )
+
+
+def _t018_seed_world() -> dict[str, Avaliacao]:
+    """Pré-condição 010/011 alinhada aos samples (canônico 1001 / 3001 / 6001)."""
+    cargo = Cargo.objects.create(nome='Analista Sample T018', nivel=1)
+    users: dict[str, CustomUser] = {}
+    for email, nome, solides_id in _T018_SEED_USERS:
+        users[solides_id] = CustomUser.objects.create_user(
+            email=email,
+            password=DEFAULT_PASSWORD,
+            nome=nome,
+            solides_id=solides_id,
+            cargo=cargo,
+            email_confirmado_em=timezone.now(),
+        )
+    ciclo = _ciclo_encerrado()
+    escala = Escala.objects.create(
+        nome='Escala T018',
+        valor_minimo=1,
+        valor_maximo=5,
+        is_active=True,
+    )
+    for sid, nome, tipo in (
+        ('HAB10', 'Comunicacao Fixture', Competencia.Tipo.COMPORTAMENTAL),
+        ('HAB11', 'Colaboracao Fixture', Competencia.Tipo.COMPORTAMENTAL),
+        ('HAB12', 'Lideranca Fixture', Competencia.Tipo.LIDERANCA),
+    ):
+        Competencia.objects.create(
+            nome=nome,
+            tipo=tipo,
+            escala=escala,
+            solides_id=sid,
+            is_active=True,
+        )
+    mapping = (('1001', '101'), ('3001', '100'), ('6001', '103'))
+    avaliacoes: dict[str, Avaliacao] = {}
+    for av_sid, user_sid in mapping:
+        avaliacoes[av_sid] = Avaliacao.objects.create(
+            ciclo=ciclo,
+            usuario=users[user_sid],
+            etapa=Avaliacao.Etapa.FEEDBACK,
+            concluida=True,
+            solides_id=av_sid,
+        )
+    return avaliacoes
+
+
+def _t018_import_samples(**kwargs):
+    _t018_assert_samples_only()
+    return import_notas_comentarios(
+        _NOTAS_MIN,
+        _COMENTARIOS_MIN,
+        _AVALIACOES_HEADERS_MIN,
+        **kwargs,
+    )
+
+
+def test_t018_suite_usa_somente_samples():
+    """T018 / OPSEC: fixtures da suíte não apontam para backups PII."""
+    _t018_assert_samples_only()
+    text = Path(__file__).read_text(encoding='utf-8')
+    assert _RAW_PII_DIR not in text
+
+
+@pytest.mark.django_db
+def test_t018_dry_run_zero_writes_totais_projetados():
+    """SC-008 / C1: dry-run projeta totais e zero writes em linhas/feedback/nota_final_*."""
+    _t018_seed_world()
+    before = _t018_write_counts()
+    av_before = Avaliacao.objects.count()
+    users_before = CustomUser.objects.count()
+    notas_finais = _t018_nota_final_snapshot()
+    av_ids = set(Avaliacao.objects.values_list('solides_id', flat=True))
+
+    report = _t018_import_samples(dry_run=True)
+
+    assert report.modo == 'dry-run'
+    assert report.notas_criadas == _T018_NOTAS_CRIADAS
+    assert report.comentarios_criados == _T018_COMENTARIOS_CRIADOS
+    assert report.n_orfaos_avaliacao == _T018_ORFAOS_AVALIACAO
+    assert report.n_orfaos_autor == _T018_ORFAOS_AUTOR
+    assert report.n_ids_colapsados_resolvidos == _T018_IDS_COLAPSADOS
+    assert _t018_write_counts() == before
+    assert Avaliacao.objects.count() == av_before
+    assert CustomUser.objects.count() == users_before
+    assert _t018_nota_final_snapshot() == notas_finais
+    assert set(Avaliacao.objects.values_list('solides_id', flat=True)) == av_ids
+    assert Avaliacao.objects.filter(solides_id='1002').exists() is False
+    assert Avaliacao.objects.filter(solides_id='88888').exists() is False
+    assert AvaliacaoCompetencia.objects.count() == 0
+    assert Feedback.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_t018_dry_run_via_comando_zero_writes():
+    """C1: ``importar_notas_comentarios --dry-run`` com samples → exit 0, zero writes."""
+    _t018_seed_world()
+    before = _t018_write_counts()
+    av_before = Avaliacao.objects.count()
+    stdout = StringIO()
+
+    result = call_command(
+        'importar_notas_comentarios',
+        notas=str(_NOTAS_MIN),
+        comentarios=str(_COMENTARIOS_MIN),
+        avaliacoes=str(_AVALIACOES_HEADERS_MIN),
+        dry_run=True,
+        stdout=stdout,
+    )
+
+    text = stdout.getvalue()
+    assert result in (0, None)
+    assert 'modo: dry-run' in text
+    assert f'notas_criadas: {_T018_NOTAS_CRIADAS}' in text
+    assert f'comentarios_criados: {_T018_COMENTARIOS_CRIADOS}' in text
+    assert f'orfaos_avaliacao: {_T018_ORFAOS_AVALIACAO}' in text
+    assert f'ids_colapsados_resolvidos: {_T018_IDS_COLAPSADOS}' in text
+    for token in _T018_PII:
+        assert token not in text, token
+    assert _t018_write_counts() == before
+    assert Avaliacao.objects.count() == av_before
+    assert AvaliacaoCompetencia.objects.count() == 0
+    assert Feedback.objects.count() == 0
+    assert 'raw' not in _NOTAS_MIN.parts
+
+
+@pytest.mark.django_db
+def test_t018_id_canonico_colapsado_orfao_samples():
+    """SC-006 / C3: canônico e colapsado na mesma Avaliacao; órfão não inventa."""
+    avaliacoes = _t018_seed_world()
+    canonica = avaliacoes['1001']
+    before_av = Avaliacao.objects.count()
+    before_users = CustomUser.objects.count()
+    etapa = canonica.etapa
+    concluida = canonica.concluida
+
+    report = _t018_import_samples()
+
+    assert Avaliacao.objects.count() == before_av
+    assert CustomUser.objects.count() == before_users
+    assert Avaliacao.objects.filter(solides_id='1001').count() == 1
+    assert Avaliacao.objects.filter(solides_id='1002').exists() is False
+    assert Avaliacao.objects.filter(solides_id='1003').exists() is False
+    assert Avaliacao.objects.filter(solides_id='88888').exists() is False
+    assert report.n_orfaos_avaliacao == _T018_ORFAOS_AVALIACAO
+    assert report.n_ids_colapsados_resolvidos == _T018_IDS_COLAPSADOS
+    linha = AvaliacaoCompetencia.objects.get(
+        avaliacao=canonica, competencia__solides_id='HAB10'
+    )
+    assert linha.nota_autoavaliacao == Decimal('3.00')
+    assert linha.nota_lider == Decimal('4.00')
+    assert AvaliacaoCompetencia.objects.filter(
+        avaliacao=canonica, competencia__solides_id='HAB11'
+    ).count() == 1
+    canonica.refresh_from_db()
+    assert canonica.etapa == etapa
+    assert canonica.concluida == concluida
+    assert canonica.solides_id == '1001'
+
+
+@pytest.mark.django_db
+def test_t018_args_faltando_exit_1_db_inalterado():
+    """T018 / contrato: args obrigatórios ausentes → exit 1; DB intacto."""
+    _t018_seed_world()
+    before = _t018_write_counts()
+    av_before = Avaliacao.objects.count()
+
+    with pytest.raises(CommandError) as exc_info:
+        call_command('importar_notas_comentarios')
+    assert exc_info.value.returncode == 1
+    assert _t018_write_counts() == before
+    assert Avaliacao.objects.count() == av_before
+
+    with pytest.raises(CommandError) as exc_notas:
+        call_command(
+            'importar_notas_comentarios',
+            comentarios=str(_COMENTARIOS_MIN),
+            avaliacoes=str(_AVALIACOES_HEADERS_MIN),
+        )
+    assert exc_notas.value.returncode == 1
+
+    with pytest.raises(CommandError) as exc_com:
+        call_command(
+            'importar_notas_comentarios',
+            notas=str(_NOTAS_MIN),
+            avaliacoes=str(_AVALIACOES_HEADERS_MIN),
+        )
+    assert exc_com.value.returncode == 1
+
+    with pytest.raises(CommandError) as exc_av:
+        call_command(
+            'importar_notas_comentarios',
+            notas=str(_NOTAS_MIN),
+            comentarios=str(_COMENTARIOS_MIN),
+        )
+    assert exc_av.value.returncode == 1
+    assert _t018_write_counts() == before
+    assert AvaliacaoCompetencia.objects.count() == 0
+    assert Feedback.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_t018_arquivo_ausente_exit_1_db_inalterado(tmp_path: Path):
+    """T018: arquivo inexistente → exit 1; DB inalterado (samples nos paths válidos)."""
+    _t018_seed_world()
+    before = _t018_write_counts()
+    av_before = Avaliacao.objects.count()
+    missing = tmp_path / 'notas_inexistente.xlsx'
+    assert not missing.exists()
+    assert 'raw' not in missing.parts
+
+    with pytest.raises(CommandError) as exc_info:
+        call_command(
+            'importar_notas_comentarios',
+            notas=str(missing),
+            comentarios=str(_COMENTARIOS_MIN),
+            avaliacoes=str(_AVALIACOES_HEADERS_MIN),
+        )
+    assert exc_info.value.returncode == 1
+    assert 'não encontrado' in str(exc_info.value).lower()
+    assert _t018_write_counts() == before
+    assert Avaliacao.objects.count() == av_before
+
+    with pytest.raises(LegacyParseError, match='não encontrado'):
+        import_notas_comentarios(
+            missing, _COMENTARIOS_MIN, _AVALIACOES_HEADERS_MIN
+        )
+    assert _t018_write_counts() == before
+    assert AvaliacaoCompetencia.objects.count() == 0
+    assert Feedback.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_t018_arquivo_ooxml_corrompido_exit_1_db_inalterado(tmp_path: Path):
+    """T018: OOXML ilegível → exit 1; nenhuma escrita parcial."""
+    _t018_seed_world()
+    before = _t018_write_counts()
+    av_before = Avaliacao.objects.count()
+    corrupted = tmp_path / 'notas_corrompido.xlsx'
+    corrupted.write_bytes(b'this is not a valid ooxml workbook')
+    assert 'raw' not in corrupted.parts
+
+    with pytest.raises(CommandError) as exc_info:
+        call_command(
+            'importar_notas_comentarios',
+            notas=str(corrupted),
+            comentarios=str(_COMENTARIOS_MIN),
+            avaliacoes=str(_AVALIACOES_HEADERS_MIN),
+        )
+    assert exc_info.value.returncode == 1
+    assert 'ilegível' in str(exc_info.value).lower()
+    assert _t018_write_counts() == before
+    assert Avaliacao.objects.count() == av_before
+
+    with pytest.raises(LegacyParseError):
+        import_notas_comentarios(
+            corrupted, _COMENTARIOS_MIN, _AVALIACOES_HEADERS_MIN
+        )
+    assert _t018_write_counts() == before
+    assert AvaliacaoCompetencia.objects.count() == 0
+    assert Feedback.objects.count() == 0
+
+
+# --- T019: conflitos / write-once / extras / fórmula (samples-only) ---
+
+
+def _t019_snapshot_linhas() -> set[tuple]:
+    """Unique (avaliacao, competencia) + snapshots write-once — SC-005."""
+    return set(
+        AvaliacaoCompetencia.objects.values_list(
+            'avaliacao_id',
+            'competencia_id',
+            'peso_utilizado',
+            'nivel_esperado_utilizado',
+        )
+    )
+
+
+def _t019_mover_para_ciclo_aberto(avaliacao: Avaliacao) -> Ciclo:
+    """Marca a avaliação em ciclo ``status=aberto`` sem ``open_cycle``."""
+    ciclo = Ciclo.objects.create(
+        nome='Ciclo Aberto T019',
+        data_inicio=date(2024, 1, 1),
+        data_fim=date(2024, 12, 31),
+        status=Ciclo.Status.ABERTO,
+    )
+    avaliacao.ciclo = ciclo
+    avaliacao.save(update_fields=['ciclo', 'updated_at'])
+    return ciclo
+
+
+@pytest.mark.django_db
+def test_t019_dois_lideres_divergentes_sem_media():
+    """C4 / R6: HAB12 com dois líderes → conflito; sem média 4.5; sem persistir líder."""
+    avaliacoes = _t018_seed_world()
+    canonica = avaliacoes['1001']
+
+    report = _t018_import_samples()
+
+    assert report.n_conflitos_lider_divergente == _T019_LIDER_DIVERGENTE
+    assert AvaliacaoCompetencia.objects.filter(
+        avaliacao=canonica, competencia__solides_id='HAB12'
+    ).exists() is False
+    hab10 = AvaliacaoCompetencia.objects.get(
+        avaliacao=canonica, competencia__solides_id='HAB10'
+    )
+    assert hab10.nota_autoavaliacao == Decimal('3.00')
+    assert hab10.nota_lider == Decimal('4.00')
+    assert hab10.nota_lider != _T019_MEDIA_PROIBIDA
+    canonica.refresh_from_db()
+    assert canonica.nota_final_lider != _T019_MEDIA_PROIBIDA
+    assert AvaliacaoCompetencia.objects.filter(
+        nota_lider=_T019_MEDIA_PROIBIDA
+    ).exists() is False
+    assert Avaliacao.objects.filter(solides_id='1001').count() == 1
+
+
+@pytest.mark.django_db
+def test_t019_ciclo_aberto_skip_sc012():
+    """C4 / SC-012: avaliação em ciclo ``status=aberto`` → skip; etapa intacta."""
+    avaliacoes = _t018_seed_world()
+    operacional = avaliacoes['3001']
+    etapa = operacional.etapa
+    concluida = operacional.concluida
+    _t019_mover_para_ciclo_aberto(operacional)
+    before_linhas = AvaliacaoCompetencia.objects.filter(
+        avaliacao=operacional
+    ).count()
+    before_av = Avaliacao.objects.count()
+
+    report = _t018_import_samples()
+
+    assert report.n_conflitos_ciclo_aberto == 1
+    assert AvaliacaoCompetencia.objects.filter(avaliacao=operacional).count() == (
+        before_linhas
+    )
+    assert AvaliacaoCompetencia.objects.filter(avaliacao=operacional).exists() is False
+    assert Avaliacao.objects.count() == before_av
+    operacional.refresh_from_db()
+    assert operacional.etapa == etapa
+    assert operacional.concluida == concluida
+    assert operacional.nota_final_lider is None
+    assert operacional.ciclo.status == Ciclo.Status.ABERTO
+    assert AvaliacaoCompetencia.objects.filter(
+        avaliacao=avaliacoes['1001']
+    ).exists() is True
+
+
+@pytest.mark.django_db
+def test_t019_write_once_segunda_run_nao_copia_cargo_competencia():
+    """SC-005: 2ª run snapshots bit-a-bit; CargoCompetencia vigente divergente ignorada."""
+    avaliacoes = _t018_seed_world()
+    canonica = avaliacoes['1001']
+
+    _t018_import_samples()
+    linha = AvaliacaoCompetencia.objects.get(
+        avaliacao=canonica, competencia__solides_id='HAB10'
+    )
+    peso_historico = linha.peso_utilizado
+    nivel_historico = linha.nivel_esperado_utilizado
+    assert peso_historico == Decimal('1.00')
+    assert nivel_historico == Decimal('2.00')
+    pairs_antes = set(
+        AvaliacaoCompetencia.objects.values_list('avaliacao_id', 'competencia_id')
+    )
+    snap_antes = _t019_snapshot_linhas()
+
+    CargoCompetencia.objects.create(
+        cargo=canonica.usuario.cargo,
+        competencia=linha.competencia,
+        nivel_esperado=_T019_CARGO_NIVEL_VIGENTE,
+        peso=_T019_CARGO_PESO_VIGENTE,
+    )
+
+    report = _t018_import_samples()
+
+    linha.refresh_from_db()
+    assert linha.peso_utilizado == peso_historico
+    assert linha.nivel_esperado_utilizado == nivel_historico
+    assert linha.peso_utilizado != _T019_CARGO_PESO_VIGENTE
+    assert linha.nivel_esperado_utilizado != _T019_CARGO_NIVEL_VIGENTE
+    assert _t019_snapshot_linhas() == snap_antes
+    assert set(
+        AvaliacaoCompetencia.objects.values_list('avaliacao_id', 'competencia_id')
+    ) == pairs_antes
+    assert report.notas_criadas == 0
+    tipos = [entry.label for entry in report.conflitos]
+    assert 'snapshot_divergente' not in tipos
+
+
+@pytest.mark.django_db
+def test_t019_habilidade_extra_vs_orfao_kpi_zero_cargo_competencia():
+    """C8 / SC-014: extra não-KPI criada; SLA/ambíguo órfãos; zero CargoCompetencia."""
+    avaliacoes = _t018_seed_world()
+    before_cc = CargoCompetencia.objects.count()
+    before_kpi = Competencia.objects.filter(solides_id__in=('99002', '99003')).count()
+    before_sla = Competencia.objects.filter(nome='SLA').count()
+    before_amb = Competencia.objects.filter(nome='Erros de usabilidade').count()
+
+    report = _t018_import_samples()
+
+    extra = Competencia.objects.get(solides_id='99001')
+    assert extra.nome == 'Habilidade Extra Fixture'
+    assert extra.is_active is True
+    assert AvaliacaoCompetencia.objects.filter(
+        avaliacao=avaliacoes['1001'], competencia=extra
+    ).count() == 1
+    assert Competencia.objects.filter(solides_id='99002').exists() is False
+    assert Competencia.objects.filter(solides_id='99003').exists() is False
+    assert Competencia.objects.filter(nome='SLA').count() == before_sla
+    assert Competencia.objects.filter(nome='Erros de usabilidade').count() == before_amb
+    assert Competencia.objects.filter(solides_id__in=('99002', '99003')).count() == (
+        before_kpi
+    )
+    assert report.habilidades_extras_criadas == _T019_EXTRAS
+    assert report.n_orfaos_competencia == _T019_ORFAOS_COMPETENCIA
+    assert CargoCompetencia.objects.count() == before_cc
+    assert CargoCompetencia.objects.filter(competencia=extra).count() == 0
+    assert CargoCompetencia.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_t019_formula_chamada_sem_create_competency_lines():
+    """C5: ``calcular_nota_final_lider`` é chamado; ``create_competency_lines`` não."""
+    avaliacoes = _t018_seed_world()
+    canonica = avaliacoes['1001']
+    gestor = avaliacoes['3001']
+    etapa = canonica.etapa
+    concluida = canonica.concluida
+
+    with (
+        patch(
+            'apps.reviews.services.evaluation.create_competency_lines'
+        ) as spy_lines,
+        patch(
+            'apps.reviews.services.legacy_import.importer.calcular_nota_final_lider',
+            wraps=calcular_nota_final_lider,
+        ) as spy_calc,
+    ):
+        report = _t018_import_samples()
+
+    spy_lines.assert_not_called()
+    assert spy_calc.called
+    tipos = [entry.label for entry in report.conflitos]
+    assert 'calculo_lider' in tipos
+    canonica.refresh_from_db()
+    gestor.refresh_from_db()
+    assert canonica.nota_final_lider is None
+    assert canonica.nota_final_lider != _T019_MEDIA_PROIBIDA
+    assert gestor.nota_final_lider is not None
+    assert gestor.nota_final_lider != _T019_MEDIA_PROIBIDA
+    assert canonica.etapa == etapa
+    assert canonica.concluida == concluida
+    assert AvaliacaoCompetencia.objects.filter(avaliacao=canonica).exists() is True
+
+
+@pytest.mark.django_db
+def test_t019_calculation_error_vira_conflito_sem_media():
+    """C5: CalculationError → conflito; ``nota_final_*`` não é média inventada."""
+    avaliacoes = _t018_seed_world()
+    gestor = avaliacoes['3001']
+    canonica = avaliacoes['1001']
+
+    with (
+        patch(
+            'apps.reviews.services.evaluation.create_competency_lines'
+        ) as spy_lines,
+        patch(
+            'apps.reviews.services.legacy_import.importer.calcular_nota_final_lider',
+            side_effect=CalculationError('Soma de peso_utilizado igual a zero'),
+        ) as spy_calc,
+    ):
+        report = _t018_import_samples()
+
+    spy_lines.assert_not_called()
+    assert spy_calc.called
+    tipos = [entry.label for entry in report.conflitos]
+    assert 'calculo_lider' in tipos
+    assert AvaliacaoCompetencia.objects.count() == _T018_NOTAS_CRIADAS
+    gestor.refresh_from_db()
+    canonica.refresh_from_db()
+    assert gestor.nota_final_lider is None
+    assert canonica.nota_final_lider is None
+    assert gestor.nota_final_lider != _T019_MEDIA_PROIBIDA
+    assert canonica.nota_final_lider != _T019_MEDIA_PROIBIDA
+    assert Avaliacao.objects.exclude(nota_final_lider__isnull=True).count() == 0
+    assert AvaliacaoCompetencia.objects.filter(
+        nota_lider=_T019_MEDIA_PROIBIDA
+    ).exists() is False
+
+
+# --- T020: comentários / PII / raw/ / teste de ouro (samples-only) ---
+
+
+def _t020_etapa_snapshot() -> dict[int, tuple[str, bool, int, str]]:
+    """``(etapa, concluida, ciclo_id, ciclo.status)`` por avaliação — SC-013."""
+    return {
+        av.pk: (av.etapa, av.concluida, av.ciclo_id, av.ciclo.status)
+        for av in Avaliacao.objects.select_related('ciclo')
+    }
+
+
+def _t020_iter_allowlist_py() -> list[Path]:
+    files: list[Path] = []
+    for rel in _T020_ALLOWLIST_PY:
+        path = _REPO_ROOT / rel
+        if path.is_file():
+            files.append(path)
+            continue
+        files.extend(sorted(path.rglob('*.py')))
+    return files
+
+
+def _t020_assert_report_sem_pii(text: str) -> None:
+    """SC-010 / C10: amostra ≤ 5; zero comentário/nome/e-mail completos."""
+    for token in _T020_PII:
+        assert token not in text, token
+        assert token.lower() not in text.lower(), token
+    sections = _amostra_items_by_section(text)
+    assert sections
+    for header, items in sections.items():
+        assert len(items) <= _SAMPLE_MAX, header
+        for item in items:
+            for token in _T020_PII:
+                assert token not in item, (header, token)
+
+
+@pytest.mark.django_db
+def test_t020_comentarios_tipo_ciencia_n_textos_chave_natural():
+    """SC-007 / C6: tipo, ciente_em líder, auto null, N textos, sem duplicata."""
+    avaliacoes = _t018_seed_world()
+    canonica = avaliacoes['1001']
+    ana = CustomUser.objects.get(solides_id='101')
+    gestor = CustomUser.objects.get(solides_id='100')
+    bruno = CustomUser.objects.get(solides_id='102')
+    etapa = canonica.etapa
+    concluida = canonica.concluida
+    before_users = CustomUser.objects.count()
+    before_av = Avaliacao.objects.count()
+
+    report = _t018_import_samples()
+
+    assert report.comentarios_criados == _T018_COMENTARIOS_CRIADOS
+    assert report.n_orfaos_autor == _T018_ORFAOS_AUTOR
+    assert Feedback.objects.filter(avaliacao=canonica).count() == 4
+    assert Feedback.objects.count() == 4
+    assert set(
+        Feedback.objects.filter(avaliacao=canonica).values_list(
+            'conteudo', flat=True
+        )
+    ) == {_T020_LIDER_A, _T020_LIDER_B, _T020_AUTO, _T020_COLAPSADO}
+    assert Feedback.objects.filter(conteudo=_T020_ORFAO_TEXTO).exists() is False
+
+    lider_gestor = list(
+        Feedback.objects.filter(
+            avaliacao=canonica, autor=gestor, tipo=Feedback.Tipo.LIDER
+        ).order_by('pk')
+    )
+    assert len(lider_gestor) == 2
+    expected_a = parse_legacy_datetime(45446.5)
+    expected_b = parse_legacy_datetime(45447)
+    by_conteudo = {fb.conteudo: fb for fb in lider_gestor}
+    assert abs(
+        (by_conteudo[_T020_LIDER_A].ciente_em - expected_a).total_seconds()
+    ) < 0.001
+    assert abs(
+        (by_conteudo[_T020_LIDER_B].ciente_em - expected_b).total_seconds()
+    ) < 0.001
+    for fb in lider_gestor:
+        assert fb.tipo == Feedback.Tipo.LIDER
+        assert fb.ciente_em is not None
+
+    auto_fb = Feedback.objects.get(
+        avaliacao=canonica, tipo=Feedback.Tipo.COLABORADOR
+    )
+    assert auto_fb.autor_id == ana.pk
+    assert auto_fb.conteudo == _T020_AUTO
+    assert auto_fb.ciente_em is None
+
+    colapsado_fb = Feedback.objects.get(conteudo=_T020_COLAPSADO)
+    assert colapsado_fb.avaliacao_id == canonica.pk
+    assert colapsado_fb.autor_id == bruno.pk
+    assert colapsado_fb.tipo == Feedback.Tipo.LIDER
+    expected_c = parse_legacy_datetime(45323.25)
+    assert abs((colapsado_fb.ciente_em - expected_c).total_seconds()) < 0.001
+    assert Avaliacao.objects.filter(solides_id='1002').exists() is False
+
+    pks_antes = set(Feedback.objects.values_list('pk', flat=True))
+    conteudos_antes = set(
+        Feedback.objects.values_list('pk', 'conteudo', 'tipo')
+    )
+    second = _t018_import_samples()
+    assert second.comentarios_criados == 0
+    assert second.comentarios_inalterados == _T018_COMENTARIOS_CRIADOS
+    assert Feedback.objects.count() == 4
+    assert set(Feedback.objects.values_list('pk', flat=True)) == pks_antes
+    assert set(Feedback.objects.values_list('pk', 'conteudo', 'tipo')) == (
+        conteudos_antes
+    )
+    by_conteudo[_T020_LIDER_A].refresh_from_db()
+    assert by_conteudo[_T020_LIDER_A].conteudo == _T020_LIDER_A
+
+    canonica.refresh_from_db()
+    assert canonica.etapa == etapa
+    assert canonica.concluida == concluida
+    assert CustomUser.objects.count() == before_users
+    assert CustomUser.objects.filter(solides_id='88888').exists() is False
+    assert Avaliacao.objects.count() == before_av
+    assert Avaliacao.objects.filter(solides_id='1001').count() == 1
+
+
+@pytest.mark.django_db
+def test_t020_relatorio_mascara_pii_max_5(tmp_path: Path):
+    """SC-010 / C10: stdout == --report-file; amostra ≤ 5; zero PII completa."""
+    _t018_seed_world()
+    report_path = tmp_path / 'relatorio-notas-comentarios.txt'
+    stdout = StringIO()
+    assert 'raw' not in report_path.parts
+
+    result = call_command(
+        'importar_notas_comentarios',
+        notas=str(_NOTAS_MIN),
+        comentarios=str(_COMENTARIOS_MIN),
+        avaliacoes=str(_AVALIACOES_HEADERS_MIN),
+        report_file=str(report_path),
+        stdout=stdout,
+    )
+
+    text = stdout.getvalue()
+    file_text = report_path.read_text(encoding='utf-8')
+    assert result in (0, None)
+    assert file_text == text
+    assert '=== Importação notas/comentários legado Sólides ===' in text
+    assert 'modo: persist' in text
+    assert f'comentarios_criados: {_T018_COMENTARIOS_CRIADOS}' in text
+    assert f'orfaos_autor: {_T018_ORFAOS_AUTOR}' in text
+    assert '--- Amostra (mascarada, max 5 por seção) ---' in text
+    assert mask_solides_id('1001') in text
+    _t020_assert_report_sem_pii(text)
+    sections = _amostra_items_by_section(text)
+    assert 'comentarios_criados:' in sections
+    assert len(sections['comentarios_criados:']) == _T018_COMENTARIOS_CRIADOS
+    assert len(sections['orfaos_autor:']) == _T018_ORFAOS_AUTOR
+    for item in sections['comentarios_criados:']:
+        assert 'avaliacao=' in item
+        assert 'autor=' in item
+        assert 'tipo=' in item
+        assert 'conteudo=' not in item
+        assert 'Comentário' not in item
+
+
+def test_t020_suite_nao_referencia_raw():
+    """SC-009 / C9: suíte e allowlist não apontam para backups PII ``raw/``."""
+    _t018_assert_samples_only()
+    suite = Path(__file__).read_text(encoding='utf-8')
+    assert _RAW_PII_DIR not in suite
+    for rel in _t020_iter_allowlist_py():
+        blob = rel.read_text(encoding='utf-8')
+        assert _RAW_PII_DIR not in blob, rel
+        assert 'legado-solides/raw' not in blob, rel
+        assert 'raw' not in rel.parts
+    for path in (_NOTAS_MIN, _COMENTARIOS_MIN, _AVALIACOES_HEADERS_MIN):
+        resolved = path.resolve()
+        assert 'raw' not in resolved.parts
+        assert _RAW_PII_DIR not in str(resolved)
+
+
+@pytest.mark.django_db
+def test_t020_ouro_import_nao_muta_etapa_concluida():
+    """SC-013: executar o import não altera ``etapa``/``concluida`` nem ciclo."""
+    avaliacoes = _t018_seed_world()
+    canonica = avaliacoes['1001']
+    before = _t020_etapa_snapshot()
+    before_status = {
+        ciclo.pk: ciclo.status for ciclo in Ciclo.objects.all()
+    }
+
+    _t018_import_samples()
+
+    assert _t020_etapa_snapshot() == before
+    assert {
+        ciclo.pk: ciclo.status for ciclo in Ciclo.objects.all()
+    } == before_status
+    canonica.refresh_from_db()
+    assert canonica.etapa == Avaliacao.Etapa.FEEDBACK
+    assert canonica.concluida is True
+    importer = (
+        _REPO_ROOT / 'apps/reviews/services/legacy_import/importer.py'
+    ).read_text(encoding='utf-8')
+    command = _IMPORT_NOTAS_COMMAND.read_text(encoding='utf-8')
+    assert '.etapa =' not in importer
+    assert '.concluida =' not in importer
+    assert '.etapa =' not in command
+    assert '.concluida =' not in command
+
+
+@pytest.mark.skipif(
+    shutil.which('git') is None,
+    reason='git ausente no PATH (ex. container web sem git)',
+)
+def test_t020_ouro_git_diff_denylist_vazio():
+    """SC-013: denylist + asserts de stage/scope/reject intactos."""
+    evaluation_diff = _git_diff(
+        'HEAD', '--', 'apps/reviews/services/evaluation.py'
+    )
+    assert evaluation_diff == '', evaluation_diff
+
+    working_tree = _git_diff('HEAD', '--', *_DENYLIST_PATHS)
+    assert working_tree == '', working_tree
+
+    stage_scope = _git_diff('HEAD', '--', *_STAGE_SCOPE_REJECT_TESTS)
+    assert stage_scope == '', stage_scope
+
+    for base in ('development', 'origin/development', 'main'):
+        if _git_rev_exists(base):
+            vs_base = _git_diff(base, '--', *_DENYLIST_PATHS)
+            assert vs_base == '', vs_base
+            vs_tests = _git_diff(base, '--', *_STAGE_SCOPE_REJECT_TESTS)
+            assert vs_tests == '', vs_tests
+            break
+
+
+# --- T021: dry-run consolidado + falha pré-persistência + rollback atômico ---
+
+
+def test_t021_command_nao_e_mais_stub_dry_run():
+    """T021: CLI/importer deixam o stub ``set_rollback``; dry-run é zero write."""
+    command = _IMPORT_NOTAS_COMMAND.read_text(encoding='utf-8')
+    importer = (
+        _REPO_ROOT / 'apps/reviews/services/legacy_import/importer.py'
+    ).read_text(encoding='utf-8')
+    assert 'stub até US3' not in command
+    assert 'set_rollback' not in command
+    assert 'set_rollback' not in importer
+    assert 'transaction.atomic' in command
+    assert 'transaction.atomic' in importer
+    assert 'zero save/create/update' in command
+
+
+@pytest.mark.django_db
+def test_t021_dry_run_zero_save_create_update_e_formula():
+    """T021 / SC-008: dry-run não chama save/create/update nem a fórmula."""
+    _t018_seed_world()
+    before_comp = Competencia.objects.count()
+    before_extra = Competencia.objects.filter(solides_id='99001').count()
+
+    with (
+        patch.object(AvaliacaoCompetencia, 'save') as ac_save,
+        patch.object(Feedback, 'save') as fb_save,
+        patch.object(Competencia, 'save') as comp_save,
+        patch.object(Avaliacao, 'save') as av_save,
+        patch.object(CustomUser, 'save') as user_save,
+        patch.object(Ciclo, 'save') as ciclo_save,
+        patch(
+            'apps.reviews.services.legacy_import.importer.calcular_nota_final_lider'
+        ) as spy_lider,
+        patch(
+            'apps.reviews.services.legacy_import.importer.'
+            'calcular_nota_final_autoavaliacao'
+        ) as spy_auto,
+    ):
+        report = _t018_import_samples(dry_run=True)
+
+    ac_save.assert_not_called()
+    fb_save.assert_not_called()
+    comp_save.assert_not_called()
+    av_save.assert_not_called()
+    user_save.assert_not_called()
+    ciclo_save.assert_not_called()
+    spy_lider.assert_not_called()
+    spy_auto.assert_not_called()
+    assert report.modo == 'dry-run'
+    assert report.notas_criadas == _T018_NOTAS_CRIADAS
+    assert report.comentarios_criados == _T018_COMENTARIOS_CRIADOS
+    assert report.habilidades_extras_criadas == _T019_EXTRAS
+    assert Competencia.objects.count() == before_comp
+    assert Competencia.objects.filter(solides_id='99001').count() == before_extra
+    assert AvaliacaoCompetencia.objects.count() == 0
+    assert Feedback.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_t021_colunas_obrigatorias_ausentes_exit_1_db_inalterado(tmp_path: Path):
+    """T021: colunas obrigatórias ausentes → exit 1; nenhuma escrita."""
+    _t018_seed_world()
+    before = _t018_write_counts()
+    av_before = Avaliacao.objects.count()
+    notas_sem_nota = _write_xlsx(
+        tmp_path / 'notas_sem_coluna.xlsx',
+        [h for h in _NOTAS_HEADERS if h != 'Nota'],
+        [
+            _nota_row(
+                ident='n1',
+                avaliacao_id='1001',
+                avaliador='Ana Silva',
+                avaliado='Ana Silva',
+                nota=3,
+            )[:-1],
+        ],
+    )
+    comentarios = _write_xlsx(
+        tmp_path / 'comentarios.xlsx',
+        _COMENTARIOS_HEADERS,
+        [],
+    )
+    avaliacoes = _write_xlsx(
+        tmp_path / 'avaliacoes.xlsx',
+        _AVALIACOES_HEADERS,
+        [_header_row('1001', nome_avaliado='Ana Silva', nome_avaliador='Ana Silva')],
+    )
+    assert 'raw' not in notas_sem_nota.parts
+
+    with pytest.raises(CommandError) as exc_info:
+        call_command(
+            'importar_notas_comentarios',
+            notas=str(notas_sem_nota),
+            comentarios=str(comentarios),
+            avaliacoes=str(avaliacoes),
+        )
+    assert exc_info.value.returncode == 1
+    assert 'obrigat' in str(exc_info.value).lower()
+    assert _t018_write_counts() == before
+    assert Avaliacao.objects.count() == av_before
+    assert AvaliacaoCompetencia.objects.count() == 0
+    assert Feedback.objects.count() == 0
+
+    with pytest.raises(LegacyParseError, match='obrigat'):
+        import_notas_comentarios(notas_sem_nota, comentarios, avaliacoes)
+    assert _t018_write_counts() == before
+
+
+@pytest.mark.django_db
+def test_t021_rollback_atomico_das_duas_fases():
+    """T021: exceção na fase comentários desfaz notas da mesma atomic."""
+    _t018_seed_world()
+    before = _t018_write_counts()
+    notas_finais = _t018_nota_final_snapshot()
+    extras_antes = Competencia.objects.filter(solides_id='99001').count()
+
+    with patch(
+        'apps.reviews.services.legacy_import.importer._upsert_feedback',
+        side_effect=RuntimeError('falha na fase comentarios'),
+    ):
+        with pytest.raises(LegacyPersistError, match='fase comentarios'):
+            _t018_import_samples()
+
+    assert _t018_write_counts() == before
+    assert _t018_nota_final_snapshot() == notas_finais
+    assert AvaliacaoCompetencia.objects.count() == 0
+    assert Feedback.objects.count() == 0
+    assert Competencia.objects.filter(solides_id='99001').count() == extras_antes
+    assert Avaliacao.objects.filter(solides_id='1002').exists() is False
+
+
+# --- T022: idempotência consolidada (SC-005 / C7) ---
+
+
+def _t022_avaliacao_ciclo_usuario_keys() -> set[tuple[int, int]]:
+    """Delta ``Avaliacao`` por ``(ciclo, usuario)`` — SC-005 / T022."""
+    return set(Avaliacao.objects.values_list('ciclo_id', 'usuario_id'))
+
+
+def _t022_competencia_pairs() -> set[tuple[int, int]]:
+    return set(
+        AvaliacaoCompetencia.objects.values_list('avaliacao_id', 'competencia_id')
+    )
+
+
+def _t022_feedback_fingerprint() -> set[tuple]:
+    return set(
+        Feedback.objects.values_list(
+            'pk', 'avaliacao_id', 'autor_id', 'tipo', 'conteudo'
+        )
+    )
+
+
+def test_t022_importer_nao_inventa_nem_apaga_avaliacao():
+    """T022: importer não cria/apaga ``Avaliacao``; update só ``nota_*``."""
+    importer = (
+        _REPO_ROOT / 'apps/reviews/services/legacy_import/importer.py'
+    ).read_text(encoding='utf-8')
+    assert 'Avaliacao.objects.create' not in importer
+    assert 'get_or_create' not in importer
+    assert '.delete()' not in importer
+    assert '_NOTA_UPDATE_FIELDS' in importer
+    assert "('nota_autoavaliacao', 'nota_lider', 'updated_at')" in importer
+    assert 'delta Avaliacao por (ciclo, usuario)' in importer
+
+
+@pytest.mark.django_db
+def test_t022_segunda_run_samples_delta_zero_sc005():
+    """C7 / SC-005: 2ª run idêntica → delta linhas/feedback/Avaliacao = 0."""
+    _t018_seed_world()
+    first = _t018_import_samples()
+    assert first.notas_criadas == _T018_NOTAS_CRIADAS
+    assert first.comentarios_criados == _T018_COMENTARIOS_CRIADOS
+
+    pairs = _t022_competencia_pairs()
+    snaps = _t019_snapshot_linhas()
+    feedbacks = _t022_feedback_fingerprint()
+    av_keys = _t022_avaliacao_ciclo_usuario_keys()
+    av_count = Avaliacao.objects.count()
+    av_ids = set(Avaliacao.objects.values_list('pk', 'solides_id'))
+    linha_count = AvaliacaoCompetencia.objects.count()
+    fb_count = Feedback.objects.count()
+    extra_pk = Competencia.objects.get(solides_id='99001').pk
+
+    second = _t018_import_samples()
+
+    assert second.notas_criadas == 0
+    assert second.notas_atualizadas == 0
+    assert second.notas_inalteradas == _T018_NOTAS_CRIADAS
+    assert second.comentarios_criados == 0
+    assert second.comentarios_inalterados == _T018_COMENTARIOS_CRIADOS
+    assert second.habilidades_extras_criadas == 0
+    assert _t022_competencia_pairs() == pairs
+    assert _t019_snapshot_linhas() == snaps
+    assert _t022_feedback_fingerprint() == feedbacks
+    assert _t022_avaliacao_ciclo_usuario_keys() == av_keys
+    assert Avaliacao.objects.count() == av_count
+    assert set(Avaliacao.objects.values_list('pk', 'solides_id')) == av_ids
+    assert AvaliacaoCompetencia.objects.count() == linha_count
+    assert Feedback.objects.count() == fb_count
+    assert Avaliacao.objects.filter(solides_id='1002').exists() is False
+    assert Competencia.objects.get(solides_id='99001').pk == extra_pk
+    tipos = [entry.label for entry in second.conflitos]
+    assert 'snapshot_divergente' not in tipos
+
+
+@pytest.mark.django_db
+def test_t022_update_so_nota_snapshots_bit_a_bit(colaborador, tmp_path):
+    """T022: 2ª run com Nota diferente atualiza só ``nota_*``; snapshots estáveis."""
+    competencia = _t009_catalogo()
+    avaliacao = _t009_avaliacao(colaborador)
+    nome = colaborador.nome
+    header = [
+        _header_row(
+            '1001',
+            nome_avaliado=nome,
+            nome_avaliador=nome,
+        )
+    ]
+    notas_v1, comentarios_path, avaliacoes = _t009_paths(
+        tmp_path,
+        notas_rows=[
+            _nota_row(
+                ident='n1',
+                avaliacao_id='1001',
+                avaliador=nome,
+                avaliado=nome,
+                fator=1,
+                nota=3,
+            )
+        ],
+        header_rows=header,
+    )
+    before_av = Avaliacao.objects.count()
+    av_keys = _t022_avaliacao_ciclo_usuario_keys()
+
+    import_notas_comentarios(notas_v1, comentarios_path, avaliacoes)
+    linha = AvaliacaoCompetencia.objects.get(
+        avaliacao=avaliacao, competencia=competencia
+    )
+    peso = linha.peso_utilizado
+    nivel = linha.nivel_esperado_utilizado
+    pk = linha.pk
+    assert linha.nota_autoavaliacao == Decimal('3.00')
+
+    notas_v2 = _write_xlsx(
+        tmp_path / 'notas_v2.xlsx',
+        _NOTAS_HEADERS,
+        [
+            _nota_row(
+                ident='n1',
+                avaliacao_id='1001',
+                avaliador=nome,
+                avaliado=nome,
+                fator=1,
+                nota=4,
+            )
+        ],
+    )
+    saves: list[dict] = []
+    orig_save = AvaliacaoCompetencia.save
+
+    def _spy_save(self, *args, **kwargs):
+        saves.append(dict(kwargs))
+        return orig_save(self, *args, **kwargs)
+
+    with (
+        patch.object(AvaliacaoCompetencia, 'save', _spy_save),
+        patch.object(AvaliacaoCompetencia, 'delete') as ac_del,
+        patch.object(Avaliacao, 'delete') as av_del,
+    ):
+        report = import_notas_comentarios(notas_v2, comentarios_path, avaliacoes)
+
+    ac_del.assert_not_called()
+    av_del.assert_not_called()
+    assert report.notas_criadas == 0
+    assert report.notas_atualizadas == 1
+    assert report.notas_inalteradas == 0
+    linha.refresh_from_db()
+    assert linha.pk == pk
+    assert linha.nota_autoavaliacao == Decimal('4.00')
+    assert linha.peso_utilizado == peso
+    assert linha.nivel_esperado_utilizado == nivel
+    assert Avaliacao.objects.count() == before_av
+    assert _t022_avaliacao_ciclo_usuario_keys() == av_keys
+    assert AvaliacaoCompetencia.objects.count() == 1
+    assert saves
+    for kwargs in saves:
+        fields = kwargs.get('update_fields')
+        assert fields is not None
+        assert 'peso_utilizado' not in fields
+        assert 'nivel_esperado_utilizado' not in fields
+        assert 'nota_autoavaliacao' in fields
+
+
+@pytest.mark.django_db
+def test_t022_snapshot_divergente_nao_apaga_linha_nem_avaliacao(
+    colaborador, tmp_path
+):
+    """T022: Fator diverge → ``snapshot_divergente``; linha e Avaliacao ficam."""
+    competencia = _t009_catalogo()
+    avaliacao = _t009_avaliacao(colaborador)
+    nome = colaborador.nome
+    header = [
+        _header_row(
+            '1001',
+            nome_avaliado=nome,
+            nome_avaliador=nome,
+        )
+    ]
+    notas_v1, comentarios, avaliacoes = _t009_paths(
+        tmp_path,
+        notas_rows=[
+            _nota_row(
+                ident='n1',
+                avaliacao_id='1001',
+                avaliador=nome,
+                avaliado=nome,
+                fator=1,
+                nota=4,
+            )
+        ],
+        header_rows=header,
+    )
+    import_notas_comentarios(notas_v1, comentarios, avaliacoes)
+    linha = AvaliacaoCompetencia.objects.get(
+        avaliacao=avaliacao, competencia=competencia
+    )
+    pk = linha.pk
+    peso = linha.peso_utilizado
+    nivel = linha.nivel_esperado_utilizado
+    av_pk = avaliacao.pk
+    av_keys = _t022_avaliacao_ciclo_usuario_keys()
+
+    notas_v2 = _write_xlsx(
+        tmp_path / 'notas_fator_diverge.xlsx',
+        _NOTAS_HEADERS,
+        [
+            _nota_row(
+                ident='n1',
+                avaliacao_id='1001',
+                avaliador=nome,
+                avaliado=nome,
+                fator=2,
+                nota=4,
+            )
+        ],
+    )
+    with (
+        patch.object(AvaliacaoCompetencia, 'delete') as ac_del,
+        patch.object(Avaliacao, 'delete') as av_del,
+    ):
+        report = import_notas_comentarios(notas_v2, comentarios, avaliacoes)
+
+    ac_del.assert_not_called()
+    av_del.assert_not_called()
+    tipos = [entry.label for entry in report.conflitos]
+    assert 'snapshot_divergente' in tipos
+    assert report.notas_criadas == 0
+    assert AvaliacaoCompetencia.objects.filter(pk=pk).exists() is True
+    linha.refresh_from_db()
+    assert linha.peso_utilizado == peso == Decimal('1.00')
+    assert linha.nivel_esperado_utilizado == nivel
+    assert linha.nota_autoavaliacao == Decimal('4.00')
+    assert Avaliacao.objects.filter(pk=av_pk).exists() is True
+    assert Avaliacao.objects.count() == 1
+    assert _t022_avaliacao_ciclo_usuario_keys() == av_keys
+    avaliacao.refresh_from_db()
+    assert avaliacao.etapa == Avaliacao.Etapa.FEEDBACK
+    assert avaliacao.concluida is True
+
+
+@pytest.mark.django_db
+def test_t022_feedback_chave_natural_nao_reescreve_conteudo(
+    colaborador, lider, tmp_path
+):
+    """T022: match da chave natural não duplica nem reescreve ``conteudo``."""
+    _t013_solides_ids(colaborador, lider)
+    avaliacao = _t009_avaliacao(colaborador)
+    criado = datetime(2024, 6, 3, 14, 30, 0)
+    original = 'Desempenho consistente no trimestre.'
+    notas, comentarios, avaliacoes = _t009_paths(
+        tmp_path,
+        notas_rows=[],
+        header_rows=[
+            _header_row(
+                '1001',
+                nome_avaliado=colaborador.nome,
+                nome_avaliador=colaborador.nome,
+            )
+        ],
+        comentarios_rows=[
+            _comentario_row(
+                avaliacao_id='1001',
+                avaliador_id='201',
+                avaliador=lider.nome,
+                avaliado=colaborador.nome,
+                comentario=original,
+                criado_em=criado,
+            )
+        ],
+    )
+    av_keys = _t022_avaliacao_ciclo_usuario_keys()
+    first = import_notas_comentarios(notas, comentarios, avaliacoes)
+    assert first.comentarios_criados == 1
+    fb = Feedback.objects.get(avaliacao=avaliacao)
+    fb_pk = fb.pk
+    grafia = '  Desempenho   consistente no trimestre.  '
+    Feedback.objects.filter(pk=fb_pk).update(conteudo=grafia)
+    fb.refresh_from_db()
+    assert fb.conteudo == grafia
+
+    saves: list = []
+    orig_save = Feedback.save
+
+    def _spy_save(self, *args, **kwargs):
+        saves.append(self.pk)
+        return orig_save(self, *args, **kwargs)
+
+    with patch.object(Feedback, 'save', _spy_save):
+        second = import_notas_comentarios(notas, comentarios, avaliacoes)
+
+    assert second.comentarios_criados == 0
+    assert second.comentarios_inalterados == 1
+    assert Feedback.objects.count() == 1
+    assert set(Feedback.objects.values_list('pk', flat=True)) == {fb_pk}
+    fb.refresh_from_db()
+    assert fb.conteudo == grafia
+    assert fb.conteudo != original
+    assert saves == []
+    assert _t022_avaliacao_ciclo_usuario_keys() == av_keys
+    assert Avaliacao.objects.count() == 1
 
 

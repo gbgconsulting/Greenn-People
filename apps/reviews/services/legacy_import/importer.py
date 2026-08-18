@@ -6,12 +6,20 @@ do persist; upsert ``AvaliacaoCompetencia``; snapshots write-once;
 ``calcular_nota_final_*`` após o lote de cada avaliação tocada.
 T013: fase Comentários — ``Feedback`` append-only (tipo auto/líder,
 ``ciente_em`` no líder, chave natural, N por avaliação). T021:
-``--dry-run`` + atomicidade das duas fases (dry-run já usa
-``set_rollback`` no padrão 010/011).
+``--dry-run`` = parse + mapa + totais projetados com **zero**
+``save``/``create``/``update`` (não entra no atomic de write);
+falha fatal pré-persistência (arquivo/OOXML/colunas) → exit 1;
+persist = uma ``transaction.atomic()`` cobre as duas fases (exceção
+→ rollback completo). T022: idempotência — unique
+``(avaliacao, competencia)`` atualiza só ``nota_*`` (snapshots
+bit-a-bit; ``snapshot_divergente`` sem apagar); Feedback pela chave
+natural sem duplicar nem reescrever ``conteudo``; delta ``Avaliacao``
+por ``(ciclo, usuario)`` = 0.
 
 Ordem normativa (``contracts/import-command-contract.md``):
 parse notas → parse comentários → mapa ``--avaliacoes`` (011, só memória) →
-fase Notas → ``calcular_nota_final_*`` → fase Comentários, na mesma
+se dry-run: projetar totais e sair; senão fase Notas →
+``calcular_nota_final_*`` → fase Comentários, na mesma
 ``transaction.atomic()``.
 
 Denylist intacta — **nunca** chama ``open_cycle`` / ``close_cycle`` /
@@ -84,6 +92,9 @@ from apps.reviews.services.legacy_import.snapshots import (
 )
 
 _NOTA_QUANT = Decimal('0.01')
+# T022: reexecução da unique ``(avaliacao, competencia)`` — nunca reenviar
+# snapshots no ``save()`` (write-once vive em ``AvaliacaoCompetencia.save``).
+_NOTA_UPDATE_FIELDS = ('nota_autoavaliacao', 'nota_lider', 'updated_at')
 
 
 class LegacySchemaError(Exception):
@@ -115,6 +126,14 @@ class _NotaGroup:
     rows: list[NotaRow] = field(default_factory=list)
 
 
+@dataclass
+class _ImportCtx:
+    """Contexto da run: persist vs projeção; extras criados nesta execução."""
+
+    persist: bool
+    extras: dict[str, Any] = field(default_factory=dict)
+
+
 def import_notas_comentarios(
     notas_path: str | Path,
     comentarios_path: str | Path,
@@ -132,8 +151,11 @@ def import_notas_comentarios(
     ``--habilidades`` é opcional (extras só como FK de nota, R11).
 
     T009: fase Notas + ``calcular_nota_final_*``. T013: fase Comentários
-    (``Feedback`` append-only). T021: dry-run consolidado (aqui:
-    ``set_rollback``).
+    (``Feedback`` append-only). T021: ``--dry-run`` projeta totais **sem**
+    ``save``/``create``/``update`` e **sem** entrar no atomic de write;
+    persist cobre as duas fases numa única ``transaction.atomic()``.
+    T022: 2ª run não inventa ``Avaliacao``; upsert de linha só muta
+    ``nota_*``; Feedback match não reescreve ``conteudo``.
     """
     notas_file, comentarios_file, avaliacoes_file, hab_file = (
         _validate_required_paths(
@@ -163,23 +185,32 @@ def import_notas_comentarios(
         avaliacoes_file=str(avaliacoes_file),
         habilidades_file=habilidades_file,
     )
+    ctx = _ImportCtx(persist=not dry_run)
 
-    with transaction.atomic():
-        try:
-            _persist_fase_notas(
-                parsed_notas.rows,
-                mapa,
-                habilidades_by_id,
-                report,
-            )
-            _persist_fase_comentarios(parsed_comentarios.rows, mapa, report)
-        except LegacyPersistError:
-            raise
-        except Exception as exc:
-            raise LegacyPersistError(str(exc)) from exc
-        finally:
-            if dry_run:
-                transaction.set_rollback(True)
+    if ctx.persist:
+        with transaction.atomic():
+            try:
+                _run_fases(
+                    parsed_notas.rows,
+                    parsed_comentarios.rows,
+                    mapa,
+                    habilidades_by_id,
+                    report,
+                    ctx,
+                )
+            except LegacyPersistError:
+                raise
+            except Exception as exc:
+                raise LegacyPersistError(str(exc)) from exc
+    else:
+        _run_fases(
+            parsed_notas.rows,
+            parsed_comentarios.rows,
+            mapa,
+            habilidades_by_id,
+            report,
+            ctx,
+        )
 
     return report
 
@@ -208,24 +239,63 @@ def _validate_required_paths(
     return notas_file, comentarios_file, avaliacoes_file, hab_file
 
 
+def _run_fases(
+    nota_rows: Sequence[NotaRow],
+    comentario_rows: Sequence[ComentarioRow],
+    mapa: Mapping[str, str],
+    habilidades_by_id: Mapping[str, HabilidadeRow],
+    report: ImportReport,
+    ctx: _ImportCtx,
+) -> None:
+    """Notas → fórmula (só persist) → comentários. Uma atomic no caller persist.
+
+    T022: captura ``(ciclo, usuario)`` antes e exige delta 0 — esta fatia
+    **não** inventa ``Avaliacao`` (011). Violação → ``LegacyPersistError``
+    (rollback no persist).
+    """
+    keys_before = _avaliacao_ciclo_usuario_keys()
+    _persist_fase_notas(nota_rows, mapa, habilidades_by_id, report, ctx)
+    _persist_fase_comentarios(comentario_rows, mapa, report, ctx)
+    _assert_avaliacao_delta_zero(keys_before)
+
+
+def _avaliacao_ciclo_usuario_keys() -> set[tuple[int, int]]:
+    """Pares ``(ciclo_id, usuario_id)`` — unique vigente; T022 delta = 0."""
+    return set(Avaliacao.objects.values_list('ciclo_id', 'usuario_id'))
+
+
+def _assert_avaliacao_delta_zero(keys_before: set[tuple[int, int]]) -> None:
+    """SC-005 / T022: não criar nem apagar ``Avaliacao`` desta fatia."""
+    keys_after = _avaliacao_ciclo_usuario_keys()
+    if keys_after != keys_before:
+        raise LegacyPersistError(
+            'delta Avaliacao por (ciclo, usuario) deve ser 0 '
+            '(esta fatia não inventa nem apaga cabeçalho 011)'
+        )
+
+
 def _persist_fase_notas(
     rows: Sequence[NotaRow],
     mapa: Mapping[str, str],
     habilidades_by_id: Mapping[str, HabilidadeRow],
     report: ImportReport,
+    ctx: _ImportCtx,
 ) -> None:
     """Fase Notas (T009 / R4–R9): agrupa → upsert → fórmula.
 
     **PROIBIDO** ``create_competency_lines``. **PROIBIDO** atribuir
     ``etapa`` / ``concluida``. **PROIBIDO** inventar ``Avaliacao``.
+    Dry-run (``ctx.persist is False``): projeta totais sem ``save``.
     """
     groups = _group_nota_rows(rows, mapa, report)
     touched: dict[int, Avaliacao] = {}
     for group in groups:
-        saved = _upsert_nota_group(group, habilidades_by_id, report)
-        if saved:
+        saved = _upsert_nota_group(group, habilidades_by_id, report, ctx)
+        if saved and ctx.persist:
             touched[group.avaliacao.pk] = group.avaliacao
 
+    if not ctx.persist:
+        return
     for avaliacao in touched.values():
         _calcular_notas_finais(avaliacao, report)
 
@@ -234,6 +304,7 @@ def _persist_fase_comentarios(
     rows: Sequence[ComentarioRow],
     mapa: Mapping[str, str],
     report: ImportReport,
+    ctx: _ImportCtx,
 ) -> None:
     """Fase Comentários (T013 / R12): Feedback append-only na canônica.
 
@@ -340,6 +411,7 @@ def _persist_fase_comentarios(
             ciente_em=instante_ciencia,
             created_at=instante if not ilegivel else None,
             report=report,
+            persist=ctx.persist,
         )
 
 
@@ -352,8 +424,14 @@ def _upsert_feedback(
     ciente_em: datetime | None,
     created_at: datetime | None,
     report: ImportReport,
+    persist: bool,
 ) -> None:
-    """Create Feedback or skip by chave natural — nunca reescreve ``conteudo``."""
+    """Create Feedback or skip by chave natural — nunca reescreve ``conteudo``.
+
+    T022 / R12: match → não duplicar, **não** reatribuir ``conteudo`` /
+    ``ciente_em`` / ``created_at`` (append-only). ``persist=False``:
+    registra criado/inalterado sem ``save``/``update``.
+    """
     av_sid = str(avaliacao.solides_id or '')
     autor_sid = str(autor.solides_id or autor.pk)
     existing = _find_feedback_by_natural_key(
@@ -364,7 +442,17 @@ def _upsert_feedback(
         instante=created_at,
     )
     if existing is not None:
+        # Append-only: não tocar o registro (inclusive grafia persistida).
         record_comentario_inalterado(
+            report,
+            avaliacao_id=av_sid,
+            autor_id=autor_sid,
+            tipo=tipo,
+        )
+        return
+
+    if not persist:
+        record_comentario_criado(
             report,
             avaliacao_id=av_sid,
             autor_id=autor_sid,
@@ -512,8 +600,9 @@ def _upsert_nota_group(
     group: _NotaGroup,
     habilidades_by_id: Mapping[str, HabilidadeRow],
     report: ImportReport,
+    ctx: _ImportCtx,
 ) -> bool:
-    """Persist um par ``(avaliacao, competencia)``. False se nada foi gravado."""
+    """Persist (ou projeta) um par ``(avaliacao, competencia)``. False se skip."""
     avaliacao = group.avaliacao
     hab_meta = habilidades_by_id.get(group.habilidade_id)
     nome = next((r.habilidade for r in group.rows if r.habilidade), '')
@@ -521,8 +610,22 @@ def _upsert_nota_group(
         nome = hab_meta.habilidade
     grupo = hab_meta.grupo if hab_meta is not None else ''
 
-    resolved = resolve_competencia(group.habilidade_id, nome, grupo=grupo)
-    competencia = resolved.competencia
+    cached = ctx.extras.get(group.habilidade_id)
+    if cached is not None:
+        competencia = cached
+        created_extra = False
+    else:
+        resolved = resolve_competencia(
+            group.habilidade_id,
+            nome,
+            grupo=grupo,
+            persist=ctx.persist,
+        )
+        competencia = resolved.competencia
+        created_extra = resolved.created
+        if created_extra and competencia is not None:
+            ctx.extras[group.habilidade_id] = competencia
+
     if competencia is None:
         record_orfao_competencia(
             report,
@@ -530,7 +633,7 @@ def _upsert_nota_group(
         )
         return False
 
-    if resolved.created:
+    if created_extra:
         record_habilidade_extra_criada(
             report,
             solides_id=str(competencia.solides_id or group.habilidade_id),
@@ -597,6 +700,7 @@ def _upsert_nota_group(
         report=report,
         av_sid=av_sid,
         comp_sid=comp_sid,
+        persist=ctx.persist,
     )
 
 
@@ -683,15 +787,25 @@ def _save_avaliacao_competencia(
     report: ImportReport,
     av_sid: str,
     comp_sid: str,
+    persist: bool,
 ) -> bool:
-    """Create/update unique ``(avaliacao, competencia)`` via ``full_clean``+``save``."""
+    """Create/update unique ``(avaliacao, competencia)`` via ``full_clean``+``save``.
+
+    T022: update **só** ``nota_*`` (``update_fields``); snapshots write-once
+    permanecem bit-a-bit. ``snapshot_divergente`` / ``ValidationError``
+    write-once → conflito **sem** apagar a linha nem a ``Avaliacao``.
+    ``persist=False``: projeta criadas/atualizadas/inalteradas sem ``save``.
+    """
     lado = _lado_relatorio(auto_nota, lider_nota)
-    linha = (
-        AvaliacaoCompetencia.objects.filter(
-            avaliacao_id=avaliacao.pk,
-            competencia_id=competencia.pk,
-        ).first()
-    )
+    if competencia.pk is None:
+        linha = None
+    else:
+        linha = (
+            AvaliacaoCompetencia.objects.filter(
+                avaliacao_id=avaliacao.pk,
+                competencia_id=competencia.pk,
+            ).first()
+        )
     created = linha is None
     if created:
         linha = AvaliacaoCompetencia(
@@ -704,6 +818,8 @@ def _save_avaliacao_competencia(
     try:
         apply_snapshots(linha, peso, nivel)
     except SnapshotConflict as exc:
+        # T022 / SC-005: não reescrever snapshot; **não** apagar a linha
+        # nem a ``Avaliacao`` 011 para “refazer”.
         record_conflito(
             report,
             tipo=exc.code,
@@ -716,10 +832,12 @@ def _save_avaliacao_competencia(
         if auto_nota is not None and not _same_nota(
             linha.nota_autoavaliacao, auto_nota
         ):
-            linha.nota_autoavaliacao = auto_nota
+            if persist:
+                linha.nota_autoavaliacao = auto_nota
             changed = True
         if lider_nota is not None and not _same_nota(linha.nota_lider, lider_nota):
-            linha.nota_lider = lider_nota
+            if persist:
+                linha.nota_lider = lider_nota
             changed = True
         if not changed:
             record_nota_inalterada(
@@ -729,10 +847,31 @@ def _save_avaliacao_competencia(
                 lado=lado,
             )
             return True
+        if not persist:
+            record_nota_atualizada(
+                report,
+                avaliacao_id=av_sid,
+                competencia_id=comp_sid,
+                lado=lado,
+            )
+            return True
+
+    if not persist:
+        record_nota_criada(
+            report,
+            avaliacao_id=av_sid,
+            competencia_id=comp_sid,
+            lado=lado,
+        )
+        return True
 
     try:
         linha.full_clean()
-        linha.save()
+        if created:
+            linha.save()
+        else:
+            # T022: nunca reenviar peso/nível — o model recusaria write-once.
+            linha.save(update_fields=list(_NOTA_UPDATE_FIELDS))
     except ValidationError as exc:
         snap = conflict_from_write_once(exc)
         if snap is not None:

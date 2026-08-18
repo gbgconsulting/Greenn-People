@@ -150,12 +150,16 @@ def resolve_competencia(
     habilidade_nome: str = "",
     *,
     grupo: str = "",
+    persist: bool = True,
 ) -> CompetenciaResolveResult:
     """Resolve ``Competencia`` por ``solides_id``; create mínima (R11) se ok.
 
     Extras: ``display_name``, ``not is_kpi``, ``not is_ambiguous``,
     ``resolve_default_escala``, tipo ``map_grupo_tipo`` se ``grupo``
     (``--habilidades``) senão ``tecnica``. Zero ``CargoCompetencia``.
+
+    ``persist=False`` (T021 ``--dry-run``): projeta extra sem
+    ``save``/``create`` — retorna instância não gravada com ``created=True``.
     """
     sid = canonicalize_id(habilidade_id)
     if not sid:
@@ -187,9 +191,12 @@ def resolve_competencia(
         solides_id=sid,
     )
     try:
-        with transaction.atomic():
+        if persist:
+            with transaction.atomic():
+                competencia.full_clean()
+                competencia.save()
+        else:
             competencia.full_clean()
-            competencia.save()
     except (ValidationError, IntegrityError):
         return CompetenciaResolveResult(competencia=None)
 

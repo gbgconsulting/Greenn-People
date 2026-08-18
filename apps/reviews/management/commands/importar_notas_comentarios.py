@@ -6,9 +6,10 @@ o relatório (stdout e opcionalmente ``--report-file``).
 Ordem fixa (``contracts/import-command-contract.md`` §Semântica):
 1. Parse notas + comentários (pré-atomic; openpyxl só em ``parse_xlsx``)
 2. Rebuild do mapa ``--avaliacoes`` em memória (011; **zero** upsert de cabeçalho)
-3. ``transaction.atomic()``: fase Notas → ``calcular_nota_final_*`` →
-   fase Comentários (T014: as duas fases na **mesma** atomic)
-4. Relatório via ``format_notas_comentarios_report`` — seções
+3. ``--dry-run``: projetar totais e sair (zero ``save``/``create``/``update``)
+4. Senão ``transaction.atomic()``: fase Notas → ``calcular_nota_final_*`` →
+   fase Comentários (as duas fases na **mesma** atomic; exceção → rollback)
+5. Relatório via ``format_notas_comentarios_report`` — seções
    ``comentarios_criados`` / ``comentarios_inalterados`` / ``orfaos_autor``
 
 Códigos de saída (``contracts/import-command-contract.md`` §Códigos de saída):
@@ -20,11 +21,12 @@ Códigos de saída (``contracts/import-command-contract.md`` §Códigos de saíd
   - falha inesperada de persistência (``transaction.atomic`` faz rollback)
 - Não há exit ``2`` nesta versão (args inválidos também → ``1``).
 
-T010: CLI fino US1 (fase Notas + fórmula). T014: fase Comentários integrada
-(não é mais stub); ``--dry-run`` stub até US3 via ``set_rollback`` no
-importer. Sem UI/DRF/Celery; denylist intacta (não chama
-stage/open/close/approval/``create_competency_lines``/adherence;
-**não** edita ``evaluation.py``).
+T010: CLI fino US1 (fase Notas + fórmula). T014: fase Comentários integrada.
+T021: ``--dry-run`` consolidado (zero writes) + falha fatal pré-persistência
++ rollback atômico das duas fases. T022: idempotência (upsert só
+``nota_*``; Feedback chave natural; delta ``Avaliacao`` = 0). Sem
+UI/DRF/Celery; denylist intacta (não chama stage/open/close/approval/
+``create_competency_lines``/adherence; **não** edita ``evaluation.py``).
 """
 
 from __future__ import annotations
@@ -44,7 +46,7 @@ from apps.reviews.services.legacy_import import (
 
 
 class Command(BaseCommand):
-    """CLI fina T010+T014: notas → fórmula → comentários; dry-run/exit 0|1."""
+    """CLI fina T010+T014+T021+T022: notas → fórmula → comentários; dry-run/exit 0|1."""
 
     help = (
         'Importa notas por competência e comentários qualitativos do backup '
@@ -103,8 +105,8 @@ class Command(BaseCommand):
             '--dry-run',
             action='store_true',
             help=(
-                'Parse + mapa + totais projetados sem commit no banco '
-                '(stub até US3: rollback da mesma atomic).'
+                'Parse + mapa + totais projetados; zero save/create/update '
+                '(sem commit no banco).'
             ),
         )
 
