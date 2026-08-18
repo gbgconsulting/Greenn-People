@@ -22,11 +22,11 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 
+from apps.accounts.models import CustomUser
 from apps.accounts.services.legacy_import.parse_xlsx import (
     canonicalize_id,
     parse_avaliacoes_headers_xlsx,
@@ -196,10 +196,46 @@ def resolve_competencia(
     return CompetenciaResolveResult(competencia=competencia, created=True)
 
 
-def resolve_autor(avaliador_id: str, nome_avaliador: str = "") -> Any:
+def resolve_autor(
+    avaliador_id: str, nome_avaliador: str = ""
+) -> CustomUser | None:
     """Resolve autor do comentário: ``solides_id`` → nome canônico único.
 
-    Inativo (010) permitido. Irresolvível → ``None`` (órfão). **Nunca**
-    inventar ``User``. Corpo em T012.
+    1. Primário: ``CustomUser.solides_id == Identificador Avaliador``.
+    2. Fallback (só se o passo 1 falhar): match **único** por
+       ``canonical_key(Nome Avaliador)``.
+    3. Miss / ambíguo → ``None`` (caller registra ``orfaos_autor``).
+
+    Usuário inativo (010) é permitido. **Nunca** inventa User nem altera
+    ``solides_id`` do existente. Avaliação canônica dos comentários continua
+    em ``resolve_avaliacao`` / mapa da US1 (ID colapsado = mesma resolução).
     """
-    raise NotImplementedError("T002 stub — implementar em T012")
+    sid = canonicalize_id(avaliador_id)
+    if sid:
+        by_id = CustomUser.objects.filter(solides_id=sid).first()
+        if by_id is not None:
+            return by_id
+    return _lookup_user_by_canonical_key_unique(nome_avaliador)
+
+
+def _lookup_user_by_canonical_key_unique(nome: str) -> CustomUser | None:
+    """Match único por ``canonical_key(nome)``; 0 ou >1 → ``None`` (R12).
+
+    Inclui inativos (histórico). Não filtra ``is_active``.
+    """
+    key = canonical_key(nome) if nome else ""
+    if not key:
+        return None
+
+    match: CustomUser | None = None
+    for user in CustomUser.objects.only(
+        "id", "nome", "solides_id", "is_active"
+    ).iterator():
+        if not user.nome:
+            continue
+        if canonical_key(user.nome) != key:
+            continue
+        if match is not None:
+            return None
+        match = user
+    return match

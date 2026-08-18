@@ -7,8 +7,9 @@ Ordem fixa (``contracts/import-command-contract.md`` §Semântica):
 1. Parse notas + comentários (pré-atomic; openpyxl só em ``parse_xlsx``)
 2. Rebuild do mapa ``--avaliacoes`` em memória (011; **zero** upsert de cabeçalho)
 3. ``transaction.atomic()``: fase Notas → ``calcular_nota_final_*`` →
-   fase Comentários (T013; no-op até US2)
-4. Relatório via ``format_notas_comentarios_report``
+   fase Comentários (T014: as duas fases na **mesma** atomic)
+4. Relatório via ``format_notas_comentarios_report`` — seções
+   ``comentarios_criados`` / ``comentarios_inalterados`` / ``orfaos_autor``
 
 Códigos de saída (``contracts/import-command-contract.md`` §Códigos de saída):
 - ``0`` — sucesso (persistência ok ou dry-run ok; conflitos/órfãos não-fatais ok)
@@ -19,10 +20,11 @@ Códigos de saída (``contracts/import-command-contract.md`` §Códigos de saíd
   - falha inesperada de persistência (``transaction.atomic`` faz rollback)
 - Não há exit ``2`` nesta versão (args inválidos também → ``1``).
 
-T010: CLI fino US1 (fase Notas funcional; Comentários stub até US2;
-``--dry-run`` stub até US3 via ``set_rollback`` no importer). Sem UI/DRF/Celery;
-denylist intacta (não chama stage/open/close/approval/``create_competency_lines``
-/adherence; **não** edita ``evaluation.py``).
+T010: CLI fino US1 (fase Notas + fórmula). T014: fase Comentários integrada
+(não é mais stub); ``--dry-run`` stub até US3 via ``set_rollback`` no
+importer. Sem UI/DRF/Celery; denylist intacta (não chama
+stage/open/close/approval/``create_competency_lines``/adherence;
+**não** edita ``evaluation.py``).
 """
 
 from __future__ import annotations
@@ -42,7 +44,7 @@ from apps.reviews.services.legacy_import import (
 
 
 class Command(BaseCommand):
-    """CLI fina T010: notas (+ fórmula); comentários stub; dry-run/exit 0|1."""
+    """CLI fina T010+T014: notas → fórmula → comentários; dry-run/exit 0|1."""
 
     help = (
         'Importa notas por competência e comentários qualitativos do backup '
@@ -109,9 +111,10 @@ class Command(BaseCommand):
     def handle(self, *args, **options) -> int:
         """Args → importer (notas → fórmula → comentários) → relatório mascarado.
 
-        Persistência e ordem das fases ficam no importer; aqui só args,
-        códigos de saída e emissão de ``format_notas_comentarios_report``.
-        ``--avaliacoes`` nunca faz upsert de cabeçalho.
+        Persistência e ordem das fases ficam no importer (mesma
+        ``transaction.atomic()``). Aqui só args, códigos de saída e emissão
+        de ``format_notas_comentarios_report`` (inclui ``comentarios_*`` e
+        ``orfaos_autor``). ``--avaliacoes`` nunca faz upsert de cabeçalho.
         """
         notas_path = options['notas']
         comentarios_path = options['comentarios']

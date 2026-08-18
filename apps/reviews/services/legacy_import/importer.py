@@ -4,8 +4,10 @@ Superfície pública: ``import_notas_comentarios`` (reexportada por ``__init__``
 T009: fase Notas — agrupa por ``(avaliacao_canônica, competencia)`` antes
 do persist; upsert ``AvaliacaoCompetencia``; snapshots write-once;
 ``calcular_nota_final_*`` após o lote de cada avaliação tocada.
-T013: fase Comentários (stub). T021: ``--dry-run`` + atomicidade das
-duas fases (dry-run já usa ``set_rollback`` no padrão 010/011).
+T013: fase Comentários — ``Feedback`` append-only (tipo auto/líder,
+``ciente_em`` no líder, chave natural, N por avaliação). T021:
+``--dry-run`` + atomicidade das duas fases (dry-run já usa
+``set_rollback`` no padrão 010/011).
 
 Ordem normativa (``contracts/import-command-contract.md``):
 parse notas → parse comentários → mapa ``--avaliacoes`` (011, só memória) →
@@ -21,14 +23,19 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.utils import timezone
 
+from apps.accounts.models import CustomUser
+from apps.accounts.services.legacy_import.dates import parse_legacy_datetime
 from apps.accounts.services.legacy_import.parse_xlsx import (
+    ComentarioRow,
     HabilidadeRow,
     LegacyParseError,
     NotaRow,
@@ -39,6 +46,8 @@ from apps.accounts.services.legacy_import.parse_xlsx import (
 )
 from apps.accounts.services.legacy_import.report import (
     ImportReport,
+    record_comentario_criado,
+    record_comentario_inalterado,
     record_conflito,
     record_conflito_ciclo_aberto,
     record_conflito_lider_divergente,
@@ -47,11 +56,13 @@ from apps.accounts.services.legacy_import.report import (
     record_nota_atualizada,
     record_nota_criada,
     record_nota_inalterada,
+    record_orfao_autor,
     record_orfao_avaliacao,
     record_orfao_competencia,
 )
+from apps.competencies.services.catalog_import.normalize import display_name
 from apps.reviews.exceptions import CalculationError
-from apps.reviews.models import Avaliacao, AvaliacaoCompetencia
+from apps.reviews.models import Avaliacao, AvaliacaoCompetencia, Feedback
 from apps.reviews.services.evaluation import (
     calcular_nota_final_autoavaliacao,
     calcular_nota_final_lider,
@@ -60,6 +71,7 @@ from apps.reviews.services.legacy_import.resolve import (
     build_collapsed_id_map,
     is_auto,
     is_ciclo_aberto,
+    resolve_autor,
     resolve_avaliacao,
     resolve_competencia,
 )
@@ -119,8 +131,9 @@ def import_notas_comentarios(
     (IMPORTAR ``aggregate_avaliacao_headers``; **zero** upsert de cabeçalho).
     ``--habilidades`` é opcional (extras só como FK de nota, R11).
 
-    T009: fase Notas + ``calcular_nota_final_*``. T013: fase Comentários.
-    T021: dry-run consolidado (aqui: ``set_rollback``).
+    T009: fase Notas + ``calcular_nota_final_*``. T013: fase Comentários
+    (``Feedback`` append-only). T021: dry-run consolidado (aqui:
+    ``set_rollback``).
     """
     notas_file, comentarios_file, avaliacoes_file, hab_file = (
         _validate_required_paths(
@@ -218,12 +231,209 @@ def _persist_fase_notas(
 
 
 def _persist_fase_comentarios(
-    rows: Sequence[Any],
+    rows: Sequence[ComentarioRow],
     mapa: Mapping[str, str],
     report: ImportReport,
 ) -> None:
-    """Fase Comentários — corpo em T013. T009: no-op (não aborta o atomic)."""
-    _ = (rows, mapa, report)
+    """Fase Comentários (T013 / R12): Feedback append-only na canônica.
+
+    ``tipo`` = ``COLABORADOR`` se ``is_auto`` senão ``LIDER``.
+    ``ciente_em`` só no líder (``parse_legacy_datetime``); ilegível/ausente
+    → ``ciencia_data_invalida`` sem persistir nulo em massa. Colaborador
+    → ``ciente_em`` null. Após ``save()``, ``QuerySet.update(created_at)``
+    se o instante for parseável. Chave natural
+    ``(avaliacao, autor, tipo, display_name(conteudo), instante)`` —
+    match não duplica e **não** reescreve ``conteudo``. Ciclo aberto →
+    mesmo skip da US1. **NÃO** atribui ``etapa`` / ``concluida``.
+    """
+    av_cache: dict[str, Any] = {}
+    autor_cache: dict[tuple[str, str], CustomUser | None] = {}
+    seen_orfao_av: set[str] = {
+        entry.label for entry in report.orfaos_avaliacao
+    }
+    seen_aberto: set[int] = set()
+    seen_collapsed: set[tuple[str, str]] = {
+        (entry.label, entry.extra) for entry in report.ids_colapsados_resolvidos
+    }
+    seen_orfao_autor: set[tuple[str, str]] = set()
+
+    for row in rows:
+        conteudo = display_name(row.comentario) if row.comentario else ''
+        if not conteudo:
+            continue
+
+        sid = row.identificador
+        if sid not in av_cache:
+            av_cache[sid] = resolve_avaliacao(sid, mapa)
+        resolved = av_cache[sid]
+        avaliacao = resolved.avaliacao
+        if avaliacao is None:
+            if sid not in seen_orfao_av:
+                seen_orfao_av.add(sid)
+                record_orfao_avaliacao(report, id_legado=sid)
+            continue
+
+        if is_ciclo_aberto(avaliacao):
+            if avaliacao.pk not in seen_aberto:
+                seen_aberto.add(avaliacao.pk)
+                av_sid = str(avaliacao.solides_id or sid)
+                if not any(
+                    entry.label == av_sid
+                    for entry in report.conflitos_ciclo_aberto
+                ):
+                    record_conflito_ciclo_aberto(
+                        report,
+                        avaliacao_id=av_sid,
+                        ciclo='aberto',
+                    )
+            continue
+
+        if resolved.via_collapsed:
+            pair = (sid, str(avaliacao.solides_id or ''))
+            if pair not in seen_collapsed:
+                seen_collapsed.add(pair)
+                record_id_colapsado_resolvido(
+                    report,
+                    colapsado=sid,
+                    canonico=str(avaliacao.solides_id or ''),
+                )
+
+        autor_key = (row.identificador_avaliador, row.nome_avaliador)
+        if autor_key not in autor_cache:
+            autor_cache[autor_key] = resolve_autor(
+                row.identificador_avaliador,
+                row.nome_avaliador,
+            )
+        autor = autor_cache[autor_key]
+        if autor is None:
+            orfao_key = (row.identificador_avaliador, row.nome_avaliador)
+            if orfao_key not in seen_orfao_autor:
+                seen_orfao_autor.add(orfao_key)
+                record_orfao_autor(
+                    report,
+                    avaliador_id=row.identificador_avaliador,
+                )
+            continue
+
+        auto = is_auto(row.nome_avaliador, row.nome_avaliado)
+        tipo = Feedback.Tipo.COLABORADOR if auto else Feedback.Tipo.LIDER
+        instante, ilegivel = _parse_criado_em(row.criado_em)
+
+        if tipo == Feedback.Tipo.LIDER and (instante is None or ilegivel):
+            record_conflito(
+                report,
+                tipo='ciencia_data_invalida',
+                motivo=f'linha={row.linha}',
+            )
+            continue
+
+        if tipo == Feedback.Tipo.COLABORADOR:
+            instante_ciencia = None
+        else:
+            instante_ciencia = instante
+
+        _upsert_feedback(
+            avaliacao=avaliacao,
+            autor=autor,
+            tipo=tipo,
+            conteudo=conteudo,
+            ciente_em=instante_ciencia,
+            created_at=instante if not ilegivel else None,
+            report=report,
+        )
+
+
+def _upsert_feedback(
+    *,
+    avaliacao: Avaliacao,
+    autor: CustomUser,
+    tipo: str,
+    conteudo: str,
+    ciente_em: datetime | None,
+    created_at: datetime | None,
+    report: ImportReport,
+) -> None:
+    """Create Feedback or skip by chave natural — nunca reescreve ``conteudo``."""
+    av_sid = str(avaliacao.solides_id or '')
+    autor_sid = str(autor.solides_id or autor.pk)
+    existing = _find_feedback_by_natural_key(
+        avaliacao=avaliacao,
+        autor=autor,
+        tipo=tipo,
+        conteudo=conteudo,
+        instante=created_at,
+    )
+    if existing is not None:
+        record_comentario_inalterado(
+            report,
+            avaliacao_id=av_sid,
+            autor_id=autor_sid,
+            tipo=tipo,
+        )
+        return
+
+    feedback = Feedback(
+        avaliacao=avaliacao,
+        autor=autor,
+        tipo=tipo,
+        conteudo=conteudo,
+        ciente_em=ciente_em,
+    )
+    feedback.full_clean()
+    feedback.save()
+    if created_at is not None:
+        Feedback.objects.filter(pk=feedback.pk).update(created_at=created_at)
+    record_comentario_criado(
+        report,
+        avaliacao_id=av_sid,
+        autor_id=autor_sid,
+        tipo=tipo,
+    )
+
+
+def _find_feedback_by_natural_key(
+    *,
+    avaliacao: Avaliacao,
+    autor: CustomUser,
+    tipo: str,
+    conteudo: str,
+    instante: datetime | None,
+) -> Feedback | None:
+    """Match ``(avaliacao, autor, tipo, display_name(conteudo), instante)``."""
+    candidates = Feedback.objects.filter(
+        avaliacao_id=avaliacao.pk,
+        autor_id=autor.pk,
+        tipo=tipo,
+    )
+    for existing in candidates.iterator():
+        if display_name(existing.conteudo) != conteudo:
+            continue
+        if instante is None:
+            return existing
+        if _same_instant(existing.created_at, instante):
+            return existing
+    return None
+
+
+def _parse_criado_em(value: Any) -> tuple[datetime | None, bool]:
+    """``(instante, ilegivel)``. Vazio/0 → ``(None, False)``; lixo → ilegível."""
+    try:
+        return parse_legacy_datetime(value), False
+    except ValueError:
+        return None, True
+
+
+def _same_instant(stored: datetime | None, expected: datetime) -> bool:
+    """Compara instantes com tolerância de 1 ms (round-trip SQLite/PG)."""
+    if stored is None:
+        return False
+    left = stored
+    right = expected
+    if timezone.is_naive(left):
+        left = timezone.make_aware(left, timezone.get_current_timezone())
+    if timezone.is_naive(right):
+        right = timezone.make_aware(right, timezone.get_current_timezone())
+    return abs((left - right).total_seconds()) < 0.001
 
 
 def _group_nota_rows(

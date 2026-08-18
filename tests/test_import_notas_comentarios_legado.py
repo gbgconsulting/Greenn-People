@@ -6,18 +6,30 @@ sem comentário/nome/e-mail). Sem persistência. **Proibido** ``raw/``.
 T007: ``resolve.py`` — mapa colapsado, ``resolve_avaliacao``, ``is_auto``,
 ``is_ciclo_aberto``, ``resolve_competencia`` (R11). **Proibido** ``raw/``.
 
+T012: ``resolve_autor`` — ``solides_id`` primário; fallback nome canônico
+único; inativo permitido; irresolvível → ``None`` (sem inventar User).
+
 T008: ``snapshots.py`` — peso do Fator, nível da tabela 003, write-once.
 **Proibido** ``raw/``. **Proibido** ler ``CargoCompetencia``.
 
 T009: fase Notas em ``importer.py`` — agrupa, upsert, fórmula vigente.
 **Proibido** ``create_competency_lines`` / mutar ``etapa``/``concluida``.
 
+T013: fase Comentários em ``importer.py`` — ``Feedback`` append-only
+(tipo, ``ciente_em`` líder, chave natural, N por avaliação, ciclo aberto).
+**Proibido** mutar ``etapa``/``concluida``; **proibido** inventar User.
+
 T010: management command ``importar_notas_comentarios`` (args, relatório,
-exit 0/1). Fase Comentários stub até US2.
+exit 0/1). T014: fase Comentários integrada no CLI (seções
+``comentarios_*`` / ``orfaos_autor``; mesma ``transaction.atomic()``).
 
 T011: validação US1 via quickstart C2–C5 (auto vs líder, snapshots 003,
 ID canônico/colapsado/órfão, dois líderes, ciclo aberto, fórmula vigente,
 spy ``create_competency_lines``, ``git diff`` denylist).
+
+T015: validação US2 via quickstart C6 (líder com ciência; auto sem
+ciência; autor inativo ok; autor irresolvível órfão; N textos;
+etapa/concluída intactas; ``git diff`` denylist).
 
 T018–T023 estendem esta suíte (dry-run, IDs, conflitos, comentários).
 """
@@ -26,7 +38,7 @@ from __future__ import annotations
 
 import shutil
 import subprocess
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from io import StringIO
 from pathlib import Path
@@ -37,8 +49,10 @@ import pytest
 from django.core.exceptions import ValidationError
 from django.core.management import call_command, get_commands
 from django.core.management.base import CommandError
+from django.utils import timezone
 from openpyxl import Workbook
 
+from apps.accounts.models import CustomUser
 from apps.accounts.services.legacy_import.report import (
     ImportReport,
     format_notas_comentarios_report,
@@ -68,6 +82,7 @@ from apps.reviews.services.legacy_import.resolve import (
     build_collapsed_id_map,
     is_auto,
     is_ciclo_aberto,
+    resolve_autor,
     resolve_avaliacao,
     resolve_competencia,
 )
@@ -78,6 +93,7 @@ from apps.reviews.services.legacy_import.snapshots import (
     parse_peso_utilizado,
     resolve_nivel_esperado,
 )
+from tests.conftest import DEFAULT_PASSWORD
 
 _SAMPLE_MAX = 5
 _EMAIL = 'ana.silva@example.com'
@@ -438,6 +454,120 @@ def test_t007_resolve_competencia_r11_sem_cargo_competencia():
     assert Competencia.objects.filter(solides_id='99003').exists() is False
 
 
+# --- T012 resolve_autor ---
+
+
+def _make_autor(
+    *,
+    email: str,
+    nome: str,
+    solides_id: str | None = None,
+    is_active: bool = True,
+) -> CustomUser:
+    return CustomUser.objects.create_user(
+        email=email,
+        password=DEFAULT_PASSWORD,
+        nome=nome,
+        solides_id=solides_id,
+        is_active=is_active,
+        email_confirmado_em=timezone.now(),
+    )
+
+
+@pytest.mark.django_db
+def test_t012_resolve_autor_por_solides_id():
+    """T012 / R12: primário ``CustomUser.solides_id == Identificador Avaliador``."""
+    autor = _make_autor(
+        email='autor-id@test.greenn.com.br',
+        nome='Ana Silva',
+        solides_id='5001',
+    )
+    before = CustomUser.objects.count()
+
+    found = resolve_autor('5001', 'Nome Distinto')
+    assert found == autor
+    assert CustomUser.objects.count() == before
+
+
+@pytest.mark.django_db
+def test_t012_resolve_autor_inativo_permitido():
+    """T012: usuário inativo (010) ainda resolve — histórico."""
+    autor = _make_autor(
+        email='ex-colab@test.greenn.com.br',
+        nome='Carla Inativa',
+        solides_id='5002',
+        is_active=False,
+    )
+    assert autor.is_active is False
+    assert resolve_autor('5002', '') == autor
+
+    by_name = resolve_autor('', 'Carla Inativa')
+    assert by_name == autor
+
+
+@pytest.mark.django_db
+def test_t012_resolve_autor_fallback_nome_canonico_unico():
+    """T012: miss de id → match único ``canonical_key(Nome Avaliador)``."""
+    autor = _make_autor(
+        email='autor-nome@test.greenn.com.br',
+        nome='José Silva',
+        solides_id=None,
+    )
+    found = resolve_autor('9999', 'JOSE SILVA')
+    assert found == autor
+
+    vazio_id = resolve_autor('', 'José Silva')
+    assert vazio_id == autor
+
+
+@pytest.mark.django_db
+def test_t012_resolve_autor_nome_ambiguo_e_orfao_nao_inventa_user():
+    """T012: ambíguo / irresolvível → ``None``; zero User criado (orfaos_autor)."""
+    _make_autor(
+        email='jose-a@test.greenn.com.br',
+        nome='José',
+        solides_id='5101',
+    )
+    _make_autor(
+        email='jose-b@test.greenn.com.br',
+        nome='Jose',
+        solides_id='5102',
+    )
+    before = CustomUser.objects.count()
+
+    ambiguo = resolve_autor('', 'José')
+    assert ambiguo is None
+
+    orfao = resolve_autor('9999', 'Ninguém Desconhecido')
+    assert orfao is None
+
+    vazio = resolve_autor('', '')
+    assert vazio is None
+
+    assert CustomUser.objects.count() == before
+    assert CustomUser.objects.filter(solides_id='9999').exists() is False
+
+
+@pytest.mark.django_db
+def test_t012_comentario_usa_mesmo_resolve_avaliacao_mapa(colaborador):
+    """T012: ID colapsado de comentário = mesma resolução canônica da US1."""
+    ciclo = _ciclo_encerrado()
+    avaliacao = Avaliacao.objects.create(
+        ciclo=ciclo,
+        usuario=colaborador,
+        etapa=Avaliacao.Etapa.FEEDBACK,
+        concluida=True,
+        solides_id='1001',
+    )
+    mapa = {'1001': '1001', '1002': '1001'}
+    before = Avaliacao.objects.count()
+
+    colapsado = resolve_avaliacao('1002', mapa)
+    assert colapsado.avaliacao == avaliacao
+    assert colapsado.via_collapsed is True
+    assert Avaliacao.objects.count() == before
+
+
 # --- T008 snapshots ---
 
 
@@ -651,10 +781,13 @@ def _t009_paths(
     *,
     notas_rows: list[list],
     header_rows: list[list],
+    comentarios_rows: list[list] | None = None,
 ) -> tuple[Path, Path, Path]:
     notas = _write_xlsx(tmp_path / 'notas.xlsx', _NOTAS_HEADERS, notas_rows)
     comentarios = _write_xlsx(
-        tmp_path / 'comentarios.xlsx', _COMENTARIOS_HEADERS, []
+        tmp_path / 'comentarios.xlsx',
+        _COMENTARIOS_HEADERS,
+        comentarios_rows or [],
     )
     avaliacoes = _write_xlsx(
         tmp_path / 'avaliacoes.xlsx', _AVALIACOES_HEADERS, header_rows
@@ -967,6 +1100,253 @@ def test_t009_nota_fora_da_escala_sem_clip(colaborador, tmp_path):
     assert avaliacao.nota_final_lider is None
 
 
+def _comentario_row(
+    *,
+    avaliacao_id: str,
+    avaliador_id: str,
+    avaliador: str,
+    avaliado: str,
+    comentario: str,
+    criado_em: object = None,
+) -> list:
+    return [
+        avaliacao_id,
+        avaliador_id,
+        avaliador,
+        avaliado,
+        comentario,
+        criado_em,
+    ]
+
+
+def _t013_solides_ids(colaborador: CustomUser, lider_user: CustomUser) -> None:
+    colaborador.solides_id = '101'
+    colaborador.save(update_fields=['solides_id'])
+    lider_user.solides_id = '201'
+    lider_user.save(update_fields=['solides_id'])
+
+
+@pytest.mark.django_db
+def test_t013_lider_ciencia_auto_sem_ciencia_etapa_intacta(
+    colaborador, lider, tmp_path
+):
+    """T013 / R12: líder→ciente_em; auto→null; etapa/concluída intactas."""
+    _t013_solides_ids(colaborador, lider)
+    avaliacao = _t009_avaliacao(colaborador)
+    etapa = avaliacao.etapa
+    concluida = avaliacao.concluida
+    criado = datetime(2024, 6, 3, 14, 30, 0)
+    notas, comentarios, avaliacoes = _t009_paths(
+        tmp_path,
+        notas_rows=[],
+        header_rows=[
+            _header_row(
+                '1001',
+                nome_avaliado=colaborador.nome,
+                nome_avaliador=colaborador.nome,
+            ),
+        ],
+        comentarios_rows=[
+            _comentario_row(
+                avaliacao_id='1001',
+                avaliador_id='201',
+                avaliador=lider.nome,
+                avaliado=colaborador.nome,
+                comentario='Desempenho consistente no trimestre.',
+                criado_em=criado,
+            ),
+            _comentario_row(
+                avaliacao_id='1001',
+                avaliador_id='101',
+                avaliador=colaborador.nome,
+                avaliado=colaborador.nome,
+                comentario='Minha autoavaliação qualitativa.',
+                criado_em=criado,
+            ),
+        ],
+    )
+    before_users = CustomUser.objects.count()
+
+    report = import_notas_comentarios(notas, comentarios, avaliacoes)
+
+    assert report.comentarios_criados == 2
+    assert Feedback.objects.filter(avaliacao=avaliacao).count() == 2
+    lider_fb = Feedback.objects.get(avaliacao=avaliacao, tipo=Feedback.Tipo.LIDER)
+    auto_fb = Feedback.objects.get(
+        avaliacao=avaliacao, tipo=Feedback.Tipo.COLABORADOR
+    )
+    assert lider_fb.autor_id == lider.pk
+    assert lider_fb.conteudo == 'Desempenho consistente no trimestre.'
+    assert lider_fb.ciente_em is not None
+    expected = timezone.make_aware(criado, timezone.get_current_timezone())
+    assert abs((lider_fb.ciente_em - expected).total_seconds()) < 0.001
+    lider_fb.refresh_from_db()
+    assert abs((lider_fb.created_at - expected).total_seconds()) < 0.001
+    assert auto_fb.autor_id == colaborador.pk
+    assert auto_fb.ciente_em is None
+    avaliacao.refresh_from_db()
+    assert avaliacao.etapa == etapa
+    assert avaliacao.concluida == concluida
+    assert CustomUser.objects.count() == before_users
+    assert Avaliacao.objects.filter(solides_id='1001').count() == 1
+
+
+@pytest.mark.django_db
+def test_t013_autor_inativo_n_textos_chave_natural_sem_duplicata(
+    colaborador, lider, tmp_path
+):
+    """T013: inativo ok; N textos; 2ª run não duplica nem reescreve conteúdo."""
+    _t013_solides_ids(colaborador, lider)
+    autor_inativo = _make_autor(
+        email='ex-lider-legado@test.greenn.com.br',
+        nome='Carla Inativa Legado',
+        solides_id='202',
+        is_active=False,
+    )
+    avaliacao = _t009_avaliacao(colaborador)
+    criado = datetime(2024, 6, 4, 9, 0, 0)
+    rows = [
+        _comentario_row(
+            avaliacao_id='1001',
+            avaliador_id='202',
+            avaliador=autor_inativo.nome,
+            avaliado=colaborador.nome,
+            comentario='Primeiro texto do líder.',
+            criado_em=criado,
+        ),
+        _comentario_row(
+            avaliacao_id='1001',
+            avaliador_id='202',
+            avaliador=autor_inativo.nome,
+            avaliado=colaborador.nome,
+            comentario='Segundo texto distinto do líder.',
+            criado_em=criado,
+        ),
+    ]
+    notas, comentarios, avaliacoes = _t009_paths(
+        tmp_path,
+        notas_rows=[],
+        header_rows=[
+            _header_row(
+                '1001',
+                nome_avaliado=colaborador.nome,
+                nome_avaliador=colaborador.nome,
+            ),
+        ],
+        comentarios_rows=rows,
+    )
+
+    first = import_notas_comentarios(notas, comentarios, avaliacoes)
+    assert first.comentarios_criados == 2
+    assert Feedback.objects.filter(
+        avaliacao=avaliacao, autor=autor_inativo
+    ).count() == 2
+
+    second = import_notas_comentarios(notas, comentarios, avaliacoes)
+    assert second.comentarios_criados == 0
+    assert second.comentarios_inalterados == 2
+    assert Feedback.objects.filter(
+        avaliacao=avaliacao, autor=autor_inativo
+    ).count() == 2
+    assert set(
+        Feedback.objects.filter(avaliacao=avaliacao).values_list(
+            'conteudo', flat=True
+        )
+    ) == {'Primeiro texto do líder.', 'Segundo texto distinto do líder.'}
+
+
+@pytest.mark.django_db
+def test_t013_orfao_autor_ciencia_invalida_ciclo_aberto_id_colapsado(
+    colaborador, lider, ciclo_aberto, tmp_path
+):
+    """T013: órfão de autor; ciência ilegível; ciclo aberto skip; ID colapsado."""
+    _t013_solides_ids(colaborador, lider)
+    canonica = _t009_avaliacao(colaborador, solides_id='1001')
+    operacional = Avaliacao.objects.get(ciclo=ciclo_aberto, usuario=colaborador)
+    operacional.solides_id = '8001'
+    operacional.save(update_fields=['solides_id'])
+    etapa_aberta = operacional.etapa
+    criado = datetime(2024, 6, 5, 11, 0, 0)
+    notas, comentarios, avaliacoes = _t009_paths(
+        tmp_path,
+        notas_rows=[],
+        header_rows=[
+            _header_row(
+                '1001',
+                nome_avaliado=colaborador.nome,
+                nome_avaliador=colaborador.nome,
+            ),
+            _header_row(
+                '1002',
+                nome_avaliado=colaborador.nome,
+                nome_avaliador=lider.nome,
+            ),
+            _header_row(
+                '8001',
+                solicitacao='80',
+                avaliado_id='101',
+                nome_avaliado=colaborador.nome,
+                nome_avaliador=colaborador.nome,
+            ),
+        ],
+        comentarios_rows=[
+            _comentario_row(
+                avaliacao_id='1002',
+                avaliador_id='201',
+                avaliador=lider.nome,
+                avaliado=colaborador.nome,
+                comentario='Comentário no ID colapsado.',
+                criado_em=criado,
+            ),
+            _comentario_row(
+                avaliacao_id='1001',
+                avaliador_id='9999',
+                avaliador='Ninguém Desconhecido',
+                avaliado=colaborador.nome,
+                comentario='Autor irresolvível.',
+                criado_em=criado,
+            ),
+            _comentario_row(
+                avaliacao_id='1001',
+                avaliador_id='201',
+                avaliador=lider.nome,
+                avaliado=colaborador.nome,
+                comentario='Líder sem data interpretável.',
+                criado_em='data-invalida',
+            ),
+            _comentario_row(
+                avaliacao_id='8001',
+                avaliador_id='201',
+                avaliador=lider.nome,
+                avaliado=colaborador.nome,
+                comentario='Ciclo ainda aberto.',
+                criado_em=criado,
+            ),
+        ],
+    )
+    before_users = CustomUser.objects.count()
+    before_av = Avaliacao.objects.count()
+
+    report = import_notas_comentarios(notas, comentarios, avaliacoes)
+
+    assert report.comentarios_criados == 1
+    assert Feedback.objects.filter(avaliacao=canonica).count() == 1
+    fb = Feedback.objects.get(avaliacao=canonica)
+    assert fb.conteudo == 'Comentário no ID colapsado.'
+    assert fb.tipo == Feedback.Tipo.LIDER
+    assert report.n_orfaos_autor == 1
+    assert any(e.label == 'ciencia_data_invalida' for e in report.conflitos)
+    assert report.n_conflitos_ciclo_aberto == 1
+    assert report.n_ids_colapsados_resolvidos == 1
+    assert Feedback.objects.filter(avaliacao=operacional).count() == 0
+    operacional.refresh_from_db()
+    assert operacional.etapa == etapa_aberta
+    assert CustomUser.objects.count() == before_users
+    assert CustomUser.objects.filter(solides_id='9999').exists() is False
+    assert Avaliacao.objects.count() == before_av
+    assert Avaliacao.objects.filter(solides_id='1002').exists() is False
+
+
 def test_t010_command_registrado_e_sem_denylist():
     """T010: comando Discoverable; imports só na allowlist (sem UI/DRF/Celery)."""
     assert 'importar_notas_comentarios' in get_commands()
@@ -1105,6 +1485,172 @@ def test_t010_command_fase_notas_relatorio_exit_0(colaborador, tmp_path):
     assert avaliacao.etapa == etapa
     assert avaliacao.concluida == concluida
     assert Feedback.objects.count() == 0
+
+
+def test_t014_command_nao_e_mais_stub_e_emite_secoes():
+    """T014: CLI deixa de stubar comentários; contrato cita seções do relatório."""
+    text = _IMPORT_NOTAS_COMMAND.read_text(encoding='utf-8')
+    assert 'no-op até US2' not in text
+    assert 'comentários stub' not in text.lower()
+    assert 'Comentários stub' not in text
+    assert 'comentarios_criados' in text
+    assert 'comentarios_inalterados' in text
+    assert 'orfaos_autor' in text
+    assert 'transaction.atomic' in text
+    assert 'format_notas_comentarios_report' in text
+    import_blob = '\n'.join(
+        line
+        for line in text.splitlines()
+        if line.lstrip().startswith(('import ', 'from '))
+    )
+    for token in _DENYLIST_IMPORT_TOKENS:
+        assert token not in import_blob, token
+
+
+@pytest.mark.django_db
+def test_t014_command_fase_comentarios_relatorio_exit_0(
+    colaborador, lider, tmp_path
+):
+    """T014: call_command persiste notas+comentários e emite comentarios_*/orfaos_autor."""
+    _t013_solides_ids(colaborador, lider)
+    competencia = _t009_catalogo()
+    avaliacao = _t009_avaliacao(colaborador)
+    etapa = avaliacao.etapa
+    concluida = avaliacao.concluida
+    nome = colaborador.nome
+    lider_nome = lider.nome
+    criado = datetime(2024, 6, 3, 14, 30, 0)
+    texto_lider = 'Desempenho consistente no trimestre.'
+    texto_auto = 'Minha autoavaliação qualitativa.'
+    notas, comentarios, avaliacoes = _t009_paths(
+        tmp_path,
+        notas_rows=[
+            _nota_row(
+                ident='n1',
+                avaliacao_id='1001',
+                avaliador=nome,
+                avaliado=nome,
+                nota=3,
+            ),
+            _nota_row(
+                ident='n2',
+                avaliacao_id='1001',
+                avaliador=lider_nome,
+                avaliado=nome,
+                nota=4,
+            ),
+        ],
+        header_rows=[
+            _header_row('1001', nome_avaliado=nome, nome_avaliador=nome),
+        ],
+        comentarios_rows=[
+            _comentario_row(
+                avaliacao_id='1001',
+                avaliador_id='201',
+                avaliador=lider_nome,
+                avaliado=nome,
+                comentario=texto_lider,
+                criado_em=criado,
+            ),
+            _comentario_row(
+                avaliacao_id='1001',
+                avaliador_id='101',
+                avaliador=nome,
+                avaliado=nome,
+                comentario=texto_auto,
+                criado_em=criado,
+            ),
+            _comentario_row(
+                avaliacao_id='1001',
+                avaliador_id='9999',
+                avaliador='Ninguém Desconhecido',
+                avaliado=nome,
+                comentario='Autor irresolvível não deve persistir.',
+                criado_em=criado,
+            ),
+        ],
+    )
+    report_path = tmp_path / 'relatorio-notas-comentarios.txt'
+    stdout = StringIO()
+    before_av = Avaliacao.objects.count()
+    before_users = CustomUser.objects.count()
+
+    result = call_command(
+        'importar_notas_comentarios',
+        notas=str(notas),
+        comentarios=str(comentarios),
+        avaliacoes=str(avaliacoes),
+        report_file=str(report_path),
+        stdout=stdout,
+    )
+
+    text = stdout.getvalue()
+    file_text = report_path.read_text(encoding='utf-8')
+    assert result in (0, None)
+    assert file_text == text
+    assert '=== Importação notas/comentários legado Sólides ===' in text
+    assert 'modo: persist' in text
+    assert 'notas_criadas: 1' in text
+    assert 'comentarios_criados: 2' in text
+    assert 'comentarios_inalterados: 0' in text
+    assert 'orfaos_autor: 1' in text
+    sections = _amostra_items_by_section(text)
+    assert 'comentarios_criados:' in sections
+    assert 'comentarios_inalterados:' in sections
+    assert 'orfaos_autor:' in sections
+    assert len(sections['comentarios_criados:']) == 2
+    assert len(sections['orfaos_autor:']) == 1
+    assert 'avaliador_id=***999' in sections['orfaos_autor:'][0]
+    assert 'motivo=usuario_nao_resolvido' in sections['orfaos_autor:'][0]
+    assert texto_lider not in text
+    assert texto_auto not in text
+    assert 'Autor irresolvível' not in text
+    assert 'Ninguém Desconhecido' not in text
+    assert nome not in text
+    assert lider_nome not in text
+    assert colaborador.email not in text
+    assert lider.email not in text
+    assert _EMAIL not in text
+    assert Avaliacao.objects.count() == before_av
+    assert CustomUser.objects.count() == before_users
+    assert CustomUser.objects.filter(solides_id='9999').exists() is False
+    linha = AvaliacaoCompetencia.objects.get(
+        avaliacao=avaliacao, competencia=competencia
+    )
+    assert linha.nota_autoavaliacao == Decimal('3.00')
+    assert linha.nota_lider == Decimal('4.00')
+    avaliacao.refresh_from_db()
+    assert avaliacao.nota_final_lider is not None
+    assert avaliacao.etapa == etapa
+    assert avaliacao.concluida == concluida
+    assert Feedback.objects.filter(avaliacao=avaliacao).count() == 2
+    lider_fb = Feedback.objects.get(avaliacao=avaliacao, tipo=Feedback.Tipo.LIDER)
+    auto_fb = Feedback.objects.get(
+        avaliacao=avaliacao, tipo=Feedback.Tipo.COLABORADOR
+    )
+    assert lider_fb.autor_id == lider.pk
+    assert lider_fb.conteudo == texto_lider
+    assert lider_fb.ciente_em is not None
+    assert auto_fb.autor_id == colaborador.pk
+    assert auto_fb.conteudo == texto_auto
+    assert auto_fb.ciente_em is None
+
+    stdout_2 = StringIO()
+    result_2 = call_command(
+        'importar_notas_comentarios',
+        notas=str(notas),
+        comentarios=str(comentarios),
+        avaliacoes=str(avaliacoes),
+        stdout=stdout_2,
+    )
+    text_2 = stdout_2.getvalue()
+    assert result_2 in (0, None)
+    assert 'comentarios_criados: 0' in text_2
+    assert 'comentarios_inalterados: 2' in text_2
+    assert 'orfaos_autor: 1' in text_2
+    assert Feedback.objects.filter(avaliacao=avaliacao).count() == 2
+    lider_fb.refresh_from_db()
+    assert lider_fb.conteudo == texto_lider
 
 
 # --- T011 validação US1 (quickstart C2–C5) ---
@@ -1408,6 +1954,140 @@ def test_t011_c5_calculation_error_vira_conflito_sem_media(
 )
 def test_t011_c5_git_diff_evaluation_e_denylist_vazios():
     """C5 / FR-021: evaluation.py e denylist intactos (chamar ≠ editar)."""
+    evaluation_diff = _git_diff(
+        'HEAD', '--', 'apps/reviews/services/evaluation.py'
+    )
+    assert evaluation_diff == '', evaluation_diff
+
+    working_tree = _git_diff('HEAD', '--', *_DENYLIST_PATHS)
+    assert working_tree == '', working_tree
+
+    for base in ('development', 'origin/development', 'main'):
+        if _git_rev_exists(base):
+            vs_base = _git_diff(base, '--', *_DENYLIST_PATHS)
+            assert vs_base == '', vs_base
+            break
+
+
+# --- T015 validação US2 (quickstart C6) ---
+
+
+@pytest.mark.django_db
+def test_t015_c6_comentarios_ciencia_autor_n_textos_etapa_intacta(
+    colaborador, lider, tmp_path
+):
+    """C6: líder com ciência; auto sem ciência; inativo ok; órfão; N textos."""
+    _t013_solides_ids(colaborador, lider)
+    autor_inativo = _make_autor(
+        email='ex-lider-c6@test.greenn.com.br',
+        nome='Carla Inativa C6',
+        solides_id='202',
+        is_active=False,
+    )
+    avaliacao = _t009_avaliacao(colaborador)
+    etapa = avaliacao.etapa
+    concluida = avaliacao.concluida
+    criado = datetime(2024, 6, 3, 14, 30, 0)
+    notas, comentarios, avaliacoes = _t009_paths(
+        tmp_path,
+        notas_rows=[],
+        header_rows=[
+            _header_row(
+                '1001',
+                nome_avaliado=colaborador.nome,
+                nome_avaliador=colaborador.nome,
+            ),
+        ],
+        comentarios_rows=[
+            _comentario_row(
+                avaliacao_id='1001',
+                avaliador_id='201',
+                avaliador=lider.nome,
+                avaliado=colaborador.nome,
+                comentario='Primeiro texto do líder.',
+                criado_em=criado,
+            ),
+            _comentario_row(
+                avaliacao_id='1001',
+                avaliador_id='201',
+                avaliador=lider.nome,
+                avaliado=colaborador.nome,
+                comentario='Segundo texto distinto do líder.',
+                criado_em=criado,
+            ),
+            _comentario_row(
+                avaliacao_id='1001',
+                avaliador_id='101',
+                avaliador=colaborador.nome,
+                avaliado=colaborador.nome,
+                comentario='Minha autoavaliação qualitativa.',
+                criado_em=criado,
+            ),
+            _comentario_row(
+                avaliacao_id='1001',
+                avaliador_id='202',
+                avaliador=autor_inativo.nome,
+                avaliado=colaborador.nome,
+                comentario='Comentário de autor inativo.',
+                criado_em=criado,
+            ),
+            _comentario_row(
+                avaliacao_id='1001',
+                avaliador_id='9999',
+                avaliador='Ninguém Desconhecido',
+                avaliado=colaborador.nome,
+                comentario='Autor irresolvível.',
+                criado_em=criado,
+            ),
+        ],
+    )
+    before_users = CustomUser.objects.count()
+    before_av = Avaliacao.objects.count()
+
+    report = import_notas_comentarios(notas, comentarios, avaliacoes)
+
+    assert report.comentarios_criados == 4
+    assert report.n_orfaos_autor == 1
+    assert Feedback.objects.filter(avaliacao=avaliacao).count() == 4
+
+    lider_fbs = list(
+        Feedback.objects.filter(
+            avaliacao=avaliacao, autor=lider, tipo=Feedback.Tipo.LIDER
+        ).order_by('pk')
+    )
+    assert len(lider_fbs) == 2
+    expected = timezone.make_aware(criado, timezone.get_current_timezone())
+    for fb in lider_fbs:
+        assert fb.tipo == Feedback.Tipo.LIDER
+        assert fb.ciente_em is not None
+        assert abs((fb.ciente_em - expected).total_seconds()) < 0.001
+
+    auto_fb = Feedback.objects.get(
+        avaliacao=avaliacao, tipo=Feedback.Tipo.COLABORADOR
+    )
+    assert auto_fb.autor_id == colaborador.pk
+    assert auto_fb.ciente_em is None
+
+    assert autor_inativo.is_active is False
+    inativo_fb = Feedback.objects.get(avaliacao=avaliacao, autor=autor_inativo)
+    assert inativo_fb.tipo == Feedback.Tipo.LIDER
+    assert inativo_fb.ciente_em is not None
+
+    avaliacao.refresh_from_db()
+    assert avaliacao.etapa == etapa
+    assert avaliacao.concluida == concluida
+    assert CustomUser.objects.count() == before_users
+    assert CustomUser.objects.filter(solides_id='9999').exists() is False
+    assert Avaliacao.objects.count() == before_av
+    assert Avaliacao.objects.filter(solides_id='1001').count() == 1
+
+
+@pytest.mark.skipif(
+    shutil.which('git') is None,
+    reason='git ausente no PATH (ex. container web sem git)',
+)
+def test_t015_c6_git_diff_denylist_vazio():
+    """C6: denylist intacta (US2 não edita stage/cycle/evaluation/scope/012)."""
     evaluation_diff = _git_diff(
         'HEAD', '--', 'apps/reviews/services/evaluation.py'
     )
