@@ -11,6 +11,7 @@ ler `data/legado-solides/raw/`.
 | `avaliacoes_headers_min.xlsx` | 011 | Cabeçalhos de avaliação (agregação 1:1) — **reusado** como mapa 013 |
 | `notas_min.xlsx` | 013 | Notas por competência (auto/líder, IDs colapsados, conflitos) |
 | `comentarios_min.xlsx` | 013 | Comentários qualitativos (líder/auto, autor órfão, serial Excel) |
+| `pdi_min.xlsx` | 014 | PDIs + 1 ação (match único, órfão, ambíguo, inativo, de-para, conflitos) |
 
 E-mails: `@example.com` (RFC 2606). CPF sentinela `000.000.000-00` (coluna
 presente só para provar que PII é ignorada — **não** persistida). Nomes de
@@ -108,3 +109,25 @@ Planilha `sheet1`. Colunas obrigatórias + `Identificador Solicitação` /
 | `1001` | Ana Silva `101` | auto | ISO `2024-06-03T09:15:00` | `ciente_em` null |
 | `1001` | `88888` / Ninguem Desconhecido Fixture | — | serial `45446.5` | `orfaos_autor` (não inventa User) |
 | `1002` colapsado | Bruno Costa `102` | líder | serial `45323.25` | mesma canônica `1001` |
+
+## `pdi_min.xlsx` (014 / T015)
+
+Planilha `sheet1`. Colunas obrigatórias do dump de PDI + opcionais
+`Criado em` / `Identificador` (pessoa) / `Identificador Solicitação` +
+`CPF` / `E-mail` sentinela (ignorados — **não** persistidos, **não**
+vazam no relatório). Nomes alinhados ao crosswalk 010. **Proibido**
+`raw/`.
+
+| Nome | ID | Status | Prazo | Subset |
+|---|---|---|---|---|
+| Ana Silva | `101` | `finalizado` | ISO `2024-06-01` (passado) | match único; concat 3 trechos `\n\n`; PDI `concluido` / ação `concluida`; `Criado em` serial `45446.5`; título/objetivo longos (máscara C8) |
+| Bruno Costa | `102` | `em_andamento` | ISO `2027-12-31` (futuro) | match único; concat 2 trechos; PDI `ativo` / ação `pendente` |
+| Gestor Alpha | `100` | `em_andamento` | serial `45446.0` (passado) | match único; PDI `ativo` / ação `atrasada` |
+| Carla Dias | `103` | `finalizado` | `date` `2024-01-15` | inativo ok (demitida 010); persiste |
+| Usuario Orfao Fixture | `99999` | `em_andamento` | ISO futuro | `orfaos_usuario` (não inventa User); solicitação `999` informativa |
+| Nome Ambiguo | — | `em_andamento` | ISO futuro | sem ID; 2+ `canonical_key` → órfão; nunca o “primeiro” |
+| Ana Silva | `102` | `em_andamento` | ISO futuro | `id_vs_nome` (nome único ≠ ID único) |
+| Bruno Costa | `102` | `arquivado` | ISO futuro | `status_desconhecido`; zero `PDI.arquivado` |
+| Gestor Alpha | `100` | `em_andamento` | `prazo-nao-e-data` | `prazo_invalido`; não inventa prazo |
+| Fernanda Lima | — | `em_andamento` | ISO futuro | `descricao_vazia` (três trechos vazios); sem 2ª ação |
+| Diego Alves | `104` | `em_andamento` | ISO futuro | título 201 chars → `titulo_excede_limite` (não truncar) |
