@@ -46,6 +46,10 @@ _SAMPLE_TIPO_TOKENS = frozenset({"colaborador", "lider", "líder", "auto"})
 _SAMPLE_STATUS_ACAO = frozenset(
     {"atrasada", "pendente", "concluida", "concluída"}
 )
+_SAMPLE_ORFAO_USUARIO = frozenset(
+    {"usuario_nao_resolvido", "nome_ambiguo"}
+)
+_SAMPLE_ORFAO_SOLICITACAO = frozenset({"informativo_sem_fk"})
 _PII_FIELD_RE = re.compile(
     r"\b(nome|comentario|comentário|conteudo|conteúdo|email|e-mail|"
     r"titulo|título|objetivo|situacao|situação)=([^|\n]+)",
@@ -1142,10 +1146,11 @@ def format_notas_comentarios_report(report: ImportReport) -> str:
 def format_pdi_report(report: ImportReport) -> str:
     """Serializa o relatório 014 (PDI/ações) — contrato §Formato.
 
-    Contadores + amostra mascarada (max 5 por seção, T006 / SC-008).
+    Contadores + amostra mascarada (max 5 por seção, T006 / T023 / SC-008).
     NEVER emite nome, e-mail, linha bruta, título/objetivo/situação
     completos; digest/IDs via ``mask_solides_id``. Superfície exclusiva
     de stdout/``--report-file`` (mesmo texto UTF-8 nas duas saídas).
+    Logs NÃO imprimem linha XLSX crua.
     """
     lines: list[str] = [
         "=== Importação PDI/ações legado Sólides ===",
@@ -1401,16 +1406,20 @@ def _format_pdi_acao(entry: ReportEntry) -> str:
 
 
 def _format_pdi_orfao_usuario(entry: ReportEntry) -> str:
+    motivo = _token_ou_mascara(entry.motivo, _SAMPLE_ORFAO_USUARIO)
     parts = [f"  - linha={_mask_emails_in_text(entry.label)}"]
-    if entry.motivo.strip():
-        parts.append(f"motivo={_mask_emails_in_text(entry.motivo.strip())}")
+    if motivo:
+        parts.append(f"motivo={motivo}")
     return " | ".join(parts)
 
 
 def _format_pdi_orfao_solicitacao(entry: ReportEntry) -> str:
+    motivo = _token_ou_mascara(
+        entry.motivo or "informativo_sem_fk", _SAMPLE_ORFAO_SOLICITACAO
+    )
     return (
         f"  - id_legado={mask_solides_id(entry.label)}"
-        f" | motivo={entry.motivo.strip() or 'informativo_sem_fk'}"
+        f" | motivo={motivo or 'informativo_sem_fk'}"
     )
 
 

@@ -2,7 +2,7 @@
 
 **Data do dump:** 2026-06-24 (prefixo `20260624` nos nomes dos arquivos)  
 **Origem:** exportação/backup Sólides Performance  
-**Status:** inventário e mapeamento documentados (Decisão #22 / PRD Sprint 6.5). Comandos de import: `importar_competencias_cargo` (003), `importar_colaboradores` (010), **`importar_ciclos_avaliacoes` (011 — passos 4→5 no mesmo comando)**, **`importar_notas_comentarios` (013 — passo 6.5.5, notas + comentários no mesmo comando)**. PDI (6.5.6) ainda não implementado.
+**Status:** inventário e mapeamento documentados (Decisão #22 / PRD Sprint 6.5). Comandos de import: `importar_competencias_cargo` (003), `importar_colaboradores` (010), **`importar_ciclos_avaliacoes` (011 — passos 4→5 no mesmo comando)**, **`importar_notas_comentarios` (013 — passo 6.5.5, notas + comentários no mesmo comando)**, **`importar_pdi` (014 — passo 7 / PRD 6.5.6, 1 PDI + 1 ação por linha)**.
 
 Este diretório alimenta a especificação e os management commands da Sprint 6.5 (PRD §6.5). Não executar writes de produção a partir destes arquivos sem `--dry-run` e banco descartável/staging.
 
@@ -20,7 +20,8 @@ data/legado-solides/
 │   ├── solicitacoes_min.xlsx           ← 011
 │   ├── avaliacoes_headers_min.xlsx     ← 011 (mapa de IDs reusado em 013)
 │   ├── notas_min.xlsx                  ← 013
-│   └── comentarios_min.xlsx            ← 013
+│   ├── comentarios_min.xlsx            ← 013
+│   └── pdi_min.xlsx                    ← 014 (CI / pytest — sem PII real)
 └── raw/               ← backups completos (contêm PII — ver § Segurança)
     ├── backup_colaboradores_*.xlsx
     ├── backup_habilidades_*.xlsx
@@ -124,7 +125,7 @@ Ordem segura para não quebrar FKs nem regras de domínio:
 4. Solicitações → Ciclo (status **sempre** encerrado; histórico **não** abre ciclo ativo)
 5. [6.5.4] Cabeçalhos Avaliacao — backup_avaliacoes (agregação 1:1; estado terminal; **sem** notas)
 6. [6.5.5] Notas + comentários — backup_notas + backup_comentarios (**após** 011)
-7. [6.5.6] PDI — backup_pdi                         ← ainda não implementado
+7. [6.5.6] PDI + 1 ação — backup_pdi — importar_pdi (após 003+010; 011/013 **não** bloqueiam)
 8. Homologação — contagens, FKs, pytest stage/scope
 ```
 
@@ -174,7 +175,29 @@ python manage.py importar_notas_comentarios \
 
 Layout das fixtures: `data/legado-solides/samples/README.md`. Contrato: `specs/013-import-notas-comentarios-legado/contracts/import-command-contract.md`. Relatório com amostra **mascarada** (máx. 5 por seção; sem dump de comentário completo, nome ou e-mail).
 
-**Denylist (não alterar na importação):** `stage.py`, `cycle.py` (`open_cycle` / `close_cycle`), `approval.py`, **editar** `evaluation.py`, `adherence.py`, `scope.py`, urls/templates 012, `pdi`/`talent`, regras de avanço de etapa. 011 persiste cabeçalhos sem `nota_final_*`. 013 **chama** `calcular_nota_final_lider` / `calcular_nota_final_autoavaliacao` e persiste `AvaliacaoCompetencia`/`Feedback`; **não** chama `create_competency_lines` nem inventa `Avaliacao`/`User`/`Ciclo`.
+**Passo 7 (6.5.6):** comando fechado `importar_pdi` (spec 014). Um path `--pdi`. **Pré-condição dura:** 003 (chave canônica) + 010 (colaboradores, inclusive inativos; schema `PDI.solides_id`). Specs **011 e 013 são opcionais** — PDI **não** tem FK ciclo/avaliação; `Identificador Solicitação` é só informativo no relatório. Sem `--ciclo`. Sem migration nesta fatia.
+
+`--dry-run` é **obrigatório em staging** antes de qualquer persistência (samples no CI; `raw/` só manual, nunca no CI). Homologação do dump real (~86 linhas) é **manual em staging**.
+
+```bash
+# CI / local — somente sample anonimizado (sem PII)
+python manage.py importar_pdi \
+  --pdi data/legado-solides/samples/pdi_min.xlsx \
+  --dry-run
+
+# Staging — backup raw (PII; nunca no CI). Dry-run primeiro; persist só depois.
+python manage.py importar_pdi \
+  --pdi data/legado-solides/raw/backup_pdi_20260624.xlsx \
+  --dry-run
+
+python manage.py importar_pdi \
+  --pdi data/legado-solides/raw/backup_pdi_20260624.xlsx \
+  --report-file /tmp/relatorio-pdi-legado.txt
+```
+
+Layout da fixture: `data/legado-solides/samples/README.md` (`pdi_min.xlsx`). Contrato: `specs/014-import-pdi-acoes-legado/contracts/import-command-contract.md`. Relatório com amostra **mascarada** (máx. 5 por seção; sem dump de título/objetivo/situação completos, nome ou e-mail).
+
+**Denylist (não alterar na importação):** `stage.py`, `cycle.py` (`open_cycle` / `close_cycle`), `approval.py`, **editar** `evaluation.py`, `adherence.py`, `scope.py`, urls/templates 012, `apps/pdi/models.py` / `views.py` / `urls.py` / `forms.py` / `overdue.py` / `progress.py` / `tasks.py`, mutators `talent`, regras de avanço de etapa. 011 persiste cabeçalhos sem `nota_final_*`. 013 **chama** `calcular_nota_final_lider` / `calcular_nota_final_autoavaliacao` e persiste `AvaliacaoCompetencia`/`Feedback`; **não** chama `create_competency_lines` nem inventa `Avaliacao`/`User`/`Ciclo`. 014 persiste `PDI`/`AcaoPDI` via `full_clean()`+`save()` (hook de atraso **só** via `AcaoPDI.save()`); **não** chama `mark_overdue_pdi_actions` / `calculate_pdi_progress` / `get_visible_users`; **não** inventa User.
 
 ---
 
@@ -191,7 +214,7 @@ PRD 6.5.1 prevê `solides_id` em `CustomUser`, `Cargo`, `Competencia`, `Avaliaca
 | **Ciclo** | `Identificador` (solicitações) / `Identificador Solicitação` (avaliações) | `Ciclo.solides_id`; **sempre** `status=encerrado` (finished/draft/active/canceled) |
 | **Avaliação** | `Identificador` (avaliações) | `Avaliacao.solides_id` **canônico** (autoavaliação ou `min_id`); N linhas → 1 cabeçalho por `(ciclo, usuario)` |
 | **Nota** | `Identificador Avaliação` + `Identificador Habilidade` | Join avaliação + competência |
-| **PDI** | (sem ID explícito no export) | Chave composta: `Nome` + `Título do PDI` + `Criado em` ou gerar hash determinístico |
+| **PDI** | (sem ID explícito no export) | Digest estável `pdi_` + sha256 hex[:40] de `canonical_key(Nome)` + título [+ `Criado em` UTC se parseável]; **nunca** nome/título em claro em `solides_id` |
 
 ---
 
@@ -277,14 +300,19 @@ PRD 6.5.1 prevê `solides_id` em `CustomUser`, `Cargo`, `Competencia`, `Avaliaca
 
 ### `backup_pdi_*.xlsx` → `pdi.PDI` / `pdi.AcaoPDI`
 
+1 linha → **1 PDI + 1 ação** (ou nenhum, se órfão/conflito). Contrato: `specs/014-import-pdi-acoes-legado/contracts/column-mapping-contract.md`.
+
 | Coluna | Campo | Notas |
 |---|---|---|
-| `Nome` | FK `usuario` | |
-| `Título do PDI` | `PDI.titulo` | |
-| `Status` | `PDI.status` | De-para: `finalizado`→`concluido`, `em_andamento`→`ativo` |
-| `Objetivo` / `Situação Atual` / `Situação Desejada` | `AcaoPDI.descricao` ou agregado | Modelo GP: PDI + ações — definir granularidade na spec |
-| `Data de Entrega` | `AcaoPDI.prazo` | Serial Excel ou ISO |
-| — | atrasada | Se prazo vencido e não finalizado → `AcaoPDI.status=atrasada` (PRD 6.5.6) |
+| `Nome` | FK `usuario` / `AcaoPDI.responsavel` | Match único `canonical_key` (incl. inativos). ID pessoa opcional reforça se único e coerente. Zero/2+ → `orfaos_usuario` (**não** inventa User; **não** usa `line_manager` como responsável). Responsável = dono. |
+| `Título do PDI` | `PDI.titulo` | `display_name`; vazio ou `len>200` → conflito (não truncar) |
+| `Status` | `PDI.status` | `finalizado`→`concluido`; `em_andamento`→`ativo`; senão conflito. **Nunca** `arquivado` |
+| `Objetivo` / `Situação Atual` / `Situação Desejada` | `AcaoPDI.descricao` | Concat `\n\n` dos trechos não vazios; três vazios → `descricao_vazia`. **Não** três ações. |
+| `Data de Entrega` | `AcaoPDI.prazo` | `parse_legacy_date` (serial Excel ou ISO); ilegível → conflito; **não** inventa prazo |
+| `Criado em` (opcional) | material do digest | `parse_legacy_datetime`; ilegível → omite do hash |
+| `Identificador Solicitação` (opcional) | relatório | Informativo; **sem** FK ciclo |
+| — | `PDI.solides_id` | Digest `pdi_`+40 hex (len 44); upsert por digest |
+| — | `AcaoPDI.status` | `concluida` se PDI concluído; senão `atrasada` se prazo anterior à data da carga; senão `pendente`. **Nunca** `em_andamento` de ação. Hook de atraso só via `AcaoPDI.save()` |
 
 ### `backup_treinamentos_*.xlsx`
 
@@ -312,7 +340,8 @@ python manage.py importar_competencias_cargo \
 Contrato: `specs/003-import-catalogo-legado/contracts/import-command-contract.md`
 
 Passos 4→5 (ciclos + cabeçalhos): ver § Ordem de importação — comando `importar_ciclos_avaliacoes`.  
-Passo 6.5.5 (notas + comentários, **depois** da 011): comando `importar_notas_comentarios`.
+Passo 6.5.5 (notas + comentários, **depois** da 011): comando `importar_notas_comentarios`.  
+Passo 7 / 6.5.6 (PDI + 1 ação, **depois** de 003+010; 011/013 opcionais): comando `importar_pdi`.
 
 ---
 
@@ -340,17 +369,19 @@ Todo comando novo SHOULD:
 | `specs/010-import-colaboradores-legado/` | Colaboradores + schema `solides_id` (implementado) |
 | `specs/011-import-ciclos-avaliacoes-legado/` | Ciclos históricos + cabeçalhos (implementado) |
 | `specs/013-import-notas-comentarios-legado/` | Notas + comentários (implementado) |
+| `specs/014-import-pdi-acoes-legado/` | PDI + 1 ação (implementado) |
 | `apps/competencies/management/commands/importar_competencias_cargo.py` | Comando 003 |
 | `apps/accounts/management/commands/importar_colaboradores.py` | Comando 010 |
 | `apps/cycles/management/commands/importar_ciclos_avaliacoes.py` | Comando 011 (passos 4→5) |
 | `apps/reviews/management/commands/importar_notas_comentarios.py` | Comando 013 (passo 6.5.5) |
+| `apps/pdi/management/commands/importar_pdi.py` | Comando 014 (passo 7 / 6.5.6) |
 
 ---
 
 ## Próximos passos (fora deste README)
 
 1. [6.5.5] Notas + comentários — **implementado** (`importar_notas_comentarios`; consome mapa 011; **não** reabre agregação)
-2. [6.5.6] PDI
+2. [6.5.6] PDI + 1 ação — **implementado** (`importar_pdi`; 003+010 obrigatórios; 011/013 opcionais)
 3. Homologação staging com `raw/` (**manual**, fora do CI) — `--dry-run` obrigatório antes do persist
 
-*Última atualização: 2026-08-19 — comando fechado `importar_notas_comentarios`, ordem segura 011→013, samples 013 e `--dry-run` em staging. Inventário raw: inspeção read-only 2026-08-12.*
+*Última atualização: 2026-08-19 — comando fechado `importar_pdi` (passo 7 / PRD 6.5.6), sample `pdi_min.xlsx`, `--dry-run` obrigatório em staging. Inventário raw: inspeção read-only 2026-08-12.*

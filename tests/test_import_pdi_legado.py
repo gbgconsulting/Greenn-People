@@ -28,10 +28,15 @@ denylist SC-010. **Não** altera asserts de stage/scope/reject.
 T020: idempotência conservadora — upsert por digest; chave de ação
 divergente sem 2ª ação e sem delete; ``pdis_atualizados`` /
 ``acoes_atualizadas`` = 0. **Proibido** ``raw/``.
+
+T023: stdout/``--report-file`` só amostra mascarada (SC-008; máx. 5;
+zero título/objetivo/situação/nome/e-mail; IDs via ``mask_solides_id``;
+logs sem linha XLSX crua; evidência T018). **Proibido** ``raw/``.
 """
 
 from __future__ import annotations
 
+import inspect
 import re
 import shutil
 import subprocess
@@ -57,10 +62,12 @@ from apps.accounts.services.legacy_import.report import (
     ImportReport,
     format_pdi_report,
     mask_solides_id,
+    record_acao_atualizada,
     record_acao_criada,
     record_acao_inalterada,
     record_conflito,
     record_orfao_solicitacao,
+    record_pdi_atualizado,
     record_pdi_criado,
     record_pdi_inalterado,
     record_pdi_orfao_usuario,
@@ -1905,4 +1912,154 @@ def test_t018_ouro_git_diff_denylist_e_asserts_stage_scope_reject():
             migrations_vs_base = _git_diff(base, '--', '**/migrations/**')
             assert migrations_vs_base == '', migrations_vs_base
             break
+
+
+# --- T023: relatório stdout/--report-file só amostra mascarada (SC-008) ---
+
+_T023_LOG_DUMP_TOKENS = (
+    'import logging',
+    'logging.getLogger',
+    'logger.info(',
+    'logger.debug(',
+    'logger.warning(',
+    'logger.error(',
+    'print(row',
+    'print(rows',
+    'print(parsed',
+)
+_T023_HELPERS_SEM_PII = (
+    record_pdi_criado,
+    record_pdi_atualizado,
+    record_pdi_inalterado,
+    record_acao_criada,
+    record_acao_atualizada,
+    record_acao_inalterada,
+    record_pdi_orfao_usuario,
+    record_orfao_solicitacao,
+)
+_T023_HELPER_BANNED = (
+    'titulo',
+    'título',
+    'objetivo',
+    'situacao',
+    'situação',
+    'nome',
+    'email',
+    'descricao',
+    'descrição',
+)
+
+
+def test_t023_helpers_pdi_nao_aceitam_titulo_nome_email():
+    """T023: amostra 014 só digest/status/linha — sem título/nome/e-mail."""
+    for fn in _T023_HELPERS_SEM_PII:
+        params = inspect.signature(fn).parameters
+        for banned in _T023_HELPER_BANNED:
+            assert banned not in params, (fn.__name__, banned)
+
+
+def test_t023_allowlist_sem_log_de_linha_xlsx_crua():
+    """T023: allowlist não loga/imprime linha bruta da planilha."""
+    for rel in _t018_iter_allowlist_py():
+        blob = rel.read_text(encoding='utf-8')
+        for token in _T023_LOG_DUMP_TOKENS:
+            assert token not in blob, (rel, token)
+
+
+def test_t023_texto_livre_titulo_objetivo_e_redigido():
+    """T023: título/objetivo/nome colados na amostra não vazam no relatório."""
+    report = ImportReport(modo='persist', pdi_file='samples/pdi_min.xlsx')
+    record_pdi_criado(report, solides_id=_DIGEST)
+    record_acao_criada(
+        report,
+        pdi_solides_id=_DIGEST,
+        status_acao=_TITULO,
+    )
+    record_pdi_orfao_usuario(report, linha=12, motivo=_NOME)
+    record_orfao_solicitacao(report, id_legado='sol-99999', motivo=_OBJETIVO)
+    record_conflito(
+        report,
+        tipo='titulo_ausente',
+        extra=f'titulo={_TITULO} | objetivo={_OBJETIVO} | situacao={_SITUACAO}',
+        motivo=f'nome={_NOME} | email={_EMAIL}',
+    )
+    text = format_pdi_report(report)
+    assert _TITULO not in text
+    assert _OBJETIVO not in text
+    assert _SITUACAO not in text
+    assert _NOME not in text
+    assert _EMAIL not in text
+    assert _DIGEST not in text
+    assert mask_solides_id(_DIGEST) in text
+    assert mask_solides_id('sol-99999') in text
+    sections = _amostra_items_by_section(text)
+    assert _TITULO not in sections['acoes_criadas:'][0]
+    assert _NOME not in sections['orfaos_usuario:'][0]
+    assert _OBJETIVO not in sections['orfaos_solicitacao:'][0]
+
+
+@pytest.mark.django_db
+def test_t023_stdout_igual_report_file_amostra_mascarada_sc008(tmp_path: Path):
+    """T023 / SC-008 / T018 C8: stdout == --report-file; máx. 5; zero PII; stderr vazio."""
+    users = _t016_seed_world()
+    report_path = tmp_path / 'relatorio-pdi-legado-t023.txt'
+    stdout = StringIO()
+    stderr = StringIO()
+    assert 'raw' not in report_path.parts
+
+    result = call_command(
+        'importar_pdi',
+        pdi=str(_PDI_MIN),
+        report_file=str(report_path),
+        stdout=stdout,
+        stderr=stderr,
+    )
+
+    text = stdout.getvalue()
+    file_text = report_path.read_text(encoding='utf-8')
+    assert result in (0, None)
+    assert file_text == text
+    assert stderr.getvalue() == ''
+    assert text.startswith('=== Importação PDI/ações legado Sólides ===')
+    assert '--- Amostra (mascarada, max 5 por seção) ---' in text
+    _t018_assert_report_sem_pii(text)
+
+    pdi_ana = PDI.objects.get(titulo=_T016_TITULO_ANA, usuario=users['Ana Silva'])
+    assert pdi_ana.solides_id is not None
+    assert pdi_ana.solides_id not in text
+    assert mask_solides_id(pdi_ana.solides_id) in text
+    assert pdi_ana.titulo == _T016_TITULO_ANA
+    assert pdi_ana.titulo not in text
+    assert pdi_ana.acoes.get().descricao not in text
+
+    sections = _amostra_items_by_section(text)
+    for header, items in sections.items():
+        assert len(items) <= _SAMPLE_MAX, header
+        for item in items:
+            assert 'titulo=' not in item.casefold()
+            assert 'objetivo=' not in item.casefold()
+            assert 'situacao=' not in item.casefold()
+            assert 'situação=' not in item.casefold()
+            for token in _T018_PII:
+                assert token not in item, (header, token)
+
+
+@pytest.mark.skipif(
+    shutil.which('git') is None,
+    reason='git ausente no PATH (ex. container web sem git)',
+)
+def test_t023_denylist_intacta():
+    """T023: git diff vazio na denylist vs HEAD (allowlist-only em report.py)."""
+    working_tree = _git_diff('HEAD', '--', *_DENYLIST_PATHS)
+    assert working_tree == '', working_tree
+    overdue_diff = _git_diff('HEAD', '--', 'apps/pdi/services/overdue.py')
+    assert overdue_diff == '', overdue_diff
+    migrations = subprocess.run(
+        ['git', 'diff', 'HEAD', '--', '**/migrations/**'],
+        cwd=_REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert migrations.stdout == '', migrations.stdout
 
