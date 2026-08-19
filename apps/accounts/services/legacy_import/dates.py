@@ -1,9 +1,17 @@
 """Parser de datas/datetimes do legado Sólides (serial Excel + ISO).
 
-Conforme research R10/R6/R12 e ``contracts/column-mapping-contract.md``
-(§is_active / §Normalização de nome / §Datas ``Criado em``). Stdlib +
-Django ``USE_TZ`` + ``display_name`` — **sem** openpyxl (restrito a
-``parse_xlsx.py``).
+Conforme research R10/R6/R12 (010/011/013) e R8 (014) +
+``contracts/column-mapping-contract.md`` (§is_active / §Normalização de
+nome / §Datas). Stdlib + Django ``USE_TZ`` + ``display_name`` — **sem**
+openpyxl (restrito a ``parse_xlsx.py``).
+
+014 (T005): reusar estes helpers — **não** duplicar em ``pdi/``.
+
+- ``Data de Entrega`` (prazo da ação) → ``parse_legacy_date``
+- ``Criado em`` (material do digest, se parseável) → ``parse_legacy_datetime``
+
+Estender **somente** se o dump 6.5.6 trouxer formato fora de serial Excel,
+``date``/``datetime`` tipados, ISO/``fromisoformat``, ou sentinela ``0``/vazio.
 """
 
 from __future__ import annotations

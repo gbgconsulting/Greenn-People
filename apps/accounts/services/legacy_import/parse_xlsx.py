@@ -1,7 +1,7 @@
 """Leitura OOXML (openpyxl) de backups Sólides — colaboradores, solicitações,
-crosswalk, notas, comentários e habilidades.
+crosswalk, notas, comentários, habilidades e PDIs.
 
-Único módulo autorizado a importar ``openpyxl`` (research R1; 010/011/013).
+Único módulo autorizado a importar ``openpyxl`` (research R1; 010/011/013/014).
 Colunas: ``contracts/column-mapping-contract.md``; pré-condições:
 ``contracts/import-command-contract.md``.
 
@@ -83,6 +83,23 @@ HABILIDADES_REQUIRED_COLUMNS: tuple[str, ...] = (
     "Identificador",
     "Habilidade",
     "Grupo",
+)
+
+PDI_REQUIRED_COLUMNS: tuple[str, ...] = (
+    "Nome",
+    "Título do PDI",
+    "Status",
+    "Objetivo",
+    "Situação Atual",
+    "Situação Desejada",
+    "Data de Entrega",
+)
+
+PDI_OPTIONAL_COLUMNS: tuple[str, ...] = (
+    "Criado em",
+    "Identificador Solicitação",
+    "Identificador",
+    "Identificador Avaliado",
 )
 
 
@@ -210,6 +227,28 @@ class HabilidadeRow:
 
 
 @dataclass(frozen=True)
+class PdiRow:
+    """Linha de ``backup_pdi_*`` (sem persistência; 014).
+
+    Textos e datas permanecem **crus** (datetime / serial Excel / ISO /
+    None) para ``dates.py`` e o domínio em ``pdi.services.legacy_import``.
+    IDs opcionais já canônicos via ``canonicalize_id``.
+    """
+
+    linha: int
+    nome: Any
+    titulo: Any
+    status: Any
+    objetivo: Any
+    situacao_atual: Any
+    situacao_desejada: Any
+    data_entrega: Any
+    criado_em: Any
+    identificador_solicitacao: str
+    identificador_pessoa: str
+
+
+@dataclass(frozen=True)
 class ParsedColaboradores:
     """Resultado do parse de colaboradores (sem persistência)."""
 
@@ -262,6 +301,14 @@ class ParsedHabilidades:
     """Resultado do parse opcional de ``backup_habilidades_*``."""
 
     rows: tuple[HabilidadeRow, ...]
+    path: str
+
+
+@dataclass(frozen=True)
+class ParsedPdi:
+    """Resultado do parse de ``backup_pdi_*`` (sem persistência)."""
+
+    rows: tuple[PdiRow, ...]
     path: str
 
 
@@ -723,3 +770,59 @@ def parse_habilidades_xlsx(path: str | Path) -> ParsedHabilidades:
         )
 
     return ParsedHabilidades(rows=tuple(result), path=str(path))
+
+
+def _pdi_person_id(row: tuple[Any, ...], header_index: dict[str, int]) -> str:
+    """ID Sólides da pessoa se o header existir (não fatal se ausente).
+
+    Preferência: ``Identificador``; senão ``Identificador Avaliado``.
+    """
+    if "Identificador" in header_index:
+        return canonicalize_id(_cell(row, header_index, "Identificador"))
+    if "Identificador Avaliado" in header_index:
+        return canonicalize_id(_cell(row, header_index, "Identificador Avaliado"))
+    return ""
+
+
+def parse_pdi_xlsx(path: str | Path) -> ParsedPdi:
+    """Lê ``backup_pdi_*`` (014 — T004).
+
+    Colunas obrigatórias: ``Nome``, ``Título do PDI``, ``Status``,
+    ``Objetivo``, ``Situação Atual``, ``Situação Desejada``,
+    ``Data de Entrega``. Opcionais se o header existir: ``Criado em``,
+    ``Identificador Solicitação``, ID da pessoa (``Identificador`` /
+    ``Identificador Avaliado``). Células de data/texto permanecem cruas.
+    Células vazias **não** são erro de parse.
+
+    Raises:
+        LegacyParseError: arquivo / OOXML / colunas (fatal, zero writes).
+    """
+    path = Path(path)
+    raw_rows = _load_sheet_rows(path)
+    if not raw_rows:
+        raise LegacyParseError(f"Planilha vazia (sem header): {path}")
+
+    header_index = _header_index(raw_rows[0])
+    _require_columns(path, header_index, PDI_REQUIRED_COLUMNS)
+
+    result: list[PdiRow] = []
+    for excel_row, row in enumerate(raw_rows[1:], start=2):
+        result.append(
+            PdiRow(
+                linha=excel_row,
+                nome=_cell(row, header_index, "Nome"),
+                titulo=_cell(row, header_index, "Título do PDI"),
+                status=_cell(row, header_index, "Status"),
+                objetivo=_cell(row, header_index, "Objetivo"),
+                situacao_atual=_cell(row, header_index, "Situação Atual"),
+                situacao_desejada=_cell(row, header_index, "Situação Desejada"),
+                data_entrega=_cell(row, header_index, "Data de Entrega"),
+                criado_em=_cell(row, header_index, "Criado em"),
+                identificador_solicitacao=canonicalize_id(
+                    _cell(row, header_index, "Identificador Solicitação")
+                ),
+                identificador_pessoa=_pdi_person_id(row, header_index),
+            )
+        )
+
+    return ParsedPdi(rows=tuple(result), path=str(path))

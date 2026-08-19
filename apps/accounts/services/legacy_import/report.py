@@ -3,8 +3,8 @@
 Superfície pública reexportada por ``legacy_import.__init__``.
 Totais + amostra mascarada (max 5 por seção) conforme
 ``contracts/import-command-contract.md`` §Formato do relatório
-(010 colaboradores + 011 ciclos/avaliações + 013 notas/comentários)
-e research R12/R14 (010/011) / R13 (013).
+(010 colaboradores + 011 ciclos/avaliações + 013 notas/comentários
++ 014 PDIs/ações) e research R12/R14 (010/011) / R13 (013) / R10 (014).
 
 US2 (T017/010): contadores ``areas_*`` / ``cargos_*`` / ``usuarios_*`` /
 ``solides_id_preenchidos`` / ``demitidos_inativos`` + seções
@@ -23,6 +23,11 @@ US3 (T022/010): contadores ``gestores_vinculados`` / ``sem_gestor`` e seção
 ``habilidades_extras_criadas`` / ``ids_colapsados_resolvidos`` via
 ``format_notas_comentarios_report``. NEVER emite comentário completo,
 nome ou e-mail; IDs via ``mask_solides_id``.
+
+014 (T006): contadores ``pdis_*`` / ``acoes_*`` / ``orfaos_usuario`` /
+``orfaos_solicitacao`` / ``conflitos`` via ``format_pdi_report``. NEVER
+emite nome, e-mail, linha bruta, título/objetivo/situação completos;
+IDs/digest via ``mask_solides_id`` / ``mask_pii``.
 """
 
 from __future__ import annotations
@@ -38,8 +43,12 @@ _SAMPLE_MAX = 5
 # NÃO pode vazar via ``lado`` / ``tipo`` (T025 / SC-010).
 _SAMPLE_LADO_TOKENS = frozenset({"auto", "lider", "líder", "ambos"})
 _SAMPLE_TIPO_TOKENS = frozenset({"colaborador", "lider", "líder", "auto"})
+_SAMPLE_STATUS_ACAO = frozenset(
+    {"atrasada", "pendente", "concluida", "concluída"}
+)
 _PII_FIELD_RE = re.compile(
-    r"\b(nome|comentario|comentário|conteudo|conteúdo|email|e-mail)=([^|\n]+)",
+    r"\b(nome|comentario|comentário|conteudo|conteúdo|email|e-mail|"
+    r"titulo|título|objetivo|situacao|situação)=([^|\n]+)",
     flags=re.IGNORECASE,
 )
 
@@ -84,6 +93,11 @@ class ReportEntry:
     - 013 conflitos_ciclo_aberto: ``label`` = avaliacao_id; ``extra`` = ciclo.
     - 013 habilidades_extras: ``label`` = solides_id; ``extra`` = tipo.
     - 013 ids_colapsados_resolvidos: ``label`` = colapsado; ``extra`` = canônico.
+    - 014 pdis_*: ``label`` = digest ``solides_id`` (``pdi_``+hex).
+    - 014 acoes_*: ``label`` = digest do PDI; ``motivo`` = ``status_acao``.
+    - 014 orfaos_usuario: ``label`` = linha; ``motivo`` = código.
+    - 014 orfaos_solicitacao: ``label`` = id legado; ``motivo`` = código.
+    - 014 conflitos: ``label`` = tipo; ``extra``/``motivo`` = linha ou digest.
     """
 
     label: str
@@ -99,8 +113,9 @@ class ImportReport:
     resolve (áreas/cargos). Contadores ``nao_importaveis`` / ``conflitos`` /
     ``ciclos_hierarquia`` alinham a ``len`` das listas detalhadas.
     Amostra em ``format_report`` / ``format_ciclos_avaliacoes_report`` /
-    ``format_notas_comentarios_report`` trunca a 5 por seção (documentado
-    no header). NEVER dump de comentário completo / nome / e-mail.
+    ``format_notas_comentarios_report`` / ``format_pdi_report`` trunca a 5
+    por seção (documentado no header). NEVER dump de comentário completo
+    / nome / e-mail / título / objetivo / situação.
     """
 
     modo: str = "persist"
@@ -169,6 +184,23 @@ class ImportReport:
     amostra_habilidades_extras: list[ReportEntry] = field(default_factory=list)
     ids_colapsados_resolvidos: list[ReportEntry] = field(default_factory=list)
 
+    # --- 014: PDIs + uma ação por linha ---
+    pdi_file: str = ""
+    pdis_criados: int = 0
+    pdis_atualizados: int = 0
+    pdis_inalterados: int = 0
+    acoes_criadas: int = 0
+    acoes_atualizadas: int = 0
+    acoes_inalteradas: int = 0
+
+    amostra_pdis_criados: list[ReportEntry] = field(default_factory=list)
+    amostra_pdis_atualizados: list[ReportEntry] = field(default_factory=list)
+    amostra_pdis_inalterados: list[ReportEntry] = field(default_factory=list)
+    amostra_acoes_criadas: list[ReportEntry] = field(default_factory=list)
+    amostra_acoes_atualizadas: list[ReportEntry] = field(default_factory=list)
+    amostra_acoes_inalteradas: list[ReportEntry] = field(default_factory=list)
+    orfaos_solicitacao: list[ReportEntry] = field(default_factory=list)
+
     @property
     def n_nao_importaveis(self) -> int:
         """Contador alinhado à seção Não importáveis."""
@@ -223,6 +255,11 @@ class ImportReport:
     def n_ids_colapsados_resolvidos(self) -> int:
         """Contador alinhado à seção IDs colapsados resolvidos (013)."""
         return len(self.ids_colapsados_resolvidos)
+
+    @property
+    def n_orfaos_solicitacao(self) -> int:
+        """Contador alinhado à seção órfãos de solicitação (014, informativo)."""
+        return len(self.orfaos_solicitacao)
 
 
 # ---------------------------------------------------------------------------
@@ -694,6 +731,155 @@ def record_id_colapsado_resolvido(
     )
 
 
+# ---------------------------------------------------------------------------
+# Helpers 014 — PDIs / ações / órfãos (sem título, nome, e-mail ou linha crua)
+# ---------------------------------------------------------------------------
+
+
+def _pdi_digest_entry(solides_id: str) -> ReportEntry:
+    return ReportEntry(label=str(solides_id))
+
+
+def _acao_entry(pdi_solides_id: str, status_acao: str) -> ReportEntry:
+    return ReportEntry(
+        label=str(pdi_solides_id),
+        motivo=str(status_acao).strip(),
+    )
+
+
+def note_pdi_criado(report: ImportReport, n: int = 1) -> None:
+    """Incrementa ``pdis_criados``."""
+    report.pdis_criados += n
+
+
+def note_pdi_atualizado(report: ImportReport, n: int = 1) -> None:
+    """Incrementa ``pdis_atualizados`` (reservado; caminho feliz = 0)."""
+    report.pdis_atualizados += n
+
+
+def note_pdi_inalterado(report: ImportReport, n: int = 1) -> None:
+    """Incrementa ``pdis_inalterados``."""
+    report.pdis_inalterados += n
+
+
+def note_acao_criada(report: ImportReport, n: int = 1) -> None:
+    """Incrementa ``acoes_criadas``."""
+    report.acoes_criadas += n
+
+
+def note_acao_atualizada(report: ImportReport, n: int = 1) -> None:
+    """Incrementa ``acoes_atualizadas`` (reservado; caminho feliz = 0)."""
+    report.acoes_atualizadas += n
+
+
+def note_acao_inalterada(report: ImportReport, n: int = 1) -> None:
+    """Incrementa ``acoes_inalteradas``."""
+    report.acoes_inalteradas += n
+
+
+def record_pdi_criado(
+    report: ImportReport,
+    *,
+    solides_id: str,
+    increment_counter: bool = True,
+) -> None:
+    """Amostra de PDI criado — só digest; NEVER título/nome."""
+    report.amostra_pdis_criados.append(_pdi_digest_entry(solides_id))
+    if increment_counter:
+        report.pdis_criados += 1
+
+
+def record_pdi_atualizado(
+    report: ImportReport,
+    *,
+    solides_id: str,
+    increment_counter: bool = True,
+) -> None:
+    """Amostra de PDI atualizado (política conservadora: 0 no caminho feliz)."""
+    report.amostra_pdis_atualizados.append(_pdi_digest_entry(solides_id))
+    if increment_counter:
+        report.pdis_atualizados += 1
+
+
+def record_pdi_inalterado(
+    report: ImportReport,
+    *,
+    solides_id: str,
+    increment_counter: bool = True,
+) -> None:
+    """Amostra de PDI inalterado na 2ª run (mesma chave digest)."""
+    report.amostra_pdis_inalterados.append(_pdi_digest_entry(solides_id))
+    if increment_counter:
+        report.pdis_inalterados += 1
+
+
+def record_acao_criada(
+    report: ImportReport,
+    *,
+    pdi_solides_id: str,
+    status_acao: str,
+    increment_counter: bool = True,
+) -> None:
+    """Amostra de ação criada — digest do PDI + status; NEVER descrição."""
+    report.amostra_acoes_criadas.append(_acao_entry(pdi_solides_id, status_acao))
+    if increment_counter:
+        report.acoes_criadas += 1
+
+
+def record_acao_atualizada(
+    report: ImportReport,
+    *,
+    pdi_solides_id: str,
+    status_acao: str,
+    increment_counter: bool = True,
+) -> None:
+    """Amostra de ação atualizada (reservado; caminho feliz = 0)."""
+    report.amostra_acoes_atualizadas.append(
+        _acao_entry(pdi_solides_id, status_acao)
+    )
+    if increment_counter:
+        report.acoes_atualizadas += 1
+
+
+def record_acao_inalterada(
+    report: ImportReport,
+    *,
+    pdi_solides_id: str,
+    status_acao: str,
+    increment_counter: bool = True,
+) -> None:
+    """Amostra de ação inalterada pela chave natural."""
+    report.amostra_acoes_inalteradas.append(
+        _acao_entry(pdi_solides_id, status_acao)
+    )
+    if increment_counter:
+        report.acoes_inalteradas += 1
+
+
+def record_pdi_orfao_usuario(
+    report: ImportReport,
+    *,
+    linha: str | int,
+    motivo: str,
+) -> None:
+    """Órfão de pessoa (014) — só número de linha + código (contador = ``len``)."""
+    report.orfaos_usuario.append(
+        ReportEntry(label=str(linha), motivo=str(motivo).strip())
+    )
+
+
+def record_orfao_solicitacao(
+    report: ImportReport,
+    *,
+    id_legado: str,
+    motivo: str = "informativo_sem_fk",
+) -> None:
+    """Órfão informativo de solicitação — sem FK persistida (contador = ``len``)."""
+    report.orfaos_solicitacao.append(
+        ReportEntry(label=str(id_legado), motivo=str(motivo).strip())
+    )
+
+
 def _area_cargo_motivo(area: str, cargo: str) -> str:
     parts: list[str] = []
     if area.strip():
@@ -953,6 +1139,69 @@ def format_notas_comentarios_report(report: ImportReport) -> str:
     return _scrub_notas_comentarios_text("\n".join(lines) + "\n")
 
 
+def format_pdi_report(report: ImportReport) -> str:
+    """Serializa o relatório 014 (PDI/ações) — contrato §Formato.
+
+    Contadores + amostra mascarada (max 5 por seção, T006 / SC-008).
+    NEVER emite nome, e-mail, linha bruta, título/objetivo/situação
+    completos; digest/IDs via ``mask_solides_id``. Superfície exclusiva
+    de stdout/``--report-file`` (mesmo texto UTF-8 nas duas saídas).
+    """
+    lines: list[str] = [
+        "=== Importação PDI/ações legado Sólides ===",
+        f"modo: {report.modo}",
+        f"pdi_file: {report.pdi_file}",
+        "",
+        "--- Resumo ---",
+        f"pdis_criados: {report.pdis_criados}",
+        f"pdis_atualizados: {report.pdis_atualizados}",
+        f"pdis_inalterados: {report.pdis_inalterados}",
+        f"acoes_criadas: {report.acoes_criadas}",
+        f"acoes_atualizadas: {report.acoes_atualizadas}",
+        f"acoes_inalteradas: {report.acoes_inalteradas}",
+        f"orfaos_usuario: {report.n_orfaos_usuario}",
+        f"orfaos_solicitacao: {report.n_orfaos_solicitacao}",
+        f"conflitos: {report.n_conflitos}",
+        "",
+        "--- Amostra (mascarada, max 5 por seção) ---",
+        "pdis_criados:",
+    ]
+    lines.extend(
+        _sample_lines(report.amostra_pdis_criados, _format_pdi_digest_amostra)
+    )
+    lines.append("pdis_atualizados:")
+    lines.extend(
+        _sample_lines(report.amostra_pdis_atualizados, _format_pdi_digest_amostra)
+    )
+    lines.append("pdis_inalterados:")
+    lines.extend(
+        _sample_lines(report.amostra_pdis_inalterados, _format_pdi_digest_amostra)
+    )
+    lines.append("acoes_criadas:")
+    lines.extend(_sample_lines(report.amostra_acoes_criadas, _format_pdi_acao))
+    lines.append("acoes_atualizadas:")
+    lines.extend(
+        _sample_lines(report.amostra_acoes_atualizadas, _format_pdi_acao)
+    )
+    lines.append("acoes_inalteradas:")
+    lines.extend(
+        _sample_lines(report.amostra_acoes_inalteradas, _format_pdi_acao)
+    )
+    lines.append("orfaos_usuario:")
+    lines.extend(
+        _sample_lines(report.orfaos_usuario, _format_pdi_orfao_usuario)
+    )
+    lines.append("orfaos_solicitacao:")
+    lines.extend(
+        _sample_lines(report.orfaos_solicitacao, _format_pdi_orfao_solicitacao)
+    )
+    lines.append("conflitos:")
+    lines.extend(_sample_lines(report.conflitos, _format_conflito_pdi))
+    lines.append("")
+    lines.append("=== Fim ===")
+    return _scrub_notas_comentarios_text("\n".join(lines) + "\n")
+
+
 def _sample_lines(
     entries: list[ReportEntry],
     formatter: Callable[[ReportEntry], str],
@@ -1139,6 +1388,37 @@ def _format_id_colapsado_resolvido(entry: ReportEntry) -> str:
     )
 
 
+def _format_pdi_digest_amostra(entry: ReportEntry) -> str:
+    return f"  - solides_id={mask_solides_id(entry.label)}"
+
+
+def _format_pdi_acao(entry: ReportEntry) -> str:
+    status = _token_ou_mascara(entry.motivo, _SAMPLE_STATUS_ACAO)
+    parts = [f"  - pdi={mask_solides_id(entry.label)}"]
+    if status:
+        parts.append(f"status_acao={status}")
+    return " | ".join(parts)
+
+
+def _format_pdi_orfao_usuario(entry: ReportEntry) -> str:
+    parts = [f"  - linha={_mask_emails_in_text(entry.label)}"]
+    if entry.motivo.strip():
+        parts.append(f"motivo={_mask_emails_in_text(entry.motivo.strip())}")
+    return " | ".join(parts)
+
+
+def _format_pdi_orfao_solicitacao(entry: ReportEntry) -> str:
+    return (
+        f"  - id_legado={mask_solides_id(entry.label)}"
+        f" | motivo={entry.motivo.strip() or 'informativo_sem_fk'}"
+    )
+
+
+def _format_conflito_pdi(entry: ReportEntry) -> str:
+    """Conflito 014: códigos + linha/digest mascarado; sem título/nome."""
+    return _PII_FIELD_RE.sub(_repl_pii_field, _format_conflito(entry))
+
+
 def _mask_group_key(label: str) -> str:
     """``sol=123, av=456`` → ``sol=***123, av=***456``."""
     parts: list[str] = []
@@ -1180,7 +1460,7 @@ def _mask_solides_ids_in_text(text: str) -> str:
         r"\b(solicitacao|sol|av|avaliado_id|avaliador_id|avaliacao|"
         r"competencia|id_legado|habilidade_id|autor|colapsado|"
         r"can[oô]nico|canonical|solides_id|usuario|ciclo|"
-        r"superior_id|ids)=([^\s|,]+)",
+        r"superior_id|ids|pdi)=([^\s|,]+)",
         _repl_kv,
         masked,
         flags=re.IGNORECASE,
