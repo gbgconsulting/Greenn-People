@@ -3,6 +3,7 @@
 T007: concatenação FR-005, digest R-digest, de-para FR-010/FR-011,
 chave natural da ação e match único por ``canonical_key(Nome)``.
 T011 completa a matriz ID / ``id_vs_nome`` / órfão.
+T012 consome ``resolve_usuario`` + ``orfao_usuario_motivo`` no importer.
 
 Denylist intacta — **não** chama ``get_visible_users`` / ``user_in_scope`` /
 ``ScopedObjectMixin``; **não** inventa ``CustomUser``; **não** usa
@@ -19,6 +20,7 @@ from django.utils import timezone
 
 from apps.accounts.models import CustomUser
 from apps.accounts.services.legacy_import.dates import parse_legacy_datetime
+from apps.accounts.services.legacy_import.parse_xlsx import canonicalize_id
 from apps.competencies.services.catalog_import.normalize import (
     canonical_key,
     display_name,
@@ -165,13 +167,69 @@ def resolve_usuario(
     nome: str,
     solides_id: str | None = None,
 ) -> CustomUser | None:
-    """Match único de colaborador (incl. inativos). T011 completa a matriz ID/órfão.
+    """Resolve colaborador sem inventar User (research R5 / US2).
 
-    **NUNCA** ``get_or_create`` User. **NUNCA** escolher o primeiro em 2+.
-    ``solides_id`` é aceito na assinatura e ignorado até T011.
+    1. Se o ID da pessoa (``canonicalize_id``) está presente **e** há
+       unique hit em ``CustomUser.solides_id``: usar esse User, **exceto**
+       se ``Nome`` também for unique e apontar para **outra** pessoa →
+       ``id_vs_nome``.
+    2. Senão, match único por ``canonical_key(Nome)`` (incl. inativos).
+    3. Zero ou 2+ matches de nome → ``None`` (órfão; caller emite
+       ``orfaos_usuario``). **NUNCA** o primeiro. **NUNCA** ``get_or_create``.
+
+    Inatividade **não** bloqueia. **NUNCA** usa ``line_manager``.
     """
-    _ = solides_id  # T011: unique hit em CustomUser.solides_id + id_vs_nome
-    return _lookup_user_by_canonical_key_unique(nome)
+    sid = canonicalize_id(solides_id)
+    by_id = _lookup_user_by_solides_id_unique(sid) if sid else None
+    by_name = _lookup_user_by_canonical_key_unique(nome)
+
+    if by_id is not None:
+        if by_name is not None and by_name.pk != by_id.pk:
+            raise ResolveConflict("id_vs_nome")
+        return by_id
+
+    return by_name
+
+
+def orfao_usuario_motivo(nome: str) -> str:
+    """Código de ``orfaos_usuario`` quando ``resolve_usuario`` retornou ``None``.
+
+    ``nome_ambiguo`` se 2+ Users compartilham a chave canônica; senão
+    ``usuario_nao_resolvido`` (zero match / nome vazio). Não escolhe o
+    primeiro. Não inventa User.
+    """
+    key = canonical_key(_cell_text(nome)) if nome else ""
+    if not key:
+        return "usuario_nao_resolvido"
+    hits = 0
+    for user in CustomUser.objects.only("id", "nome").iterator():
+        if not user.nome:
+            continue
+        if canonical_key(user.nome) != key:
+            continue
+        hits += 1
+        if hits >= 2:
+            return "nome_ambiguo"
+    return "usuario_nao_resolvido"
+
+
+def _lookup_user_by_solides_id_unique(sid: str) -> CustomUser | None:
+    """Unique hit em ``CustomUser.solides_id``; 0 ou >1 → ``None``.
+
+    Inclui inativos. Não filtra ``is_active``. Não escolhe o primeiro em 2+.
+    """
+    if not sid:
+        return None
+
+    match: CustomUser | None = None
+    qs = CustomUser.objects.filter(solides_id=sid).only(
+        "id", "nome", "solides_id", "is_active"
+    )
+    for user in qs.iterator():
+        if match is not None:
+            return None
+        match = user
+    return match
 
 
 def _lookup_user_by_canonical_key_unique(nome: str) -> CustomUser | None:

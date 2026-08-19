@@ -21,8 +21,13 @@ Códigos de saída (``contracts/import-command-contract.md`` §Códigos de saíd
 - Não há exit ``2`` nesta versão (args inválidos também → ``1``).
 
 T009: CLI fina US1 (persistência 1+1). Sem regra de domínio aqui.
+T012: órfãos / ``id_vs_nome`` saem no relatório via ``format_pdi_report``
+e **não** viram exit ``1`` (não-fatais). Inatividade não é filtrada aqui.
+
 Sem UI/DRF/Celery; denylist intacta (não chama stage/open/close/approval/
-``get_visible_users`` / ``mark_overdue_pdi_actions`` / ``calculate_pdi_progress``).
+``get_visible_users`` / ``user_in_scope`` / ``ScopedObjectMixin`` /
+``mark_overdue_pdi_actions`` / ``calculate_pdi_progress``).
+**MUST NOT** herdar ``ScopedObjectMixin``; só ``BaseCommand``.
 """
 
 from __future__ import annotations
@@ -42,7 +47,12 @@ from apps.pdi.services.legacy_import import (
 
 
 class Command(BaseCommand):
-    """CLI fina T009: ``--pdi`` + relatório mascarado; exit 0|1."""
+    """CLI fina T009/T012: ``--pdi`` + relatório mascarado; exit 0|1.
+
+    Resolução de pessoa e persistência ficam no serviço. Este comando
+    **não** autoriza por escopo: sem ``get_visible_users``, sem
+    ``user_in_scope``, sem ``ScopedObjectMixin``.
+    """
 
     help = (
         'Importa PDIs e uma ação por linha do backup Sólides (OOXML) para o '
@@ -86,6 +96,7 @@ class Command(BaseCommand):
         """Args → importer (1 PDI + 1 ação) → relatório mascarado.
 
         Persistência, de-para e resolução de pessoa ficam no serviço.
+        Órfãos e ``id_vs_nome`` já vêm no ``ImportReport`` — exit ``0``.
         Aqui só args, códigos de saída e emissão de ``format_pdi_report``.
         """
         pdi_path = options['pdi']

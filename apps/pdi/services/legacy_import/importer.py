@@ -2,14 +2,17 @@
 
 Superfície pública: ``import_pdi`` (reexportada por ``__init__``).
 T008: persistência 1 PDI + 1 ação por linha resolvível (R-idempotência).
+T012: resolução de pessoa no lote — órfãos / ``id_vs_nome`` não-fatais.
 T019: dry-run / rollback; T020: consolidar idempotência.
 
 Denylist intacta — **nunca** chama ``open_cycle`` / ``close_cycle`` /
 ``advance_stage`` / approval / ``get_visible_users`` / ``user_in_scope`` /
-``mark_overdue_pdi_actions`` / ``calculate_pdi_progress``; **nunca** edita
-``overdue.py`` / ``models.py`` / views; **nunca** importa openpyxl
-(parse só em ``accounts``). Hook de atraso **somente** via ``AcaoPDI.save()``.
-**PROIBIDO** ``bulk_create``; **PROIBIDO** FK Ciclo/Avaliação.
+``ScopedObjectMixin`` / ``mark_overdue_pdi_actions`` /
+``calculate_pdi_progress``; **nunca** edita ``overdue.py`` / ``models.py`` /
+views; **nunca** importa openpyxl (parse só em ``accounts``). Hook de atraso
+**somente** via ``AcaoPDI.save()``. **PROIBIDO** ``bulk_create``; **PROIBIDO**
+FK Ciclo/Avaliação. Inatividade **não** bloqueia e **não** cria atalho de
+visibilidade.
 """
 
 from __future__ import annotations
@@ -44,6 +47,7 @@ from apps.pdi.services.legacy_import.resolve import (
     map_acao_status,
     map_pdi_status,
     normalize_pdi_titulo,
+    orfao_usuario_motivo,
     resolve_usuario,
 )
 
@@ -79,7 +83,8 @@ def import_pdi(
     2. Schema: coluna ``PDI.solides_id`` presente (pré-requisito 010).
     3. ``data_carga = timezone.localdate()`` congelada para FR-011.
     4. Persist: uma ``transaction.atomic()`` cobre o lote; por linha
-       resolvível, PDI **e** ação ou nenhum. Conflitos/órfãos não-fatais.
+       resolvível, PDI **e** ação ou nenhum. Órfãos (``orfaos_usuario``) e
+       ``id_vs_nome`` são não-fatais: skip da linha, lote continua.
     5. ``dry_run``: stub até T019.
     """
     parsed = parse_pdi_xlsx(pdi_path)
@@ -153,19 +158,19 @@ def _persist_row(
             id_legado=row.identificador_solicitacao,
         )
 
-    usuario = resolve_usuario(
-        nome=_cell_text(row.nome),
-        solides_id=row.identificador_pessoa or None,
-    )
-    if usuario is None:
-        record_pdi_orfao_usuario(
-            report,
-            linha=row.linha,
-            motivo="usuario_nao_resolvido",
-        )
-        return
-
     try:
+        usuario = resolve_usuario(
+            nome=_cell_text(row.nome),
+            solides_id=row.identificador_pessoa or None,
+        )
+        if usuario is None:
+            record_pdi_orfao_usuario(
+                report,
+                linha=row.linha,
+                motivo=orfao_usuario_motivo(_cell_text(row.nome)),
+            )
+            return
+
         titulo = normalize_pdi_titulo(row.titulo)
         pdi_status = map_pdi_status(row.status)
         descricao = concat_acao_descricao(

@@ -9,6 +9,8 @@ título/objetivo/situação completos). Sem persistência. **Proibido** ``raw/``
 
 T010: validação US1 via quickstart C2 + C5 + C6 (1+1, concat ``\\n\\n``,
 responsável = dono, de-para + atraso, digest, spy overdue, denylist).
+T013: validação US2 via C3 + C4 (órfão, ambíguo, ``id_vs_nome``, inativo
+ok, zero User inventado; denylist + asserts de ``test_scope.py`` intactos).
 XLSX em ``tmp_path`` — **proibido** ``raw/``. Samples oficiais ficam na T015.
 """
 
@@ -18,13 +20,16 @@ import re
 import shutil
 import subprocess
 from datetime import date, datetime, timedelta, timezone as dt_timezone
+from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from django.core.management import call_command
 from django.utils import timezone
 from openpyxl import Workbook
 
+from apps.accounts.models import CustomUser
 from apps.accounts.services.legacy_import.dates import (
     parse_legacy_date,
     parse_legacy_datetime,
@@ -41,11 +46,16 @@ from apps.accounts.services.legacy_import.report import (
     record_pdi_inalterado,
     record_pdi_orfao_usuario,
 )
+from apps.accounts.services.scope import get_visible_users, user_in_scope
 from apps.cycles.models import Ciclo
 from apps.pdi.models import AcaoPDI, PDI
 from apps.pdi.services.legacy_import import format_pdi_report as _reexport
 from apps.pdi.services.legacy_import import import_pdi
-from apps.pdi.services.legacy_import.resolve import build_pdi_digest
+from apps.pdi.services.legacy_import.resolve import (
+    ResolveConflict,
+    build_pdi_digest,
+    resolve_usuario,
+)
 from apps.reviews.models import Avaliacao
 
 _DATES_PY = (
@@ -282,11 +292,15 @@ _PDI_HEADERS = (
 )
 
 
-def _write_pdi_xlsx(path: Path, rows: list[list[object]]) -> Path:
-    """Fixture OOXML em tmp — testes T010 não leem ``raw/`` nem samples oficiais."""
+def _write_pdi_xlsx(
+    path: Path,
+    rows: list[list[object]],
+    headers: tuple[str, ...] | None = None,
+) -> Path:
+    """Fixture OOXML em tmp — testes T010/T012 não leem ``raw/`` nem samples oficiais."""
     wb = Workbook()
     ws = wb.active
-    ws.append(list(_PDI_HEADERS))
+    ws.append(list(headers or _PDI_HEADERS))
     for row in rows:
         ws.append(row)
     wb.save(path)
@@ -578,6 +592,390 @@ def test_t010_c5_git_diff_overdue_models_denylist_vazios():
         if _git_rev_exists(base):
             vs_base = _git_diff(base, '--', *_DENYLIST_PATHS)
             assert vs_base == '', vs_base
+            migrations_vs_base = _git_diff(base, '--', '**/migrations/**')
+            assert migrations_vs_base == '', migrations_vs_base
+            break
+
+
+# --- T011 resolução R5 (ID / id_vs_nome / órfão) — persistência no importer é T012 ---
+
+
+@pytest.mark.django_db
+def test_t011_nome_unico_resolve_incluindo_inativo(colaborador, lider):
+    """C3/C4: match único por nome; inativo não bloqueia; zero User inventado."""
+    users_antes = CustomUser.objects.count()
+    assert resolve_usuario(nome=colaborador.nome) == colaborador
+
+    colaborador.is_active = False
+    colaborador.save(update_fields=['is_active'])
+    assert resolve_usuario(nome=colaborador.nome) == colaborador
+    assert CustomUser.objects.count() == users_antes
+    assert resolve_usuario(nome=lider.nome) == lider
+
+
+@pytest.mark.django_db
+def test_t011_zero_ou_ambiguo_e_orfao_nunca_escolhe_o_primeiro(
+    colaborador, area, cargo_colab, lider
+):
+    """Zero ou 2+ nomes → None; nunca o primeiro em silêncio."""
+    users_antes = CustomUser.objects.count()
+    assert resolve_usuario(nome='Pessoa Inexistente XyZ') is None
+    assert resolve_usuario(nome='') is None
+    assert resolve_usuario(nome='   ') is None
+
+    CustomUser.objects.create_user(
+        email='dup-a@test.greenn.com.br',
+        password='TestPass123!',
+        nome=colaborador.nome,
+        cargo=cargo_colab,
+        area=area,
+        line_manager=lider,
+        email_confirmado_em=timezone.now(),
+    )
+    assert resolve_usuario(nome=colaborador.nome) is None
+    assert CustomUser.objects.count() == users_antes + 1
+
+
+@pytest.mark.django_db
+def test_t011_id_unico_prevalece_e_id_vs_nome_quando_nome_unico_diverge(
+    colaborador, lider
+):
+    """ID unique hit prevalece se coerente; Nome unique de outra pessoa → id_vs_nome."""
+    colaborador.solides_id = '441'
+    colaborador.save(update_fields=['solides_id'])
+    lider.solides_id = '442'
+    lider.save(update_fields=['solides_id'])
+
+    assert (
+        resolve_usuario(nome=colaborador.nome, solides_id='441') == colaborador
+    )
+    assert (
+        resolve_usuario(nome=colaborador.nome, solides_id=441.0) == colaborador
+    )
+
+    with pytest.raises(ResolveConflict) as excinfo:
+        resolve_usuario(nome=lider.nome, solides_id='441')
+    assert excinfo.value.tipo == 'id_vs_nome'
+
+    assert resolve_usuario(nome=colaborador.nome, solides_id='99999') == colaborador
+    assert resolve_usuario(nome='Inexistente', solides_id='441') == colaborador
+
+
+# --- T012 integração US2 no importer + comando (órfãos / id_vs_nome / inativo) ---
+
+_SCOPE_DENY = (
+    'get_visible_users',
+    'user_in_scope',
+    'ScopedObjectMixin',
+)
+
+
+def _pdi_row(
+    nome: str,
+    titulo: str,
+    *,
+    status: str = 'em_andamento',
+    identificador: object | None = None,
+) -> list[object]:
+    row: list[object] = [
+        nome,
+        titulo,
+        status,
+        'Objetivo T012',
+        '',
+        '',
+        timezone.localdate() + timedelta(days=7),
+        None,
+    ]
+    if identificador is not None:
+        row.append(identificador)
+    return row
+
+
+@pytest.mark.django_db
+def test_t012_orfaos_e_id_vs_nome_nao_fatais_lote_continua(
+    colaborador, lider, tmp_path
+):
+    """C3: órfão/ambíguo/id_vs_nome skip da linha; lote segue; zero User inventado."""
+    colaborador.solides_id = '441'
+    colaborador.save(update_fields=['solides_id'])
+    lider.solides_id = '442'
+    lider.save(update_fields=['solides_id'])
+
+    titulo_ok = 'PDI T012 match unico'
+    titulo_orfao = 'PDI T012 orfao'
+    titulo_id_vs_nome = 'PDI T012 id vs nome'
+    headers = _PDI_HEADERS + ('Identificador',)
+    path = _write_pdi_xlsx(
+        tmp_path / 'pdi_t012_c3.xlsx',
+        [
+            _pdi_row('Pessoa Inexistente XyZ', titulo_orfao, identificador=''),
+            _pdi_row(
+                colaborador.nome, titulo_ok, identificador=colaborador.solides_id
+            ),
+            _pdi_row(
+                lider.nome,
+                titulo_id_vs_nome,
+                identificador=colaborador.solides_id,
+            ),
+        ],
+        headers=headers,
+    )
+    users_antes = CustomUser.objects.count()
+    pdis_antes = PDI.objects.count()
+
+    report = import_pdi(path)
+
+    assert CustomUser.objects.count() == users_antes
+    assert report.pdis_criados == 1
+    assert report.acoes_criadas == 1
+    assert report.n_orfaos_usuario == 1
+    assert report.orfaos_usuario[0].motivo == 'usuario_nao_resolvido'
+    tipos = {c.label for c in report.conflitos}
+    assert 'id_vs_nome' in tipos
+    assert PDI.objects.count() == pdis_antes + 1
+    assert PDI.objects.filter(titulo=titulo_ok, usuario=colaborador).exists()
+    assert not PDI.objects.filter(titulo=titulo_orfao).exists()
+    assert not PDI.objects.filter(titulo=titulo_id_vs_nome).exists()
+
+
+@pytest.mark.django_db
+def test_t012_nome_ambiguo_nunca_escolhe_o_primeiro(
+    colaborador, area, cargo_colab, lider, tmp_path
+):
+    """C3: 2+ canonical_key → orfaos_usuario nome_ambiguo; não persiste no 'primeiro'."""
+    CustomUser.objects.create_user(
+        email='dup-t012@test.greenn.com.br',
+        password='TestPass123!',
+        nome=colaborador.nome,
+        cargo=cargo_colab,
+        area=area,
+        line_manager=lider,
+        email_confirmado_em=timezone.now(),
+    )
+    titulo = 'PDI T012 ambiguo'
+    path = _write_pdi_xlsx(
+        tmp_path / 'pdi_t012_ambiguo.xlsx',
+        [_pdi_row(colaborador.nome, titulo)],
+    )
+    pdis_antes = PDI.objects.filter(titulo=titulo).count()
+
+    report = import_pdi(path)
+
+    assert report.pdis_criados == 0
+    assert report.n_orfaos_usuario == 1
+    assert report.orfaos_usuario[0].motivo == 'nome_ambiguo'
+    assert PDI.objects.filter(titulo=titulo).count() == pdis_antes
+
+
+@pytest.mark.django_db
+def test_t012_inativo_persiste_sem_atalho_de_escopo(colaborador, tmp_path):
+    """C4: is_active=False com match único persiste; comando sem mixins de escopo."""
+    colaborador.is_active = False
+    colaborador.save(update_fields=['is_active'])
+    titulo = 'PDI T012 inativo'
+    path = _write_pdi_xlsx(
+        tmp_path / 'pdi_t012_inativo.xlsx',
+        [_pdi_row(colaborador.nome, titulo)],
+    )
+
+    report = import_pdi(path)
+
+    assert report.pdis_criados == 1
+    pdi = PDI.objects.get(titulo=titulo)
+    assert pdi.usuario_id == colaborador.id
+    acao = pdi.acoes.get()
+    assert acao.responsavel_id == colaborador.id
+
+    importer_src = _IMPORTER_PY.read_text(encoding='utf-8')
+    command_src = _COMMAND_PY.read_text(encoding='utf-8')
+    for token in _SCOPE_DENY:
+        assert f'{token}(' not in importer_src
+        assert f'{token}(' not in command_src
+        if token != 'ScopedObjectMixin':
+            continue
+        assert 'class Command(ScopedObjectMixin' not in command_src
+        assert 'class Command(BaseCommand)' in command_src
+
+
+@pytest.mark.django_db
+def test_t012_comando_orfaos_nao_fatais_exit_0(colaborador, tmp_path):
+    """CLI: órfão no lote → relatório com orfaos_usuario; handle retorna 0."""
+    path = _write_pdi_xlsx(
+        tmp_path / 'pdi_t012_cmd.xlsx',
+        [
+            _pdi_row('Pessoa Inexistente XyZ', 'PDI T012 cmd orfao'),
+            _pdi_row(colaborador.nome, 'PDI T012 cmd ok'),
+        ],
+    )
+    stdout = StringIO()
+
+    result = call_command('importar_pdi', pdi=str(path), stdout=stdout)
+
+    assert result in (0, None)
+    text = stdout.getvalue()
+    assert 'orfaos_usuario: 1' in text
+    assert 'pdis_criados: 1' in text
+    assert PDI.objects.filter(titulo='PDI T012 cmd ok', usuario=colaborador).exists()
+    assert not PDI.objects.filter(titulo='PDI T012 cmd orfao').exists()
+
+
+# --- T013 validação US2 (quickstart C3 + C4) ---
+
+_SCOPE_TEST_PY = _REPO_ROOT / 'tests' / 'test_scope.py'
+_SCOPE_ASSERT_MARKERS = (
+    "assert get_scope_level(admin) == 'admin'",
+    "assert get_scope_level(lider) == 'leader'",
+    "assert get_scope_level(colaborador) == 'collaborator'",
+    'assert {admin.pk, lider.pk, colaborador.pk, outsider.pk}.issubset(visible)',
+    'assert visible == {lider.pk, colaborador.pk}',
+    'assert outsider.pk not in visible',
+    'assert user_in_scope(lider, outsider.pk) is False',
+    'assert visible == {colaborador.pk}',
+    'assert resp.status_code == 404',
+    'assert after == before + 1',
+)
+
+
+@pytest.mark.django_db
+def test_t013_c3_orfao_ambiguo_id_vs_nome_zero_user_inventado(
+    colaborador, lider, area, cargo_colab, tmp_path
+):
+    """C3: órfão, ambíguo e ``id_vs_nome``; nunca o primeiro; zero User inventado."""
+    colaborador.solides_id = '441'
+    colaborador.save(update_fields=['solides_id'])
+    lider.solides_id = '442'
+    lider.save(update_fields=['solides_id'])
+    CustomUser.objects.create_user(
+        email='dup-t013@test.greenn.com.br',
+        password='TestPass123!',
+        nome=colaborador.nome,
+        cargo=cargo_colab,
+        area=area,
+        line_manager=lider,
+        email_confirmado_em=timezone.now(),
+    )
+
+    titulo_orfao = 'PDI T013 C3 orfao'
+    titulo_ambiguo = 'PDI T013 C3 ambiguo'
+    titulo_id_vs_nome = 'PDI T013 C3 id vs nome'
+    titulo_lider = 'PDI T013 C3 lider unico'
+    headers = _PDI_HEADERS + ('Identificador',)
+    path = _write_pdi_xlsx(
+        tmp_path / 'pdi_t013_c3.xlsx',
+        [
+            _pdi_row('Pessoa Inexistente XyZ', titulo_orfao, identificador=''),
+            _pdi_row(colaborador.nome, titulo_ambiguo, identificador=''),
+            _pdi_row(
+                lider.nome,
+                titulo_id_vs_nome,
+                identificador=colaborador.solides_id,
+            ),
+            _pdi_row(lider.nome, titulo_lider, identificador=lider.solides_id),
+        ],
+        headers=headers,
+    )
+    users_antes = CustomUser.objects.count()
+    pdis_antes = PDI.objects.count()
+
+    report = import_pdi(path)
+
+    assert CustomUser.objects.count() == users_antes
+    assert not CustomUser.objects.filter(nome='Pessoa Inexistente XyZ').exists()
+    assert report.pdis_criados == 1
+    assert report.acoes_criadas == 1
+    assert report.n_orfaos_usuario == 2
+    motivos = {item.motivo for item in report.orfaos_usuario}
+    assert motivos == {'usuario_nao_resolvido', 'nome_ambiguo'}
+    tipos = {c.label for c in report.conflitos}
+    assert 'id_vs_nome' in tipos
+    assert PDI.objects.count() == pdis_antes + 1
+    assert PDI.objects.filter(titulo=titulo_lider, usuario=lider).exists()
+    assert not PDI.objects.filter(titulo=titulo_orfao).exists()
+    assert not PDI.objects.filter(titulo=titulo_ambiguo).exists()
+    assert not PDI.objects.filter(titulo=titulo_id_vs_nome).exists()
+    assert not PDI.objects.filter(titulo=titulo_ambiguo, usuario=colaborador).exists()
+
+
+@pytest.mark.django_db
+def test_t013_c4_inativo_persiste_escopo_vigente_sem_atalho(
+    colaborador, lider, area, cargo_colab, tmp_path
+):
+    """C4 / FR-020: inativo com match único persiste; escopo vigente sem atalho."""
+    colaborador.is_active = False
+    colaborador.save(update_fields=['is_active'])
+    outsider = CustomUser.objects.create_user(
+        email='outsider-t013@test.greenn.com.br',
+        password='TestPass123!',
+        nome='Outsider T013',
+        cargo=cargo_colab,
+        area=area,
+        line_manager=None,
+        email_confirmado_em=timezone.now(),
+    )
+    visivel_lider_antes = set(
+        get_visible_users(lider).values_list('pk', flat=True)
+    )
+    visivel_colab_antes = set(
+        get_visible_users(colaborador).values_list('pk', flat=True)
+    )
+    visivel_outsider_antes = set(
+        get_visible_users(outsider).values_list('pk', flat=True)
+    )
+    titulo = 'PDI T013 C4 inativo'
+    path = _write_pdi_xlsx(
+        tmp_path / 'pdi_t013_c4.xlsx',
+        [_pdi_row(colaborador.nome, titulo)],
+    )
+    users_antes = CustomUser.objects.count()
+
+    report = import_pdi(path)
+
+    assert CustomUser.objects.count() == users_antes
+    assert report.pdis_criados == 1
+    pdi = PDI.objects.get(titulo=titulo)
+    assert pdi.usuario_id == colaborador.id
+    assert pdi.usuario.is_active is False
+    assert pdi.acoes.get().responsavel_id == colaborador.id
+
+    visivel_lider = set(get_visible_users(lider).values_list('pk', flat=True))
+    visivel_colab = set(
+        get_visible_users(colaborador).values_list('pk', flat=True)
+    )
+    visivel_outsider = set(
+        get_visible_users(outsider).values_list('pk', flat=True)
+    )
+    assert visivel_lider == visivel_lider_antes == {lider.pk, colaborador.pk}
+    assert visivel_colab == visivel_colab_antes == {colaborador.pk}
+    assert visivel_outsider == visivel_outsider_antes == {outsider.pk}
+    assert colaborador.pk not in visivel_outsider
+    assert user_in_scope(lider, colaborador.pk) is True
+    assert user_in_scope(outsider, colaborador.pk) is False
+
+
+@pytest.mark.skipif(
+    shutil.which('git') is None,
+    reason='git ausente no PATH (ex. container web sem git)',
+)
+def test_t013_c4_git_diff_denylist_e_test_scope_intactos():
+    """C4 / SC-010: denylist vazia; asserts de ``tests/test_scope.py`` intactos."""
+    scope_src = _SCOPE_TEST_PY.read_text(encoding='utf-8')
+    for marker in _SCOPE_ASSERT_MARKERS:
+        assert marker in scope_src, marker
+
+    working_tree = _git_diff('HEAD', '--', *_DENYLIST_PATHS)
+    assert working_tree == '', working_tree
+    scope_working = _git_diff('HEAD', '--', 'tests/test_scope.py')
+    assert scope_working == '', scope_working
+    migrations_diff = _git_diff('HEAD', '--', '**/migrations/**')
+    assert migrations_diff == '', migrations_diff
+
+    for base in ('development', 'origin/development', 'main'):
+        if _git_rev_exists(base):
+            vs_base = _git_diff(base, '--', *_DENYLIST_PATHS)
+            assert vs_base == '', vs_base
+            scope_vs_base = _git_diff(base, '--', 'tests/test_scope.py')
+            assert scope_vs_base == '', scope_vs_base
             migrations_vs_base = _git_diff(base, '--', '**/migrations/**')
             assert migrations_vs_base == '', migrations_vs_base
             break
