@@ -6,12 +6,24 @@ em ``dates.py``. **Proibido** ``raw/``.
 
 T006: ``format_pdi_report`` (seções estáveis, máx. 5, sem nome/e-mail/
 título/objetivo/situação completos). Sem persistência. **Proibido** ``raw/``.
+
+T010: validação US1 via quickstart C2 + C5 + C6 (1+1, concat ``\\n\\n``,
+responsável = dono, de-para + atraso, digest, spy overdue, denylist).
+XLSX em ``tmp_path`` — **proibido** ``raw/``. Samples oficiais ficam na T015.
 """
 
 from __future__ import annotations
 
-from datetime import date, datetime, timezone as dt_timezone
+import re
+import shutil
+import subprocess
+from datetime import date, datetime, timedelta, timezone as dt_timezone
 from pathlib import Path
+from unittest.mock import patch
+
+import pytest
+from django.utils import timezone
+from openpyxl import Workbook
 
 from apps.accounts.services.legacy_import.dates import (
     parse_legacy_date,
@@ -29,7 +41,12 @@ from apps.accounts.services.legacy_import.report import (
     record_pdi_inalterado,
     record_pdi_orfao_usuario,
 )
+from apps.cycles.models import Ciclo
+from apps.pdi.models import AcaoPDI, PDI
 from apps.pdi.services.legacy_import import format_pdi_report as _reexport
+from apps.pdi.services.legacy_import import import_pdi
+from apps.pdi.services.legacy_import.resolve import build_pdi_digest
+from apps.reviews.models import Avaliacao
 
 _DATES_PY = (
     Path(__file__).resolve().parents[1]
@@ -224,3 +241,343 @@ def test_format_pdi_report_mascara_e_trunca_max_5():
             assert _NOME not in item
             assert _OBJETIVO not in item
             assert _SITUACAO not in item
+
+
+# --- T010 validação US1 (quickstart C2 + C5 + C6) ---
+
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+_IMPORTER_PY = (
+    _REPO_ROOT / 'apps' / 'pdi' / 'services' / 'legacy_import' / 'importer.py'
+)
+_COMMAND_PY = (
+    _REPO_ROOT / 'apps' / 'pdi' / 'management' / 'commands' / 'importar_pdi.py'
+)
+_DENYLIST_PATHS = (
+    'apps/cycles/services/stage.py',
+    'apps/cycles/services/cycle.py',
+    'apps/goals/services/approval.py',
+    'apps/accounts/services/scope.py',
+    'apps/reviews/services/evaluation.py',
+    'apps/dashboard/services/adherence.py',
+    'apps/dashboard/urls.py',
+    'apps/cycles/urls.py',
+    'apps/pdi/models.py',
+    'apps/pdi/views.py',
+    'apps/pdi/urls.py',
+    'apps/pdi/forms.py',
+    'apps/pdi/services/overdue.py',
+    'apps/pdi/services/progress.py',
+    'apps/pdi/tasks.py',
+    'apps/talent',
+)
+_PDI_HEADERS = (
+    'Nome',
+    'Título do PDI',
+    'Status',
+    'Objetivo',
+    'Situação Atual',
+    'Situação Desejada',
+    'Data de Entrega',
+    'Criado em',
+)
+
+
+def _write_pdi_xlsx(path: Path, rows: list[list[object]]) -> Path:
+    """Fixture OOXML em tmp — testes T010 não leem ``raw/`` nem samples oficiais."""
+    wb = Workbook()
+    ws = wb.active
+    ws.append(list(_PDI_HEADERS))
+    for row in rows:
+        ws.append(row)
+    wb.save(path)
+    return path
+
+
+def _git_diff(*args: str) -> str:
+    result = subprocess.run(
+        ['git', 'diff', *args],
+        cwd=_REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout
+
+
+def _git_rev_exists(rev: str) -> bool:
+    result = subprocess.run(
+        ['git', 'rev-parse', '--verify', rev],
+        cwd=_REPO_ROOT,
+        capture_output=True,
+        text=True,
+    )
+    return result.returncode == 0
+
+
+@pytest.mark.django_db
+def test_t010_c2_persist_1_pdi_1_acao_concat_responsavel_sem_fk(
+    colaborador, tmp_path
+):
+    """C2: 1 PDI + 1 ação; concat ``\\n\\n``; responsável = dono; zero FK ciclo."""
+    titulo = 'PDI concatenacao T010 C2'
+    path = _write_pdi_xlsx(
+        tmp_path / 'pdi_c2.xlsx',
+        [
+            [
+                colaborador.nome,
+                titulo,
+                'em_andamento',
+                ' Objetivo  um ',
+                '',
+                'Situação   desejada',
+                timezone.localdate() + timedelta(days=10),
+                None,
+            ]
+        ],
+    )
+    ciclos_antes = Ciclo.objects.count()
+    avaliacoes_antes = Avaliacao.objects.count()
+    pdis_antes = PDI.objects.count()
+    acoes_antes = AcaoPDI.objects.count()
+
+    report = import_pdi(path)
+
+    assert report.pdis_criados == 1
+    assert report.acoes_criadas == 1
+    assert PDI.objects.count() == pdis_antes + 1
+    assert AcaoPDI.objects.count() == acoes_antes + 1
+
+    pdi = PDI.objects.get(usuario=colaborador, titulo=titulo)
+    acoes = list(pdi.acoes.all())
+    assert len(acoes) == 1
+    acao = acoes[0]
+    assert acao.descricao == 'Objetivo um\n\nSituação desejada'
+    assert acao.descricao.count('\n\n') == 1
+    assert acao.responsavel_id == pdi.usuario_id == colaborador.id
+    assert Ciclo.objects.count() == ciclos_antes
+    assert Avaliacao.objects.count() == avaliacoes_antes
+    field_names = {f.name for f in PDI._meta.get_fields()} | {
+        f.name for f in AcaoPDI._meta.get_fields()
+    }
+    assert 'ciclo' not in field_names
+    assert 'avaliacao' not in field_names
+    assert AcaoPDI.objects.filter(pdi=pdi).count() != 3
+    assert pdi.acoes.exists()
+
+
+@pytest.mark.django_db
+def test_t010_c2_tres_trechos_nao_viram_tres_acoes(colaborador, tmp_path):
+    """C2: três trechos na mesma linha → uma descrição, uma ação; PDI sem ação = 0."""
+    titulo = 'PDI tres trechos T010 C2'
+    path = _write_pdi_xlsx(
+        tmp_path / 'pdi_c2_tres.xlsx',
+        [
+            [
+                colaborador.nome,
+                titulo,
+                'finalizado',
+                'Objetivo',
+                'Situação atual',
+                'Situação desejada',
+                timezone.localdate() - timedelta(days=3),
+                None,
+            ]
+        ],
+    )
+
+    import_pdi(path)
+
+    pdi = PDI.objects.get(usuario=colaborador, titulo=titulo)
+    acoes = list(pdi.acoes.all())
+    assert len(acoes) == 1
+    assert acoes[0].descricao == 'Objetivo\n\nSituação atual\n\nSituação desejada'
+    assert PDI.objects.filter(usuario=colaborador, acoes__isnull=True).count() == 0
+
+
+@pytest.mark.django_db
+def test_t010_c5_de_para_atraso_conflitos_spy_mark_overdue(colaborador, tmp_path):
+    """C5: FR-010/FR-011; conflitos sem persistir; spy ``mark_overdue_pdi_actions``."""
+    hoje = timezone.localdate()
+    path = _write_pdi_xlsx(
+        tmp_path / 'pdi_c5.xlsx',
+        [
+            [
+                colaborador.nome,
+                'PDI finalizado T010 C5',
+                'finalizado',
+                'Concluir curso',
+                '',
+                '',
+                hoje - timedelta(days=30),
+                None,
+            ],
+            [
+                colaborador.nome,
+                'PDI atrasado T010 C5',
+                'em_andamento',
+                'Prazo vencido',
+                '',
+                '',
+                hoje - timedelta(days=1),
+                None,
+            ],
+            [
+                colaborador.nome,
+                'PDI pendente T010 C5',
+                'em_andamento',
+                'Prazo futuro',
+                '',
+                '',
+                hoje + timedelta(days=5),
+                None,
+            ],
+            [
+                colaborador.nome,
+                'PDI status desconhecido T010 C5',
+                'rascunho',
+                'Texto',
+                '',
+                '',
+                hoje,
+                None,
+            ],
+            [
+                colaborador.nome,
+                'PDI prazo ilegivel T010 C5',
+                'em_andamento',
+                'Texto',
+                '',
+                '',
+                'prazo-nao-e-data',
+                None,
+            ],
+            [
+                colaborador.nome,
+                'PDI descricao vazia T010 C5',
+                'em_andamento',
+                '',
+                '  ',
+                None,
+                hoje + timedelta(days=2),
+                None,
+            ],
+        ],
+    )
+    pdis_antes = PDI.objects.count()
+
+    with patch('apps.pdi.tasks.mark_overdue_pdi_actions') as spy_overdue:
+        report = import_pdi(path)
+
+    spy_overdue.assert_not_called()
+    importer_src = _IMPORTER_PY.read_text(encoding='utf-8')
+    command_src = _COMMAND_PY.read_text(encoding='utf-8')
+    assert 'mark_overdue_pdi_actions(' not in importer_src
+    assert 'mark_overdue_pdi_actions(' not in command_src
+    assert 'recalculate_overdue_status(' not in importer_src
+
+    tipos = {c.label for c in report.conflitos}
+    assert 'status_desconhecido' in tipos
+    assert 'prazo_invalido' in tipos
+    assert 'descricao_vazia' in tipos
+    assert report.pdis_criados == 3
+    assert report.acoes_criadas == 3
+    assert PDI.objects.count() == pdis_antes + 3
+    assert PDI.objects.filter(status=PDI.Status.ARQUIVADO).count() == 0
+
+    pdi_ok = PDI.objects.get(titulo='PDI finalizado T010 C5')
+    acao_ok = pdi_ok.acoes.get()
+    assert pdi_ok.status == PDI.Status.CONCLUIDO
+    assert acao_ok.status == AcaoPDI.Status.CONCLUIDA
+    assert acao_ok.status != AcaoPDI.Status.ATRASADA
+
+    pdi_atrasado = PDI.objects.get(titulo='PDI atrasado T010 C5')
+    acao_atrasada = pdi_atrasado.acoes.get()
+    assert pdi_atrasado.status == PDI.Status.ATIVO
+    assert acao_atrasada.status == AcaoPDI.Status.ATRASADA
+
+    pdi_pendente = PDI.objects.get(titulo='PDI pendente T010 C5')
+    acao_pendente = pdi_pendente.acoes.get()
+    assert pdi_pendente.status == PDI.Status.ATIVO
+    assert acao_pendente.status == AcaoPDI.Status.PENDENTE
+    assert acao_pendente.status != AcaoPDI.Status.EM_ANDAMENTO
+
+    assert not PDI.objects.filter(titulo='PDI status desconhecido T010 C5').exists()
+    assert not PDI.objects.filter(titulo='PDI prazo ilegivel T010 C5').exists()
+    assert not PDI.objects.filter(titulo='PDI descricao vazia T010 C5').exists()
+
+
+@pytest.mark.django_db
+def test_t010_c6_digest_prefixo_len_estavel_diferente_da_concatenacao(
+    colaborador, tmp_path
+):
+    """C6 / SC-007: ``pdi_`` + 40 hex; len 44; ≠ Nome+Título; estável entre runs."""
+    titulo = 'PDI digest T010 C6'
+    criado = '2024-06-03T15:30:00Z'
+    path = _write_pdi_xlsx(
+        tmp_path / 'pdi_c6.xlsx',
+        [
+            [
+                colaborador.nome,
+                titulo,
+                'em_andamento',
+                'Objetivo digest',
+                '',
+                '',
+                timezone.localdate() + timedelta(days=8),
+                criado,
+            ]
+        ],
+    )
+
+    import_pdi(path)
+    pdi = PDI.objects.get(usuario=colaborador, titulo=titulo)
+    digest = pdi.solides_id
+    assert digest is not None
+    assert digest.startswith('pdi_')
+    assert len(digest) == 44
+    assert len(digest) <= 50
+    hex_part = digest.removeprefix('pdi_')
+    assert len(hex_part) == 40
+    assert re.fullmatch(r'[0-9a-f]{40}', hex_part)
+    claro = f'{colaborador.nome}{titulo}'
+    assert digest != claro
+    assert colaborador.nome not in digest
+    assert titulo not in digest
+    esperado = build_pdi_digest(colaborador.nome, titulo, criado)
+    assert digest == esperado
+
+    report2 = import_pdi(path)
+    pdi.refresh_from_db()
+    assert pdi.solides_id == digest
+    assert report2.pdis_criados == 0
+    assert report2.pdis_inalterados == 1
+    assert report2.acoes_criadas == 0
+    assert report2.acoes_inalteradas == 1
+    assert PDI.objects.filter(usuario=colaborador, titulo=titulo).count() == 1
+    assert AcaoPDI.objects.filter(pdi=pdi).count() == 1
+
+
+@pytest.mark.skipif(
+    shutil.which('git') is None,
+    reason='git ausente no PATH (ex. container web sem git)',
+)
+def test_t010_c5_git_diff_overdue_models_denylist_vazios():
+    """C5 / FR-021: ``overdue.py`` / ``models.py`` e denylist intactos."""
+    overdue_diff = _git_diff('HEAD', '--', 'apps/pdi/services/overdue.py')
+    models_diff = _git_diff('HEAD', '--', 'apps/pdi/models.py')
+    assert overdue_diff == '', overdue_diff
+    assert models_diff == '', models_diff
+
+    migrations_diff = _git_diff('HEAD', '--', '**/migrations/**')
+    assert migrations_diff == '', migrations_diff
+
+    working_tree = _git_diff('HEAD', '--', *_DENYLIST_PATHS)
+    assert working_tree == '', working_tree
+
+    for base in ('development', 'origin/development', 'main'):
+        if _git_rev_exists(base):
+            vs_base = _git_diff(base, '--', *_DENYLIST_PATHS)
+            assert vs_base == '', vs_base
+            migrations_vs_base = _git_diff(base, '--', '**/migrations/**')
+            assert migrations_vs_base == '', migrations_vs_base
+            break
