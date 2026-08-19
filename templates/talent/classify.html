@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load review_display %}
 
 {% block title %}Classificar talento — Greenn People{% endblock %}
 
@@ -24,7 +25,7 @@
       <p class="mt-2">
         Prévia do desempenho no ciclo:
         <span class="font-medium text-emerald-700">{{ desempenho_preview.label }}</span>
-        (nota líder {{ desempenho_preview.nota_final_lider }})
+        (nota líder {{ desempenho_preview.nota_final_lider|nota_percentual }})
       </p>
       {% else %}
       <p class="mt-2 text-amber-700">{{ desempenho_preview.mensagem }}</p>

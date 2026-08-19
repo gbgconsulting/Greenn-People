@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static review_display %}
 
 {% block title %}Meu painel — Greenn People{% endblock %}
 
@@ -41,11 +41,11 @@
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2" aria-label="Indicadores pessoais">
       {% if nota_atual is not None %}
         {% if nota_atual_origem == "lider" %}
-          {% include "components/card.html" with label="Nota atual" value=nota_atual badge_status="concluida" badge_label="Nota do líder" body="Nota dada pelo seu líder neste ciclo." %}
+          {% include "components/card.html" with label="Nota atual" value=nota_atual|nota_percentual badge_status="concluida" badge_label="Nota do líder" body="Nota dada pelo seu líder neste ciclo." %}
         {% elif nota_atual_origem == "autoavaliacao" %}
-          {% include "components/card.html" with label="Nota atual" value=nota_atual badge_status="em_andamento" badge_label="Autoavaliação" body="Nota da sua autoavaliação neste ciclo." %}
+          {% include "components/card.html" with label="Nota atual" value=nota_atual|nota_percentual badge_status="em_andamento" badge_label="Autoavaliação" body="Nota da sua autoavaliação neste ciclo." %}
         {% else %}
-          {% include "components/card.html" with label="Nota atual" value=nota_atual badge_status="arquivado" badge_label="Sem nota" body="Ainda não há nota neste ciclo." %}
+          {% include "components/card.html" with label="Nota atual" value=nota_atual|nota_percentual badge_status="arquivado" badge_label="Sem nota" body="Ainda não há nota neste ciclo." %}
         {% endif %}
       {% elif nota_atual_origem == "lider" %}
         {% include "components/card.html" with label="Nota atual" value="—" badge_status="concluida" badge_label="Nota do líder" body="Nota dada pelo seu líder neste ciclo." %}
