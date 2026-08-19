@@ -2,7 +2,7 @@
 
 **Data do dump:** 2026-06-24 (prefixo `20260624` nos nomes dos arquivos)  
 **Origem:** exportação/backup Sólides Performance  
-**Status:** inventário e mapeamento documentados (Decisão #22 / PRD Sprint 6.5). Comandos de import: `importar_competencias_cargo` (003), `importar_colaboradores` (010), **`importar_ciclos_avaliacoes` (011 — passos 4→5 no mesmo comando)**. Notas/comentários (6.5.5) e PDI (6.5.6) ainda não implementados.
+**Status:** inventário e mapeamento documentados (Decisão #22 / PRD Sprint 6.5). Comandos de import: `importar_competencias_cargo` (003), `importar_colaboradores` (010), **`importar_ciclos_avaliacoes` (011 — passos 4→5 no mesmo comando)**, **`importar_notas_comentarios` (013 — passo 6.5.5, notas + comentários no mesmo comando)**. PDI (6.5.6) ainda não implementado.
 
 Este diretório alimenta a especificação e os management commands da Sprint 6.5 (PRD §6.5). Não executar writes de produção a partir destes arquivos sem `--dry-run` e banco descartável/staging.
 
@@ -18,7 +18,9 @@ data/legado-solides/
 │   ├── colaboradores_min.xlsx
 │   ├── avaliacoes_crosswalk_min.xlsx
 │   ├── solicitacoes_min.xlsx           ← 011
-│   └── avaliacoes_headers_min.xlsx     ← 011
+│   ├── avaliacoes_headers_min.xlsx     ← 011 (mapa de IDs reusado em 013)
+│   ├── notas_min.xlsx                  ← 013
+│   └── comentarios_min.xlsx            ← 013
 └── raw/               ← backups completos (contêm PII — ver § Segurança)
     ├── backup_colaboradores_*.xlsx
     ├── backup_habilidades_*.xlsx
@@ -59,8 +61,8 @@ file data/legado-solides/raw/*.xlsx
 | `backup_habilidades_cargo_*.xlsx` | 2.720 | 6.5.3 | idem |
 | `backup_solicitacoes_avalicaoes_*.xlsx` | 57 | pré-6.5.4 | `importar_ciclos_avaliacoes` (fase 1 — ciclos) |
 | `backup_avaliacoes_*.xlsx` | 1.925 | 6.5.4 | `importar_ciclos_avaliacoes` (fase 2 — cabeçalhos) |
-| `backup_notas_avaliacoes_*.xlsx` | 7.360 | 6.5.5 | `importar_notas` |
-| `backup_comentarios_avaliacoes_*.xlsx` | 1.494 | 6.5.5 | `importar_comentarios` |
+| `backup_notas_avaliacoes_*.xlsx` | 7.360 | 6.5.5 | `importar_notas_comentarios` (fase notas) |
+| `backup_comentarios_avaliacoes_*.xlsx` | 1.494 | 6.5.5 | `importar_notas_comentarios` (fase comentários) |
 | `backup_pdi_*.xlsx` | 86 | 6.5.6 | `importar_pdi` |
 | `backup_treinamentos_*.xlsx` | 119 | — | **fora de escopo** v1 |
 
@@ -121,10 +123,9 @@ Ordem segura para não quebrar FKs nem regras de domínio:
 3. [6.5.2] Colaboradores + áreas + hierarquia — importar_colaboradores (010)
 4. Solicitações → Ciclo (status **sempre** encerrado; histórico **não** abre ciclo ativo)
 5. [6.5.4] Cabeçalhos Avaliacao — backup_avaliacoes (agregação 1:1; estado terminal; **sem** notas)
-6. [6.5.5] Notas — backup_notas_avaliacoes          ← ainda não implementado
-7. [6.5.5] Comentários / feedback — backup_comentarios_avaliacoes ← ainda não implementado
-8. [6.5.6] PDI — backup_pdi                         ← ainda não implementado
-9. Homologação — contagens, FKs, pytest stage/scope
+6. [6.5.5] Notas + comentários — backup_notas + backup_comentarios (**após** 011)
+7. [6.5.6] PDI — backup_pdi                         ← ainda não implementado
+8. Homologação — contagens, FKs, pytest stage/scope
 ```
 
 **Passos 4→5:** um único comando `importar_ciclos_avaliacoes` (spec 011). Ambos os paths são obrigatórios; a ordem interna é **sempre** ciclos depois cabeçalhos, na mesma `transaction.atomic()`. Não existe `importar_avaliacoes` separado nesta fatia — pular o passo 4 quebraria FKs.
@@ -145,7 +146,35 @@ python manage.py importar_ciclos_avaliacoes \
 
 Contrato: `specs/011-import-ciclos-avaliacoes-legado/contracts/import-command-contract.md`. Relatório com amostra **mascarada** (máx. 5 por seção; sem dump de nomes/e-mails).
 
-**Denylist (não alterar na importação):** `stage.py`, `cycle.py` (`open_cycle` / `close_cycle`), `approval.py`, fórmulas de nota/aderência (`evaluation.py` / `adherence.py`), `scope.py`, regras de avanço de etapa. Import **persiste histórico**; não simula POSTs de ciclo nem preenche `nota_final_*`.
+**Passos 011→013 (6.5.5):** um único comando `importar_notas_comentarios` (spec 013). `--avaliacoes` **só** reconstrói o mapa de IDs colapsados da 011 em memória (zero upsert de cabeçalho). Ordem interna **sempre** notas → `calcular_nota_final_*` (chamar, **não** editar `evaluation.py`) → comentários, na mesma `transaction.atomic()`. Não existem `importar_notas` / `importar_comentarios` separados. Pular o passo 011 quebraria o mapa canônico.
+
+`--dry-run` é **obrigatório em staging** antes de qualquer persistência (samples no CI; `raw/` só manual, nunca no CI).
+
+```bash
+# CI / local — somente samples (sem PII)
+python manage.py importar_notas_comentarios \
+  --notas data/legado-solides/samples/notas_min.xlsx \
+  --comentarios data/legado-solides/samples/comentarios_min.xlsx \
+  --avaliacoes data/legado-solides/samples/avaliacoes_headers_min.xlsx \
+  --dry-run
+
+# Staging — backups raw (PII; nunca no CI). Dry-run primeiro; persist só depois.
+python manage.py importar_notas_comentarios \
+  --notas data/legado-solides/raw/backup_notas_avaliacoes_20260624.xlsx \
+  --comentarios data/legado-solides/raw/backup_comentarios_avaliacoes_20260624.xlsx \
+  --avaliacoes data/legado-solides/raw/backup_avaliacoes_20260624.xlsx \
+  --dry-run
+
+python manage.py importar_notas_comentarios \
+  --notas data/legado-solides/raw/backup_notas_avaliacoes_20260624.xlsx \
+  --comentarios data/legado-solides/raw/backup_comentarios_avaliacoes_20260624.xlsx \
+  --avaliacoes data/legado-solides/raw/backup_avaliacoes_20260624.xlsx \
+  --report-file /tmp/relatorio-notas-comentarios-legado.txt
+```
+
+Layout das fixtures: `data/legado-solides/samples/README.md`. Contrato: `specs/013-import-notas-comentarios-legado/contracts/import-command-contract.md`. Relatório com amostra **mascarada** (máx. 5 por seção; sem dump de comentário completo, nome ou e-mail).
+
+**Denylist (não alterar na importação):** `stage.py`, `cycle.py` (`open_cycle` / `close_cycle`), `approval.py`, **editar** `evaluation.py`, `adherence.py`, `scope.py`, urls/templates 012, `pdi`/`talent`, regras de avanço de etapa. 011 persiste cabeçalhos sem `nota_final_*`. 013 **chama** `calcular_nota_final_lider` / `calcular_nota_final_autoavaliacao` e persiste `AvaliacaoCompetencia`/`Feedback`; **não** chama `create_competency_lines` nem inventa `Avaliacao`/`User`/`Ciclo`.
 
 ---
 
@@ -230,21 +259,21 @@ PRD 6.5.1 prevê `solides_id` em `CustomUser`, `Cargo`, `Competencia`, `Avaliaca
 
 | Coluna | Campo | Notas |
 |---|---|---|
-| `Identificador Avaliação` | FK `avaliacao` | |
-| `Identificador Habilidade` | FK `competencia` | |
+| `Identificador Avaliação` | FK `avaliacao` | Canônico ou ID colapsado via mapa 011; órfão → relatório, **não** inventa `Avaliacao` |
+| `Identificador Habilidade` | FK `competencia` | Extra não-KPI só com `--habilidades` + filtro 003; KPI/ambíguo → órfão |
 | `Nota` | `nota_autoavaliacao` **ou** `nota_lider` | Se `Nome Avaliador` = `Nome Avaliado` → auto; senão → líder (PRD 6.5.5) |
-| `Fator no Momento` | `peso_utilizado` | Snapshot write-once (RF-19.2) |
-| — | `nivel_esperado_utilizado` | Snapshot; valor vigente na Sólides ou derivado do cargo na data |
+| `Fator no Momento` | `peso_utilizado` | Snapshot write-once; ausente/≤0 → conflito (não assume 1) |
+| — | `nivel_esperado_utilizado` | Snapshot via tabela 003 (`nivel_esperado_for`); **não** ler `CargoCompetencia` |
 
 ### `backup_comentarios_avaliacoes_*.xlsx` → `reviews.Feedback`
 
 | Coluna | Campo | Notas |
 |---|---|---|
-| `Identificador` | FK `avaliacao` | join por ID avaliação Sólides |
-| `Identificador Avaliador` | `autor` | |
-| `Comentário` | `conteudo` | |
-| `Criado em` | `created_at` | se suportado sem violar append-only |
-| — | `tipo` | Inferir colaborador vs líder pelo papel do autor |
+| `Identificador` | FK `avaliacao` | Mesmo mapa canônico da fase notas (ID colapsado incluso) |
+| `Identificador Avaliador` | `autor` | `solides_id`; fallback nome único; irresolvível → órfão (**não** inventa User) |
+| `Comentário` | `conteudo` | Persistido no registro; **nunca** no relatório mascarado |
+| `Criado em` | `created_at` / `ciente_em` | Serial Excel com fração; ciência **somente** em líder |
+| — | `tipo` | `COLABORADOR` se auto; senão `LIDER` |
 
 ### `backup_pdi_*.xlsx` → `pdi.PDI` / `pdi.AcaoPDI`
 
@@ -282,7 +311,8 @@ python manage.py importar_competencias_cargo \
 
 Contrato: `specs/003-import-catalogo-legado/contracts/import-command-contract.md`
 
-Passos 4→5 (ciclos + cabeçalhos): ver § Ordem de importação — comando `importar_ciclos_avaliacoes`.
+Passos 4→5 (ciclos + cabeçalhos): ver § Ordem de importação — comando `importar_ciclos_avaliacoes`.  
+Passo 6.5.5 (notas + comentários, **depois** da 011): comando `importar_notas_comentarios`.
 
 ---
 
@@ -309,16 +339,18 @@ Todo comando novo SHOULD:
 | `specs/003-import-catalogo-legado/contracts/legado-domain-mapping-contract.md` | `canonical_key`, senioridade, KPI |
 | `specs/010-import-colaboradores-legado/` | Colaboradores + schema `solides_id` (implementado) |
 | `specs/011-import-ciclos-avaliacoes-legado/` | Ciclos históricos + cabeçalhos (implementado) |
+| `specs/013-import-notas-comentarios-legado/` | Notas + comentários (implementado) |
 | `apps/competencies/management/commands/importar_competencias_cargo.py` | Comando 003 |
 | `apps/accounts/management/commands/importar_colaboradores.py` | Comando 010 |
 | `apps/cycles/management/commands/importar_ciclos_avaliacoes.py` | Comando 011 (passos 4→5) |
+| `apps/reviews/management/commands/importar_notas_comentarios.py` | Comando 013 (passo 6.5.5) |
 
 ---
 
 ## Próximos passos (fora deste README)
 
-1. [6.5.5] Notas + comentários — consome `ids_colapsados` do relatório 011 (handoff; **não** reabre agregação)
+1. [6.5.5] Notas + comentários — **implementado** (`importar_notas_comentarios`; consome mapa 011; **não** reabre agregação)
 2. [6.5.6] PDI
-3. Homologação staging com `raw/` (**manual**, fora do CI) após `--dry-run`
+3. Homologação staging com `raw/` (**manual**, fora do CI) — `--dry-run` obrigatório antes do persist
 
-*Última atualização: 2026-08-14 — ponteiro `importar_ciclos_avaliacoes` e ordem segura 4→5. Inventário raw: inspeção read-only 2026-08-12.*
+*Última atualização: 2026-08-19 — comando fechado `importar_notas_comentarios`, ordem segura 011→013, samples 013 e `--dry-run` em staging. Inventário raw: inspeção read-only 2026-08-12.*

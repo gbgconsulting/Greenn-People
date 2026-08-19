@@ -159,7 +159,11 @@ class Command(BaseCommand):
         return 0
 
     def _emit_report(self, text: str, report_file: str | None) -> None:
-        """Stdout obrigatório; ``--report-file`` grava o mesmo texto UTF-8."""
+        """Stdout obrigatório; ``--report-file`` grava o **mesmo** texto UTF-8.
+
+        T025 / SC-010: superfície exclusiva do relatório mascarado. NÃO
+        loga linha XLSX crua, comentário, nome ou e-mail.
+        """
         self.stdout.write(text, ending='')
         if report_file:
             Path(report_file).write_text(text, encoding='utf-8')

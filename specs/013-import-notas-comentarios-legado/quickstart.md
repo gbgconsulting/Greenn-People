@@ -27,7 +27,9 @@ Pré-condição dura: 003 + 010 + 011 no ambiente alvo. **Zero** `migrate` desta
 ```bash
 export DJANGO_SETTINGS_MODULE=config.settings.dev
 
-git diff main -- \
+# Base da feature = `development` (merge 012). `main` pode estar atrás
+# de 010/011/012 — um diff vs main NÃO significa denylist violada.
+git diff development -- \
   apps/cycles/services/stage.py \
   apps/cycles/services/cycle.py \
   apps/goals/services/approval.py \
@@ -39,11 +41,11 @@ git diff main -- \
   apps/pdi \
   apps/talent
 
-pytest tests/test_stage_machine tests/test_scope tests/test_reject_stage_invariant -q
+pytest tests/test_stage_machine.py tests/test_scope.py tests/test_reject_stage_invariant.py -q
 pytest tests/test_import_notas_comentarios_legado.py -q
 ```
 
-**Esperado**: diff denylist **vazio**; testes verdes; **asserts** de stage/scope/reject **não** alterados.
+**Esperado**: diff denylist **vazio** vs `development`; testes verdes; **asserts** de stage/scope/reject **não** alterados.
 
 Allowlist: [contracts/model-allowlist.md](./contracts/model-allowlist.md).  
 Denylist: [contracts/non-goals-denylist.md](./contracts/non-goals-denylist.md).

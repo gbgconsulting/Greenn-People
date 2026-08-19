@@ -54,10 +54,20 @@ T022: idempotência consolidada (SC-005 / C7) — unique
 bit-a-bit; ``snapshot_divergente`` sem apagar; Feedback chave natural
 sem reescrever ``conteudo``; delta ``Avaliacao`` por
 ``(ciclo, usuario)`` = 0. **Proibido** ``raw/``.
+
+T024: walkthrough quickstart C1–C10 + §0 com samples (SC-002…SC-010,
+SC-012…SC-014). SC-001 (volume dump) e SC-011 (tempo operador) ficam
+em homologação staging manual — **proibido** ``raw/`` no CI.
+
+T025: stdout **==** ``--report-file``; amostra mascarada máx. 5/seção
+(SC-010); zero comentário/nome/e-mail; IDs via ``mask_solides_id``;
+logs sem linha XLSX crua; evidência T020. **Proibido** ``raw/``.
 """
 
 from __future__ import annotations
 
+import inspect
+import re
 import shutil
 import subprocess
 from datetime import date, datetime
@@ -185,6 +195,36 @@ _T020_ALLOWLIST_PY = (
     'apps/accounts/services/legacy_import/dates.py',
     'apps/accounts/services/legacy_import/report.py',
 )
+_T025_PII = (
+    *_T020_PII,
+    'Habilidade Extra Fixture',
+    'Usuario Orfao Fixture',
+    'gestor.alpha@example.com',
+    'bruno.costa@example.com',
+    'carla.dias@example.com',
+)
+_T025_UNMASKED_IDS = (
+    '1001',
+    '1002',
+    '1003',
+    '88888',
+    '99001',
+    '99002',
+    '99003',
+    'HAB10',
+    'HAB12',
+)
+_T025_LOG_DUMP_TOKENS = (
+    'import logging',
+    'logging.getLogger',
+    'logger.info(',
+    'logger.debug(',
+    'logger.warning(',
+    'logger.error(',
+    'print(row',
+    'print(rows',
+    'print(parsed',
+)
 _STAGE_SCOPE_REJECT_TESTS = (
     'tests/test_stage_machine.py',
     'tests/test_scope.py',
@@ -209,6 +249,72 @@ _DENYLIST_IMPORT_TOKENS = (
     'celery',
     'rest_framework',
     'openpyxl',
+)
+_T024_QUICKSTART_TESTS = {
+    'C1': (
+        'test_t018_dry_run_zero_writes_totais_projetados',
+        'test_t018_dry_run_via_comando_zero_writes',
+        'test_t021_dry_run_zero_save_create_update_e_formula',
+    ),
+    'C2': (
+        'test_t011_c2_auto_vs_lider_peso_fator_nivel_003_nao_cargo_competencia',
+    ),
+    'C3': (
+        'test_t011_c3_id_canonico_colapsado_orfao',
+        'test_t018_id_canonico_colapsado_orfao_samples',
+    ),
+    'C4': (
+        'test_t011_c4_dois_lideres_divergentes_e_ciclo_aberto',
+        'test_t019_dois_lideres_divergentes_sem_media',
+        'test_t019_ciclo_aberto_skip_sc012',
+    ),
+    'C5': (
+        'test_t011_c5_nota_final_via_formula_spy_sem_create_lines',
+        'test_t011_c5_calculation_error_vira_conflito_sem_media',
+        'test_t011_c5_git_diff_evaluation_e_denylist_vazios',
+        'test_t019_formula_chamada_sem_create_competency_lines',
+    ),
+    'C6': (
+        'test_t015_c6_comentarios_ciencia_autor_n_textos_etapa_intacta',
+        'test_t020_comentarios_tipo_ciencia_n_textos_chave_natural',
+    ),
+    'C7': (
+        'test_t022_segunda_run_samples_delta_zero_sc005',
+        'test_t019_write_once_segunda_run_nao_copia_cargo_competencia',
+    ),
+    'C8': (
+        'test_t019_habilidade_extra_vs_orfao_kpi_zero_cargo_competencia',
+    ),
+    'C9': (
+        'test_t018_suite_usa_somente_samples',
+        'test_t020_suite_nao_referencia_raw',
+    ),
+    'C10': (
+        'test_format_notas_comentarios_report_mascara_e_trunca_max_5',
+        'test_t020_relatorio_mascara_pii_max_5',
+        'test_t025_stdout_igual_report_file_amostra_mascarada_sc010',
+    ),
+}
+_T024_SC_SAMPLE_COVERAGE = {
+    'SC-002': 'test_t011_c2_auto_vs_lider_peso_fator_nivel_003_nao_cargo_competencia',
+    'SC-003': 'test_t011_c2_auto_vs_lider_peso_fator_nivel_003_nao_cargo_competencia',
+    'SC-004': 'test_t011_c5_nota_final_via_formula_spy_sem_create_lines',
+    'SC-005': 'test_t022_segunda_run_samples_delta_zero_sc005',
+    'SC-006': 'test_t018_id_canonico_colapsado_orfao_samples',
+    'SC-007': 'test_t020_comentarios_tipo_ciencia_n_textos_chave_natural',
+    'SC-008': 'test_t018_dry_run_zero_writes_totais_projetados',
+    'SC-009': 'test_t020_suite_nao_referencia_raw',
+    'SC-010': 'test_t020_relatorio_mascara_pii_max_5',
+    'SC-012': 'test_t019_ciclo_aberto_skip_sc012',
+    'SC-013': 'test_t020_ouro_import_nao_muta_etapa_concluida',
+    'SC-014': 'test_t019_habilidade_extra_vs_orfao_kpi_zero_cargo_competencia',
+}
+_T024_SC_STAGING_ONLY = ('SC-001', 'SC-011')
+_T024_QUICKSTART = (
+    _REPO_ROOT
+    / 'specs'
+    / '013-import-notas-comentarios-legado'
+    / 'quickstart.md'
 )
 _DENYLIST_PATHS = (
     'apps/cycles/services/stage.py',
@@ -3376,5 +3482,341 @@ def test_t022_feedback_chave_natural_nao_reescreve_conteudo(
     assert saves == []
     assert _t022_avaliacao_ciclo_usuario_keys() == av_keys
     assert Avaliacao.objects.count() == 1
+
+
+# --- T024: quickstart C1–C10 + §0 (samples; dump real só staging manual) ---
+
+
+def test_t024_quickstart_c1_c10_cobertos_na_suite():
+    """T024: C1–C10 do quickstart têm testes samples-only nesta suíte."""
+    names = set(globals())
+    missing: list[str] = []
+    for cenario, testes in _T024_QUICKSTART_TESTS.items():
+        assert cenario.startswith('C')
+        for name in testes:
+            if name not in names:
+                missing.append(f'{cenario}:{name}')
+    assert missing == []
+    assert set(_T024_QUICKSTART_TESTS) == {
+        'C1',
+        'C2',
+        'C3',
+        'C4',
+        'C5',
+        'C6',
+        'C7',
+        'C8',
+        'C9',
+        'C10',
+    }
+
+
+def test_t024_sc_001_a_014_aplicaveis_com_samples():
+    """T024: SC-002…SC-010 e SC-012…SC-014 no CI; SC-001/SC-011 só staging."""
+    names = set(globals())
+    missing = [
+        f'{sc}:{test_name}'
+        for sc, test_name in _T024_SC_SAMPLE_COVERAGE.items()
+        if test_name not in names
+    ]
+    assert missing == []
+    assert set(_T024_SC_STAGING_ONLY) == {'SC-001', 'SC-011'}
+    for sc in _T024_SC_STAGING_ONLY:
+        assert sc not in _T024_SC_SAMPLE_COVERAGE
+    assert _T024_QUICKSTART.is_file()
+    qs = _T024_QUICKSTART.read_text(encoding='utf-8')
+    assert '## §0 — Gate de regressão' in qs
+    assert '### C1 —' in qs and '### C10 —' in qs
+    assert 'Homologação dump real (staging — MANUAL)' in qs
+    assert 'Nunca** instruir o CI a ler' in qs
+    assert 'SC-001' in qs and 'SC-011' in qs
+    _t018_assert_samples_only()
+    suite = Path(__file__).read_text(encoding='utf-8')
+    assert _RAW_PII_DIR not in suite
+    for path in (_NOTAS_MIN, _COMENTARIOS_MIN, _AVALIACOES_HEADERS_MIN):
+        assert 'raw' not in path.parts
+
+
+@pytest.mark.skipif(
+    shutil.which('git') is None,
+    reason='git ausente no PATH (ex. container web sem git)',
+)
+def test_t024_s0_denylist_vs_development():
+    """§0: denylist vazia vs ``development`` (base da feature, merge 012)."""
+    evaluation_diff = _git_diff(
+        'HEAD', '--', 'apps/reviews/services/evaluation.py'
+    )
+    assert evaluation_diff == '', evaluation_diff
+    working_tree = _git_diff('HEAD', '--', *_DENYLIST_PATHS)
+    assert working_tree == '', working_tree
+    stage_scope = _git_diff('HEAD', '--', *_STAGE_SCOPE_REJECT_TESTS)
+    assert stage_scope == '', stage_scope
+
+    base = None
+    for candidate in ('development', 'origin/development'):
+        if _git_rev_exists(candidate):
+            base = candidate
+            break
+    assert base is not None, 'branch development ausente para o gate §0'
+    vs_base = _git_diff(base, '--', *_DENYLIST_PATHS)
+    assert vs_base == '', vs_base
+    vs_tests = _git_diff(base, '--', *_STAGE_SCOPE_REJECT_TESTS)
+    assert vs_tests == '', vs_tests
+    vs_eval = _git_diff(base, '--', 'apps/reviews/services/evaluation.py')
+    assert vs_eval == '', vs_eval
+
+
+@pytest.mark.django_db
+def test_t024_walkthrough_samples_c1_a_c10():
+    """T024: C1→C8 + C10 numa execução samples; C9 = zero path ``raw/``."""
+    _t018_assert_samples_only()
+    assert 'raw' not in _NOTAS_MIN.parts
+    assert 'raw' not in _COMENTARIOS_MIN.parts
+    assert 'raw' not in _AVALIACOES_HEADERS_MIN.parts
+
+    avaliacoes = _t018_seed_world()
+    canonica = avaliacoes['1001']
+    gestor = avaliacoes['3001']
+    before = _t018_write_counts()
+    etapa = _t020_etapa_snapshot()
+    users_before = CustomUser.objects.count()
+    av_before = Avaliacao.objects.count()
+
+    dry = _t018_import_samples(dry_run=True)
+    assert dry.modo == 'dry-run'
+    assert dry.notas_criadas == _T018_NOTAS_CRIADAS
+    assert dry.comentarios_criados == _T018_COMENTARIOS_CRIADOS
+    assert _t018_write_counts() == before
+    assert AvaliacaoCompetencia.objects.count() == 0
+    assert Feedback.objects.count() == 0
+
+    with patch(
+        'apps.reviews.services.evaluation.create_competency_lines'
+    ) as spy_lines:
+        first = _t018_import_samples()
+    spy_lines.assert_not_called()
+
+    hab10 = AvaliacaoCompetencia.objects.get(
+        avaliacao=canonica, competencia__solides_id='HAB10'
+    )
+    assert hab10.nota_autoavaliacao == Decimal('3.00')
+    assert hab10.nota_lider == Decimal('4.00')
+    assert hab10.peso_utilizado == Decimal('1.00')
+    assert hab10.nivel_esperado_utilizado == Decimal('2.00')
+    unique_pairs = AvaliacaoCompetencia.objects.filter(
+        avaliacao=canonica, competencia=hab10.competencia
+    ).count()
+    assert unique_pairs == 1
+
+    assert Avaliacao.objects.count() == av_before
+    assert CustomUser.objects.count() == users_before
+    assert Avaliacao.objects.filter(solides_id='1002').exists() is False
+    assert Avaliacao.objects.filter(solides_id='1003').exists() is False
+    assert Avaliacao.objects.filter(solides_id='88888').exists() is False
+    assert first.n_orfaos_avaliacao == _T018_ORFAOS_AVALIACAO
+    assert first.n_ids_colapsados_resolvidos == _T018_IDS_COLAPSADOS
+
+    assert first.n_conflitos_lider_divergente == _T019_LIDER_DIVERGENTE
+    assert AvaliacaoCompetencia.objects.filter(
+        avaliacao=canonica, competencia__solides_id='HAB12'
+    ).exists() is False
+    assert AvaliacaoCompetencia.objects.filter(
+        nota_lider=_T019_MEDIA_PROIBIDA
+    ).exists() is False
+
+    gestor.refresh_from_db()
+    canonica.refresh_from_db()
+    assert gestor.nota_final_lider is not None
+    assert gestor.nota_final_lider != _T019_MEDIA_PROIBIDA
+    assert canonica.nota_final_lider != _T019_MEDIA_PROIBIDA
+
+    assert first.comentarios_criados == _T018_COMENTARIOS_CRIADOS
+    assert first.n_orfaos_autor == _T018_ORFAOS_AUTOR
+    assert Feedback.objects.filter(avaliacao=canonica).count() == 4
+    gestor_user = CustomUser.objects.get(solides_id='100')
+    ana = CustomUser.objects.get(solides_id='101')
+    lider_fb = Feedback.objects.filter(
+        avaliacao=canonica, autor=gestor_user, tipo=Feedback.Tipo.LIDER
+    )
+    auto_fb = Feedback.objects.filter(
+        avaliacao=canonica, autor=ana, tipo=Feedback.Tipo.COLABORADOR
+    )
+    assert lider_fb.exists()
+    assert all(fb.ciente_em is not None for fb in lider_fb)
+    assert auto_fb.exists()
+    assert all(fb.ciente_em is None for fb in auto_fb)
+    assert CustomUser.objects.filter(solides_id='88888').exists() is False
+
+    extra = Competencia.objects.get(solides_id='99001')
+    assert extra.nome == 'Habilidade Extra Fixture'
+    assert Competencia.objects.filter(solides_id='99002').exists() is False
+    assert Competencia.objects.filter(solides_id='99003').exists() is False
+    assert first.habilidades_extras_criadas == _T019_EXTRAS
+    assert first.n_orfaos_competencia == _T019_ORFAOS_COMPETENCIA
+    assert CargoCompetencia.objects.filter(competencia=extra).count() == 0
+
+    text = format_notas_comentarios_report(first)
+    _t020_assert_report_sem_pii(text)
+    assert '--- Amostra (mascarada, max 5 por seção) ---' in text
+    assert mask_solides_id('1001') in text
+    sections = _amostra_items_by_section(text)
+    for header, items in sections.items():
+        assert len(items) <= _SAMPLE_MAX, header
+
+    pairs = _t022_competencia_pairs()
+    snaps = _t019_snapshot_linhas()
+    feedbacks = _t022_feedback_fingerprint()
+    second = _t018_import_samples()
+    assert second.notas_criadas == 0
+    assert second.notas_inalteradas == _T018_NOTAS_CRIADAS
+    assert second.comentarios_criados == 0
+    assert second.comentarios_inalterados == _T018_COMENTARIOS_CRIADOS
+    assert _t022_competencia_pairs() == pairs
+    assert _t019_snapshot_linhas() == snaps
+    assert _t022_feedback_fingerprint() == feedbacks
+    assert _t020_etapa_snapshot() == etapa
+    assert Avaliacao.objects.count() == av_before
+    tipos = [entry.label for entry in second.conflitos]
+    assert 'snapshot_divergente' not in tipos
+
+
+# --- T025: relatório mascarado stdout == --report-file (SC-010) ---
+
+
+def _t025_assert_ids_mascarados(text: str) -> None:
+    """IDs Sólides na amostra passam por ``mask_solides_id`` (não em claro)."""
+    amostra = text.split('--- Amostra (mascarada, max 5 por seção) ---', 1)[1]
+    for sid in _T025_UNMASKED_IDS:
+        assert not re.search(rf'(?<!\*){re.escape(sid)}', amostra), sid
+        assert mask_solides_id(sid) in text
+
+
+def _t025_assert_sem_pii(text: str) -> None:
+    for token in _T025_PII:
+        assert token not in text, token
+        assert token.lower() not in text.lower(), token
+    folded = text.casefold()
+    assert 'conteudo=' not in folded
+    assert 'comentário=' not in folded
+    assert 'comentario=' not in folded
+
+
+def test_t025_helpers_comentario_nao_aceitam_conteudo_nome_email():
+    """T025: amostra de feedback só IDs + tipo — sem ``conteudo``/nome/e-mail."""
+    for fn in (record_comentario_criado, record_comentario_inalterado):
+        params = inspect.signature(fn).parameters
+        for banned in ('conteudo', 'comentario', 'comentário', 'nome', 'email'):
+            assert banned not in params, (fn.__name__, banned)
+
+
+def test_t025_allowlist_sem_log_de_linha_xlsx_crua():
+    """T025: allowlist não loga/imprime linha bruta da planilha."""
+    for rel in _t020_iter_allowlist_py():
+        blob = rel.read_text(encoding='utf-8')
+        for token in _T025_LOG_DUMP_TOKENS:
+            assert token not in blob, (rel, token)
+
+
+def test_t025_texto_livre_em_tipo_lado_e_redigido():
+    """T025: comentário/nome colados em tipo/lado não vazam no relatório."""
+    report = ImportReport(
+        modo='persist',
+        notas_file='samples/notas_min.xlsx',
+        comentarios_file='samples/comentarios_min.xlsx',
+        avaliacoes_file='samples/avaliacoes_headers_min.xlsx',
+    )
+    record_comentario_criado(
+        report,
+        avaliacao_id=_AVALIACAO_ID,
+        autor_id=_AUTOR_ID,
+        tipo=_COMENTARIO,
+    )
+    record_nota_criada(
+        report,
+        avaliacao_id=_AVALIACAO_ID,
+        competencia_id=_COMPETENCIA_ID,
+        lado=_NOME,
+    )
+    record_conflito(
+        report,
+        tipo='ciencia_data_invalida',
+        extra=f'nome={_NOME} | email={_EMAIL}',
+        motivo=f'comentario={_COMENTARIO}',
+    )
+    text = format_notas_comentarios_report(report)
+    assert _COMENTARIO not in text
+    assert _NOME not in text
+    assert _EMAIL not in text
+    assert _AVALIACAO_ID not in text
+    assert mask_solides_id(_AVALIACAO_ID) in text
+    assert mask_solides_id(_COMPETENCIA_ID) in text
+    assert mask_solides_id(_AUTOR_ID) in text
+    sections = _amostra_items_by_section(text)
+    assert len(sections['comentarios_criados:']) == 1
+    assert len(sections['notas_criadas:']) == 1
+    assert _COMENTARIO not in sections['comentarios_criados:'][0]
+    assert _NOME not in sections['notas_criadas:'][0]
+
+
+@pytest.mark.django_db
+def test_t025_stdout_igual_report_file_amostra_mascarada_sc010(tmp_path: Path):
+    """T025 / SC-010 / T020: stdout == --report-file; máx. 5; zero PII; stderr vazio."""
+    _t018_seed_world()
+    report_path = tmp_path / 'relatorio-notas-comentarios-t025.txt'
+    stdout = StringIO()
+    stderr = StringIO()
+    assert 'raw' not in report_path.parts
+
+    result = call_command(
+        'importar_notas_comentarios',
+        notas=str(_NOTAS_MIN),
+        comentarios=str(_COMENTARIOS_MIN),
+        avaliacoes=str(_AVALIACOES_HEADERS_MIN),
+        report_file=str(report_path),
+        stdout=stdout,
+        stderr=stderr,
+    )
+
+    text = stdout.getvalue()
+    file_text = report_path.read_text(encoding='utf-8')
+    assert result in (0, None)
+    assert file_text == text
+    assert stderr.getvalue() == ''
+    assert '=== Importação notas/comentários legado Sólides ===' in text
+    assert '--- Amostra (mascarada, max 5 por seção) ---' in text
+    assert mask_solides_id('1001') in text
+    _t020_assert_report_sem_pii(text)
+    _t025_assert_sem_pii(text)
+    _t025_assert_ids_mascarados(text)
+    sections = _amostra_items_by_section(text)
+    assert sections
+    for header, items in sections.items():
+        assert len(items) <= _SAMPLE_MAX, header
+        for item in items:
+            assert 'conteudo=' not in item.casefold()
+            for token in _T025_PII:
+                assert token not in item, (header, token)
+
+
+@pytest.mark.skipif(
+    shutil.which('git') is None,
+    reason='git ausente no PATH (ex. container web sem git)',
+)
+def test_t025_denylist_intacta():
+    """T025: git diff vazio na denylist (inclui evaluation.py) vs HEAD."""
+    working_tree = _git_diff('HEAD', '--', *_DENYLIST_PATHS)
+    assert working_tree == '', working_tree
+    evaluation_diff = _git_diff(
+        'HEAD', '--', 'apps/reviews/services/evaluation.py'
+    )
+    assert evaluation_diff == '', evaluation_diff
+    migrations = subprocess.run(
+        ['git', 'diff', 'HEAD', '--', '**/migrations/**'],
+        cwd=_REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert migrations.stdout == '', migrations.stdout
 
 

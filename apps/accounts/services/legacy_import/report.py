@@ -34,6 +34,15 @@ from dataclasses import dataclass, field
 # Contrato §Formato: amostra truncada a 5 itens por seção.
 _SAMPLE_MAX = 5
 
+# Tokens curtos permitidos na amostra 013 — texto livre (comentário/nome)
+# NÃO pode vazar via ``lado`` / ``tipo`` (T025 / SC-010).
+_SAMPLE_LADO_TOKENS = frozenset({"auto", "lider", "líder", "ambos"})
+_SAMPLE_TIPO_TOKENS = frozenset({"colaborador", "lider", "líder", "auto"})
+_PII_FIELD_RE = re.compile(
+    r"\b(nome|comentario|comentário|conteudo|conteúdo|email|e-mail)=([^|\n]+)",
+    flags=re.IGNORECASE,
+)
+
 # E-mails no meio de texto (ex. campos livres de conflito / ciclo).
 _EMAIL_IN_TEXT = re.compile(
     r"(?<![A-Za-z0-9._%+\-])([A-Za-z0-9._%+\-]+)@([A-Za-z0-9.\-]+\.[A-Za-z]{2,})"
@@ -852,9 +861,10 @@ def format_ciclos_avaliacoes_report(report: ImportReport) -> str:
 def format_notas_comentarios_report(report: ImportReport) -> str:
     """Serializa o relatório 013 (notas/comentários) — contrato §Formato.
 
-    Contadores + amostra mascarada (max 5 por seção, T006 / SC-010).
+    Contadores + amostra mascarada (max 5 por seção, T006 / T025 / SC-010).
     NEVER emite comentário completo, nome ou e-mail; IDs via
-    ``mask_solides_id``. Superfície exclusiva de stdout/``--report-file``.
+    ``mask_solides_id``. Superfície exclusiva de stdout/``--report-file``
+    (mesmo texto UTF-8 nas duas saídas). Logs NÃO imprimem linha XLSX crua.
     """
     habilidades = report.habilidades_file.strip() or "(omitido)"
     lines: list[str] = [
@@ -940,7 +950,7 @@ def format_notas_comentarios_report(report: ImportReport) -> str:
     lines.extend(_sample_lines(report.conflitos, _format_conflito_notas))
     lines.append("")
     lines.append("=== Fim ===")
-    return "\n".join(lines) + "\n"
+    return _scrub_notas_comentarios_text("\n".join(lines) + "\n")
 
 
 def _sample_lines(
@@ -948,6 +958,40 @@ def _sample_lines(
     formatter: Callable[[ReportEntry], str],
 ) -> list[str]:
     return [formatter(entry) for entry in entries[:_SAMPLE_MAX]]
+
+
+def _repl_pii_field(match: re.Match[str]) -> str:
+    return f"{match.group(1)}={mask_pii(match.group(2).strip())}"
+
+
+def _token_ou_mascara(value: str, allowed: frozenset[str]) -> str:
+    """Mantém token curto conhecido; texto livre → ``mask_pii`` (T025)."""
+    text = str(value).strip()
+    if not text:
+        return ""
+    if text.casefold() in allowed:
+        return text
+    return mask_pii(_mask_emails_in_text(text))
+
+
+def _scrub_notas_comentarios_text(text: str) -> str:
+    """T025 / SC-010: segunda passagem — sem e-mail/nome/comentário completos.
+
+    Aplica-se linha a linha na amostra para não colapsar IDs mascarados
+    de várias linhas num falso positivo de CPF (11+ dígitos concatenados).
+    """
+    scrubbed = _PII_FIELD_RE.sub(_repl_pii_field, text)
+    marker = "--- Amostra (mascarada, max 5 por seção) ---"
+    if marker not in scrubbed:
+        return scrubbed
+    head, _, rest = scrubbed.partition(marker)
+    fim = "=== Fim ==="
+    sample, sep, tail = rest.partition(fim)
+    lines = [
+        _mask_emails_in_text(line) if line.strip() else line
+        for line in sample.split("\n")
+    ]
+    return head + marker + "\n".join(lines) + sep + tail
 
 
 def _format_usuario_amostra(entry: ReportEntry) -> str:
@@ -981,17 +1025,7 @@ def _format_conflito(entry: ReportEntry) -> str:
 
 def _format_conflito_notas(entry: ReportEntry) -> str:
     """Conflito 013: além de IDs/e-mail/CPF, redige nome e texto livre."""
-    line = _format_conflito(entry)
-
-    def _repl_pii_field(match: re.Match[str]) -> str:
-        return f"{match.group(1)}={mask_pii(match.group(2).strip())}"
-
-    return re.sub(
-        r"\b(nome|comentario|comentário|conteudo|conteúdo)=([^|]+)",
-        _repl_pii_field,
-        line,
-        flags=re.IGNORECASE,
-    )
+    return _PII_FIELD_RE.sub(_repl_pii_field, _format_conflito(entry))
 
 
 def _format_ciclo(entry: ReportEntry) -> str:
@@ -1033,7 +1067,7 @@ def _format_ids_colapsados(entry: ReportEntry) -> str:
 
 
 def _format_nota_amostra(entry: ReportEntry) -> str:
-    lado = _mask_emails_in_text(entry.motivo.strip()) if entry.motivo.strip() else ""
+    lado = _token_ou_mascara(entry.motivo, _SAMPLE_LADO_TOKENS)
     parts = [
         f"  - avaliacao={mask_solides_id(entry.label)}",
         f"competencia={mask_solides_id(entry.extra)}",
@@ -1044,7 +1078,8 @@ def _format_nota_amostra(entry: ReportEntry) -> str:
 
 
 def _format_comentario_amostra(entry: ReportEntry) -> str:
-    tipo = _mask_emails_in_text(entry.motivo.strip()) if entry.motivo.strip() else ""
+    """Só IDs mascarados + tipo; NEVER ``conteudo`` / nome / e-mail."""
+    tipo = _token_ou_mascara(entry.motivo, _SAMPLE_TIPO_TOKENS)
     parts = [
         f"  - avaliacao={mask_solides_id(entry.label)}",
         f"autor={mask_solides_id(entry.extra)}",
