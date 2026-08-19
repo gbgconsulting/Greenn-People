@@ -1,15 +1,19 @@
-"""Parser de datas do legado Sólides (serial Excel + ISO).
+"""Parser de datas/datetimes do legado Sólides (serial Excel + ISO).
 
-Conforme research R10/R6 e ``contracts/column-mapping-contract.md``
-(§is_active / §Normalização de nome). Stdlib + ``display_name`` —
-**sem** openpyxl (restrito a ``parse_xlsx.py``).
+Conforme research R10/R6/R12 e ``contracts/column-mapping-contract.md``
+(§is_active / §Normalização de nome / §Datas ``Criado em``). Stdlib +
+Django ``USE_TZ`` + ``display_name`` — **sem** openpyxl (restrito a
+``parse_xlsx.py``).
 """
 
 from __future__ import annotations
 
 import re
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
 from typing import Any
+
+from django.conf import settings
+from django.utils import timezone
 
 from apps.competencies.services.catalog_import.normalize import display_name
 
@@ -59,6 +63,54 @@ def parse_legacy_date(value: Any) -> date | None:
             pass
 
     raise ValueError(f"data legado não suportada: {type(value).__name__}={value!r}")
+
+
+def parse_legacy_datetime(value: Any) -> datetime | None:
+    """Converte valor cru de célula (ex. ``Criado em``) em ``datetime``.
+
+    Aceita:
+    - ``None`` / vazio / ``0`` / ``0.0`` → ``None`` (ausente).
+    - ``datetime`` já tipado (openpyxl) — aware se ``USE_TZ``.
+    - ``date`` tipado (sem hora) → meia-noite, aware se ``USE_TZ``.
+    - ``int`` / ``float`` serial Excel (epoch 1899-12-30) **com fração de
+      dia** convertida em hora.
+    - ``str`` ISO (``fromisoformat``, inclusive ``Z``) ou string numérica
+      serial / ``\"0\"``.
+
+    Raises:
+        ValueError: valor não vazio e não interpretável como datetime.
+    """
+    if value is None:
+        return None
+
+    if isinstance(value, bool):
+        raise ValueError(f"datetime legado inválido (bool): {value!r}")
+
+    if isinstance(value, datetime):
+        return _ensure_tz(value)
+
+    if isinstance(value, date):
+        return _ensure_tz(datetime.combine(value, time.min))
+
+    if isinstance(value, (int, float)):
+        parsed = _from_excel_serial_datetime(value)
+        return None if parsed is None else _ensure_tz(parsed)
+
+    if isinstance(value, str):
+        parsed = _from_string_datetime(value)
+        return None if parsed is None else _ensure_tz(parsed)
+
+    if hasattr(value, "__float__") and not isinstance(value, (bytes, bytearray)):
+        try:
+            parsed = _from_excel_serial_datetime(float(value))
+        except (TypeError, ValueError, OverflowError):
+            pass
+        else:
+            return None if parsed is None else _ensure_tz(parsed)
+
+    raise ValueError(
+        f"datetime legado não suportado: {type(value).__name__}={value!r}"
+    )
 
 
 def normalize_ciclo_nome(raw: Any) -> str:
@@ -149,3 +201,59 @@ def _from_string(raw: str) -> date | None:
         return _from_excel_serial(float(text.replace(",", ".")))
     except (TypeError, ValueError, OverflowError) as exc:
         raise ValueError(f"data legado inválida: {raw!r}") from exc
+
+
+def _ensure_tz(dt: datetime) -> datetime:
+    """Naive → aware no TZ corrente se ``USE_TZ``; aware permanece."""
+    if timezone.is_aware(dt):
+        return dt
+    if settings.USE_TZ:
+        return timezone.make_aware(dt, timezone.get_current_timezone())
+    return dt
+
+
+def _from_excel_serial_datetime(serial: float | int) -> datetime | None:
+    if serial == 0 or serial == 0.0:
+        return None
+    # Parte inteira = dia civil; fração = hora (contrato §Datas).
+    days = int(serial)
+    if days == 0:
+        return None
+    fraction = float(serial) - days
+    microseconds = round(fraction * 86_400 * 1_000_000)
+    extra_days, microseconds = divmod(microseconds, 86_400 * 1_000_000)
+    try:
+        return datetime.combine(_EXCEL_EPOCH, time.min) + timedelta(
+            days=days + extra_days,
+            microseconds=microseconds,
+        )
+    except OverflowError as exc:
+        raise ValueError(
+            f"datetime legado serial fora do intervalo: {serial!r}"
+        ) from exc
+
+
+def _from_string_datetime(raw: str) -> datetime | None:
+    text = raw.strip()
+    if not text:
+        return None
+
+    if text in {"0", "0.0", "0.00"}:
+        return None
+
+    iso = text[:-1] + "+00:00" if text.endswith(("Z", "z")) else text
+    try:
+        return datetime.fromisoformat(iso)
+    except ValueError:
+        pass
+
+    if len(text) >= 10 and text[4] == "-":
+        try:
+            return datetime.combine(date.fromisoformat(text[:10]), time.min)
+        except ValueError:
+            pass
+
+    try:
+        return _from_excel_serial_datetime(float(text.replace(",", ".")))
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError(f"datetime legado inválido: {raw!r}") from exc

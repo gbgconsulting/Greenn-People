@@ -1,12 +1,12 @@
-"""Leitura OOXML (openpyxl) de backups Sólides — colaboradores, solicitações e crosswalk.
+"""Leitura OOXML (openpyxl) de backups Sólides — colaboradores, solicitações,
+crosswalk, notas, comentários e habilidades.
 
-Único módulo da feature autorizado a importar ``openpyxl`` (research R1).
-Colunas: ``contracts/column-mapping-contract.md`` §Obrigatórias;
-pré-condições: ``contracts/import-command-contract.md``.
+Único módulo autorizado a importar ``openpyxl`` (research R1; 010/011/013).
+Colunas: ``contracts/column-mapping-contract.md``; pré-condições:
+``contracts/import-command-contract.md``.
 
-T025: falhas fatais pré-persistência (arquivo ausente/ilegível, OOXML
-inválido, colunas obrigatórias ausentes) → ``LegacyParseError`` (exit 1
-no command; zero writes).
+Falhas fatais pré-persistência (arquivo ausente/ilegível, OOXML inválido,
+colunas obrigatórias ausentes) → ``LegacyParseError`` (exit 1; zero writes).
 """
 
 from __future__ import annotations
@@ -58,6 +58,32 @@ SOLICITACOES_REQUIRED_COLUMNS: tuple[str, ...] = (
 )
 
 SOLICITACOES_OPTIONAL_COLUMNS: tuple[str, ...] = ("Status",)
+
+NOTAS_REQUIRED_COLUMNS: tuple[str, ...] = (
+    "Identificador",
+    "Identificador Avaliação",
+    "Nome Avaliador",
+    "Nome Avaliado",
+    "Identificador Habilidade",
+    "habilidade",
+    "Fator no Momento",
+    "Nota",
+)
+
+COMENTARIOS_REQUIRED_COLUMNS: tuple[str, ...] = (
+    "Identificador",
+    "Identificador Avaliador",
+    "Nome Avaliador",
+    "Nome Avaliado",
+    "Comentário",
+    "Criado em",
+)
+
+HABILIDADES_REQUIRED_COLUMNS: tuple[str, ...] = (
+    "Identificador",
+    "Habilidade",
+    "Grupo",
+)
 
 
 class LegacyParseError(Exception):
@@ -131,6 +157,59 @@ class AvaliacaoHeaderRow:
 
 
 @dataclass(frozen=True)
+class NotaRow:
+    """Linha de ``backup_notas_avaliacoes_*`` (sem persistência).
+
+    IDs já canônicos. Nomes via ``display_name``. ``fator_no_momento`` e
+    ``nota`` permanecem crus (número / texto / None) para validação na
+    fase de snapshots. Dump 2026-06-24 **não** tem coluna de nível —
+    não parsear / não inventar.
+    """
+
+    linha: int
+    identificador: str
+    identificador_avaliacao: str
+    nome_avaliador: str
+    nome_avaliado: str
+    identificador_habilidade: str
+    habilidade: str
+    fator_no_momento: Any
+    nota: Any
+
+
+@dataclass(frozen=True)
+class ComentarioRow:
+    """Linha de ``backup_comentarios_avaliacoes_*`` (sem persistência).
+
+    ``identificador`` é o ID de **avaliação** (não do comentário).
+    ``criado_em`` permanece cru para ``dates.parse_legacy_datetime``.
+    ``comentario`` via ``display_name``; não vai para o relatório.
+    """
+
+    linha: int
+    identificador: str
+    identificador_avaliador: str
+    nome_avaliador: str
+    nome_avaliado: str
+    comentario: str
+    criado_em: Any
+
+
+@dataclass(frozen=True)
+class HabilidadeRow:
+    """Linha de ``backup_habilidades_*`` (opcional; só se ``--habilidades``).
+
+    Completa ``nome``/``tipo`` de extras criadas como FK de nota (R11).
+    **Não** é a matriz ``backup_habilidades_cargo_*``.
+    """
+
+    linha: int
+    identificador: str
+    habilidade: str
+    grupo: str
+
+
+@dataclass(frozen=True)
 class ParsedColaboradores:
     """Resultado do parse de colaboradores (sem persistência)."""
 
@@ -159,6 +238,30 @@ class ParsedAvaliacoesHeaders:
     """Resultado do parse de cabeçalhos de avaliação (sem agregação)."""
 
     rows: tuple[AvaliacaoHeaderRow, ...]
+    path: str
+
+
+@dataclass(frozen=True)
+class ParsedNotas:
+    """Resultado do parse de notas por competência (sem persistência)."""
+
+    rows: tuple[NotaRow, ...]
+    path: str
+
+
+@dataclass(frozen=True)
+class ParsedComentarios:
+    """Resultado do parse de comentários qualitativos (sem persistência)."""
+
+    rows: tuple[ComentarioRow, ...]
+    path: str
+
+
+@dataclass(frozen=True)
+class ParsedHabilidades:
+    """Resultado do parse opcional de ``backup_habilidades_*``."""
+
+    rows: tuple[HabilidadeRow, ...]
     path: str
 
 
@@ -494,3 +597,129 @@ def parse_avaliacoes_headers_xlsx(path: str | Path) -> ParsedAvaliacoesHeaders:
         )
 
     return ParsedAvaliacoesHeaders(rows=tuple(result), path=str(path))
+
+
+def parse_notas_xlsx(path: str | Path) -> ParsedNotas:
+    """Lê ``backup_notas_avaliacoes_*`` (013 — T004).
+
+    Colunas obrigatórias: ``Identificador``, ``Identificador Avaliação``,
+    ``Nome Avaliador``, ``Nome Avaliado``, ``Identificador Habilidade``,
+    ``habilidade``, ``Fator no Momento``, ``Nota``. Sem coluna de nível.
+    Linhas sem ``Identificador Avaliação`` canônico são descartadas.
+    ``Fator no Momento`` e ``Nota`` permanecem crus (conflito na persistência).
+
+    Raises:
+        LegacyParseError: arquivo / OOXML / colunas (fatal, zero writes).
+    """
+    path = Path(path)
+    raw_rows = _load_sheet_rows(path)
+    if not raw_rows:
+        raise LegacyParseError(f"Planilha vazia (sem header): {path}")
+
+    header_index = _header_index(raw_rows[0])
+    _require_columns(path, header_index, NOTAS_REQUIRED_COLUMNS)
+
+    result: list[NotaRow] = []
+    for excel_row, row in enumerate(raw_rows[1:], start=2):
+        identificador_avaliacao = canonicalize_id(
+            _cell(row, header_index, "Identificador Avaliação")
+        )
+        if not identificador_avaliacao:
+            continue
+        result.append(
+            NotaRow(
+                linha=excel_row,
+                identificador=canonicalize_id(
+                    _cell(row, header_index, "Identificador")
+                ),
+                identificador_avaliacao=identificador_avaliacao,
+                nome_avaliador=_as_text(_cell(row, header_index, "Nome Avaliador")),
+                nome_avaliado=_as_text(_cell(row, header_index, "Nome Avaliado")),
+                identificador_habilidade=canonicalize_id(
+                    _cell(row, header_index, "Identificador Habilidade")
+                ),
+                habilidade=_as_text(_cell(row, header_index, "habilidade")),
+                fator_no_momento=_cell(row, header_index, "Fator no Momento"),
+                nota=_cell(row, header_index, "Nota"),
+            )
+        )
+
+    return ParsedNotas(rows=tuple(result), path=str(path))
+
+
+def parse_comentarios_xlsx(path: str | Path) -> ParsedComentarios:
+    """Lê ``backup_comentarios_avaliacoes_*`` (013 — T004).
+
+    Colunas obrigatórias: ``Identificador`` (ID de avaliação),
+    ``Identificador Avaliador``, ``Nome Avaliador``, ``Nome Avaliado``,
+    ``Comentário``, ``Criado em``. Demais colunas do dump (solicitação,
+    identificador avaliado) são ignoradas. Linhas sem ``Identificador``
+    canônico são descartadas. ``Criado em`` permanece cru para
+    ``dates.parse_legacy_datetime``.
+
+    Raises:
+        LegacyParseError: arquivo / OOXML / colunas (fatal, zero writes).
+    """
+    path = Path(path)
+    raw_rows = _load_sheet_rows(path)
+    if not raw_rows:
+        raise LegacyParseError(f"Planilha vazia (sem header): {path}")
+
+    header_index = _header_index(raw_rows[0])
+    _require_columns(path, header_index, COMENTARIOS_REQUIRED_COLUMNS)
+
+    result: list[ComentarioRow] = []
+    for excel_row, row in enumerate(raw_rows[1:], start=2):
+        identificador = canonicalize_id(_cell(row, header_index, "Identificador"))
+        if not identificador:
+            continue
+        result.append(
+            ComentarioRow(
+                linha=excel_row,
+                identificador=identificador,
+                identificador_avaliador=canonicalize_id(
+                    _cell(row, header_index, "Identificador Avaliador")
+                ),
+                nome_avaliador=_as_text(_cell(row, header_index, "Nome Avaliador")),
+                nome_avaliado=_as_text(_cell(row, header_index, "Nome Avaliado")),
+                comentario=_as_text(_cell(row, header_index, "Comentário")),
+                criado_em=_cell(row, header_index, "Criado em"),
+            )
+        )
+
+    return ParsedComentarios(rows=tuple(result), path=str(path))
+
+
+def parse_habilidades_xlsx(path: str | Path) -> ParsedHabilidades:
+    """Lê ``backup_habilidades_*`` opcional (013 — T004; só se ``--habilidades``).
+
+    Colunas: ``Identificador``, ``Habilidade``, ``Grupo``. Linhas sem
+    ``Identificador`` canônico são descartadas. **Não** lê a matriz
+    ``backup_habilidades_cargo_*``.
+
+    Raises:
+        LegacyParseError: arquivo / OOXML / colunas (fatal, zero writes).
+    """
+    path = Path(path)
+    raw_rows = _load_sheet_rows(path)
+    if not raw_rows:
+        raise LegacyParseError(f"Planilha vazia (sem header): {path}")
+
+    header_index = _header_index(raw_rows[0])
+    _require_columns(path, header_index, HABILIDADES_REQUIRED_COLUMNS)
+
+    result: list[HabilidadeRow] = []
+    for excel_row, row in enumerate(raw_rows[1:], start=2):
+        identificador = canonicalize_id(_cell(row, header_index, "Identificador"))
+        if not identificador:
+            continue
+        result.append(
+            HabilidadeRow(
+                linha=excel_row,
+                identificador=identificador,
+                habilidade=_as_text(_cell(row, header_index, "Habilidade")),
+                grupo=_as_text(_cell(row, header_index, "Grupo")),
+            )
+        )
+
+    return ParsedHabilidades(rows=tuple(result), path=str(path))

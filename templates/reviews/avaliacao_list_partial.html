@@ -1,3 +1,4 @@
+{% load review_display %}
 <div id="list-container">
 <div class="table-frame">
   <table>
@@ -40,7 +41,7 @@
         </td>
         <td class="tabular-nums text-slate-800">
           {% if row.avaliacao.nota_final_lider is not None %}
-            {{ row.avaliacao.nota_final_lider }}
+            {{ row.avaliacao.nota_final_lider|nota_percentual }}
           {% else %}
             <span class="text-slate-400">—</span>
           {% endif %}

@@ -1,3 +1,4 @@
+{% load review_display %}
 <div id="list-container">
 <div class="table-frame">
   <table>
@@ -29,7 +30,7 @@
           </td>
           <td>
             {% if item.avaliacao.nota_final_lider is not None %}
-              <span class="font-semibold tabular-nums text-slate-800">{{ item.avaliacao.nota_final_lider }}</span>
+              <span class="font-semibold tabular-nums text-slate-800">{{ item.avaliacao.nota_final_lider|nota_percentual }}</span>
             {% else %}
               <span class="text-slate-400">—</span>
             {% endif %}
@@ -89,7 +90,7 @@
           </td>
           <td>
             {% if item.avaliacao.nota_final_lider is not None %}
-              <span class="font-semibold tabular-nums text-slate-800">{{ item.avaliacao.nota_final_lider }}</span>
+              <span class="font-semibold tabular-nums text-slate-800">{{ item.avaliacao.nota_final_lider|nota_percentual }}</span>
             {% else %}
               <span class="text-slate-400">—</span>
             {% endif %}

@@ -8,7 +8,9 @@ ler `data/legado-solides/raw/`.
 | `colaboradores_min.xlsx` | 010 | Layout de colaboradores |
 | `avaliacoes_crosswalk_min.xlsx` | 010 | Crosswalk `Nome Avaliado` → `Identificador Avaliado` |
 | `solicitacoes_min.xlsx` | 011 | Solicitações → ciclos históricos |
-| `avaliacoes_headers_min.xlsx` | 011 | Cabeçalhos de avaliação (agregação 1:1) |
+| `avaliacoes_headers_min.xlsx` | 011 | Cabeçalhos de avaliação (agregação 1:1) — **reusado** como mapa 013 |
+| `notas_min.xlsx` | 013 | Notas por competência (auto/líder, IDs colapsados, conflitos) |
+| `comentarios_min.xlsx` | 013 | Comentários qualitativos (líder/auto, autor órfão, serial Excel) |
 
 E-mails: `@example.com` (RFC 2606). CPF sentinela `000.000.000-00` (coluna
 presente só para provar que PII é ignorada — **não** persistida). Nomes de
@@ -71,3 +73,38 @@ ignorada).
 | Órfão usuário | 10 | `99999` / Usuario Orfao Fixture | 4001 | `orfaos_usuario` |
 | Solicitação órfã | `999` (ausente) | Ana Silva `101` | 5001 | `orfaos_ciclo` |
 | 1:1 canceled | 40 | Carla Dias `103` | 6001 | ciclo canceled no sample |
+
+## `notas_min.xlsx` (013 / T017)
+
+Planilha `sheet1`. Colunas obrigatórias do dump de notas (**sem** coluna de
+nível) + `CPF` / `E-mail` sentinela (ignorados — **não** persistidos). Mapa
+de IDs = `avaliacoes_headers_min.xlsx` (011). **Proibido** `raw/`.
+
+| ID linha | Avaliação | Avaliador → avaliado | Habilidade | Subset |
+|---|---|---|---|---|
+| 8001 | `1001` canônico | Ana Silva → Ana Silva (auto) | `HAB10` Comunicacao Fixture | auto + canônico; Fator `1`; Nota `3` |
+| 8002 | `1003` colapsado | Gestor Alpha → Ana Silva | `HAB10` | líder unívoco do mesmo par |
+| 8003 | `1002` colapsado | Bruno Costa → Ana Silva | `HAB11` Colaboracao Fixture | ID colapsado sem conflito de líder |
+| 8004 | `88888` | Gestor Alpha → Ana Silva | `HAB10` | órfão (sem canônico nem mapa) |
+| 8005 | `1002` colapsado | Bruno Costa → Ana Silva | `HAB12` Lideranca Fixture | dois líderes divergentes (nota `4`) |
+| 8006 | `1003` colapsado | Gestor Alpha → Ana Silva | `HAB12` | dois líderes divergentes (nota `5`) |
+| 8007 | `3001` | Ana Silva → Gestor Alpha | `HAB10` | Fator válido `1.5` |
+| 8008 | `3001` | Ana Silva → Gestor Alpha | `HAB11` | Fator inválido `0` |
+| 8009 | `6001` | Gestor Alpha → Carla Dias | `HAB10` | Nota `9` fora da escala 1–5 |
+| 8010 | `1001` | Ana Silva → Ana Silva (auto) | `99001` Habilidade Extra Fixture | extra não-KPI |
+| 8011 | `1001` | Ana Silva → Ana Silva (auto) | `99002` `SLA` | nome KPI 003 → `orfaos_competencia` |
+| 8012 | `1001` | Ana Silva → Ana Silva (auto) | `99003` Erros de usabilidade | nome ambíguo 003 → `orfaos_competencia` |
+
+## `comentarios_min.xlsx` (013 / T017)
+
+Planilha `sheet1`. Colunas obrigatórias + `Identificador Solicitação` /
+`Identificador Avaliado` / `CPF` / `E-mail` (ignorados). Textos são fixture
+— persistidos em `Feedback.conteudo`, **nunca** no relatório mascarado.
+
+| Avaliação | Avaliador | Tipo | `Criado em` | Subset |
+|---|---|---|---|---|
+| `1001` | Gestor Alpha `100` | líder | serial `45446.5` (fração de dia) | ciência preenchida |
+| `1001` | Gestor Alpha `100` | líder | serial `45447` | 2º texto (N por avaliação) |
+| `1001` | Ana Silva `101` | auto | ISO `2024-06-03T09:15:00` | `ciente_em` null |
+| `1001` | `88888` / Ninguem Desconhecido Fixture | — | serial `45446.5` | `orfaos_autor` (não inventa User) |
+| `1002` colapsado | Bruno Costa `102` | líder | serial `45323.25` | mesma canônica `1001` |
