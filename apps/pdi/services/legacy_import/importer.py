@@ -3,7 +3,11 @@
 Superfície pública: ``import_pdi`` (reexportada por ``__init__``).
 T008: persistência 1 PDI + 1 ação por linha resolvível (R-idempotência).
 T012: resolução de pessoa no lote — órfãos / ``id_vs_nome`` não-fatais.
-T019: dry-run / rollback; T020: consolidar idempotência.
+T019: ``--dry-run`` projeta totais sem ``save``/``create``/``update``;
+persist cobre o lote numa ``transaction.atomic()`` (rollback em exceção).
+T020: idempotência conservadora (SC-005) — upsert só por digest novo;
+2ª run inalterada; chave de ação divergente → conflito sem 2ª ação e
+sem delete; ``pdis_atualizados`` / ``acoes_atualizadas`` permanecem 0.
 
 Denylist intacta — **nunca** chama ``open_cycle`` / ``close_cycle`` /
 ``advance_stage`` / approval / ``get_visible_users`` / ``user_in_scope`` /
@@ -17,6 +21,7 @@ visibilidade.
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 
@@ -70,6 +75,16 @@ class LegacyPersistError(Exception):
     """
 
 
+@dataclass
+class _ImportCtx:
+    """Persist vs projeção (T019): dry-run **nunca** chama save/create/update."""
+
+    persist: bool
+    overlay: dict[str, list[tuple[tuple[str, date], str]]] = field(
+        default_factory=dict
+    )
+
+
 def import_pdi(
     pdi_path: str | Path,
     *,
@@ -80,12 +95,16 @@ def import_pdi(
     Assinatura alinhada a ``contracts/import-command-contract.md``.
 
     1. Parse ``--pdi`` (openpyxl via ``parse_pdi_xlsx`` em accounts).
+       Arquivo ausente / OOXML ilegível / colunas obrigatórias ausentes
+       → ``LegacyParseError`` **antes** de qualquer escrita (exit 1).
     2. Schema: coluna ``PDI.solides_id`` presente (pré-requisito 010).
     3. ``data_carga = timezone.localdate()`` congelada para FR-011.
-    4. Persist: uma ``transaction.atomic()`` cobre o lote; por linha
-       resolvível, PDI **e** ação ou nenhum. Órfãos (``orfaos_usuario``) e
-       ``id_vs_nome`` são não-fatais: skip da linha, lote continua.
-    5. ``dry_run``: stub até T019.
+    4. ``dry_run`` (T019): parse + resolve + totais projetados;
+       **zero** ``save`` / ``create`` / ``update``.
+    5. Persist: uma ``transaction.atomic()`` cobre o lote; exceção →
+       rollback completo e ``LegacyPersistError`` (exit 1). Por linha
+       resolvível, PDI **e** ação ou nenhum. Órfãos (``orfaos_usuario``)
+       e ``id_vs_nome`` são não-fatais: skip da linha, lote continua.
     """
     parsed = parse_pdi_xlsx(pdi_path)
     report = ImportReport(
@@ -94,17 +113,18 @@ def import_pdi(
     )
     _assert_pdi_solides_id_schema()
     data_carga = timezone.localdate()
+    ctx = _ImportCtx(persist=not dry_run)
 
-    if dry_run:
-        raise NotImplementedError("T019: --dry-run (zero writes)")
-
-    with transaction.atomic():
-        try:
-            _persist_rows(parsed.rows, report, data_carga)
-        except LegacyPersistError:
-            raise
-        except Exception as exc:
-            raise LegacyPersistError(str(exc)) from exc
+    if ctx.persist:
+        with transaction.atomic():
+            try:
+                _persist_rows(parsed.rows, report, data_carga, ctx)
+            except LegacyPersistError:
+                raise
+            except Exception as exc:
+                raise LegacyPersistError(str(exc)) from exc
+    else:
+        _persist_rows(parsed.rows, report, data_carga, ctx)
 
     return report
 
@@ -136,16 +156,18 @@ def _persist_rows(
     rows: tuple[PdiRow, ...],
     report: ImportReport,
     data_carga: date,
+    ctx: _ImportCtx,
 ) -> None:
-    """Processa o lote: 1 PDI + 1 ação por linha resolvível (T008)."""
+    """Processa o lote: 1 PDI + 1 ação por linha resolvível (T008/T019)."""
     for row in rows:
-        _persist_row(row, report, data_carga)
+        _persist_row(row, report, data_carga, ctx)
 
 
 def _persist_row(
     row: PdiRow,
     report: ImportReport,
     data_carga: date,
+    ctx: _ImportCtx,
 ) -> None:
     """Unidade atômica da linha: PDI e ação, ou nenhum.
 
@@ -191,6 +213,7 @@ def _persist_row(
 
     _upsert_pdi_e_acao(
         report,
+        ctx,
         usuario=usuario,
         titulo=titulo,
         pdi_status=pdi_status,
@@ -201,8 +224,37 @@ def _persist_row(
     )
 
 
+def _lookup_acoes(
+    ctx: _ImportCtx,
+    digest: str,
+) -> list[tuple[tuple[str, date], str]] | None:
+    """Ações já vistas neste lote (overlay) ou no DB. ``None`` = PDI ausente.
+
+    Chave natural da ação: ``(pdi_id, display_name(descricao), prazo)`` —
+    o ``pdi_id`` fica implícito no agrupamento por digest (``solides_id``
+    único). Overlay memoiza o snapshot para a 2ª linha do mesmo lote não
+    divergir do primeiro lookup (T020).
+    """
+    if digest in ctx.overlay:
+        return ctx.overlay[digest]
+    existing = (
+        PDI.objects.filter(solides_id=digest)
+        .prefetch_related("acoes")
+        .first()
+    )
+    if existing is None:
+        return None
+    snapshot = [
+        (acao_natural_key(acao.descricao, acao.prazo), acao.status)
+        for acao in existing.acoes.all()
+    ]
+    ctx.overlay[digest] = list(snapshot)
+    return snapshot
+
+
 def _upsert_pdi_e_acao(
     report: ImportReport,
+    ctx: _ImportCtx,
     *,
     usuario: CustomUser,
     titulo: str,
@@ -212,20 +264,25 @@ def _upsert_pdi_e_acao(
     prazo: date,
     acao_status: str,
 ) -> None:
-    """Upsert conservador por digest; ação pela chave natural.
+    """Upsert conservador por digest; ação pela chave natural (T020 / SC-005).
 
-    Digest novo → create 1+1. Mesma chave de ação → inalterado (não
-    reescreve título/status/descrição). Chave divergente no mesmo PDI →
-    ``acao_chave_divergente`` sem 2ª ação e sem delete.
+    Digest novo → create 1+1 (``pdis_criados`` / ``acoes_criadas``).
+    Digest existe + mesma chave ``(pdi, display_name(descricao), prazo)``
+    → inalterado: **não** ``save`` no PDI/ação existente, **não**
+    reescreve título/status/descrição (mesmo se a fonte divergir).
+    Digest existe + chave de ação não bate (incl. PDI sem ação) →
+    ``acao_chave_divergente``; **não** cria 2ª ação; **não** apaga;
+    **não** chama ``QuerySet.update`` / ``delete``.
+
+    Política conservadora: ``pdis_atualizados`` / ``acoes_atualizadas``
+    permanecem 0 no caminho feliz — esta fatia **não** chama
+    ``record_pdi_atualizado`` / ``record_acao_atualizada``.
     """
-    existing = (
-        PDI.objects.filter(solides_id=digest)
-        .prefetch_related("acoes")
-        .first()
-    )
-    if existing is None:
+    acoes = _lookup_acoes(ctx, digest)
+    if acoes is None:
         _create_pdi_e_acao(
             report,
+            ctx,
             usuario=usuario,
             titulo=titulo,
             pdi_status=pdi_status,
@@ -237,44 +294,31 @@ def _upsert_pdi_e_acao(
         return
 
     wanted = acao_natural_key(descricao, prazo)
-    matched: AcaoPDI | None = None
-    has_any_acao = False
-    for acao in existing.acoes.all():
-        has_any_acao = True
-        if acao_natural_key(acao.descricao, acao.prazo) == wanted:
-            matched = acao
+    matched_status: str | None = None
+    for key, status in acoes:
+        if key == wanted:
+            matched_status = status
             break
 
-    if matched is not None:
+    if matched_status is not None:
         record_pdi_inalterado(report, solides_id=digest)
         record_acao_inalterada(
             report,
             pdi_solides_id=digest,
-            status_acao=matched.status,
+            status_acao=matched_status,
         )
         return
 
-    if has_any_acao:
-        record_conflito(
-            report,
-            tipo="acao_chave_divergente",
-            extra=f"pdi={digest}",
-        )
-        return
-
-    _create_acao(
+    record_conflito(
         report,
-        pdi=existing,
-        digest=digest,
-        descricao=descricao,
-        prazo=prazo,
-        acao_status=acao_status,
+        tipo="acao_chave_divergente",
+        extra=f"pdi={digest}",
     )
-    record_pdi_inalterado(report, solides_id=digest)
 
 
 def _create_pdi_e_acao(
     report: ImportReport,
+    ctx: _ImportCtx,
     *,
     usuario: CustomUser,
     titulo: str,
@@ -284,17 +328,24 @@ def _create_pdi_e_acao(
     prazo: date,
     acao_status: str,
 ) -> None:
-    """Create 1 PDI + 1 ação via ``full_clean``+``save`` (sem ``bulk_create``)."""
-    pdi = PDI(
-        usuario=usuario,
-        titulo=titulo,
-        status=pdi_status,
-        solides_id=digest,
-    )
-    pdi.full_clean()
-    pdi.save()
+    """Create 1 PDI + 1 ação via ``full_clean``+``save`` (sem ``bulk_create``).
+
+    Dry-run: registra totais projetados e overlay; **zero** ``save``.
+    """
+    pdi: PDI | None = None
+    if ctx.persist:
+        pdi = PDI(
+            usuario=usuario,
+            titulo=titulo,
+            status=pdi_status,
+            solides_id=digest,
+        )
+        pdi.full_clean()
+        pdi.save()
+    ctx.overlay[digest] = []
     _create_acao(
         report,
+        ctx,
         pdi=pdi,
         digest=digest,
         descricao=descricao,
@@ -306,8 +357,9 @@ def _create_pdi_e_acao(
 
 def _create_acao(
     report: ImportReport,
+    ctx: _ImportCtx,
     *,
-    pdi: PDI,
+    pdi: PDI | None,
     digest: str,
     descricao: str,
     prazo: date,
@@ -317,20 +369,30 @@ def _create_acao(
 
     **MUST NOT** chamar ``recalculate_overdue_status`` /
     ``mark_overdue_pdi_actions``. Sem ``update_fields`` que pule ``prazo``.
+    Dry-run: só overlay + relatório; **zero** ``save``.
     """
-    acao = AcaoPDI(
-        pdi=pdi,
-        descricao=descricao,
-        responsavel=pdi.usuario,
-        prazo=prazo,
-        status=acao_status,
-    )
-    acao.full_clean()
-    acao.save()
+    status_registrado = acao_status
+    if ctx.persist:
+        if pdi is None:
+            raise LegacyPersistError(
+                f"PDI ausente para persistir ação (digest={digest})"
+            )
+        acao = AcaoPDI(
+            pdi=pdi,
+            descricao=descricao,
+            responsavel=pdi.usuario,
+            prazo=prazo,
+            status=acao_status,
+        )
+        acao.full_clean()
+        acao.save()
+        status_registrado = acao.status
+    wanted = acao_natural_key(descricao, prazo)
+    ctx.overlay.setdefault(digest, []).append((wanted, status_registrado))
     record_acao_criada(
         report,
         pdi_solides_id=digest,
-        status_acao=acao.status,
+        status_acao=status_registrado,
     )
 
 

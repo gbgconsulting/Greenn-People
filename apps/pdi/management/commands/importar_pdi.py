@@ -6,9 +6,10 @@ relatório (stdout e opcionalmente ``--report-file``).
 Ordem fixa (``contracts/import-command-contract.md`` §Semântica):
 1. Parse ``--pdi`` (pré-atomic; openpyxl só em ``parse_xlsx``)
 2. ``data_carga`` congelada no importer
-3. ``--dry-run``: stub até T019 (flag aceita; persistência projetada
-   sem writes fica no importer)
-4. Senão ``transaction.atomic()`` no importer: 1 PDI + 1 ação por linha
+3. ``--dry-run``: parse + resolve + totais projetados; **zero**
+   ``save``/``create``/``update`` (T019)
+4. Senão ``transaction.atomic()`` no importer: 1 PDI + 1 ação por linha;
+   exceção → rollback + exit ``1``
 5. Relatório via ``format_pdi_report`` — stdout **==** ``--report-file``
 
 Códigos de saída (``contracts/import-command-contract.md`` §Códigos de saída):
@@ -23,6 +24,8 @@ Códigos de saída (``contracts/import-command-contract.md`` §Códigos de saíd
 T009: CLI fina US1 (persistência 1+1). Sem regra de domínio aqui.
 T012: órfãos / ``id_vs_nome`` saem no relatório via ``format_pdi_report``
 e **não** viram exit ``1`` (não-fatais). Inatividade não é filtrada aqui.
+T019: ``--dry-run`` funcional (zero writes); falha pré-persistência e
+rollback de persistência → exit ``1``.
 
 Sem UI/DRF/Celery; denylist intacta (não chama stage/open/close/approval/
 ``get_visible_users`` / ``user_in_scope`` / ``ScopedObjectMixin`` /
@@ -47,7 +50,7 @@ from apps.pdi.services.legacy_import import (
 
 
 class Command(BaseCommand):
-    """CLI fina T009/T012: ``--pdi`` + relatório mascarado; exit 0|1.
+    """CLI fina T009/T012/T019: ``--pdi`` + relatório mascarado; exit 0|1.
 
     Resolução de pessoa e persistência ficam no serviço. Este comando
     **não** autoriza por escopo: sem ``get_visible_users``, sem
@@ -88,7 +91,7 @@ class Command(BaseCommand):
             action='store_true',
             help=(
                 'Parse + totais projetados; zero save/create/update '
-                '(stub até T019 no importer).'
+                '(T019: parse + totais projetados; zero save/create/update).'
             ),
         )
 
