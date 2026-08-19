@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Acesso negado — Greenn People{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-lg py-12">
+  {% include "components/card.html" with title="Acesso indisponível" body="Você não tem acesso a este recurso ou ele não existe." %}
+  <div class="mt-6">
+    {% include "components/button.html" with label="Voltar ao início" href="/" variant="primary" %}
+  </div>
+</div>
+{% endblock %}

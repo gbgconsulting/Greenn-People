@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}{{ pdi.titulo }} — Greenn People{% endblock %}
+
+{% block content %}
+<header class="mb-6 flex flex-wrap items-start justify-between gap-3">
+  <div>
+    <h1 class="font-display text-2xl font-semibold text-slate-800">{{ pdi.titulo }}</h1>
+    <p class="mt-1 text-sm text-slate-500">
+      PDI de
+      <span class="font-medium text-slate-700">{{ colaborador.nome|default:colaborador.email }}</span>
+      {% if is_self %}
+        <span class="text-slate-400">(você)</span>
+      {% endif %}.
+      Acompanhe status, progresso e ações de desenvolvimento.
+    </p>
+  </div>
+  {% url 'pdi:list' as list_url %}
+  {% include "components/button.html" with label="Voltar à lista" href=list_url variant="secondary" %}
+</header>
+
+<section class="mb-8" aria-labelledby="pdi-resumo-heading">
+  <h2 id="pdi-resumo-heading" class="sr-only">Resumo do PDI</h2>
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="rounded-xl border border-line bg-surface-card p-4">
+      <p class="text-xs uppercase tracking-wide text-slate-500">Status</p>
+      <div class="mt-1.5">
+        {% include "components/badge_status.html" with status=pdi.status label=pdi.get_status_display %}
+      </div>
+    </div>
+    <div class="rounded-xl border border-line bg-surface-card p-4">
+      <p class="text-xs uppercase tracking-wide text-slate-500">Progresso</p>
+      <p class="mt-1 font-display text-2xl font-semibold tabular-nums tracking-tight text-slate-800">
+        {{ progresso }}%
+      </p>
+    </div>
+    <div class="rounded-xl border border-line bg-surface-card p-4">
+      <p class="text-xs uppercase tracking-wide text-slate-500">Área</p>
+      <p class="mt-1 font-medium text-slate-800">{{ colaborador.area.nome|default:"—" }}</p>
+    </div>
+    <div class="rounded-xl border border-line bg-surface-card p-4">
+      <p class="text-xs uppercase tracking-wide text-slate-500">Cargo</p>
+      <p class="mt-1 font-medium text-slate-800">{{ colaborador.cargo.nome|default:"—" }}</p>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="acoes-heading">
+  <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+    <div>
+      <h2 id="acoes-heading" class="font-display text-lg font-medium text-slate-800">Ações de desenvolvimento</h2>
+      <p class="mt-0.5 font-ui text-sm text-slate-500">Atualize status, prazos e responsáveis sem sair desta tela.</p>
+    </div>
+    {% url 'pdi:action_create_modal' pdi.pk as acao_create_modal_url %}
+    {% include "components/button.html" with label="Nova ação" type="button" variant="primary" hx_get=acao_create_modal_url %}
+  </div>
+
+  <div id="acao-list" class="table-frame">
+    {% include "pdi/acao_list_partial.html" %}
+  </div>
+</section>
+{% endblock %}

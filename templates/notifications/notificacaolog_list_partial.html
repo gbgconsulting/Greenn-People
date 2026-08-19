@@ -1,0 +1,45 @@
+<div id="list-container">
+<div class="table-frame">
+  <table>
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Destinatário</th>
+        <th>Tipo</th>
+        <th>Status</th>
+        <th>Erro</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in logs %}
+      <tr>
+        <td class="whitespace-nowrap text-slate-600">{{ log.created_at|date:"d/m/Y H:i" }}</td>
+        <td>
+          <p class="font-medium text-slate-800">{{ log.destinatario.nome|default:log.destinatario.email }}</p>
+          <p class="font-ui text-xs text-slate-500">{{ log.destinatario.email }}</p>
+        </td>
+        <td class="text-slate-600">{{ log.get_tipo_display }}</td>
+        <td>
+          {% if log.status == "enviado" %}
+            {% include "components/badge_status.html" with status="alta" label=log.get_status_display %}
+          {% else %}
+            {% include "components/badge_status.html" with status="baixa" label=log.get_status_display %}
+          {% endif %}
+        </td>
+        <td class="max-w-md text-slate-600" title="{{ log.erro }}">
+          {{ log.erro|default:"—"|truncatechars:80 }}
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="5" class="!py-8">
+          {% include "components/empty_state.html" with title="Nenhum log encontrado" message="Nenhum log de notificação para os filtros atuais." %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% include "components/pagination.html" with page_obj=page_obj %}
+</div>

@@ -1,0 +1,47 @@
+{% comment %}
+  Indicador de loading HTMX compartilhado.
+
+  Uso global (base.html):
+    {% include "components/htmx_indicator.html" %}
+
+  Uso contextual (próximo à ação):
+    {% include "components/htmx_indicator.html" with indicator_id="htmx-ind-acao-12" variant="inline" %}
+
+    Nos elementos hx-*:
+    hx-indicator="#htmx-indicator"
+    (ou o id customizado)
+
+  Parâmetros:
+    indicator_id — id do elemento (default: htmx-indicator)
+    variant      — fixed | inline (default: fixed)
+    label        — texto acessível (default: Carregando…)
+
+  A11y: aria-hidden inicia true (idle). O hook em base.html sincroniza
+  aria-hidden com .htmx-request para que role="status" anuncie o label.
+{% endcomment %}
+{% with ind_id=indicator_id|default:"htmx-indicator" v=variant|default:"fixed" %}
+<span
+  id="{{ ind_id }}"
+  class="htmx-indicator {% if v == 'inline' %}inline-flex{% else %}fixed{% endif %} items-center gap-2 {% if v == 'fixed' %}bottom-4 left-1/2 z-[60] -translate-x-1/2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm{% else %}text-slate-500{% endif %}"
+  role="status"
+  aria-live="polite"
+  aria-hidden="true"
+  data-htmx-indicator
+>
+  <svg
+    class="h-4 w-4 shrink-0 animate-spin text-emerald-600"
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+  >
+    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+    <path
+      class="opacity-75"
+      fill="currentColor"
+      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+    ></path>
+  </svg>
+  <span>{% if label %}{{ label }}{% else %}Carregando…{% endif %}</span>
+</span>
+{% endwith %}

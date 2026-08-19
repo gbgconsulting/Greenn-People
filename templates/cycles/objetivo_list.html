@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Objetivos — {{ ciclo.nome }} — Greenn People{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+  <div>
+    <p class="text-sm text-slate-500">
+      <a href="{% url 'cycles:ciclo_list' %}" class="text-emerald-700 hover:text-emerald-800">Ciclos</a>
+      <span class="mx-1 text-slate-300">/</span>
+      {{ ciclo.nome }}
+    </p>
+    <h1 class="mt-1 text-2xl font-semibold text-slate-800">Objetivos estratégicos</h1>
+    <p class="mt-1 text-slate-500">
+      Defina os objetivos do ciclo aos quais as metas dos colaboradores serão vinculadas.
+    </p>
+  </div>
+  {% url 'cycles:objetivo_create' ciclo.pk as create_url %}
+  {% include "components/button.html" with label="Novo objetivo" href=create_url variant="primary" %}
+</div>
+
+{% include "cycles/objetivo_list_partial.html" %}
+{% endblock %}

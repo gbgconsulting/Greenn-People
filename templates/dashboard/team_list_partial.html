@@ -1,0 +1,132 @@
+{% load review_display %}
+<div id="list-container">
+<div class="table-frame">
+  <table>
+    <thead>
+      <tr>
+        <th>Colaborador</th>
+        <th>Etapa</th>
+        <th>Nota líder</th>
+        <th>Área</th>
+        <th>Cargo</th>
+        <th class="text-right">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in membros_resumo %}
+        {% if item.avaliacao %}
+          {% if item.avaliacao.etapa == "avaliacao" or item.avaliacao.etapa == "aprovacao_metas" or item.avaliacao.etapa == "aprovacao_resultados" %}
+        <tr class="border-l-4 border-l-amber-400 bg-amber-50/40 hover:bg-amber-50/70">
+          <td>
+            <p class="font-medium text-slate-800">{{ item.usuario.nome|default:item.usuario.email }}</p>
+            <p class="text-xs text-slate-500">{{ item.usuario.email }}</p>
+          </td>
+          <td>
+            {% if item.avaliacao.etapa == "avaliacao" %}
+              {% include "components/badge_status.html" with status="pendente" label=item.avaliacao.get_etapa_display %}
+            {% else %}
+              {% include "components/badge_status.html" with status="media" label=item.avaliacao.get_etapa_display %}
+            {% endif %}
+          </td>
+          <td>
+            {% if item.avaliacao.nota_final_lider is not None %}
+              <span class="font-semibold tabular-nums text-slate-800">{{ item.avaliacao.nota_final_lider|nota_percentual }}</span>
+            {% else %}
+              <span class="text-slate-400">—</span>
+            {% endif %}
+          </td>
+          <td class="text-slate-500">{{ item.usuario.area.nome|default:"—" }}</td>
+          <td class="text-slate-500">{{ item.usuario.cargo.nome|default:"—" }}</td>
+          <td class="text-right">
+            <div class="inline-flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
+              {% if item.avaliacao.etapa == "avaliacao" %}
+              <a
+                href="{% url 'reviews:leader_assessment' item.avaliacao.pk %}"
+                class="font-semibold text-emerald-700 hover:text-emerald-800"
+              >Avaliar</a>
+              {% endif %}
+              <a
+                href="{% url 'reviews:detail' item.avaliacao.pk %}"
+                class="font-medium text-slate-600 hover:text-slate-800"
+              >Ver</a>
+              <a
+                href="{% url 'reviews:feedback_list' item.avaliacao.pk %}"
+                class="font-medium text-slate-600 hover:text-slate-800"
+              >Feedbacks</a>
+            </div>
+          </td>
+        </tr>
+          {% endif %}
+        {% endif %}
+      {% endfor %}
+
+      {% for item in membros_resumo %}
+        {% if not item.avaliacao %}
+        <tr>
+          <td>
+            <p class="font-medium text-slate-800">{{ item.usuario.nome|default:item.usuario.email }}</p>
+            <p class="text-xs text-slate-500">{{ item.usuario.email }}</p>
+          </td>
+          <td>
+            {% include "components/badge_status.html" with status="arquivado" label="Sem avaliação" %}
+          </td>
+          <td><span class="text-slate-400">—</span></td>
+          <td class="text-slate-500">{{ item.usuario.area.nome|default:"—" }}</td>
+          <td class="text-slate-500">{{ item.usuario.cargo.nome|default:"—" }}</td>
+          <td class="text-right"><span class="text-slate-400">—</span></td>
+        </tr>
+        {% elif item.avaliacao.etapa != "avaliacao" and item.avaliacao.etapa != "aprovacao_metas" and item.avaliacao.etapa != "aprovacao_resultados" %}
+        <tr>
+          <td>
+            <p class="font-medium text-slate-800">{{ item.usuario.nome|default:item.usuario.email }}</p>
+            <p class="text-xs text-slate-500">{{ item.usuario.email }}</p>
+          </td>
+          <td>
+            {% if item.avaliacao.etapa == "feedback" %}
+              {% include "components/badge_status.html" with status="concluida" label=item.avaliacao.get_etapa_display %}
+            {% else %}
+              {% include "components/badge_status.html" with status="em_andamento" label=item.avaliacao.get_etapa_display %}
+            {% endif %}
+          </td>
+          <td>
+            {% if item.avaliacao.nota_final_lider is not None %}
+              <span class="font-semibold tabular-nums text-slate-800">{{ item.avaliacao.nota_final_lider|nota_percentual }}</span>
+            {% else %}
+              <span class="text-slate-400">—</span>
+            {% endif %}
+          </td>
+          <td class="text-slate-500">{{ item.usuario.area.nome|default:"—" }}</td>
+          <td class="text-slate-500">{{ item.usuario.cargo.nome|default:"—" }}</td>
+          <td class="text-right">
+            <div class="inline-flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
+              <a
+                href="{% url 'reviews:detail' item.avaliacao.pk %}"
+                class="font-medium text-emerald-700 hover:text-emerald-800"
+              >Ver</a>
+              <a
+                href="{% url 'reviews:feedback_list' item.avaliacao.pk %}"
+                class="font-medium text-slate-600 hover:text-slate-800"
+              >Feedbacks</a>
+            </div>
+          </td>
+        </tr>
+        {% endif %}
+      {% endfor %}
+
+      {% if not membros_resumo %}
+      <tr>
+        <td colspan="6" class="!py-8">
+          {% if not ciclo_aberto %}
+            {% include "components/empty_state.html" with title="Sem colaboradores no escopo" message="Não há ciclo aberto e nenhum colaborador no seu escopo hierárquico no momento." %}
+          {% else %}
+            {% include "components/empty_state.html" with title="Sem colaboradores no escopo" message="Nenhum colaborador no seu escopo hierárquico no momento. Quando houver subordinados ativos, o status do ciclo aparece aqui." %}
+          {% endif %}
+        </td>
+      </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+
+{% include "components/pagination.html" with page_obj=page_obj %}
+</div>

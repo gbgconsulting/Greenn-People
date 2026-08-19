@@ -1,0 +1,45 @@
+{% comment %}
+  Empty state reutilizável (DS v2 — honest/acionável; headline display + UI corpo).
+
+  Uso (mensagem apenas):
+    {% include "components/empty_state.html" with message="Nenhuma meta cadastrada." %}
+
+  Uso com link (CTA liberado pelo caller):
+    {% url 'goals:meta_create' as create_url %}
+    {% include "components/empty_state.html" with message="..." cta_label="Nova meta" cta_href=create_url %}
+
+  Uso com ação HTMX:
+    {% url 'pdi:action_create_modal' pdi.pk as modal_url %}
+    {% include "components/empty_state.html" with message="..." cta_label="Nova ação" cta_hx_get=modal_url %}
+
+  Anatomia: sem chrome de card — tipografia e ritmo criam hierarquia.
+  Headline (title) em display; mensagem em UI; CTA primary só quando o caller
+  passa permissão. Sem inventar dados.
+
+  Parâmetros:
+    message       — texto principal (obrigatório)
+    title         — título/headline opcional acima da mensagem
+    cta_label     — texto do CTA; se omitido, não renderiza botão
+    cta_href      — se definido, CTA é link (<a>)
+    cta_hx_get    — se definido (sem cta_href), CTA é botão com hx-get
+    cta_hx_target — alvo HTMX (default: #modal-container)
+    cta_hx_swap   — swap HTMX (default: innerHTML)
+    cta_attrs     — atributos HTML extras no CTA (passar com |safe se necessário)
+{% endcomment %}
+<div class="flex flex-col items-center justify-center px-4 py-8 text-center" role="status">
+  {% if title %}
+  <p class="font-display text-base font-medium tracking-tight text-slate-800">{{ title }}</p>
+  {% endif %}
+  <p class="max-w-sm font-ui text-sm leading-relaxed text-slate-500{% if title %} mt-1.5{% endif %}">{{ message }}</p>
+  {% if cta_label %}
+  <div class="mt-5">
+    {% if cta_href %}
+      {% include "components/button.html" with label=cta_label href=cta_href variant="primary" attrs=cta_attrs %}
+    {% elif cta_hx_get %}
+      {% include "components/button.html" with label=cta_label type="button" variant="primary" hx_get=cta_hx_get hx_target=cta_hx_target hx_swap=cta_hx_swap attrs=cta_attrs %}
+    {% elif cta_attrs %}
+      {% include "components/button.html" with label=cta_label type="button" variant="primary" attrs=cta_attrs %}
+    {% endif %}
+  </div>
+  {% endif %}
+</div>

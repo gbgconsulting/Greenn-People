@@ -1,0 +1,32 @@
+{% comment %}
+  Campo de formulário com label.
+  Uso: {% include "components/input.html" with label="E-mail" name="email" type="email" %}
+
+  Experimento: altura ~48px (Guia Figma Input Medium), estados default/error/disabled.
+  Parâmetros: label, name, type, value, placeholder, id, required, disabled, error, help_text, attrs, extra_class
+{% endcomment %}
+{% with field_id=id|default:name %}
+<div class="mb-4">
+  {% if label %}
+  <label for="{{ field_id }}" class="mb-1.5 block text-sm font-medium text-slate-700">{{ label }}</label>
+  {% endif %}
+  <input
+    type="{{ type|default:'text' }}"
+    name="{{ name }}"
+    id="{{ field_id }}"
+    {% if value != None %}value="{{ value }}"{% endif %}
+    {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+    {% if required %}required{% endif %}
+    {% if disabled %}disabled{% endif %}
+    class="h-12 w-full rounded-lg border bg-white px-3 text-sm text-slate-800 transition-colors placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500 {% if error %}border-rose-300 focus:ring-rose-500{% else %}border-slate-200 hover:border-slate-300 focus:ring-emerald-500{% endif %} {{ extra_class }}"
+    aria-invalid="{% if error %}true{% else %}false{% endif %}"
+    {% if error %}aria-describedby="{{ field_id }}-error"{% elif help_text %}aria-describedby="{{ field_id }}-help"{% endif %}
+    {% if attrs %}{{ attrs|safe }}{% endif %}
+  />
+  {% if error %}
+  <p id="{{ field_id }}-error" class="mt-1.5 text-xs text-rose-600" role="alert">{{ error }}</p>
+  {% elif help_text %}
+  <p id="{{ field_id }}-help" class="mt-1.5 text-xs text-slate-500">{{ help_text }}</p>
+  {% endif %}
+</div>
+{% endwith %}

@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% load review_display %}
+
+{% block title %}Avaliação — Greenn People{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex flex-wrap items-start justify-between gap-3">
+  <div>
+    <h1 class="font-display text-2xl font-semibold text-slate-800">Avaliação</h1>
+    <p class="mt-1 text-sm text-slate-500">
+      <span class="font-medium text-slate-700">{{ colaborador.nome|default:colaborador.email }}</span>
+      {% if avaliacao.ciclo %}
+        · ciclo {{ avaliacao.ciclo.nome }}
+      {% endif %}
+      · etapa {{ avaliacao.get_etapa_display }}.
+    </p>
+  </div>
+  <div class="flex flex-wrap items-center gap-2">
+    {% url 'reviews:list' as list_url %}
+    {% include "components/button.html" with label="Voltar à lista" href=list_url variant="secondary" %}
+  </div>
+</div>
+
+{# Guidance 008: único “próximo passo” + stepper — não duplicar/contradizer #}
+<section class="mb-8 min-w-0 space-y-6" aria-labelledby="orientacao-heading">
+  <h2 id="orientacao-heading" class="sr-only">Orientação do ciclo</h2>
+  {% include "components/next_step.html" with next_step=next_step %}
+  {% include "components/stage_stepper.html" with stage_stepper=stage_stepper %}
+</section>
+
+<section class="mb-6" aria-labelledby="resumo-avaliacao-heading">
+  <h2 id="resumo-avaliacao-heading" class="sr-only">Resumo da avaliação</h2>
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="rounded-xl border border-line bg-surface-card p-4">
+      <p class="text-xs uppercase tracking-wide text-slate-500">Área</p>
+      <p class="mt-1 font-medium text-slate-800">{{ colaborador.area.nome|default:"—" }}</p>
+    </div>
+    <div class="rounded-xl border border-line bg-surface-card p-4">
+      <p class="text-xs uppercase tracking-wide text-slate-500">Cargo</p>
+      <p class="mt-1 font-medium text-slate-800">{{ colaborador.cargo.nome|default:"—" }}</p>
+    </div>
+    <div class="rounded-xl border border-line bg-surface-card p-4">
+      <p class="text-xs uppercase tracking-wide text-slate-500">Nota líder</p>
+      <p class="mt-1 font-display text-2xl font-semibold tabular-nums tracking-tight text-slate-800">
+        {{ avaliacao.nota_final_lider|nota_percentual }}
+      </p>
+    </div>
+    <div class="rounded-xl border border-line bg-surface-card p-4">
+      <p class="text-xs uppercase tracking-wide text-slate-500">Nota autoavaliação</p>
+      <p class="mt-1 font-display text-2xl font-semibold tabular-nums tracking-tight text-slate-800">
+        {{ avaliacao.nota_final_autoavaliacao|nota_percentual }}
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="mb-6 min-w-0" aria-labelledby="hub-acoes-heading">
+  <h2 id="hub-acoes-heading" class="sr-only">Ações desta avaliação</h2>
+  <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap" data-hub-actions>
+    {% if pode_autoavaliar %}
+      {% url 'reviews:self_assessment' avaliacao.pk as self_url %}
+      {% include "components/button.html" with label="Autoavaliar" href=self_url variant="secondary" extra_class="w-full sm:w-auto" %}
+    {% endif %}
+    {% if pode_avaliar_lider %}
+      {% url 'reviews:leader_assessment' avaliacao.pk as leader_url %}
+      {% include "components/button.html" with label="Avaliar" href=leader_url variant="secondary" extra_class="w-full sm:w-auto" %}
+    {% endif %}
+    {% url 'reviews:feedback_list' avaliacao.pk as feedback_url %}
+    {% include "components/button.html" with label="Feedbacks" href=feedback_url variant="secondary" extra_class="w-full sm:w-auto" %}
+    {% if pode_criar_feedback %}
+      {% url 'reviews:feedback_create' avaliacao.pk as feedback_create_url %}
+      {% include "components/button.html" with label="Ir ao feedback" href=feedback_create_url variant="secondary" extra_class="w-full sm:w-auto" %}
+    {% endif %}
+    {% if rotulo_avanco %}
+    <form method="post" action="{% url 'reviews:advance' avaliacao.pk %}" class="w-full sm:w-auto sm:inline">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{% url 'reviews:detail' avaliacao.pk %}">
+      {% include "components/button.html" with label=rotulo_avanco type="submit" variant="secondary" disabled=avanco_desabilitado extra_class="w-full sm:w-auto" %}
+    </form>
+    {% endif %}
+  </div>
+</section>
+{% if rotulo_avanco and not pode_avancar and motivo_bloqueio_avanco %}
+<p class="mb-6 font-ui text-sm text-amber-700" role="status">{{ motivo_bloqueio_avanco }}</p>
+{% endif %}
+
+<section aria-labelledby="competencias-heading">
+  <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+    <h2 id="competencias-heading" class="font-display text-lg font-medium text-slate-800">
+      Competências
+    </h2>
+  </div>
+  <div class="table-frame">
+    <table>
+      <thead>
+        <tr>
+          <th>Competência</th>
+          <th>Nível esperado</th>
+          <th>Peso</th>
+          <th>Autoavaliação</th>
+          <th>Nota líder</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for linha in linhas %}
+        <tr>
+          <td class="font-medium text-slate-800">{{ linha.competencia.nome }}</td>
+          <td class="tabular-nums text-slate-600">{{ linha.nivel_esperado_utilizado }}</td>
+          <td class="tabular-nums text-slate-600">{{ linha.peso_utilizado }}</td>
+          <td class="tabular-nums text-slate-800">
+            {% if linha.nota_autoavaliacao is not None %}{{ linha.nota_autoavaliacao }}{% else %}—{% endif %}
+          </td>
+          <td class="tabular-nums text-slate-800">
+            {% if linha.nota_lider is not None %}{{ linha.nota_lider }}{% else %}—{% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="!py-8">
+            {% include "components/empty_state.html" with title="Sem competências" message="Ainda não há competências registradas nesta avaliação. Elas são criadas ao entrar na etapa de avaliação." %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

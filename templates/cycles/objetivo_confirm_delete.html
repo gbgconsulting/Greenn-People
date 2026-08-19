@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Excluir objetivo — Greenn People{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-lg">
+  <p class="text-sm text-slate-500">
+    <a href="{% url 'cycles:ciclo_list' %}" class="text-emerald-700 hover:text-emerald-800">Ciclos</a>
+    <span class="mx-1 text-slate-300">/</span>
+    <a href="{% url 'cycles:objetivo_list' ciclo.pk %}" class="text-emerald-700 hover:text-emerald-800">{{ ciclo.nome }}</a>
+  </p>
+  <h1 class="mb-1 mt-1 text-2xl font-semibold text-slate-800">Excluir objetivo</h1>
+  <p class="mb-6 text-slate-500">
+    Confirma a exclusão de
+    <strong>{{ object.descricao|truncatechars:120 }}</strong>?
+    Objetivos com metas vinculadas não podem ser excluídos (histórico protegido).
+  </p>
+
+  <form method="post" class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+    {% csrf_token %}
+    <div class="flex flex-wrap gap-3">
+      {% include "components/button.html" with label="Excluir" type="submit" variant="primary" extra_class="!bg-rose-600 hover:!from-rose-600 hover:!to-rose-600" %}
+      {% url 'cycles:objetivo_list' ciclo.pk as cancel_url %}
+      {% include "components/button.html" with label="Cancelar" href=cancel_url variant="secondary" %}
+    </div>
+  </form>
+</div>
+{% endblock %}

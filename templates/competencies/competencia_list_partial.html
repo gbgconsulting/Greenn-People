@@ -1,0 +1,40 @@
+<div id="list-container">
+<div class="table-frame">
+  <table>
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Tipo</th>
+        <th>Escala</th>
+        <th class="text-right">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for competencia in competencias %}
+      <tr>
+        <td class="font-medium text-slate-800">{{ competencia.nome }}</td>
+        <td class="text-slate-600">{{ competencia.get_tipo_display }}</td>
+        <td class="text-slate-600">
+          {{ competencia.escala.nome }}
+          <span class="text-slate-400">({{ competencia.escala.valor_minimo }}–{{ competencia.escala.valor_maximo }})</span>
+        </td>
+        <td class="text-right">
+          <a href="{% url 'competencies:competencia_update' competencia.pk %}" class="font-medium text-emerald-700 hover:text-emerald-800">Editar</a>
+          <span class="mx-2 text-slate-300">|</span>
+          <a href="{% url 'competencies:competencia_delete' competencia.pk %}" class="font-medium text-rose-600 hover:text-rose-700">Desativar</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="4" class="!py-8">
+          {% url 'competencies:competencia_create' as competencia_create_url %}
+          {% include "components/empty_state.html" with title="Nenhuma competência cadastrada" message="Cadastre a primeira competência e vincule a uma escala." cta_label="Nova competência" cta_href=competencia_create_url %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% include "components/pagination.html" with page_obj=page_obj %}
+</div>

@@ -1,0 +1,231 @@
+@import 'tailwindcss';
+@config '../../tailwind.config.js';
+
+/*
+ * Tokens e base alinhados a docs/design-system.md (fonte documental canônica · Freeze v2).
+ * Qualquer alteração de token/padrão aqui deve atualizar a doc na mesma entrega.
+ *
+ * Paleta (Tailwind / hex):
+ *   Primária ........ from-emerald-600 to-teal-500 (#059669 → #14b8a6)
+ *   Primária hover .. from-emerald-700 to-teal-600 (#047857 → #0d9488)
+ *   Surface ......... bg-slate-50 / --color-surface (#f8fafc)
+ *   Surface card .... bg-white / --color-surface-card (#ffffff)
+ *   Ink ............. text-slate-800 / --color-ink (#1e293b)
+ *   Ink muted ....... text-slate-500 / --color-ink-muted (#64748b)
+ *   Line ............ border-slate-200 / --color-line (#e2e8f0)
+ *   Sucesso/alto .... emerald-50 / emerald-600–700
+ *   Alerta/médio .... amber-50 / amber-600–700
+ *   Crítico/baixo ... rose-50 / rose-600–700
+ *
+ * Tipografia:
+ *   Inter (--font-sans) — default global / body / auth (NÃO alterar).
+ *   Fraunces (--font-display / font-display) — títulos autenticados.
+ *   Source Sans 3 (--font-ui / font-ui) — UI autenticada sob .app-shell.
+ * Componentes CSS: .table-frame, .form-control (ver design-system.md).
+ * A11y: :focus-visible emerald + ring-offset-surface (US5 / a11y-shell).
+ */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../fonts/InterVariable.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../fonts/FrauncesVariable.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Source Sans 3';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../fonts/SourceSans3Variable.woff2') format('woff2');
+}
+
+@theme {
+  --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+  /* v2 autenticado — utilitários font-display / font-ui; body permanece font-sans */
+  --font-display: Fraunces, ui-serif, Georgia, 'Times New Roman', serif;
+  --font-ui: 'Source Sans 3', ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Tokens semânticos @theme static — espelham a tabela "Paleta de cores" da doc */
+@theme static {
+  --color-surface: #f8fafc; /* fundo principal / bg-slate-50 */
+  --color-surface-card: #ffffff; /* cartões / bg-white */
+  --color-ink: #1e293b; /* texto principal / text-slate-800 */
+  --color-ink-muted: #64748b; /* texto secundário / text-slate-500 */
+  --color-line: #e2e8f0; /* bordas / border-slate-200 */
+
+  /* Gradiente primário (botão primary / CTAs) */
+  --background-image-brand-gradient: linear-gradient(to right, #059669, #14b8a6);
+  --background-image-brand-gradient-hover: linear-gradient(
+    to right,
+    #047857,
+    #0d9488
+  );
+}
+
+@layer base {
+  body {
+    @apply bg-surface font-sans text-sm text-ink antialiased;
+  }
+
+  /*
+   * Tipografia UI v2 — só no shell autenticado (classe em templates/base.html).
+   * Login/base_auth NÃO têm .app-shell → continuam com Inter via body font-sans.
+   */
+  .app-shell {
+    font-family: var(--font-ui);
+  }
+
+  /* Selects/inputs nativos — mesmo anel emerald dos forms (design-system.md) */
+  select:not([class*='rounded']) {
+    @apply rounded-lg border border-line bg-surface-card px-3 py-2 text-sm text-ink focus-visible:border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500;
+  }
+
+  /*
+   * Focus-visible (docs → Focus-visible e a11y mínima do shell):
+   * Links/botões: ring-2 ring-emerald-500 ring-offset-2 ring-offset-surface
+   * Campos: ring-2 ring-emerald-500 + border-transparent
+   * Preferir :focus-visible (não :focus agressivo).
+   * :where() mantém especificidade baixa para utilities sobrescreverem.
+   */
+  :where(
+    a,
+    button,
+    [role='button'],
+    input[type='button'],
+    input[type='submit'],
+    input[type='reset'],
+    summary,
+    [tabindex]:not([tabindex='-1']):not(input):not(select):not(textarea)
+  ):focus-visible {
+    @apply outline-none ring-2 ring-emerald-500 ring-offset-2 ring-offset-surface;
+  }
+
+  :where(
+    input:not([type='hidden']):not([type='button']):not([type='submit']):not([type='reset']),
+    select,
+    textarea
+  ):focus-visible {
+    @apply outline-none border-transparent ring-2 ring-emerald-500;
+  }
+}
+
+@layer components {
+  /*
+   * Table-frame (DS v2) — listagens / dashboards.
+   * Chrome leve: borda + surface, sem sombra (alinha a card KPI; evita “cardificar”).
+   * Densidade anatômica nos filhos table/th/td; hover genérico só em linhas sem
+   * ênfase de status (templates podem sobrescrever com utilitários).
+   */
+  .table-frame {
+    @apply overflow-x-auto rounded-xl border border-line bg-surface-card;
+  }
+
+  .table-frame table {
+    @apply min-w-full divide-y divide-line text-left text-sm text-ink;
+  }
+
+  .table-frame thead {
+    @apply bg-slate-50/80 text-xs uppercase tracking-wide text-ink-muted;
+  }
+
+  .table-frame th {
+    @apply px-4 py-2.5 font-medium;
+  }
+
+  .table-frame tbody {
+    @apply divide-y divide-slate-100;
+  }
+
+  .table-frame td {
+    @apply px-4 py-2.5 align-middle;
+  }
+
+  .table-frame tbody tr:hover {
+    @apply bg-slate-50;
+  }
+
+  /* Filtros/selects — docs → Inputs e formulários (.form-control)
+   * Experimento Figma Input: altura ~48px (h-12) + hover de borda. */
+  .form-control {
+    @apply h-12 w-full rounded-lg border border-line bg-surface-card px-3 text-sm text-ink transition-colors hover:border-slate-300 focus-visible:border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 sm:w-auto sm:min-w-[12rem];
+  }
+
+  /*
+   * Shell nav — densidade/tipografia v2 (T044); IA Governança/Cadastros/Sistema intacta.
+   * Alvos de clique confortáveis; ênfase P1 via marker.
+   */
+  .nav-section-label {
+    @apply mb-1 px-3 text-[0.6875rem] font-medium uppercase tracking-wider text-slate-400;
+  }
+
+  .nav-link {
+    @apply block rounded-lg px-3 py-2 text-sm tracking-tight text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-800;
+  }
+
+  .nav-link[aria-current='page'] {
+    @apply bg-emerald-50 font-medium text-emerald-700;
+  }
+
+  .nav-link--emphasis {
+    @apply border-l-2 border-emerald-500 font-semibold text-slate-800;
+  }
+
+  .nav-link--emphasis[aria-current='page'] {
+    @apply bg-emerald-50 text-emerald-800;
+  }
+
+  /* Marca do chrome autenticado — display + tracking; só sob .app-shell (sidebar/topbar). */
+  .shell-brand {
+    @apply bg-brand-gradient bg-clip-text font-display text-base font-semibold tracking-tight text-transparent;
+  }
+
+  /*
+   * Painel gerencial (009 Freeze C / FR-011 / SC-007):
+   * Ritmo vertical canônico KPI → visual → tabela/drill (~375px empilha na mesma ordem).
+   * Filhos min-w-0 + w-full evitam bleed horizontal no main (p-4 ≈ 343px úteis).
+   * Sem chrome/sombra própria — composição só; shell/nav/auth intocados.
+   */
+  .managerial-panel {
+    @apply flex flex-col gap-6 sm:gap-8;
+  }
+
+  .managerial-panel > * {
+    @apply min-w-0 w-full;
+  }
+
+  /*
+   * Canvas de gráfico (005-dashboard-charts / SC-006 + 007 US3 T029 + 009 T005):
+   * altura fixa legível em viewport ~375px; Chart.js com maintainAspectRatio: false.
+   * Ritmo v2: espaço título→plot um pouco maior; bump sutil 15.5 / 17 / 19 rem.
+   * Não altera shell/nav/topbar — só o bloco do gráfico.
+   */
+  .dashboard-chart-canvas {
+    @apply relative mt-5 w-full min-w-0;
+    height: 15.5rem; /* ~248px — rótulos + legenda consultáveis no mobile */
+    min-height: 15.5rem;
+  }
+
+  @media (min-width: 640px) {
+    .dashboard-chart-canvas {
+      height: 17rem;
+      min-height: 17rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .dashboard-chart-canvas {
+      height: 19rem;
+      min-height: 19rem;
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{% comment %}
+  Toggle Operacional / Histórico (T033 / US3).
+
+  GET completo na mesma URL — sem HTMX no canvas (FR-017 / Freeze D).
+  Preserva query vigente (ciclo, ciclos, q…), troca só `visao`.
+
+  Uso:
+    {% include "dashboard/_visao_toggle.html" %}
+
+  Contexto:
+    request — QueryDict da página
+    visao  — 'historico' ou None/outro (default operacional)
+{% endcomment %}
+<nav
+  class="inline-flex flex-wrap gap-2"
+  role="navigation"
+    aria-label="Neste ciclo ou histórico"
+  data-component="visao-toggle"
+>
+  <a
+    href="?{% for key, value in request.GET.items %}{% if key != 'visao' %}{{ key }}={{ value|urlencode }}&amp;{% endif %}{% endfor %}"
+    class="rounded-lg px-3 py-1.5 font-ui text-sm {% if visao != 'historico' %}bg-emerald-50 font-medium text-emerald-700{% else %}border border-line bg-surface-card text-slate-600 hover:bg-slate-50{% endif %}"
+    {% if visao != 'historico' %}aria-current="page"{% endif %}
+  >Neste ciclo</a>
+  <a
+    href="?{% for key, value in request.GET.items %}{% if key != 'visao' %}{{ key }}={{ value|urlencode }}&amp;{% endif %}{% endfor %}visao=historico"
+    class="rounded-lg px-3 py-1.5 font-ui text-sm {% if visao == 'historico' %}bg-emerald-50 font-medium text-emerald-700{% else %}border border-line bg-surface-card text-slate-600 hover:bg-slate-50{% endif %}"
+    {% if visao == 'historico' %}aria-current="page"{% endif %}
+  >Histórico</a>
+</nav>

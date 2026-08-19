@@ -1,0 +1,57 @@
+<div id="list-container">
+<div class="table-frame">
+  <table>
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>E-mail</th>
+        <th>Área</th>
+        <th>Cargo</th>
+        <th>Pendência</th>
+        <th class="text-right">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+      <tr>
+        <td class="font-medium text-slate-800">{{ u.nome }}</td>
+        <td class="text-slate-600">{{ u.email }}</td>
+        <td class="text-slate-600">{{ u.area.nome|default:"—" }}</td>
+        <td class="text-slate-600">{{ u.cargo.nome|default:"—" }}</td>
+        <td>
+          {% if not u.area_id and not u.cargo_id %}
+            {% include "components/badge_status.html" with status="pendente" label="Área e cargo" %}
+          {% elif not u.area_id %}
+            {% include "components/badge_status.html" with status="pendente" label="Área" %}
+          {% else %}
+            {% include "components/badge_status.html" with status="pendente" label="Cargo" %}
+          {% endif %}
+        </td>
+        <td class="text-right">
+          <a
+            href="{% url 'organization:user_update' u.pk %}?next=pending"
+            class="font-medium text-emerald-700 hover:text-emerald-800"
+          >Vincular área/cargo</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6" class="!py-8">
+          {% if rh_has_cargo_blockers %}
+            {% url 'organization:cargo_list' as cargo_list_url %}
+            {% include "components/empty_state.html" with title="Nenhum usuário pendente de vínculo" message="Ainda há cargos sem competências/pesos." cta_label="Revisar cargos" cta_href=cargo_list_url %}
+          {% elif rh_pre_open_checklist and not rh_checklist_has_blockers %}
+            {% url 'cycles:ciclo_list' as ciclos_url %}
+            {% include "components/empty_state.html" with title="Nenhum usuário pendente de vínculo" message="Checklist operacional sem pendências neste escopo." cta_label="Voltar aos ciclos" cta_href=ciclos_url %}
+          {% else %}
+            {% include "components/empty_state.html" with title="Nenhum usuário pendente de vínculo" message="Colaboradores ativos sem área ou cargo aparecerão aqui." %}
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% include "components/pagination.html" with page_obj=page_obj %}
+</div>

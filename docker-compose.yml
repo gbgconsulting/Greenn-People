@@ -1,0 +1,103 @@
+# Greenn People — app + PostgreSQL + Redis (+ Celery worker/beat)
+#
+# Uso:
+#   docker compose up --build
+#   docker compose exec web python manage.py createsuperuser
+#   http://127.0.0.1:8000/
+
+x-app-environment: &app-environment
+  SECRET_KEY: ${SECRET_KEY:-docker-dev-change-me-not-for-production}
+  DEBUG: 'True'
+  ALLOWED_HOSTS: localhost,127.0.0.1,web,0.0.0.0
+  DATABASE_URL: postgresql://greenn:greenn@db:5432/greenn_people
+  REDIS_URL: redis://redis:6379/0
+  CELERY_BROKER_URL: redis://redis:6379/0
+  CELERY_RESULT_BACKEND: redis://redis:6379/0
+  DJANGO_SETTINGS_MODULE: config.settings.dev
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: greenn
+      POSTGRES_PASSWORD: greenn
+      POSTGRES_DB: greenn_people
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U greenn -d greenn_people']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    environment:
+      <<: *app-environment
+    ports:
+      - '8000:8000'
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+
+  worker:
+    build: .
+    entrypoint: ['celery', '-A', 'config']
+    command: ['worker', '-l', 'info']
+    environment:
+      <<: *app-environment
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      web:
+        condition: service_started
+    volumes:
+      - .:/app
+
+  beat:
+    build: .
+    entrypoint: ['celery', '-A', 'config']
+    # Schedule/pid em /tmp: o bind mount .:/app é do host (uid diferente de appuser).
+    command:
+      [
+        'beat',
+        '-l',
+        'info',
+        '--schedule',
+        '/tmp/celerybeat-schedule',
+        '--pidfile',
+        '/tmp/celerybeat.pid',
+      ]
+    environment:
+      <<: *app-environment
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      web:
+        condition: service_started
+    volumes:
+      - .:/app
+
+volumes:
+  postgres_data:

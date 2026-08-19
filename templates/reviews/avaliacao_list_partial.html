@@ -1,0 +1,86 @@
+{% load review_display %}
+<div id="list-container">
+<div class="table-frame">
+  <table>
+    <thead>
+      <tr>
+        <th>Colaborador</th>
+        <th>Área</th>
+        <th>Cargo</th>
+        <th>Etapa</th>
+        <th>Nota líder</th>
+        <th class="text-right">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in avaliacao_rows %}
+      <tr
+        class="{% if row.is_self %}border-l-4 border-l-emerald-500 bg-emerald-50/30 hover:bg-emerald-50/50{% endif %}"
+      >
+        <td>
+          <p class="font-semibold text-slate-800">
+            {{ row.avaliacao.usuario.nome|default:row.avaliacao.usuario.email }}
+            {% if row.is_self %}
+              <span class="ml-1 text-xs font-normal text-slate-400">(você)</span>
+            {% endif %}
+          </p>
+          <p class="text-xs text-slate-500">{{ row.avaliacao.usuario.email }}</p>
+        </td>
+        <td class="text-slate-600">{{ row.avaliacao.usuario.area.nome|default:"—" }}</td>
+        <td class="text-slate-600">{{ row.avaliacao.usuario.cargo.nome|default:"—" }}</td>
+        <td>
+          {% if row.avaliacao.concluida or row.avaliacao.etapa == "feedback" %}
+            {% include "components/badge_status.html" with status="concluido" label=row.avaliacao.get_etapa_display %}
+          {% elif row.avaliacao.etapa == "avaliacao" %}
+            {% include "components/badge_status.html" with status="em_andamento" label=row.avaliacao.get_etapa_display %}
+          {% elif row.avaliacao.etapa == "aprovacao_metas" or row.avaliacao.etapa == "aprovacao_resultados" %}
+            {% include "components/badge_status.html" with status="pendente" label=row.avaliacao.get_etapa_display %}
+          {% else %}
+            {% include "components/badge_status.html" with status="arquivado" label=row.avaliacao.get_etapa_display %}
+          {% endif %}
+        </td>
+        <td class="tabular-nums text-slate-800">
+          {% if row.avaliacao.nota_final_lider is not None %}
+            {{ row.avaliacao.nota_final_lider|nota_percentual }}
+          {% else %}
+            <span class="text-slate-400">—</span>
+          {% endif %}
+        </td>
+        <td class="text-right">
+          <div class="inline-flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
+            <a
+              href="{% url 'reviews:detail' row.avaliacao.pk %}"
+              class="font-medium text-emerald-700 hover:text-emerald-800"
+            >Ver</a>
+            {% if row.pode_autoavaliar %}
+            <a
+              href="{% url 'reviews:self_assessment' row.avaliacao.pk %}"
+              class="font-semibold text-emerald-700 hover:text-emerald-800"
+            >Autoavaliar</a>
+            {% endif %}
+            {% if row.pode_avaliar_lider %}
+            <a
+              href="{% url 'reviews:leader_assessment' row.avaliacao.pk %}"
+              class="font-semibold text-emerald-700 hover:text-emerald-800"
+            >Avaliar</a>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6" class="!py-8">
+          {% if not ciclo_aberto %}
+            {% include "components/empty_state.html" with title="Sem ciclo aberto" message="As avaliações aparecerão quando um ciclo estiver ativo." %}
+          {% else %}
+            {% include "components/empty_state.html" with title="Nenhuma avaliação no escopo" message="Não há avaliações no seu escopo hierárquico no ciclo atual." %}
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% include "components/pagination.html" with page_obj=page_obj %}
+</div>

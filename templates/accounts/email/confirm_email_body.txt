@@ -1,0 +1,7 @@
+Olá {{ user.nome }},
+
+Para confirmar a posse do seu e-mail e liberar o acesso ao Greenn People, abra o link abaixo:
+
+{{ protocol }}://{{ domain }}{% url 'accounts:confirm_email' uidb64=uid token=token %}
+
+Se você não solicitou este cadastro, ignore esta mensagem.

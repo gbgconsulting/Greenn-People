@@ -1,0 +1,58 @@
+{% comment %}
+  Menu lateral desktop + drawer mobile.
+  Paths alinhados a contracts/routes-contract.md.
+  Propriedades is_leader / is_manager / is_admin vêm do CustomUser (T016).
+  DS v2 (T044): densidade/tipografia do chrome sob .app-shell — IA People intacta (FR-008).
+{% endcomment %}
+{% with path=request.path %}
+<aside
+  class="hidden w-60 shrink-0 border-r border-line bg-surface-card md:flex md:flex-col"
+  aria-label="Navegação principal"
+>
+  <div class="flex items-center gap-2.5 border-b border-line px-3.5 py-3.5">
+    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-brand-gradient text-xs font-semibold text-white shadow-sm" aria-hidden="true">G</span>
+    <a href="{% url 'dashboard:personal' %}" class="shell-brand">
+      Greenn People
+    </a>
+  </div>
+  <nav class="flex-1 space-y-4 overflow-y-auto px-2.5 py-3" aria-label="Menu">
+    {% include "components/nav_menu.html" %}
+  </nav>
+</aside>
+
+{# Drawer mobile #}
+<div
+  id="mobile-nav-overlay"
+  class="fixed inset-0 z-40 hidden bg-slate-900/50 md:hidden"
+  aria-hidden="true"
+  data-nav-close
+></div>
+<aside
+  id="mobile-nav"
+  class="fixed inset-y-0 left-0 z-50 flex w-[min(17.5rem,100vw)] -translate-x-full flex-col border-r border-line bg-surface-card shadow-lg transition-transform duration-200 ease-out md:hidden"
+  aria-label="Navegação mobile"
+  aria-hidden="true"
+>
+  <div class="flex items-center justify-between gap-2.5 border-b border-line px-3.5 py-3">
+    <div class="flex min-w-0 items-center gap-2.5">
+      <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-brand-gradient text-xs font-semibold text-white shadow-sm" aria-hidden="true">G</span>
+      <a href="{% url 'dashboard:personal' %}" class="shell-brand truncate">
+        Greenn People
+      </a>
+    </div>
+    <button
+      type="button"
+      class="rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
+      aria-label="Fechar menu"
+      data-nav-close
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5" aria-hidden="true">
+        <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+      </svg>
+    </button>
+  </div>
+  <nav class="flex-1 space-y-4 overflow-y-auto px-2.5 py-3" aria-label="Menu mobile">
+    {% include "components/nav_menu.html" %}
+  </nav>
+</aside>
+{% endwith %}

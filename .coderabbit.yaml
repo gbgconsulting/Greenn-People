@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+
+language: "pt-BR"
+
+reviews:
+  path_filters:
+    # Dependências e ambientes virtuais
+    - "!**/node_modules/**"
+    - "!**/venv/**"
+    - "!**/env/**"
+    - "!**/__pycache__/**"
+    
+    # Builds, logs e coberturas de testes
+    - "!**/dist/**"
+    - "!**/build/**"
+    - "!**/coverage/**"
+    - "!**/htmlcov/**"
+    - "!**/logs/**"
+    
+    # Arquivos de Mídia e Estáticos gerados/compilados
+    - "!**/media/**"
+    - "!**/static/**"
+    
+    # Metadados de IDEs e ferramentas de IA (Spec-Kit e Cursor)
+    - "!**/.cursor/**"
+    - "!**/.specify/**"
+    - "!**/specs/**"
+    
+    # Arquivos sensíveis ou avulsos específicos
+    - "!**/core_settings.py**"

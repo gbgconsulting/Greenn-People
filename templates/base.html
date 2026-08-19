@@ -1,0 +1,148 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Greenn People{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
+  <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.4/dist/htmx.min.js" defer></script>
+  <script src="{% static 'js/modal.js' %}" defer></script>
+  <style>
+    .htmx-indicator {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 200ms ease-in;
+    }
+    .htmx-request.htmx-indicator,
+    .htmx-request .htmx-indicator {
+      opacity: 1;
+    }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body
+  class="app-shell min-h-screen"
+  hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+>
+  <a
+    href="#main-content"
+    class="sr-only focus-visible:not-sr-only focus-visible:absolute focus-visible:left-4 focus-visible:top-4 focus-visible:z-50 focus-visible:rounded-lg focus-visible:border focus-visible:border-emerald-200 focus-visible:bg-white focus-visible:px-4 focus-visible:py-2 focus-visible:text-sm focus-visible:font-medium focus-visible:text-emerald-800 focus-visible:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+  >
+    Ir para o conteúdo
+  </a>
+  <div class="flex min-h-screen">
+    {% include "components/sidebar.html" %}
+    <div class="flex min-w-0 flex-1 flex-col">
+      {% include "components/topbar.html" %}
+      <main id="main-content" class="flex-1 p-4 md:p-6" tabindex="-1">
+        {% if messages %}
+          <div class="mb-4 space-y-2" id="django-messages" aria-live="polite">
+            {% for message in messages %}
+              <div
+                class="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm
+                       {% if message.tags == 'error' %}border-rose-200 text-rose-700
+                       {% elif message.tags == 'success' %}border-emerald-200 text-emerald-700
+                       {% elif message.tags == 'warning' %}border-amber-200 text-amber-700
+                       {% else %}text-slate-700{% endif %}"
+                role="status"
+              >
+                {{ message }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <div id="modal-container"></div>
+  {% include "components/htmx_indicator.html" %}
+  <div
+    id="toast-container"
+    class="pointer-events-none fixed inset-x-4 bottom-4 z-50 flex max-w-sm flex-col gap-2 sm:inset-x-auto sm:right-4"
+    aria-live="polite"
+  ></div>
+
+  <script>
+    (function initHtmxIndicatorA11y() {
+      const sync = () => {
+        document.querySelectorAll('[data-htmx-indicator]').forEach((el) => {
+          const active =
+            el.classList.contains('htmx-request') || !!el.closest('.htmx-request');
+          el.setAttribute('aria-hidden', active ? 'false' : 'true');
+        });
+      };
+      document.body.addEventListener('htmx:beforeRequest', () => {
+        queueMicrotask(sync);
+      });
+      document.body.addEventListener('htmx:afterRequest', () => {
+        queueMicrotask(sync);
+      });
+    })();
+
+    document.body.addEventListener('showMessage', (e) => {
+      const detail = e.detail || {};
+      const message = detail.message || detail.value || '';
+      const level = detail.level || 'info';
+      if (!message) return;
+
+      const toast = document.createElement('div');
+      const tone =
+        level === 'error'
+          ? 'border-rose-200 text-rose-700'
+          : level === 'success'
+            ? 'border-emerald-200 text-emerald-700'
+            : level === 'warning'
+              ? 'border-amber-200 text-amber-700'
+              : 'border-slate-200 text-slate-700';
+      toast.className =
+        'pointer-events-auto rounded-lg border bg-white px-4 py-3 text-sm shadow-sm ' + tone;
+      toast.setAttribute('role', 'status');
+      toast.textContent = message;
+      document.getElementById('toast-container').appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    });
+
+    (function initMobileNav() {
+      const drawer = document.getElementById('mobile-nav');
+      const overlay = document.getElementById('mobile-nav-overlay');
+      const openBtn = document.getElementById('nav-open');
+      if (!drawer || !overlay || !openBtn) return;
+
+      const openNav = () => {
+        drawer.classList.remove('-translate-x-full');
+        drawer.setAttribute('aria-hidden', 'false');
+        overlay.classList.remove('hidden');
+        overlay.setAttribute('aria-hidden', 'false');
+        openBtn.setAttribute('aria-expanded', 'true');
+        document.body.classList.add('overflow-hidden');
+      };
+
+      const closeNav = () => {
+        drawer.classList.add('-translate-x-full');
+        drawer.setAttribute('aria-hidden', 'true');
+        overlay.classList.add('hidden');
+        overlay.setAttribute('aria-hidden', 'true');
+        openBtn.setAttribute('aria-expanded', 'false');
+        document.body.classList.remove('overflow-hidden');
+      };
+
+      openBtn.addEventListener('click', openNav);
+      document.querySelectorAll('[data-nav-close]').forEach((el) => {
+        el.addEventListener('click', closeNav);
+      });
+      drawer.querySelectorAll('a[href]').forEach((link) => {
+        link.addEventListener('click', closeNav);
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape') return;
+        if (typeof window.isAppModalOpen === 'function' && window.isAppModalOpen()) return;
+        closeNav();
+      });
+    })();
+  </script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}PDI — Greenn People{% endblock %}
+
+{% block content %}
+<header class="mb-6 flex flex-wrap items-start justify-between gap-3">
+  <div>
+    <h1 class="font-display text-2xl font-semibold text-slate-800">Meu PDI</h1>
+    <p class="mt-1 text-sm text-slate-500">
+      Planos de desenvolvimento individual no seu escopo hierárquico.
+    </p>
+  </div>
+  <div class="flex flex-wrap items-center gap-2">
+    {% if pode_criar %}
+      {% url 'pdi:create' as create_url %}
+      {% include "components/button.html" with label="Novo PDI" href=create_url variant="primary" %}
+    {% endif %}
+  </div>
+</header>
+
+<nav class="mb-4 flex flex-wrap gap-2" role="navigation" aria-label="Filtro por status">
+  <a
+    href="{% url 'pdi:list' %}"
+    class="rounded-lg px-3 py-1.5 font-ui text-sm {% if not status_filtro %}bg-emerald-50 font-medium text-emerald-700{% else %}border border-line bg-surface-card text-slate-600 hover:bg-slate-50{% endif %}"
+  >Todos</a>
+  {% for value, label in status_choices %}
+  <a
+    href="?status={{ value }}"
+    class="rounded-lg px-3 py-1.5 font-ui text-sm {% if status_filtro == value %}bg-emerald-50 font-medium text-emerald-700{% else %}border border-line bg-surface-card text-slate-600 hover:bg-slate-50{% endif %}"
+  >{{ label }}</a>
+  {% endfor %}
+</nav>
+
+{% include "pdi/pdi_list_partial.html" %}
+{% endblock %}

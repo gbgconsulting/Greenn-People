@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% load review_display %}
+
+{% block title %}Avaliação do líder — Greenn People{% endblock %}
+
+{% block content %}
+<div
+  class="sticky top-14 z-20 -mx-4 mb-6 border-b border-line bg-surface/95 px-4 py-3 backdrop-blur md:-mx-6 md:px-6"
+  data-component="leader-assessment-sticky"
+>
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+    <div class="min-w-0">
+      <p class="font-ui text-xs font-medium uppercase tracking-wide text-slate-500">
+        Avaliando
+      </p>
+      <p class="truncate font-display text-base font-medium tracking-tight text-slate-800">
+        {{ colaborador.nome|default:colaborador.email }}
+      </p>
+      {% if avaliacao.ciclo %}
+      <p class="mt-0.5 truncate font-ui text-xs text-slate-500">
+        Ciclo: {{ avaliacao.ciclo.nome }}
+      </p>
+      {% endif %}
+    </div>
+
+    {% if not linhas_vazias and notas_total %}
+    <div
+      class="shrink-0 rounded-lg border border-line bg-surface-card px-3 py-2 font-ui text-sm"
+      data-field="progresso-notas"
+      role="status"
+      aria-live="polite"
+    >
+      {% if avaliacao_progresso_completo %}
+      <p class="font-medium text-emerald-700">
+        Todas as {{ notas_total }} notas preenchidas
+      </p>
+      {% elif notas_restantes == 1 %}
+      <p class="font-medium text-amber-800">Falta 1 nota</p>
+      <p class="mt-0.5 text-xs text-slate-500">
+        {{ notas_preenchidas }} de {{ notas_total }} preenchidas
+      </p>
+      {% else %}
+      <p class="font-medium text-amber-800">
+        Faltam {{ notas_restantes }} notas
+      </p>
+      <p class="mt-0.5 text-xs text-slate-500">
+        {{ notas_preenchidas }} de {{ notas_total }} preenchidas
+      </p>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="mb-6">
+  <h1 class="font-display text-2xl font-semibold text-slate-800">Avaliação do líder</h1>
+  <p class="mt-1 font-ui text-slate-500">
+    Avalie as competências de
+    <span class="font-medium text-slate-700">{{ colaborador.nome|default:colaborador.email }}</span>,
+    comparando com o nível esperado congelado no ciclo.
+    {% if avaliacao.ciclo %}
+      Ciclo: {{ avaliacao.ciclo.nome }}.
+    {% endif %}
+  </p>
+  {% if nota_final_lider is not None %}
+  <p class="mt-2 font-ui text-sm text-emerald-700">
+    Nota final do líder:
+    <span class="font-semibold">{{ nota_final_lider|nota_percentual }}</span>
+  </p>
+  {% endif %}
+</div>
+
+{% if linhas_vazias %}
+<div
+  class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 font-ui text-sm text-amber-900"
+  role="status"
+>
+  <p class="font-medium">Linhas de competência indisponíveis</p>
+  <p class="mt-1 text-amber-800">
+    Ainda não há competências registradas para esta avaliação.
+    Elas são criadas ao entrar na etapa de avaliação.
+  </p>
+  <div class="mt-4">
+    {% url 'dashboard:personal' as cancel_url %}
+    {% include "components/button.html" with label="Voltar" href=cancel_url variant="secondary" %}
+  </div>
+</div>
+{% else %}
+<form method="post" novalidate class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+  {% csrf_token %}
+  {{ formset.management_form }}
+
+  {% if formset.non_form_errors %}
+  <div class="border-b border-rose-200 bg-rose-50 px-4 py-3 font-ui text-sm text-rose-700" role="alert">
+    {% for error in formset.non_form_errors %}{{ error }}{% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+      <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+        <tr>
+          <th class="px-4 py-3 font-medium">Competência</th>
+          <th class="px-4 py-3 font-medium">Nível esperado</th>
+          <th class="px-4 py-3 font-medium">Escala</th>
+          <th class="px-4 py-3 font-medium">Autoavaliação</th>
+          <th class="px-4 py-3 font-medium">Nota do líder</th>
+          <th class="px-4 py-3 font-medium">Comparação</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for form in formset %}
+        <tr class="hover:bg-slate-50" id="competencia-row-{{ form.instance.pk }}">
+          {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+          <td class="px-4 py-3 font-medium text-slate-800">
+            {{ form.instance.competencia.nome }}
+            <p class="mt-0.5 text-xs font-normal text-slate-500">
+              {{ form.instance.competencia.get_tipo_display }}
+              · peso {{ form.instance.peso_utilizado }}
+            </p>
+            {% if form.non_field_errors %}
+              <p class="mt-1 text-xs font-normal text-rose-600" role="alert">
+                {{ form.non_field_errors.0 }}
+              </p>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 text-slate-800">
+            {{ form.instance.nivel_esperado_utilizado }}
+          </td>
+          <td class="px-4 py-3 text-slate-600">
+            {{ form.instance.competencia.escala.nome }}
+            <span class="text-slate-400">
+              ({{ form.instance.competencia.escala.valor_minimo }}–{{ form.instance.competencia.escala.valor_maximo }})
+            </span>
+          </td>
+          <td class="px-4 py-3 text-slate-700">
+            {% if form.instance.nota_autoavaliacao is not None %}
+              {{ form.instance.nota_autoavaliacao }}
+            {% else %}
+              <span class="text-slate-400">—</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3">
+            {{ form.nota_lider }}
+            {% if form.nota_lider.errors %}
+              <p class="mt-1 text-xs text-rose-600" role="alert">
+                {{ form.nota_lider.errors.0 }}
+              </p>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3">
+            {% with cmp=form.comparacao_nivel %}
+              {% if cmp == 'acima' %}
+                <span class="inline-flex rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
+                  Acima do esperado
+                </span>
+              {% elif cmp == 'abaixo' %}
+                <span class="inline-flex rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800">
+                  Abaixo do esperado
+                </span>
+              {% elif cmp == 'igual' %}
+                <span class="inline-flex rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">
+                  No esperado
+                </span>
+              {% else %}
+                <span class="text-slate-400">—</span>
+              {% endif %}
+            {% endwith %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if pode_editar %}
+  <div class="flex flex-wrap items-center gap-3 border-t border-slate-200 bg-slate-50 px-4 py-4">
+    {% include "components/button.html" with label="Salvar avaliação" type="submit" variant="primary" %}
+    {% url 'dashboard:personal' as cancel_url %}
+    {% include "components/button.html" with label="Voltar" href=cancel_url variant="secondary" %}
+    <p class="w-full font-ui text-xs leading-relaxed text-slate-500" role="note" data-field="save-confirm-hint">
+      Ao salvar, a confirmação aparece no topo da página (mensagem de sucesso).
+    </p>
+  </div>
+  {% endif %}
+</form>
+{% endif %}
+
+{% if not linhas_vazias %}
+<div class="mt-4 flex flex-wrap items-center gap-3">
+  <form method="post" action="{% url 'reviews:advance' avaliacao.pk %}" class="inline">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{% url 'reviews:feedback_list' avaliacao.pk %}">
+    {% include "components/button.html" with label="Avançar para feedback" type="submit" variant="secondary" disabled=avanco_desabilitado %}
+  </form>
+  {% if not pode_avancar and motivo_bloqueio_avanco %}
+  <p class="font-ui text-sm text-amber-700">{{ motivo_bloqueio_avanco }}</p>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

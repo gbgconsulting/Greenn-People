@@ -1,0 +1,70 @@
+{% comment %}
+  Card de pessoa na célula da matriz 9-box — polish visual DS v2 / US4 (T033).
+
+  Uso: {% include "talent/partials/_person_card.html" with item=item %}
+
+  Parâmetros:
+  - item: ClassificacaoTalento (usuario, potencial, desempenho, ciclo, visivel_ao_colaborador)
+  - filtro_area_id / filtro_cargo_id: opcionais (contexto da matrix) — propagados no GET do drawer
+
+  Anatomia v2: chrome leve (border-line + surface-card, sem sombra); tipografia ink;
+  densidade compacta (rounded-md, px-2.5 py-2); estados hover/focus alinhados ao shell.
+
+  Data attrs (DnD T020+): data-user-pk, data-potencial, data-desempenho
+  Gates (T023 / FR-010):
+  - Server: draggable + data-dnd-capable só se is_admin_viewer (não-admin: zero handles).
+  - Client (ninebox_matrix.js): em pointer:coarse / viewport ≤767px desliga DnD
+    (draggable=false); drawer permanece caminho completo de calibração.
+  A11y handle (T028 / SC-006): nome acessível “Arrastar … para alterar potencial”
+    quando DnD ativo; hide via JS no mobile/coarse.
+  Abertura do drawer (T014): hx-get → #matrix-drawer (innerHTML), query ciclo (+ area/cargo).
+  Loading (T017): #htmx-indicator + #matrix-drawer-indicator (SC-004).
+{% endcomment %}
+<li
+  class="relative rounded-md border border-line bg-surface-card text-sm{% if is_admin_viewer %} cursor-grab active:cursor-grabbing{% endif %}"
+  data-user-pk="{{ item.usuario_id }}"
+  data-potencial="{{ item.potencial }}"
+  data-desempenho="{{ item.desempenho }}"
+  {% if is_admin_viewer %}draggable="true" data-dnd-capable="1" aria-grabbed="false"{% endif %}
+>
+  {% if is_admin_viewer %}
+  {# Handle/nome acessível do arraste (contrato a11y); ausente em não-admin; JS esconde no mobile #}
+  <span
+    class="ninebox-dnd-handle pointer-events-none absolute right-1.5 top-1.5 flex items-center gap-0.5 text-ink-muted/70"
+    data-dnd-handle
+    title="Arrastar para alterar potencial"
+  >
+    <span class="sr-only">Arrastar {{ item.usuario.nome|default:item.usuario.email }} para alterar potencial</span>
+    <svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false">
+      <circle cx="5" cy="4" r="1.25" />
+      <circle cx="11" cy="4" r="1.25" />
+      <circle cx="5" cy="8" r="1.25" />
+      <circle cx="11" cy="8" r="1.25" />
+      <circle cx="5" cy="12" r="1.25" />
+      <circle cx="11" cy="12" r="1.25" />
+    </svg>
+  </span>
+  {% endif %}
+  <button
+    type="button"
+    class="w-full rounded-md px-2.5 py-2 text-left transition-colors hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1 focus-visible:ring-offset-surface{% if is_admin_viewer %} pr-7{% endif %}"
+    hx-get="{% url 'talent:matrix_drawer' item.usuario_id %}?ciclo={{ item.ciclo_id }}{% if filtro_area_id %}&area={{ filtro_area_id }}{% endif %}{% if filtro_cargo_id %}&cargo={{ filtro_cargo_id }}{% endif %}"
+    hx-target="#matrix-drawer"
+    hx-swap="innerHTML"
+    hx-indicator="#htmx-indicator, #matrix-drawer-indicator"
+    aria-controls="matrix-drawer"
+    aria-label="Abrir detalhe de {{ item.usuario.nome|default:item.usuario.email }}"
+  >
+    <p class="font-medium leading-snug tracking-tight text-ink">{{ item.usuario.nome|default:item.usuario.email }}</p>
+    {% if item.usuario.nome %}
+    <p class="mt-0.5 text-xs leading-snug text-ink-muted">{{ item.usuario.email }}</p>
+    {% endif %}
+    <div class="mt-1.5">
+      {% if item.visivel_ao_colaborador %}
+        {% include "components/badge_status.html" with status="ativo" label="Visível" %}
+      {% else %}
+        {% include "components/badge_status.html" with status="arquivado" label="Oculto" %}
+      {% endif %}
+    </div>
+  </button>
+</li>

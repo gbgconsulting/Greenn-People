@@ -1,0 +1,58 @@
+{% extends "components/modal.html" %}
+
+{% block modal_title %}Nova ação{% endblock %}
+
+{% block modal_body %}
+<form
+  method="post"
+  hx-post="{% url 'pdi:action_create' pdi.pk %}"
+  hx-target="#acao-list"
+  hx-swap="innerHTML"
+  hx-indicator="#htmx-indicator"
+  novalidate
+  class="space-y-4"
+>
+  {% csrf_token %}
+
+  {% if form.non_field_errors %}
+  <div class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700" role="alert">
+    {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+  </div>
+  {% endif %}
+
+  <div>
+    <label for="{{ form.descricao.id_for_label }}" class="mb-1 block text-sm font-medium text-slate-700">
+      {{ form.descricao.label }}
+    </label>
+    {{ form.descricao }}
+    {% if form.descricao.errors %}
+      <p class="mt-1 text-xs text-rose-600" role="alert">{{ form.descricao.errors.0 }}</p>
+    {% endif %}
+  </div>
+
+  <div>
+    <label for="{{ form.responsavel.id_for_label }}" class="mb-1 block text-sm font-medium text-slate-700">
+      {{ form.responsavel.label }}
+    </label>
+    {{ form.responsavel }}
+    {% if form.responsavel.errors %}
+      <p class="mt-1 text-xs text-rose-600" role="alert">{{ form.responsavel.errors.0 }}</p>
+    {% endif %}
+  </div>
+
+  <div>
+    <label for="{{ form.prazo.id_for_label }}" class="mb-1 block text-sm font-medium text-slate-700">
+      {{ form.prazo.label }}
+    </label>
+    {{ form.prazo }}
+    {% if form.prazo.errors %}
+      <p class="mt-1 text-xs text-rose-600" role="alert">{{ form.prazo.errors.0 }}</p>
+    {% endif %}
+  </div>
+
+  <div class="flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4">
+    {% include "components/button.html" with label="Cancelar" type="button" variant="secondary" attrs='onclick="closeModal()"' %}
+    {% include "components/button.html" with label="Criar ação" type="submit" variant="primary" %}
+  </div>
+</form>
+{% endblock %}

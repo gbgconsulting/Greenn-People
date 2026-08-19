@@ -1,0 +1,61 @@
+{% comment %}
+  Barra superior — menu mobile, identidade, contexto de ciclo, usuário e logout.
+  DS v2 (T044): densidade/tipografia do chrome sob .app-shell — sem CTAs novos (FR-008).
+{% endcomment %}
+<header class="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-line bg-surface-card px-4 md:px-5">
+  <div class="flex min-w-0 items-center gap-2 md:hidden">
+    <button
+      type="button"
+      id="nav-open"
+      class="rounded-lg p-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800"
+      aria-controls="mobile-nav"
+      aria-expanded="false"
+      aria-label="Abrir menu"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5" aria-hidden="true">
+        <path fill-rule="evenodd" d="M2 4.75A.75.75 0 0 1 2.75 4h14.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 4.75ZM2 10a.75.75 0 0 1 .75-.75h14.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 10Zm0 5.25a.75.75 0 0 1 .75-.75h14.5a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1-.75-.75Z" clip-rule="evenodd" />
+      </svg>
+    </button>
+    <a href="{% url 'dashboard:personal' %}" class="shell-brand truncate text-base">
+      Greenn People
+    </a>
+  </div>
+  {% if user.is_authenticated %}
+    {% if ciclo_aberto %}
+      <p
+        class="hidden min-w-0 flex-1 truncate sm:block"
+        title="Ciclo: {{ ciclo_aberto.nome }}"
+      >
+        <span class="inline-flex max-w-full items-center gap-2 rounded-md border border-line bg-surface px-2.5 py-1 text-sm tracking-tight text-slate-600">
+          <span class="shrink-0 text-[0.6875rem] font-medium uppercase tracking-wider text-slate-400">Ciclo</span>
+          <span class="truncate font-medium text-slate-800">{{ ciclo_aberto.nome }}</span>
+        </span>
+      </p>
+      <p class="min-w-0 flex-1 truncate text-sm tracking-tight text-slate-600 sm:hidden" title="Ciclo: {{ ciclo_aberto.nome }}">
+        <span class="text-slate-400">Ciclo</span>
+        {{ ciclo_aberto.nome }}
+      </p>
+    {% else %}
+      <p
+        class="min-w-0 flex-1 truncate text-sm tracking-tight text-slate-500"
+        title="Sem ciclo aberto"
+      >
+        Sem ciclo aberto
+      </p>
+    {% endif %}
+  {% endif %}
+  <div class="ml-auto flex shrink-0 items-center gap-2.5 text-sm tracking-tight text-slate-600">
+    {% if user.is_authenticated %}
+      <span class="hidden max-w-[12rem] truncate font-medium text-slate-700 sm:inline" title="{{ user.get_username }}">
+        {{ user.get_username }}
+      </span>
+      <form method="post" action="{% url 'accounts:logout' %}" class="inline">
+        {% csrf_token %}
+        {% include "components/button.html" with label="Sair" variant="outlined" type="submit" extra_class="!h-9 px-3" %}
+      </form>
+    {% else %}
+      {% url 'accounts:login' as login_url %}
+      {% include "components/button.html" with label="Entrar" variant="primary" href=login_url extra_class="!h-9 px-3" %}
+    {% endif %}
+  </div>
+</header>

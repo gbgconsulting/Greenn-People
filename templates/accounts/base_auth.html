@@ -1,0 +1,44 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Greenn People{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="min-h-screen {% block body_class %}{% endblock %}">
+  {% block layout %}
+  <div class="flex min-h-screen flex-col items-center justify-center px-4 py-10">
+    <a
+      href="{% url 'accounts:login' %}"
+      class="mb-6 bg-brand-gradient bg-clip-text text-2xl font-semibold text-transparent"
+    >
+      Greenn People
+    </a>
+
+    {% if messages %}
+      <div class="mb-4 w-full max-w-md space-y-2" aria-live="polite">
+        {% for message in messages %}
+          <div
+            class="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm
+                   {% if message.tags == 'error' %}border-rose-200 text-rose-700
+                   {% elif message.tags == 'success' %}border-emerald-200 text-emerald-700
+                   {% elif message.tags == 'warning' %}border-amber-200 text-amber-700
+                   {% else %}text-slate-700{% endif %}"
+            role="status"
+          >
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <main class="w-full max-w-md rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+  {% endblock %}
+</body>
+</html>

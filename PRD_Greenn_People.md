@@ -4,7 +4,7 @@
 | Campo | Valor |
 |---|---|
 | **Produto** | Greenn People |
-| **Stack** | Django 5 (full stack) · Django Templates + HTMX + Tailwind CSS · SQLite (v1) → PostgreSQL · Redis + Celery |
+| **Stack** | Django 6.0.7 (full stack) · Django Templates + HTMX + Tailwind CSS · SQLite (v1) → PostgreSQL · Redis + Celery |
 | **Autor deste PRD** | Gabriel (DP / Desenvolvedor interno — Greenn) |
 | **Base de referência** | PRD funcional do sponsor (Iuri — COO/Pessoas), adaptado para uma implementação simples e enxuta |
 | **Versão** | 1.4 (Revisada — fechamento de pendências de prontidão para desenvolvimento) |

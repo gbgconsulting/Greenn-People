@@ -1,0 +1,217 @@
+{% extends "accounts/base_auth.html" %}
+
+{% block title %}Entrar — Greenn People{% endblock %}
+
+{% block body_class %}bg-white text-slate-800 antialiased selection:bg-emerald-100 selection:text-emerald-900{% endblock %}
+
+{% block layout %}
+<main class="flex min-h-screen w-full flex-col md:flex-row">
+  {# Painel narrativo (desktop) #}
+  <section class="relative hidden flex-col justify-between overflow-hidden bg-emerald-950 p-8 md:flex md:w-1/2 lg:w-3/5 lg:p-12">
+    <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(16,185,129,0.25),_transparent_55%),radial-gradient(ellipse_at_bottom_left,_rgba(20,184,166,0.2),_transparent_50%)]" aria-hidden="true"></div>
+
+    <div class="relative z-10 flex items-center gap-2">
+      <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-200">
+        <svg class="h-5 w-5 text-emerald-950" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A14.94 14.94 0 0 0 12 17c6 0 9-4 9-9a5 5 0 0 0-4-4c-1.65 0-3.07.88-4.21 2.14C11.54 5.45 10.34 5 9 5c-2.76 0-5 2.24-5 5 0 5.25 4.25 9 9 9 .9 0 1.77-.12 2.6-.34l.8 1.84 1.89-.82C16.17 16.1 17 12.5 17 8z"/>
+        </svg>
+      </div>
+      <h1 class="text-xl font-semibold tracking-tight text-emerald-200">Greenn People</h1>
+    </div>
+
+    <div class="relative z-10 max-w-lg">
+      <h2 class="mb-6 text-3xl font-bold tracking-tight text-white lg:text-4xl xl:text-5xl xl:leading-tight">
+        Potencializando o crescimento humano.
+      </h2>
+      <div class="space-y-4">
+        <div class="flex items-start gap-4 rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm transition-colors hover:bg-white/10">
+          <div class="rounded-lg bg-emerald-900/60 p-2">
+            <svg class="h-5 w-5 text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-base font-semibold text-white">Acompanhar a evolução histórica</h3>
+            <p class="mt-1 text-sm leading-relaxed text-emerald-200/80">Visualize toda a trajetória profissional com dados precisos e insights estratégicos.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-4 rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm transition-colors hover:bg-white/10">
+          <div class="rounded-lg bg-emerald-900/60 p-2">
+            <svg class="h-5 w-5 text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-base font-semibold text-white">Visão consolidada</h3>
+            <p class="mt-1 text-sm leading-relaxed text-emerald-200/80">Painéis integrados que oferecem uma perspectiva clara do capital humano da organização.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-4 rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm transition-colors hover:bg-white/10">
+          <div class="rounded-lg bg-emerald-900/60 p-2">
+            <svg class="h-5 w-5 text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-base font-semibold text-white">Avaliação de desempenho</h3>
+            <p class="mt-1 text-sm leading-relaxed text-emerald-200/80">Sistemas de feedbacks e metas projetados para impulsionar a excelência operacional.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="relative z-10 flex items-center justify-between text-xs font-medium uppercase tracking-wider text-emerald-200/50">
+      <span>© 2026 Greenn People</span>
+    </div>
+  </section>
+
+  {# Formulário #}
+  <section class="relative flex w-full flex-col items-center justify-center bg-white px-6 py-10 md:w-1/2 lg:w-2/5 lg:px-10">
+    <div class="absolute left-6 top-6 flex items-center gap-1.5 md:hidden">
+      <svg class="h-5 w-5 text-emerald-800" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A14.94 14.94 0 0 0 12 17c6 0 9-4 9-9a5 5 0 0 0-4-4c-1.65 0-3.07.88-4.21 2.14C11.54 5.45 10.34 5 9 5c-2.76 0-5 2.24-5 5 0 5.25 4.25 9 9 9 .9 0 1.77-.12 2.6-.34l.8 1.84 1.89-.82C16.17 16.1 17 12.5 17 8z"/>
+      </svg>
+      <span class="text-lg font-semibold text-emerald-900">Greenn People</span>
+    </div>
+
+    <div class="w-full max-w-sm space-y-8">
+      {% if messages %}
+        <div class="space-y-2" aria-live="polite">
+          {% for message in messages %}
+            <div
+              class="rounded-lg border px-4 py-3 text-sm
+                     {% if message.tags == 'error' %}border-rose-200 bg-rose-50 text-rose-700
+                     {% elif message.tags == 'success' %}border-emerald-200 bg-emerald-50 text-emerald-700
+                     {% elif message.tags == 'warning' %}border-amber-200 bg-amber-50 text-amber-700
+                     {% else %}border-slate-200 bg-slate-50 text-slate-700{% endif %}"
+              role="status"
+            >
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <header class="space-y-2 text-center md:text-left">
+        <h2 class="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">Bem-vindo de volta</h2>
+        <p class="text-base text-slate-500">Acesse sua conta para gerenciar seu crescimento.</p>
+      </header>
+
+      <form method="post" novalidate class="space-y-5">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700" role="alert">
+            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+          </div>
+        {% endif %}
+
+        <div class="space-y-1.5">
+          <label class="block text-xs font-medium uppercase tracking-wide text-slate-500" for="id_username">E-mail corporativo</label>
+          <div class="relative">
+            <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+              </svg>
+            </span>
+            <input
+              class="h-12 w-full rounded-lg border bg-slate-50 py-3 pl-11 pr-3 text-sm text-slate-800 transition-colors placeholder:text-slate-400 hover:border-slate-300 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500 {% if form.username.errors %}border-rose-300 focus:ring-rose-500{% else %}border-slate-200{% endif %}"
+              id="id_username"
+              name="username"
+              type="email"
+              placeholder="nome@empresa.com.br"
+              autocomplete="username"
+              required
+              {% if form.username.value %}value="{{ form.username.value }}"{% endif %}
+              aria-invalid="{% if form.username.errors %}true{% else %}false{% endif %}"
+              {% if form.username.errors %}aria-describedby="id_username-error"{% endif %}
+            >
+          </div>
+          {% if form.username.errors %}
+            <p id="id_username-error" class="text-xs text-rose-600" role="alert">{{ form.username.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between gap-3">
+            <label class="block text-xs font-medium uppercase tracking-wide text-slate-500" for="id_password">Senha</label>
+            <a href="{% url 'accounts:password_reset' %}" class="text-xs font-medium text-emerald-700 hover:text-emerald-800 hover:underline">
+              Esqueceu a senha?
+            </a>
+          </div>
+          <div class="relative">
+            <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+              </svg>
+            </span>
+            <input
+              class="h-12 w-full rounded-lg border bg-slate-50 py-3 pl-11 pr-11 text-sm text-slate-800 transition-colors placeholder:text-slate-400 hover:border-slate-300 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500 {% if form.password.errors %}border-rose-300 focus:ring-rose-500{% else %}border-slate-200{% endif %}"
+              id="id_password"
+              name="password"
+              type="password"
+              placeholder="••••••••"
+              autocomplete="current-password"
+              required
+              aria-invalid="{% if form.password.errors %}true{% else %}false{% endif %}"
+              {% if form.password.errors %}aria-describedby="id_password-error"{% endif %}
+            >
+            <button
+              type="button"
+              id="toggle-password"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-700"
+              aria-label="Mostrar senha"
+            >
+              <svg id="icon-eye" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+              </svg>
+              <svg id="icon-eye-off" class="hidden h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+              </svg>
+            </button>
+          </div>
+          {% if form.password.errors %}
+            <p id="id_password-error" class="text-xs text-rose-600" role="alert">{{ form.password.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <button
+          type="submit"
+          class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-950 px-5 text-base font-semibold text-white shadow-sm transition-all hover:bg-emerald-900 active:scale-[0.98]"
+        >
+          <span>Entrar</span>
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+          </svg>
+        </button>
+      </form>
+
+      <div class="border-t border-slate-200 pt-6">
+        <p class="text-center text-sm text-slate-500">
+          Ainda não tem conta?
+          <a href="{% url 'accounts:register' %}" class="ml-1 font-semibold text-emerald-700 hover:text-emerald-800 hover:underline">Cadastre-se</a>
+        </p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+  (function () {
+    var btn = document.getElementById('toggle-password');
+    var input = document.getElementById('id_password');
+    var eye = document.getElementById('icon-eye');
+    var eyeOff = document.getElementById('icon-eye-off');
+    if (!btn || !input || !eye || !eyeOff) return;
+    btn.addEventListener('click', function () {
+      var show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      eye.classList.toggle('hidden', show);
+      eyeOff.classList.toggle('hidden', !show);
+      btn.setAttribute('aria-label', show ? 'Ocultar senha' : 'Mostrar senha');
+    });
+  })();
+</script>
+{% endblock %}

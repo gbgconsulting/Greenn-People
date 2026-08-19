@@ -1,0 +1,1 @@
+Lembrete: ciclo {{ ciclo.nome }} encerra em breve — Greenn People

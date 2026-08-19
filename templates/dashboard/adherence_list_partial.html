@@ -1,0 +1,63 @@
+<div id="list-container">
+<div class="table-frame">
+  <table>
+    <thead>
+      <tr>
+        <th>Líder</th>
+        <th>Área</th>
+        <th>Ciclo</th>
+        <th>Aderência</th>
+        <th>Status</th>
+        <th>Aprovações</th>
+        <th>Feedbacks</th>
+        <th>Ações PDI</th>
+        <th>Calculado em</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in snapshots_resumo %}
+      <tr class="{% if item.status == 'baixa' %}border-l-4 border-l-rose-400 bg-rose-50/30 hover:bg-rose-50/50{% else %}hover:bg-slate-50{% endif %}">
+        <td>
+          <p class="font-medium text-slate-800">{{ item.snapshot.lider.nome|default:item.snapshot.lider.email }}</p>
+          <p class="text-xs text-slate-500">{{ item.snapshot.lider.email }}</p>
+        </td>
+        <td class="text-slate-600">{{ item.snapshot.lider.area.nome|default:"—" }}</td>
+        <td class="text-slate-600">{{ item.snapshot.ciclo.nome }}</td>
+        <td class="font-semibold tabular-nums text-slate-800">{{ item.snapshot.percentual }}%</td>
+        <td>
+          {% include "components/badge_status.html" with status=item.status %}
+        </td>
+        <td class="tabular-nums text-slate-600">
+          {% with c=item.snapshot.componentes.aprovacoes %}
+            {% if c %}{{ c.no_prazo }}/{{ c.total }} ({{ c.percentual }}%){% else %}—{% endif %}
+          {% endwith %}
+        </td>
+        <td class="tabular-nums text-slate-600">
+          {% with c=item.snapshot.componentes.feedbacks %}
+            {% if c %}{{ c.no_prazo }}/{{ c.total }} ({{ c.percentual }}%){% else %}—{% endif %}
+          {% endwith %}
+        </td>
+        <td class="tabular-nums text-slate-600">
+          {% with c=item.snapshot.componentes.acoes_pdi %}
+            {% if c %}{{ c.no_prazo }}/{{ c.total }} ({{ c.percentual }}%){% else %}—{% endif %}
+          {% endwith %}
+        </td>
+        <td class="tabular-nums text-slate-600">{{ item.snapshot.calculado_em|date:"d/m/Y H:i" }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="9" class="!py-8">
+          {% if ciclo_filtro %}
+            {% include "components/empty_state.html" with title="Sem dados de aderência" message="Nenhum líder com aderência neste escopo para o ciclo filtrado. Os índices são atualizados diariamente." %}
+          {% else %}
+            {% include "components/empty_state.html" with title="Sem ciclo aberto" message="Não há ciclo aberto. Você pode escolher outro ciclo pelo seletor." %}
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% include "components/pagination.html" with page_obj=page_obj %}
+</div>

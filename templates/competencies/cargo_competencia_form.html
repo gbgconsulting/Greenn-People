@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Perfil de competências — {{ cargo.nome }} — Greenn People{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-3xl">
+  <header class="mb-6">
+    <h1 class="font-display text-2xl font-semibold text-slate-800">Perfil de competências</h1>
+    <p class="mt-1 font-ui text-sm text-slate-500">
+      Defina competências, nível esperado e peso para o cargo
+      <strong class="text-slate-700">{{ cargo.nome }}</strong> (nível {{ cargo.nivel }}).
+      Pesos devem ser maiores que zero.
+    </p>
+  </header>
+
+  <form method="post" novalidate class="rounded-xl border border-line bg-surface-card p-6">
+    {% csrf_token %}
+    {{ formset.management_form }}
+
+    {% if formset.non_form_errors %}
+      <div class="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 font-ui text-sm text-rose-700" role="alert">
+        {% for error in formset.non_form_errors %}{{ error }}{% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="table-frame">
+      <table>
+        <thead>
+          <tr>
+            <th>Competência</th>
+            <th>Nível esperado</th>
+            <th>Peso</th>
+            <th class="text-center">Remover</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for form in formset %}
+          <tr class="{% if form.instance.pk %}{% else %}bg-emerald-50/40{% endif %}">
+            <td class="align-top">
+              {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+              {{ form.competencia }}
+              {% if form.competencia.errors %}<p class="mt-1 font-ui text-xs text-rose-600" role="alert">{{ form.competencia.errors.0 }}</p>{% endif %}
+              {% if form.non_field_errors %}<p class="mt-1 font-ui text-xs text-rose-600" role="alert">{{ form.non_field_errors.0 }}</p>{% endif %}
+            </td>
+            <td class="align-top">
+              {{ form.nivel_esperado }}
+              {% if form.nivel_esperado.errors %}<p class="mt-1 font-ui text-xs text-rose-600" role="alert">{{ form.nivel_esperado.errors.0 }}</p>{% endif %}
+            </td>
+            <td class="align-top">
+              {{ form.peso }}
+              {% if form.peso.errors %}<p class="mt-1 font-ui text-xs text-rose-600" role="alert">{{ form.peso.errors.0 }}</p>{% endif %}
+            </td>
+            <td class="align-top text-center">
+              {% if form.DELETE %}
+                {{ form.DELETE }}
+              {% else %}
+                <span class="text-slate-300">—</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <p class="mt-3 font-ui text-xs text-slate-500">
+      A última linha vazia adiciona um novo vínculo. Marque &quot;Remover&quot; para excluir linhas existentes.
+    </p>
+
+    <div class="mt-6 flex flex-wrap gap-3">
+      {% url 'organization:cargo_list' as cancel_url %}
+      {% include "components/button.html" with label="Salvar perfil" type="submit" variant="primary" %}
+      {% include "components/button.html" with label="Voltar aos cargos" href=cancel_url variant="secondary" %}
+    </div>
+  </form>
+</div>
+{% endblock %}

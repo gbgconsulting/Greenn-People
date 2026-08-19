@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Aderência da liderança — Greenn People{% endblock %}
+
+{% block content %}
+<header class="mb-6">
+  <div class="flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <h1 class="font-display text-2xl font-semibold text-slate-800">Aderência da liderança</h1>
+      <p class="mt-1 text-sm text-slate-500">
+        Veja como os líderes estão cumprindo prazos no ciclo escolhido.
+      </p>
+      {% if grouped_ciclo_options.arquivo_total %}
+        <p class="mt-1 text-xs text-slate-500">
+          {{ grouped_ciclo_options.arquivo_total }} ciclo{{ grouped_ciclo_options.arquivo_total|pluralize }} encerrado{{ grouped_ciclo_options.arquivo_total|pluralize }} disponíveis no seletor
+        </p>
+      {% endif %}
+    </div>
+    {% if ciclo_aberto %}
+      {% include "components/badge_status.html" with status="ativo" label=ciclo_aberto.nome extra_class="mt-1" %}
+    {% else %}
+      {% include "components/badge_status.html" with status="arquivado" label="Sem ciclo aberto" extra_class="mt-1" %}
+    {% endif %}
+  </div>
+</header>
+
+<section class="mb-6 min-w-0" aria-label="Selecionar ciclo">
+  {% include "dashboard/_ciclo_selector.html" %}
+</section>
+
+<section class="mb-8 min-w-0" aria-labelledby="aderencia-heading">
+  <div class="mb-3">
+    <h2 id="aderencia-heading" class="font-display text-lg font-medium text-slate-800">
+      Onde estamos
+    </h2>
+    <p class="mt-0.5 text-sm text-slate-500">
+      {% if ciclo_selecionado %}
+        Média e distribuição em {{ ciclo_selecionado.nome }} — a lista abaixo detalha cada líder.
+      {% else %}
+        Média e distribuição no escopo — a lista abaixo detalha cada líder.
+      {% endif %}
+    </p>
+  </div>
+
+  <div class="managerial-panel">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores de aderência">
+      {% if aderencia_resumo.has_ciclo and aderencia_resumo.media is not None %}
+        {% with val=aderencia_resumo.media|stringformat:"d"|add:"%" %}
+        {% include "components/card.html" with label="Aderência média" value=val badge_status=aderencia_resumo.status body="Média dos líderes no escopo filtrado." %}
+        {% endwith %}
+      {% elif aderencia_resumo.has_ciclo %}
+        {% include "components/card.html" with label="Aderência média" value="—" body="Ainda não há dados de aderência neste escopo." %}
+      {% else %}
+        {% include "components/card.html" with label="Aderência média" value="—" body="Abra ou escolha um ciclo no seletor." %}
+      {% endif %}
+
+      {% if aderencia_resumo.has_ciclo %}
+        {% include "components/card.html" with label="Líderes com aderência" value=aderencia_resumo.total_lideres body="Com índice registrado no mesmo escopo da lista." %}
+      {% else %}
+        {% include "components/card.html" with label="Líderes com aderência" value="—" body="Disponível quando houver ciclo." %}
+      {% endif %}
+
+      {% if aderencia_resumo.has_ciclo and aderencia_resumo.baixa is not None %}
+        {% if aderencia_resumo.baixa > 0 %}
+          {% include "components/card.html" with label="Baixa aderência" value=aderencia_resumo.baixa badge_status="baixa" badge_label="Atenção" body="Abaixo de 50% — priorize na lista." %}
+        {% else %}
+          {% include "components/card.html" with label="Baixa aderência" value=aderencia_resumo.baixa badge_status="alta" badge_label="Em dia" body="Ninguém abaixo de 50% no escopo." %}
+        {% endif %}
+      {% else %}
+        {% include "components/card.html" with label="Baixa aderência" value="—" body="Disponível quando houver ciclo." %}
+      {% endif %}
+    </div>
+
+    {% if aderencia_resumo.has_ciclo %}
+    {% if chart_aderencia_distribuicao.has_data %}
+      {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" kpi_label="Líderes" kpi_value=chart_aderencia_distribuicao.total kpi_body="com aderência no escopo" insight="Distribuição em alta, média e baixa — o centro mostra o total." %}
+    {% else %}
+      {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" %}
+    {% endif %}
+
+    <div class="min-w-0" aria-labelledby="aderencia-drilldown-heading">
+      <div class="mb-3">
+        <h3 id="aderencia-drilldown-heading" class="font-display text-lg font-medium text-slate-800">
+          Líderes no escopo
+        </h3>
+        <p class="mt-0.5 text-sm text-slate-500">
+          Detalhe por líder — componentes e data da última atualização.
+        </p>
+      </div>
+      {% include "dashboard/adherence_list_partial.html" %}
+    </div>
+    {% else %}
+    <div class="min-w-0">
+      {% include "components/empty_state.html" with title="Sem ciclo aberto" message=chart_aderencia_distribuicao.empty_message %}
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" defer></script>
+<script src="{% static 'js/dashboard_charts.js' %}" defer></script>
+{% endblock %}

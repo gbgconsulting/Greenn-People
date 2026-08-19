@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% load review_display %}
+
+{% block title %}Classificar talento — Greenn People{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-lg">
+  <h1 class="mb-1 text-2xl font-semibold text-slate-800">Classificar talento</h1>
+  <p class="mb-6 text-slate-500">
+    Defina o potencial (1–3) de
+    <span class="font-medium text-slate-700">{{ colaborador.nome|default:colaborador.email }}</span>.
+    O desempenho é derivado automaticamente da nota do líder no ciclo.
+  </p>
+
+  <div class="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+    <p>
+      <span class="font-medium text-slate-700">Área:</span>
+      {{ colaborador.area.nome|default:"—" }}
+      ·
+      <span class="font-medium text-slate-700">Cargo:</span>
+      {{ colaborador.cargo.nome|default:"—" }}
+    </p>
+    {% if desempenho_preview %}
+      {% if desempenho_preview.disponivel %}
+      <p class="mt-2">
+        Prévia do desempenho no ciclo:
+        <span class="font-medium text-emerald-700">{{ desempenho_preview.label }}</span>
+        (nota líder {{ desempenho_preview.nota_final_lider|nota_percentual }})
+      </p>
+      {% else %}
+      <p class="mt-2 text-amber-700">{{ desempenho_preview.mensagem }}</p>
+      {% endif %}
+    {% endif %}
+    {% if classificacao_atual %}
+    <p class="mt-2 text-xs text-slate-500">
+      Classificação atual: {{ classificacao_atual.get_quadrante_display }}
+      · visível ao colaborador:
+      {% if classificacao_atual.visivel_ao_colaborador %}sim{% else %}não{% endif %}
+    </p>
+    {% endif %}
+  </div>
+
+  <form method="post" novalidate class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700" role="alert">
+        {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="mb-4">
+      <label for="{{ form.ciclo.id_for_label }}" class="mb-1 block text-sm font-medium text-slate-700">{{ form.ciclo.label }}</label>
+      {{ form.ciclo }}
+      {% if form.ciclo.errors %}<p class="mt-1 text-xs text-rose-600" role="alert">{{ form.ciclo.errors.0 }}</p>{% endif %}
+    </div>
+
+    <div class="mb-6">
+      <label for="{{ form.potencial.id_for_label }}" class="mb-1 block text-sm font-medium text-slate-700">{{ form.potencial.label }}</label>
+      {{ form.potencial }}
+      {% if form.potencial.help_text %}<p class="mt-1 text-xs text-slate-500">{{ form.potencial.help_text }}</p>{% endif %}
+      {% if form.potencial.errors %}<p class="mt-1 text-xs text-rose-600" role="alert">{{ form.potencial.errors.0 }}</p>{% endif %}
+    </div>
+
+    <div class="flex flex-wrap gap-3">
+      {% url 'talent:matrix' as cancel_url %}
+      {% include "components/button.html" with label="Salvar classificação" type="submit" variant="primary" %}
+      {% include "components/button.html" with label="Cancelar" href=cancel_url variant="secondary" %}
+    </div>
+  </form>
+</div>
+{% endblock %}

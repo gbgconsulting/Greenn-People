@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Editar usuário — Greenn People{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-lg">
+  <header class="mb-6">
+    <h1 class="font-display text-2xl font-semibold text-slate-800">Editar usuário</h1>
+    <p class="mt-1 font-ui text-sm text-slate-500">{{ edited_user.email }}</p>
+  </header>
+
+  {% if active_direct_reports %}
+    <div class="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 font-ui text-sm text-amber-900" role="status">
+      <p class="font-medium">
+        Este colaborador possui {{ active_direct_reports|length }} liderado(s) ativo(s).
+      </p>
+      <p class="mt-1 text-amber-800">
+        A desativação só é permitida após reatribuir todos os liderados a outro gestor.
+      </p>
+      <p class="mt-2">
+        <a
+          href="{% url 'organization:user_reassign_reports' edited_user.pk %}"
+          class="font-medium text-emerald-700 underline hover:text-emerald-800"
+        >
+          Reatribuir liderados em lote
+        </a>
+      </p>
+    </div>
+  {% endif %}
+
+  <form method="post" novalidate class="rounded-xl border border-line bg-surface-card p-6">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 font-ui text-sm text-rose-700" role="alert">
+        {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="mb-4">
+      <label for="{{ form.nome.id_for_label }}" class="mb-1 block font-ui text-sm font-medium text-slate-700">{{ form.nome.label }}</label>
+      {{ form.nome }}
+      {% if form.nome.errors %}<p class="mt-1 font-ui text-xs text-rose-600" role="alert">{{ form.nome.errors.0 }}</p>{% endif %}
+    </div>
+
+    <div class="mb-4">
+      <label for="{{ form.area.id_for_label }}" class="mb-1 block font-ui text-sm font-medium text-slate-700">{{ form.area.label }}</label>
+      {{ form.area }}
+      {% if form.area.errors %}<p class="mt-1 font-ui text-xs text-rose-600" role="alert">{{ form.area.errors.0 }}</p>{% endif %}
+    </div>
+
+    <div class="mb-4">
+      <label for="{{ form.cargo.id_for_label }}" class="mb-1 block font-ui text-sm font-medium text-slate-700">{{ form.cargo.label }}</label>
+      {{ form.cargo }}
+      {% if form.cargo.errors %}<p class="mt-1 font-ui text-xs text-rose-600" role="alert">{{ form.cargo.errors.0 }}</p>{% endif %}
+    </div>
+
+    <div class="mb-4">
+      <label for="{{ form.line_manager.id_for_label }}" class="mb-1 block font-ui text-sm font-medium text-slate-700">{{ form.line_manager.label }}</label>
+      {{ form.line_manager }}
+      {% if form.line_manager.errors %}<p class="mt-1 font-ui text-xs text-rose-600" role="alert">{{ form.line_manager.errors.0 }}</p>{% endif %}
+    </div>
+
+    <div class="mb-4">
+      <label for="{{ form.data_entrada.id_for_label }}" class="mb-1 block font-ui text-sm font-medium text-slate-700">{{ form.data_entrada.label }}</label>
+      {{ form.data_entrada }}
+      {% if form.data_entrada.errors %}<p class="mt-1 font-ui text-xs text-rose-600" role="alert">{{ form.data_entrada.errors.0 }}</p>{% endif %}
+    </div>
+
+    <div class="mb-3 flex items-center gap-2">
+      {{ form.is_admin }}
+      <label for="{{ form.is_admin.id_for_label }}" class="font-ui text-sm text-slate-700">{{ form.is_admin.label }}</label>
+      {% if form.is_admin.errors %}<p class="font-ui text-xs text-rose-600" role="alert">{{ form.is_admin.errors.0 }}</p>{% endif %}
+    </div>
+
+    <div class="mb-6 flex items-center gap-2">
+      {{ form.is_active }}
+      <label for="{{ form.is_active.id_for_label }}" class="font-ui text-sm text-slate-700">{{ form.is_active.label }}</label>
+      {% if form.is_active.errors %}<p class="font-ui text-xs text-rose-600" role="alert">{{ form.is_active.errors.0 }}</p>{% endif %}
+    </div>
+
+    <div class="flex flex-wrap gap-3">
+      {% if request.GET.next == 'pending' %}
+        {% url 'organization:user_pending' as cancel_url %}
+      {% else %}
+        {% url 'organization:user_list' as cancel_url %}
+      {% endif %}
+      {% include "components/button.html" with label="Salvar" type="submit" variant="primary" %}
+      {% include "components/button.html" with label="Cancelar" href=cancel_url variant="secondary" %}
+    </div>
+  </form>
+</div>
+{% endblock %}

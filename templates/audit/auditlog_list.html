@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Auditoria — Greenn People{% endblock %}
+
+{% block content %}
+<header class="mb-6">
+  <h1 class="font-display text-2xl font-semibold text-slate-800">Auditoria</h1>
+  <p class="mt-1 font-ui text-sm text-slate-500">
+    Histórico append-only de alterações sensíveis e acessos negados por escopo.
+  </p>
+</header>
+
+<form
+  method="get"
+  class="mb-6 grid grid-cols-1 gap-3 rounded-xl border border-line bg-surface-card p-4 sm:flex sm:flex-wrap sm:items-end"
+  role="search"
+  aria-label="Filtrar logs de auditoria"
+>
+  <div class="min-w-0 sm:min-w-[12rem]">
+    <label for="usuario" class="mb-1 block font-ui text-xs font-medium uppercase tracking-wide text-slate-500">Usuário</label>
+    <select
+      id="usuario"
+      name="usuario"
+      class="form-control w-full"
+    >
+      <option value="">Todos</option>
+      {% for u in usuarios %}
+      <option value="{{ u.pk }}" {% if filtro_usuario == u.pk|stringformat:"s" %}selected{% endif %}>
+        {{ u.nome|default:u.email }}
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="min-w-0">
+    <label for="acao" class="mb-1 block font-ui text-xs font-medium uppercase tracking-wide text-slate-500">Ação</label>
+    <select
+      id="acao"
+      name="acao"
+      class="form-control w-full"
+    >
+      <option value="">Todas</option>
+      {% for value, label in acao_choices %}
+      <option value="{{ value }}" {% if filtro_acao == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="min-w-0">
+    <label for="data_inicio" class="mb-1 block font-ui text-xs font-medium uppercase tracking-wide text-slate-500">De</label>
+    <input
+      type="date"
+      id="data_inicio"
+      name="data_inicio"
+      value="{{ filtro_data_inicio }}"
+      class="form-control w-full"
+    />
+  </div>
+  <div class="min-w-0">
+    <label for="data_fim" class="mb-1 block font-ui text-xs font-medium uppercase tracking-wide text-slate-500">Até</label>
+    <input
+      type="date"
+      id="data_fim"
+      name="data_fim"
+      value="{{ filtro_data_fim }}"
+      class="form-control w-full"
+    />
+  </div>
+  <div class="flex flex-wrap gap-2">
+    {% include "components/button.html" with label="Filtrar" type="submit" variant="primary" %}
+    {% url 'audit:list' as audit_clear_url %}
+    {% include "components/button.html" with label="Limpar" href=audit_clear_url variant="secondary" %}
+  </div>
+</form>
+
+{% include "audit/auditlog_list_partial.html" %}
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Escalas — Greenn People{% endblock %}
+
+{% block content %}
+<header class="mb-6 flex flex-wrap items-start justify-between gap-3">
+  <div>
+    <h1 class="font-display text-2xl font-semibold text-slate-800">Escalas</h1>
+    <p class="mt-1 font-ui text-sm text-slate-500">Faixas de avaliação reutilizáveis nas competências.</p>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    {% url 'competencies:competencia_list' as competencias_url %}
+    {% include "components/button.html" with label="Competências" href=competencias_url variant="secondary" %}
+    {% url 'competencies:escala_create' as create_url %}
+    {% include "components/button.html" with label="Nova escala" href=create_url variant="primary" %}
+  </div>
+</header>
+
+{% include "competencies/escala_list_partial.html" %}
+{% endblock %}

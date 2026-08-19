@@ -1,0 +1,93 @@
+<tr id="meta-row-{{ meta.pk }}">
+  <td class="font-medium text-slate-800">{{ meta.descricao }}</td>
+  <td class="text-slate-600">{{ meta.usuario.nome }}</td>
+  <td class="text-slate-600">{{ meta.objetivo_estrategico.descricao }}</td>
+  <td class="text-slate-600">
+    {% if pode_atualizar_progresso and progress_form %}
+    <form
+      method="post"
+      action="{% url 'goals:meta_progress' meta.pk %}"
+      hx-post="{% url 'goals:meta_progress' meta.pk %}"
+      hx-target="#meta-row-{{ meta.pk }}"
+      hx-swap="outerHTML"
+      hx-indicator="#htmx-indicator"
+      class="flex flex-wrap items-center gap-2"
+    >
+      {% csrf_token %}
+      <label class="sr-only" for="id_progresso_{{ meta.pk }}">Progresso (%)</label>
+      <input
+        type="number"
+        name="progresso"
+        id="id_progresso_{{ meta.pk }}"
+        value="{{ progress_form.progresso.value|default_if_none:'' }}"
+        min="0"
+        max="100"
+        step="0.01"
+        inputmode="decimal"
+        required
+        class="form-control !h-10 !min-w-0 w-24 sm:!min-w-0"
+      >
+      <span class="text-slate-500">%</span>
+      {% include "components/button.html" with label=rotulo_salvar_progresso|default:"Salvar" type="submit" variant="primary" extra_class="!h-10 !px-3" %}
+      {% if progress_form.progresso.errors %}
+      <p class="w-full text-xs text-rose-600">{{ progress_form.progresso.errors|striptags }}</p>
+      {% endif %}
+      {% if progress_form.non_field_errors %}
+      <p class="w-full text-xs text-rose-600">{{ progress_form.non_field_errors|striptags }}</p>
+      {% endif %}
+    </form>
+    {% elif meta.progresso is not None %}
+      <span class="tabular-nums">{{ meta.progresso }}%</span>
+    {% else %}
+      —
+    {% endif %}
+  </td>
+  <td>
+    {% include "components/badge_status.html" with status=badge_status|default:meta.status label=badge_label|default:meta.get_status_display %}
+    {% if item_reprovado and proximo_passo_hint %}
+    <p class="mt-1 font-ui text-xs text-amber-700">{{ proximo_passo_hint }}</p>
+    {% endif %}
+  </td>
+  <td class="text-right whitespace-nowrap">
+    <div class="inline-flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
+      {% if pode_aprovar %}
+      <form
+        method="post"
+        action="{% url 'goals:meta_approve' meta.pk %}"
+        hx-post="{% url 'goals:meta_approve' meta.pk %}"
+        hx-target="#meta-row-{{ meta.pk }}"
+        hx-swap="outerHTML"
+        hx-indicator="#htmx-indicator"
+        class="inline"
+      >
+        {% csrf_token %}
+        <button
+          type="submit"
+          class="font-medium text-emerald-700 hover:text-emerald-800"
+        >{{ rotulo_aprovar|default:"Aprovar" }}</button>
+      </form>
+      <form
+        method="post"
+        action="{% url 'goals:meta_reject' meta.pk %}"
+        hx-post="{% url 'goals:meta_reject' meta.pk %}"
+        hx-target="#meta-row-{{ meta.pk }}"
+        hx-swap="outerHTML"
+        hx-indicator="#htmx-indicator"
+        class="inline"
+      >
+        {% csrf_token %}
+        <button
+          type="submit"
+          class="font-medium text-rose-600 hover:text-rose-700"
+        >Reprovar</button>
+      </form>
+      {% endif %}
+      {% if pode_editar_conteudo and meta.status != 'aprovada' and mostrar_link_editar|default:True %}
+      <a href="{% url 'goals:meta_update' meta.pk %}" class="font-medium text-emerald-700 hover:text-emerald-800{% if item_reprovado %} font-semibold{% endif %}">{{ rotulo_editar|default:"Editar" }}</a>
+      {% endif %}
+      {% if pode_editar_conteudo and meta.status == 'pendente' %}
+      <a href="{% url 'goals:meta_delete' meta.pk %}" class="font-medium text-rose-600 hover:text-rose-700">Excluir</a>
+      {% endif %}
+    </div>
+  </td>
+</tr>

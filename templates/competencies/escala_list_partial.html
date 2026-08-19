@@ -1,0 +1,37 @@
+<div id="list-container">
+<div class="table-frame">
+  <table>
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Mínimo</th>
+        <th>Máximo</th>
+        <th class="text-right">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for escala in escalas %}
+      <tr>
+        <td class="font-medium text-slate-800">{{ escala.nome }}</td>
+        <td class="text-slate-600">{{ escala.valor_minimo }}</td>
+        <td class="text-slate-600">{{ escala.valor_maximo }}</td>
+        <td class="text-right">
+          <a href="{% url 'competencies:escala_update' escala.pk %}" class="font-medium text-emerald-700 hover:text-emerald-800">Editar</a>
+          <span class="mx-2 text-slate-300">|</span>
+          <a href="{% url 'competencies:escala_delete' escala.pk %}" class="font-medium text-rose-600 hover:text-rose-700">Desativar</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="4" class="!py-8">
+          {% url 'competencies:escala_create' as escala_create_url %}
+          {% include "components/empty_state.html" with title="Nenhuma escala cadastrada" message="Cadastre a primeira escala para uso nas competências." cta_label="Nova escala" cta_href=escala_create_url %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% include "components/pagination.html" with page_obj=page_obj %}
+</div>

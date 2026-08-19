@@ -1,0 +1,54 @@
+<tr class="hover:bg-slate-50" id="acao-{{ acao.pk }}">
+  <td class="px-4 py-3">
+    <p class="font-medium text-slate-800">{{ acao.descricao }}</p>
+  </td>
+  <td class="px-4 py-3 text-slate-600">
+    {{ acao.responsavel.nome|default:acao.responsavel.email }}
+  </td>
+  <td class="px-4 py-3 tabular-nums text-slate-600">{{ acao.prazo|date:"d/m/Y" }}</td>
+  <td class="px-4 py-3">
+    <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+      {% include "components/badge_status.html" with status=acao.status label=acao.get_status_display %}
+      <select
+        name="status"
+        class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        hx-post="{% url 'pdi:action_status' acao.pk %}"
+        hx-target="#acao-{{ acao.pk }}"
+        hx-swap="outerHTML"
+        hx-include="this"
+        hx-indicator="#htmx-indicator"
+        aria-label="Atualizar status da ação"
+      >
+        {% for value, label in status_choices %}
+        <option value="{{ value }}" {% if acao.status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </td>
+  <td class="px-4 py-3 tabular-nums text-slate-500">{{ acao.updated_at|date:"d/m/Y H:i" }}</td>
+  <td class="px-4 py-3 text-right">
+    <div class="inline-flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
+      <button
+        type="button"
+        class="font-medium text-emerald-700 hover:text-emerald-800"
+        hx-get="{% url 'pdi:action_edit_modal' acao.pk %}"
+        hx-target="#modal-container"
+        hx-swap="innerHTML"
+        hx-indicator="#htmx-indicator"
+      >
+        Editar
+      </button>
+      <button
+        type="button"
+        class="font-medium text-rose-600 hover:text-rose-700"
+        hx-post="{% url 'pdi:action_delete' acao.pk %}"
+        hx-target="#acao-list"
+        hx-swap="innerHTML"
+        hx-confirm="Remover esta ação do PDI?"
+        hx-indicator="#htmx-indicator"
+      >
+        Remover
+      </button>
+    </div>
+  </td>
+</tr>

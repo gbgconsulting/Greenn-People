@@ -1,0 +1,39 @@
+{% comment %}
+  Paginação padrão (paginate_by=20) com HTMX.
+  Uso: {% include "components/pagination.html" with page_obj=page_obj %}
+  Preserva demais query params (filtros) ao trocar de página.
+  Requer #list-container no partial da listagem (hx-target / outerHTML).
+{% endcomment %}
+{% if page_obj.paginator.num_pages > 1 %}
+<nav
+  class="mt-6 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between"
+  aria-label="Paginação"
+>
+  <p class="text-sm text-slate-500">
+    Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+    ({{ page_obj.paginator.count }} no total)
+  </p>
+  <div class="flex gap-2">
+    {% if page_obj.has_previous %}
+      <a
+        href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}"
+        hx-get="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}"
+        hx-target="#list-container"
+        hx-swap="outerHTML"
+        hx-push-url="true"
+        class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+      >Anterior</a>
+    {% endif %}
+    {% if page_obj.has_next %}
+      <a
+        href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}"
+        hx-get="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}"
+        hx-target="#list-container"
+        hx-swap="outerHTML"
+        hx-push-url="true"
+        class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+      >Próxima</a>
+    {% endif %}
+  </div>
+</nav>
+{% endif %}

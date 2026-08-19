@@ -1,0 +1,27 @@
+"""
+URL configuration for Greenn People.
+
+The `urlpatterns` list routes URLs to views. For more information please see:
+    https://docs.djangoproject.com/en/6.0/topics/http/urls/
+"""
+from django.contrib import admin
+from django.urls import include, path
+
+from apps.core.views import health
+
+urlpatterns = [
+    path('health/', health, name='health'),
+    path('admin/', admin.site.urls),
+    path('accounts/', include('apps.accounts.urls')),
+    path('organization/', include('apps.organization.urls')),
+    path('competencies/', include('apps.competencies.urls')),
+    path('goals/', include('apps.goals.urls')),
+    path('cycles/', include('apps.cycles.urls')),
+    path('reviews/', include('apps.reviews.urls')),
+    path('pdi/', include('apps.pdi.urls')),
+    path('talent/', include('apps.talent.urls')),
+    # PersonalDashboardView em `/`; demais rotas do app sob `/dashboard/...`
+    path('', include('apps.dashboard.urls')),
+    path('audit/', include('apps.audit.urls')),
+    path('notifications/', include('apps.notifications.urls')),
+]

@@ -13,13 +13,31 @@ env/
 # Banco de dados e logs
 db.sqlite3
 *.log
+celerybeat-schedule
+celerybeat-schedule.*
+celerybeat.pid
 
 # Cache do Python
 __pycache__/
 *.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.Python
+
+# Testes e lint
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
 
 # Arquivos de sistema e editores
 .DS_Store
+Thumbs.db
+*.tmp
+*.swp
 .vscode/
 .idea/
 
@@ -27,7 +45,24 @@ __pycache__/
 media/
 staticfiles/
 
+# Legado Sólides — backups com PII (nunca versionar; samples/ ok)
+data/legado-solides/raw/
+
+# Node (se Tailwind/CLI local for instalado via npm)
+node_modules/
+
+# Tailwind CLI standalone (binário local; não versionar)
+bin/tailwindcss
+bin/tailwindcss.exe
+tailwindcss
+tailwindcss.exe
+
 # Django
 *.log
 core_settings.py
 staticfiles/
+
+# BeeBase (AppImage local + runtime extraído p/ Ubuntu 22.04)
+BeeBase_*.AppImage
+BeeBase.sh
+.beebase-runtime/

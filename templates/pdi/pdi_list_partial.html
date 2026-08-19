@@ -1,0 +1,58 @@
+<div id="list-container">
+<div class="table-frame">
+  <table>
+    <thead>
+      <tr>
+        <th>Título</th>
+        <th>Colaborador</th>
+        <th>Status</th>
+        <th>Progresso</th>
+        <th class="text-right">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in pdi_rows %}
+      <tr class="{% if row.is_self %}border-l-4 border-l-emerald-500 bg-emerald-50/30 hover:bg-emerald-50/50{% endif %}">
+        <td>
+          <p class="font-semibold text-slate-800">{{ row.pdi.titulo }}</p>
+        </td>
+        <td>
+          <p class="font-medium text-slate-800">
+            {{ row.pdi.usuario.nome|default:row.pdi.usuario.email }}
+            {% if row.is_self %}
+              <span class="ml-1 text-xs font-normal text-slate-400">(você)</span>
+            {% endif %}
+          </p>
+          <p class="text-xs text-slate-500">{{ row.pdi.usuario.email }}</p>
+        </td>
+        <td>
+          {% include "components/badge_status.html" with status=row.pdi.status label=row.pdi.get_status_display %}
+        </td>
+        <td class="tabular-nums text-slate-800">{{ row.progresso }}%</td>
+        <td class="text-right">
+          <a
+            href="{% url 'pdi:detail' row.pdi.pk %}"
+            class="font-medium text-emerald-700 hover:text-emerald-800"
+          >Ver</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="5" class="!py-8">
+          {% if status_filtro %}
+            {% include "components/empty_state.html" with title="Nenhum PDI neste filtro" message="Nenhum PDI com este status no seu escopo. Tente remover o filtro ou escolha outro status." %}
+          {% elif pode_criar %}
+            {% url 'pdi:create' as pdi_create_url %}
+            {% include "components/empty_state.html" with title="Nenhum PDI cadastrado" message="Nenhum PDI cadastrado no seu escopo." cta_label="Novo PDI" cta_href=pdi_create_url %}
+          {% else %}
+            {% include "components/empty_state.html" with title="Nenhum PDI cadastrado" message="Nenhum PDI cadastrado no seu escopo." %}
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% include "components/pagination.html" with page_obj=page_obj %}
+</div>

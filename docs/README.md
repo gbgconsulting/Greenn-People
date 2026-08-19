@@ -13,3 +13,4 @@ Esta pasta contém os **guidelines e padrões técnicos** do projeto. Para requi
 | [data-model.md](data-model.md) | Diagrama ER e descrição das entidades principais. |
 | [coding-standards.md](coding-standards.md) | Padrões de código, segurança, performance, paginação e auditabilidade. |
 | [design-system.md](design-system.md) | Paleta de cores, tipografia, componentes UI e layout base. |
+| [ops/](ops/) | Operações: backup, checklist de deploy e prontidão de produção. |

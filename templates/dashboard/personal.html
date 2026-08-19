@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% load static review_display %}
+
+{% block title %}Meu painel — Greenn People{% endblock %}
+
+{% block content %}
+<header class="mb-6">
+  <div class="flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <h1 class="font-display text-2xl font-semibold tracking-tight text-slate-800">Meu painel</h1>
+      <p class="mt-1 font-ui text-sm text-slate-500">
+        Bem-vindo{% if user.nome %}, {{ user.nome }}{% endif %}.
+        Veja sua nota, o que o cargo espera de você e o próximo passo no ciclo.
+      </p>
+    </div>
+    {% if ciclo_aberto %}
+      {% include "components/badge_status.html" with status="ativo" label=ciclo_aberto.nome extra_class="mt-1" %}
+    {% else %}
+      {% include "components/badge_status.html" with status="arquivado" label="Sem ciclo aberto" extra_class="mt-1" %}
+    {% endif %}
+  </div>
+</header>
+
+<section class="mb-8 min-w-0 space-y-6" aria-labelledby="orientacao-heading">
+  <h2 id="orientacao-heading" class="sr-only">Orientação do ciclo</h2>
+  {% include "components/next_step.html" with next_step=next_step %}
+  {% include "components/stage_stepper.html" with stage_stepper=stage_stepper %}
+</section>
+
+<section class="mb-8 min-w-0" aria-labelledby="desempenho-heading">
+  <div class="mb-3">
+    <h2 id="desempenho-heading" class="font-display text-lg font-medium tracking-tight text-slate-800">
+      Meu desempenho
+    </h2>
+    <p class="mt-0.5 font-ui text-sm text-slate-500">
+      Sua nota e o nível esperado do cargo. Em seguida, o comparativo por competência.
+    </p>
+  </div>
+
+  <div class="managerial-panel">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2" aria-label="Indicadores pessoais">
+      {% if nota_atual is not None %}
+        {% if nota_atual_origem == "lider" %}
+          {% include "components/card.html" with label="Nota atual" value=nota_atual|nota_percentual badge_status="concluida" badge_label="Nota do líder" body="Nota dada pelo seu líder neste ciclo." %}
+        {% elif nota_atual_origem == "autoavaliacao" %}
+          {% include "components/card.html" with label="Nota atual" value=nota_atual|nota_percentual badge_status="em_andamento" badge_label="Autoavaliação" body="Nota da sua autoavaliação neste ciclo." %}
+        {% else %}
+          {% include "components/card.html" with label="Nota atual" value=nota_atual|nota_percentual badge_status="arquivado" badge_label="Sem nota" body="Ainda não há nota neste ciclo." %}
+        {% endif %}
+      {% elif nota_atual_origem == "lider" %}
+        {% include "components/card.html" with label="Nota atual" value="—" badge_status="concluida" badge_label="Nota do líder" body="Nota dada pelo seu líder neste ciclo." %}
+      {% elif nota_atual_origem == "autoavaliacao" %}
+        {% include "components/card.html" with label="Nota atual" value="—" badge_status="em_andamento" badge_label="Autoavaliação" body="Nota da sua autoavaliação neste ciclo." %}
+      {% else %}
+        {% include "components/card.html" with label="Nota atual" value="—" badge_status="arquivado" badge_label="Sem nota" body="Ainda não há nota neste ciclo." %}
+      {% endif %}
+
+      {% if vinculo_pendente %}
+        {% include "components/card.html" with label="Nível esperado" value="—" badge_status="pendente" badge_label="Cadastro incompleto" body="Seu cargo ou competências ainda não foram definidos." %}
+      {% else %}
+        {% include "components/card.html" with label="Nível esperado" value=competencias_resumo|length badge_status="ativo" badge_label="Competências do cargo" body="Quantas competências o seu cargo avalia." %}
+      {% endif %}
+    </div>
+
+    <div class="min-w-0" aria-labelledby="gaps-heading">
+      <div class="mb-3">
+        <h3 id="gaps-heading" class="font-display text-lg font-medium tracking-tight text-slate-800">
+          Esperado × nota
+        </h3>
+        <p class="mt-0.5 font-ui text-sm text-slate-500">
+          Compara o nível do cargo com a sua nota. O gráfico destaca as maiores diferenças.
+        </p>
+      </div>
+      {% if chart_gaps_competencia.has_data %}
+        {% include "dashboard/_chart_block.html" with chart=chart_gaps_competencia script_id="chart-gaps-competencia" kpi_label="Competências" kpi_value=chart_gaps_competencia.total kpi_body="mostradas no gráfico" insight="Maiores diferenças entre o esperado e a sua nota. O restante está na tabela abaixo." %}
+      {% else %}
+        {% include "dashboard/_chart_block.html" with chart=chart_gaps_competencia script_id="chart-gaps-competencia" %}
+      {% endif %}
+    </div>
+
+    {% if not vinculo_pendente and competencias_resumo %}
+    <div class="min-w-0" aria-labelledby="competencias-resumo-heading">
+      <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+        <div>
+          <h3 id="competencias-resumo-heading" class="font-display text-lg font-medium tracking-tight text-slate-800">
+            Níveis esperados
+          </h3>
+          <p class="mt-0.5 font-ui text-sm text-slate-500">
+            Lista completa das competências do seu cargo.
+          </p>
+        </div>
+        {% if cargo %}
+        <p class="font-ui text-sm text-slate-500">Cargo: <span class="font-medium text-slate-700">{{ cargo.nome }}</span></p>
+        {% endif %}
+      </div>
+      <div class="table-frame">
+        <table>
+          <thead>
+            <tr>
+              <th>Competência</th>
+              <th>Nível esperado</th>
+              <th>Nota atual</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in competencias_resumo %}
+            <tr>
+              <td class="font-medium text-slate-800">{{ item.competencia.nome }}</td>
+              <td class="tabular-nums text-slate-800">{{ item.nivel_esperado }}</td>
+              <td>
+                {% if item.nota_atual is not None %}
+                  <span class="font-semibold tabular-nums text-slate-800">{{ item.nota_atual }}</span>
+                {% else %}
+                  <span class="text-slate-400">—</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p class="mt-3 font-ui text-sm text-slate-500">
+        <a href="{% url 'goals:expectations' %}" class="font-medium text-emerald-700 hover:text-emerald-800">
+          Ver expectativas e metas do ciclo
+        </a>
+      </p>
+    </div>
+    {% elif vinculo_pendente %}
+    <div class="min-w-0" aria-labelledby="vinculo-pendente-heading">
+      <h3 id="vinculo-pendente-heading" class="sr-only">Níveis esperados</h3>
+      {% if not cargo %}
+        {% include "components/empty_state.html" with title="Cadastro incompleto" message="Seu perfil ainda não tem cargo. Peça ao RH para concluir o cadastro antes de ver o nível esperado." %}
+      {% else %}
+        <p class="mb-1 text-center font-ui text-sm text-slate-500">
+          Cargo: <span class="font-medium text-slate-700">{{ cargo.nome }}</span>
+        </p>
+        {% include "components/empty_state.html" with title="Cadastro incompleto" message="Este cargo ainda não tem competências definidas. Peça ao RH para concluir o cadastro." %}
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+{% if classificacao %}
+<section class="mb-8 min-w-0" aria-labelledby="classificacao-heading">
+  <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+    <div>
+      <h2 id="classificacao-heading" class="font-display text-lg font-medium tracking-tight text-slate-800">
+        Minha classificação
+      </h2>
+      <p class="mt-0.5 font-ui text-sm text-slate-500">
+        Visão já liberada para você neste ciclo — somente leitura.
+      </p>
+    </div>
+    <p class="font-ui text-sm text-slate-500">{{ classificacao.ciclo.nome }}</p>
+  </div>
+  <div class="rounded-xl border border-line bg-surface-card p-4">
+    <p class="font-ui text-xs font-medium uppercase tracking-wide text-ink-muted">Quadrante</p>
+    <p class="mt-1 font-display text-lg font-semibold tracking-tight text-slate-800">
+      {{ classificacao.get_quadrante_display }}
+    </p>
+    <p class="mt-1.5 font-ui text-sm text-slate-600">
+      Desempenho {{ classificacao.desempenho }}/3 · potencial {{ classificacao.potencial }}/3
+    </p>
+    <p class="mt-3 font-ui text-sm">
+      <a href="{% url 'talent:mine' %}" class="font-medium text-emerald-700 hover:text-emerald-800">
+        Ver detalhes da classificação
+      </a>
+    </p>
+  </div>
+</section>
+{% endif %}
+
+<section class="min-w-0" aria-labelledby="perfil-heading">
+  <div class="mb-3">
+    <h2 id="perfil-heading" class="font-display text-lg font-medium tracking-tight text-slate-800">
+      Meu perfil
+    </h2>
+    <p class="mt-0.5 font-ui text-sm text-slate-500">
+      Dados cadastrais do seu vínculo na organização.
+    </p>
+  </div>
+  <div class="rounded-xl border border-line bg-surface-card p-4">
+    <dl class="grid gap-4 sm:grid-cols-2">
+      <div>
+        <dt class="font-ui text-xs font-medium uppercase tracking-wide text-ink-muted">E-mail</dt>
+        <dd class="mt-1 font-ui text-sm text-slate-800">{{ user.email }}</dd>
+      </div>
+      <div>
+        <dt class="font-ui text-xs font-medium uppercase tracking-wide text-ink-muted">Área</dt>
+        <dd class="mt-1 font-ui text-sm text-slate-800">{{ user.area.nome|default:"—" }}</dd>
+      </div>
+      <div>
+        <dt class="font-ui text-xs font-medium uppercase tracking-wide text-ink-muted">Cargo</dt>
+        <dd class="mt-1 font-ui text-sm text-slate-800">{{ user.cargo.nome|default:"—" }}</dd>
+      </div>
+      <div>
+        <dt class="font-ui text-xs font-medium uppercase tracking-wide text-ink-muted">Gestor</dt>
+        <dd class="mt-1 font-ui text-sm text-slate-800">{% if user.line_manager %}{{ user.line_manager }}{% else %}—{% endif %}</dd>
+      </div>
+    </dl>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" defer></script>
+<script src="{% static 'js/dashboard_charts.js' %}" defer></script>
+{% endblock %}
