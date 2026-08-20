@@ -6,15 +6,6 @@
   data-field="rh-checklist-hint"
 >
   Há avisos de cadastro acima — revise os links antes de abrir o ciclo.
-  Você ainda pode abrir o ciclo mesmo com avisos.
-</p>
-{% elif rh_pre_open_checklist and not rh_checklist_has_blockers %}
-<p
-  class="mb-3 font-ui text-xs leading-relaxed text-slate-500 sm:text-sm"
-  role="status"
-  data-field="rh-checklist-hint"
->
-  Checklist operacional sem pendências neste escopo. Abrir segue a regra já vigente.
 </p>
 {% endif %}
 
@@ -130,11 +121,17 @@
                 href="{% url 'cycles:ciclo_detail' ciclo.pk %}"
                 class="font-medium text-emerald-700 hover:text-emerald-800"
               >Visão gerencial</a>
-              <form method="post" action="{% url 'cycles:ciclo_open' ciclo.pk %}" class="inline">
+              <form
+                method="post"
+                action="{% url 'cycles:ciclo_open' ciclo.pk %}"
+                class="inline"
+                data-ciclo-open-form
+              >
                 {% csrf_token %}
                 <button
                   type="submit"
                   class="font-semibold text-emerald-700 hover:text-emerald-800"
+                  title="{% if ciclo.admitidos_ate %}Admitidos até {{ ciclo.admitidos_ate|date:'d/m/Y' }}{% else %}Defina Admitidos até em Editar antes de abrir{% endif %}"
                   {% if rh_pre_open_checklist %}aria-describedby="rh-pre-open-checklist"{% endif %}
                 >Abrir</button>
               </form>

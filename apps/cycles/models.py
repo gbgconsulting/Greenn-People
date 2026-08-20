@@ -31,6 +31,11 @@ class Ciclo(TimeStampedModel):
         unique=True,
         db_index=True,
     )
+    admitidos_ate = models.DateField(
+        'admitidos até',
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         verbose_name = 'ciclo'

@@ -1,3 +1,4 @@
+from datetime import date
 from decimal import Decimal
 
 from django.contrib import messages
@@ -5,7 +6,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Avg, Count, Q
 from django.db.models.deletion import ProtectedError
 from django.http import HttpResponseRedirect
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render
 from django.urls import reverse, reverse_lazy
 from django.views import View
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
@@ -13,10 +14,15 @@ from django.views.generic.detail import SingleObjectMixin
 
 from apps.accounts.services.scope import get_visible_users
 from apps.core.mixins import HtmxPaginatedListMixin, RequiresAdminMixin
-from apps.cycles.exceptions import CycleAlreadyOpenError, CycleNotOpenError
+from apps.cycles.exceptions import (
+    CycleAlreadyOpenError,
+    CycleMissingCutoffError,
+    CycleNotOpenError,
+)
 from apps.cycles.forms import CicloForm
 from apps.cycles.models import Ciclo
 from apps.cycles.services.cycle import close_cycle, open_cycle
+from apps.cycles.services.eligibility import preview_admission_counts
 from apps.dashboard.chart_payloads import (
     CHART_TYPE_BAR_GROUPED,
     CHART_TYPE_BAR_HORIZONTAL,
@@ -122,6 +128,13 @@ class CicloListView(AdminCyclesMixin, HtmxPaginatedListMixin, ListView):
 
 
 class CicloCreateView(AdminCyclesMixin, CreateView):
+    """Cria o ciclo e, em seguida, abre + matricula elegíveis via ``open_cycle``.
+
+    Persistência inicial como ``encerrado``; ``open_cycle`` aplica o gate de
+    corte, a regra de um-aberto e a matrícula. Se já houver ciclo aberto, o
+    cadastro permanece encerrado (com ``admitidos_ate``) para Abrir depois.
+    """
+
     model = Ciclo
     form_class = CicloForm
     template_name = 'cycles/ciclo_form.html'
@@ -129,8 +142,25 @@ class CicloCreateView(AdminCyclesMixin, CreateView):
 
     def form_valid(self, form):
         form.instance.status = Ciclo.Status.ENCERRADO
-        messages.success(self.request, 'Ciclo criado com sucesso.')
-        return super().form_valid(form)
+        self.object = form.save()
+        try:
+            opened = open_cycle(self.object)
+        except CycleAlreadyOpenError as exc:
+            messages.warning(
+                self.request,
+                f'Ciclo "{self.object.nome}" criado, mas não foi aberto: {exc} '
+                'Encerre o ciclo em andamento e use Abrir.',
+            )
+        except CycleMissingCutoffError as exc:
+            messages.error(self.request, str(exc))
+        else:
+            corte = opened.admitidos_ate.strftime('%d/%m/%Y')
+            messages.success(
+                self.request,
+                f'Ciclo "{opened.nome}" criado e aberto. Avaliações criadas '
+                f'conforme elegibilidade (admitidos até {corte}).',
+            )
+        return HttpResponseRedirect(self.get_success_url())
 
 
 class CicloUpdateView(AdminCyclesMixin, UpdateView):
@@ -378,28 +408,77 @@ class CicloDetailView(AdminCyclesMixin, DetailView):
 
 
 class CicloOpenView(AdminCyclesMixin, SingleObjectMixin, View):
-    """Abre o ciclo e cria Avaliacao para colaboradores ativos (FR-015/016).
+    """Abre o ciclo e matricula elegíveis.
 
-    Não lê ``build_rh_pre_open_checklist`` — checklist permanece avisório
-    (T026 / FR-008); abertura segue só ``open_cycle`` / ``cycle.py``.
+    O corte vem do ``admitidos_ate`` já gravado no cadastro. POST opcional
+    ``admitidos_ate`` permanece como override (testes / compat). Checklist
+    008 permanece avisório.
     """
 
     model = Ciclo
     http_method_names = ['post', 'options']
 
+    @staticmethod
+    def _parse_admitidos_ate(raw: str) -> date | None:
+        value = (raw or '').strip()
+        if not value:
+            return None
+        try:
+            return date.fromisoformat(value)
+        except ValueError:
+            return None
+
     def post(self, request, *args, **kwargs):
         ciclo = self.get_object()
+        override = self._parse_admitidos_ate(
+            request.POST.get('admitidos_ate', ''),
+        )
         try:
-            open_cycle(ciclo)
+            opened = open_cycle(ciclo, admitidos_ate=override)
         except CycleAlreadyOpenError as exc:
             messages.error(request, str(exc))
+        except CycleMissingCutoffError as exc:
+            messages.error(request, str(exc))
         else:
+            corte = opened.admitidos_ate.strftime('%d/%m/%Y')
             messages.success(
                 request,
-                f'Ciclo "{ciclo.nome}" aberto. Avaliações criadas para '
-                'colaboradores ativos.',
+                f'Ciclo "{opened.nome}" aberto. Avaliações criadas conforme '
+                f'elegibilidade (admitidos até {corte}).',
             )
         return HttpResponseRedirect(reverse('cycles:ciclo_list'))
+
+
+class CicloOpenPreviewView(AdminCyclesMixin, SingleObjectMixin, View):
+    """Preview HTMX das 3 contagens de elegibilidade (admin-only).
+
+    Mesmo gate de ``CicloOpenView``. Sem lista nominativa / PII; sem DRF.
+    Usa ``?admitidos_ate=`` ou o corte já persistido no ciclo.
+    """
+
+    model = Ciclo
+    http_method_names = ['get', 'options']
+    template_name = 'cycles/ciclo_open_preview_partial.html'
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        admitidos_ate = CicloOpenView._parse_admitidos_ate(
+            request.GET.get('admitidos_ate', ''),
+        )
+        if admitidos_ate is None:
+            admitidos_ate = self.object.admitidos_ate
+        context = {
+            'ciclo': self.object,
+            'admitidos_ate': admitidos_ate,
+            'preview_needs_date': admitidos_ate is None,
+            'elegiveis': None,
+            'excluidos_admissao_posterior': None,
+            'sem_data_entrada': None,
+        }
+        if admitidos_ate is not None:
+            counts = preview_admission_counts(admitidos_ate)
+            context.update(counts)
+        return render(request, self.template_name, context)
 
 
 class CicloCloseView(AdminCyclesMixin, SingleObjectMixin, View):

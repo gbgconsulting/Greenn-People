@@ -1,0 +1,28 @@
+{# Preview agregado do corte — só contagens; sem nomes/e-mails/IDs. #}
+<div
+  id="ciclo-open-preview-{{ ciclo.pk }}"
+  class="font-ui max-w-xs text-right text-xs text-slate-600"
+  data-ciclo-open-preview
+  role="status"
+  aria-live="polite"
+  {% if admitidos_ate %}data-admitidos-ate="{{ admitidos_ate|date:'Y-m-d' }}"{% endif %}
+>
+  {% if preview_needs_date %}
+    {# silencioso até haver data — evita copy operacional na listagem #}
+  {% else %}
+    <ul class="inline-flex flex-wrap items-center justify-end gap-x-3 gap-y-1 tabular-nums">
+      <li>
+        <span class="font-medium text-slate-700">Elegíveis:</span>
+        {{ elegiveis }}
+      </li>
+      <li>
+        <span class="font-medium text-slate-700">Admissão posterior:</span>
+        {{ excluidos_admissao_posterior }}
+      </li>
+      <li>
+        <span class="font-medium text-slate-700">Sem data de entrada:</span>
+        {{ sem_data_entrada }}
+      </li>
+    </ul>
+  {% endif %}
+</div>

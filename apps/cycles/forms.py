@@ -10,18 +10,24 @@ _INPUT = (
 
 
 class CicloForm(forms.ModelForm):
-    """Cadastro/edição de ciclo; status é controlado por abrir/encerrar."""
+    """Cadastro/edição de ciclo.
+
+    No create, a view grava o ciclo e chama ``open_cycle`` (corte obrigatório).
+    Na edição, só atualiza campos — não reabre nem rematricula.
+    """
 
     class Meta:
         model = Ciclo
-        fields = ('nome', 'data_inicio', 'data_fim')
+        fields = ('nome', 'data_inicio', 'data_fim', 'admitidos_ate')
         labels = {
             'nome': 'Nome',
             'data_inicio': 'Data de início',
             'data_fim': 'Data de fim',
+            'admitidos_ate': 'Admitidos até',
         }
         help_texts = {
-            'data_fim': 'Informativo; o encerramento do ciclo é manual.',
+            'data_fim': '',
+            'admitidos_ate': '',
         }
         widgets = {
             'data_inicio': forms.DateInput(
@@ -30,11 +36,15 @@ class CicloForm(forms.ModelForm):
             'data_fim': forms.DateInput(
                 attrs={'type': 'date', 'class': _INPUT},
             ),
+            'admitidos_ate': forms.DateInput(
+                attrs={'type': 'date', 'class': _INPUT},
+            ),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['nome'].widget.attrs.update({'class': _INPUT})
+        self.fields['admitidos_ate'].required = True
 
     def clean(self):
         cleaned = super().clean()
