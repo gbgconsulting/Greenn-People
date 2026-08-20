@@ -164,8 +164,13 @@ class UserUpdateForm(forms.ModelForm):
 
     def save(self, commit=True):
         user = super().save(commit=commit)
-        if commit and user.is_active and not self._was_active:
-            transaction.on_commit(
-                lambda u=user: ensure_avaliacao_for_user(u),
-            )
+        # Mid-cycle (015): reativação ou correção de data_entrada — elegibilidade
+        # só no ensure; AuthZ desta view permanece intacta.
+        if commit and user.is_active:
+            reactivated = not self._was_active
+            data_entrada_changed = 'data_entrada' in self.changed_data
+            if reactivated or data_entrada_changed:
+                transaction.on_commit(
+                    lambda u=user: ensure_avaliacao_for_user(u),
+                )
         return user

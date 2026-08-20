@@ -128,13 +128,13 @@ Monólito Django na raiz (`apps/cycles`, `apps/reviews`, `apps/accounts`, `templ
 
 ### Tests for User Story 3
 
-- [ ] T020 [P] [US3] Atualizar `tests/test_mid_cycle_enrollment.py` para o predicado 015: ativo elegível; entrada > D / sem data → `None`; snapshot (editar `data_entrada` após matrícula **não** remove Avaliacao); ciclo encerrado → 0
+- [X] T020 [P] [US3] Atualizar `tests/test_mid_cycle_enrollment.py` para o predicado 015: ativo elegível; entrada > D / sem data → `None`; snapshot (editar `data_entrada` após matrícula **não** remove Avaliacao); ciclo encerrado → 0
 
 ### Implementation for User Story 3
 
-- [ ] T021 [US3] Confirmar/ajustar pontos de invocação mid-cycle (RegisterForm / UserUpdateForm em `apps/accounts/forms.py` e `apps/organization/forms.py`) para continuar chamando `ensure_avaliacao_for_user` **sem** mudar AuthZ — elegibilidade só no backend; `data_entrada` permanece opcional no RegisterForm (FR-009)
-- [ ] T022 [P] [US3] Atualizar `specs/002-pos-mvp-hardening/contracts/mid-cycle-enrollment-contract.md` para documentar elegibilidade = predicado 015 e que `open_cycle` deixa de matricular “todos os ativos”
-- [ ] T023 [US3] Validar US3 via SC-003/SC-004 e `pytest tests/test_mid_cycle_enrollment.py -q`; confirmar zero remoção/desfazer etapa por mudança de data
+- [X] T021 [US3] Confirmar/ajustar pontos de invocação mid-cycle (RegisterForm / UserUpdateForm em `apps/accounts/forms.py` e `apps/organization/forms.py`) para continuar chamando `ensure_avaliacao_for_user` **sem** mudar AuthZ — elegibilidade só no backend; `data_entrada` permanece opcional no RegisterForm (FR-009)
+- [X] T022 [P] [US3] Atualizar `specs/002-pos-mvp-hardening/contracts/mid-cycle-enrollment-contract.md` para documentar elegibilidade = predicado 015 e que `open_cycle` deixa de matricular “todos os ativos”
+- [X] T023 [US3] Validar US3 via SC-003/SC-004 e `pytest tests/test_mid_cycle_enrollment.py -q`; confirmar zero remoção/desfazer etapa por mudança de data
 
 **Checkpoint**: US1+US3 — abertura e mid-cycle compartilham o mesmo predicado
 
