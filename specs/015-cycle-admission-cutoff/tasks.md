@@ -107,14 +107,14 @@ Monólito Django na raiz (`apps/cycles`, `apps/reviews`, `apps/accounts`, `templ
 
 ### Tests for User Story 2
 
-- [ ] T015 [P] [US2] Estender `tests/test_open_cycle_admission_cutoff.py` (ou módulo dedicado no mesmo arquivo) com AuthZ de preview: admin 200 + 3 contagens; líder/colaborador 403; anônimo redirect; resposta **sem** lista de e-mails/nomes
+- [X] T015 [P] [US2] Estender `tests/test_open_cycle_admission_cutoff.py` (ou módulo dedicado no mesmo arquivo) com AuthZ de preview: admin 200 + 3 contagens; líder/colaborador 403; anônimo redirect; resposta **sem** lista de e-mails/nomes
 
 ### Implementation for User Story 2
 
-- [ ] T016 [US2] Implementar `preview_admission_counts(admitidos_ate: date) -> dict` em `apps/cycles/services/eligibility.py` com agregações ORM: `elegiveis`, `excluidos_admissao_posterior`, `sem_data_entrada` (somente `is_active=True`; inativos fora) conforme [contracts/preview-counts-contract.md](./contracts/preview-counts-contract.md)
-- [ ] T017 [US2] Criar `CicloOpenPreviewView(AdminCyclesMixin, …)` em `apps/cycles/views.py` + rota `cycles:ciclo_open_preview` em `apps/cycles/urls.py` (somente se necessário; **MUST NOT** alterar rotas 012/histórico) retornando partial HTMX com **apenas** as 3 contagens
-- [ ] T018 [P] [US2] Criar/atualizar partial em `templates/cycles/` (ex.: `ciclo_open_preview_partial.html`) e integrar região de preview + disparo HTMX no fluxo de abertura em `templates/cycles/ciclo_list.html` / `ciclo_list_partial.html` — informativo; sem confirmação em duas etapas além do POST Abrir
-- [ ] T019 [US2] Validar US2 via SC-006 e testes de AuthZ do T015; confirmar payload sem PII nominativa
+- [X] T016 [US2] Implementar `preview_admission_counts(admitidos_ate: date) -> dict` em `apps/cycles/services/eligibility.py` com agregações ORM: `elegiveis`, `excluidos_admissao_posterior`, `sem_data_entrada` (somente `is_active=True`; inativos fora) conforme [contracts/preview-counts-contract.md](./contracts/preview-counts-contract.md)
+- [X] T017 [US2] Criar `CicloOpenPreviewView(AdminCyclesMixin, …)` em `apps/cycles/views.py` + rota `cycles:ciclo_open_preview` em `apps/cycles/urls.py` (somente se necessário; **MUST NOT** alterar rotas 012/histórico) retornando partial HTMX com **apenas** as 3 contagens
+- [X] T018 [P] [US2] Criar/atualizar partial em `templates/cycles/` (ex.: `ciclo_open_preview_partial.html`) e integrar região de preview + disparo HTMX no fluxo de abertura em `templates/cycles/ciclo_list.html` / `ciclo_list_partial.html` — informativo; sem confirmação em duas etapas além do POST Abrir
+- [X] T019 [US2] Validar US2 via SC-006 e testes de AuthZ do T015; confirmar payload sem PII nominativa
 
 **Checkpoint**: US2 independentemente testável; preview admin-only alinhado à regra
 

@@ -7,6 +7,7 @@ Contrato: ``specs/015-cycle-admission-cutoff/contracts/open-cycle-cutoff-contrac
 from __future__ import annotations
 
 from datetime import date, timedelta
+from urllib.parse import quote
 
 import pytest
 from django.contrib.messages import get_messages
@@ -18,6 +19,7 @@ from apps.accounts.models import CustomUser
 from apps.cycles.exceptions import CycleAlreadyOpenError, CycleMissingCutoffError
 from apps.cycles.models import Ciclo
 from apps.cycles.services.cycle import close_cycle, open_cycle
+from apps.cycles.services.eligibility import preview_admission_counts
 from apps.reviews.models import Avaliacao
 
 DEFAULT_PASSWORD = 'TestPass123!'
@@ -223,3 +225,188 @@ def test_ciclo_open_view_mensagem_sucesso_sem_todos_os_ativos(admin, lider, area
     ciclo.refresh_from_db()
     assert ciclo.status == Ciclo.Status.ABERTO
     assert ciclo.admitidos_ate == CUTOFF
+
+
+# --- T015/T016 [US2]: preview de contagens ------------------------------------
+
+
+def _preview_url(ciclo: Ciclo) -> str:
+    return reverse('cycles:ciclo_open_preview', kwargs={'pk': ciclo.pk})
+
+
+def _seed_preview_cohort(lider, area, cargo_colab) -> dict[str, object]:
+    """Base controlada para as 3 contagens (fixtures admin+lider também contam).
+
+    Com ``lider`` (puxa ``admin``): 2 ativos com entrada ≤ D já existem.
+    Acrescenta 2 elegíveis, 5 posteriores, 7 sem data e 1 inativo (fora).
+    Contagens distintas (4 / 5 / 7) para asserts estáveis no HTML.
+    """
+    elegivel_a = _make_user(
+        email='prev-elegivel-a@test.greenn.com.br',
+        nome='Preview Elegível A',
+        lider=lider,
+        area=area,
+        cargo_colab=cargo_colab,
+        data_entrada=CUTOFF,
+    )
+    elegivel_b = _make_user(
+        email='prev-elegivel-b@test.greenn.com.br',
+        nome='Preview Elegível B',
+        lider=lider,
+        area=area,
+        cargo_colab=cargo_colab,
+        data_entrada=CUTOFF - timedelta(days=5),
+    )
+    posteriores = [
+        _make_user(
+            email=f'prev-post-{i}@test.greenn.com.br',
+            nome=f'Preview Posterior {i}',
+            lider=lider,
+            area=area,
+            cargo_colab=cargo_colab,
+            data_entrada=CUTOFF + timedelta(days=i + 1),
+        )
+        for i in range(5)
+    ]
+    sem_data = [
+        _make_user(
+            email=f'prev-sem-{i}@test.greenn.com.br',
+            nome=f'Preview Sem Data {i}',
+            lider=lider,
+            area=area,
+            cargo_colab=cargo_colab,
+            data_entrada=None,
+        )
+        for i in range(7)
+    ]
+    inativo = _make_user(
+        email='prev-inativo@test.greenn.com.br',
+        nome='Preview Inativo Excluído',
+        lider=lider,
+        area=area,
+        cargo_colab=cargo_colab,
+        data_entrada=CUTOFF - timedelta(days=10),
+        is_active=False,
+    )
+    # admin + lider (fixtures) + elegivel_a/b
+    return {
+        'elegiveis': 4,
+        'excluidos_admissao_posterior': 5,
+        'sem_data_entrada': 7,
+        'pii_emails': [
+            elegivel_a.email,
+            elegivel_b.email,
+            *[u.email for u in posteriores],
+            *[u.email for u in sem_data],
+            inativo.email,
+        ],
+        'pii_nomes': [
+            elegivel_a.nome,
+            elegivel_b.nome,
+            *[u.nome for u in posteriores],
+            *[u.nome for u in sem_data],
+            inativo.nome,
+        ],
+    }
+
+
+@pytest.mark.django_db
+def test_preview_admission_counts_agrega_somente_ativos(lider, area, cargo_colab):
+    """T016: agregações ORM batem; inativos fora; sem lista nominativa."""
+    expected = _seed_preview_cohort(lider, area, cargo_colab)
+    counts = preview_admission_counts(CUTOFF)
+
+    assert counts == {
+        'elegiveis': expected['elegiveis'],
+        'excluidos_admissao_posterior': expected['excluidos_admissao_posterior'],
+        'sem_data_entrada': expected['sem_data_entrada'],
+    }
+    assert set(counts.keys()) == {
+        'elegiveis',
+        'excluidos_admissao_posterior',
+        'sem_data_entrada',
+    }
+
+
+@pytest.mark.django_db
+def test_ciclo_open_preview_admin_200_tres_contagens(admin, lider, area, cargo_colab):
+    """T015 / SC-006: admin → 200; HTML com as 3 contagens; sem PII nominativa."""
+    _close_all_open()
+    ciclo = _make_encerrado(nome='Ciclo Preview Contagens')
+    expected = _seed_preview_cohort(lider, area, cargo_colab)
+
+    client = Client()
+    client.force_login(admin)
+    url = _preview_url(ciclo)
+    response = client.get(url, data={'admitidos_ate': CUTOFF.isoformat()})
+
+    assert response.status_code == 200
+    body = response.content.decode()
+
+    assert str(expected['elegiveis']) in body
+    assert str(expected['excluidos_admissao_posterior']) in body
+    assert str(expected['sem_data_entrada']) in body
+
+    for email in expected['pii_emails']:
+        assert email not in body
+    for nome in expected['pii_nomes']:
+        assert nome not in body
+
+
+@pytest.mark.django_db
+def test_ciclo_open_preview_lider_403(lider, area, cargo_colab):
+    """T015: líder autenticado (não-admin) → 403."""
+    assert not lider.is_admin
+    _close_all_open()
+    ciclo = _make_encerrado(nome='Ciclo Preview Líder')
+    _seed_preview_cohort(lider, area, cargo_colab)
+
+    client = Client()
+    client.force_login(lider)
+    response = client.get(
+        _preview_url(ciclo),
+        data={'admitidos_ate': CUTOFF.isoformat()},
+    )
+
+    assert response.status_code == 403
+    body = response.content.decode()
+    assert 'prev-post-0@test.greenn.com.br' not in body
+    assert 'Preview Posterior 0' not in body
+
+
+@pytest.mark.django_db
+def test_ciclo_open_preview_colaborador_403(colaborador, lider, area, cargo_colab):
+    """T015: colaborador autenticado (não-admin) → 403."""
+    assert not colaborador.is_admin
+    _close_all_open()
+    ciclo = _make_encerrado(nome='Ciclo Preview Colab')
+    _seed_preview_cohort(lider, area, cargo_colab)
+
+    client = Client()
+    client.force_login(colaborador)
+    response = client.get(
+        _preview_url(ciclo),
+        data={'admitidos_ate': CUTOFF.isoformat()},
+    )
+
+    assert response.status_code == 403
+    body = response.content.decode()
+    assert 'prev-sem-0@test.greenn.com.br' not in body
+    assert 'Preview Sem Data 0' not in body
+
+
+@pytest.mark.django_db
+def test_ciclo_open_preview_anonimo_redirect_login(lider, area, cargo_colab):
+    """T015: anônimo → redirect para login (LoginRequiredMixin)."""
+    _close_all_open()
+    ciclo = _make_encerrado(nome='Ciclo Preview Anônimo')
+    _seed_preview_cohort(lider, area, cargo_colab)
+
+    client = Client()
+    url = _preview_url(ciclo)
+    response = client.get(url, data={'admitidos_ate': CUTOFF.isoformat()})
+
+    assert response.status_code == 302
+    login_url = reverse('accounts:login')
+    assert response.url.startswith(login_url)
+    assert f'next={quote(url)}' in response.url

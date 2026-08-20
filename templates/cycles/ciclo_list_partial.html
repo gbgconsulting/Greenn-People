@@ -133,27 +133,36 @@
               <form
                 method="post"
                 action="{% url 'cycles:ciclo_open' ciclo.pk %}"
-                class="inline-flex flex-wrap items-center justify-end gap-x-2 gap-y-1"
+                class="inline-flex max-w-xs flex-col items-end gap-1"
                 data-ciclo-open-form
               >
                 {% csrf_token %}
-                <label
-                  for="admitidos-ate-{{ ciclo.pk }}"
-                  class="font-ui text-xs font-medium text-slate-600"
-                >Admitidos até</label>
-                <input
-                  type="date"
-                  name="admitidos_ate"
-                  id="admitidos-ate-{{ ciclo.pk }}"
-                  value="{% if ciclo.admitidos_ate %}{{ ciclo.admitidos_ate|date:'Y-m-d' }}{% endif %}"
-                  class="rounded-lg border border-slate-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  aria-label="Admitidos até"
-                >
-                <button
-                  type="submit"
-                  class="font-semibold text-emerald-700 hover:text-emerald-800"
-                  {% if rh_pre_open_checklist %}aria-describedby="rh-pre-open-checklist"{% endif %}
-                >Abrir</button>
+                <div class="inline-flex flex-wrap items-center justify-end gap-x-2 gap-y-1">
+                  <label
+                    for="admitidos-ate-{{ ciclo.pk }}"
+                    class="font-ui text-xs font-medium text-slate-600"
+                  >Admitidos até</label>
+                  <input
+                    type="date"
+                    name="admitidos_ate"
+                    id="admitidos-ate-{{ ciclo.pk }}"
+                    value="{% if ciclo.admitidos_ate %}{{ ciclo.admitidos_ate|date:'Y-m-d' }}{% endif %}"
+                    class="rounded-lg border border-slate-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    aria-label="Admitidos até"
+                    aria-controls="ciclo-open-preview-{{ ciclo.pk }}"
+                    hx-get="{% url 'cycles:ciclo_open_preview' ciclo.pk %}"
+                    hx-target="#ciclo-open-preview-{{ ciclo.pk }}"
+                    hx-swap="outerHTML"
+                    hx-trigger="change, input delay:300ms{% if ciclo.admitidos_ate %}, load{% endif %}"
+                    hx-indicator="#htmx-indicator"
+                  >
+                  <button
+                    type="submit"
+                    class="font-semibold text-emerald-700 hover:text-emerald-800"
+                    {% if rh_pre_open_checklist %}aria-describedby="rh-pre-open-checklist"{% endif %}
+                  >Abrir</button>
+                </div>
+                {% include "cycles/ciclo_open_preview_partial.html" with ciclo=ciclo admitidos_ate=None preview_needs_date=True elegiveis=None excluidos_admissao_posterior=None sem_data_entrada=None %}
               </form>
               <a href="{% url 'cycles:objetivo_list' ciclo.pk %}" class="font-medium text-emerald-700 hover:text-emerald-800">Objetivos</a>
               <a href="{% url 'cycles:ciclo_update' ciclo.pk %}" class="font-medium text-slate-600 hover:text-slate-800">Editar</a>

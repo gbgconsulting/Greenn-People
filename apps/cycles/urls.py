@@ -23,6 +23,11 @@ urlpatterns = [
         name='ciclo_open',
     ),
     path(
+        '<int:pk>/open/preview/',
+        views.CicloOpenPreviewView.as_view(),
+        name='ciclo_open_preview',
+    ),
+    path(
         '<int:pk>/close/',
         views.CicloCloseView.as_view(),
         name='ciclo_close',
