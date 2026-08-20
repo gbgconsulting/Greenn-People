@@ -47,7 +47,7 @@ def open_cycle(ciclo: Ciclo, *, admitidos_ate: date | None = None) -> Ciclo:
         )
         if resolved is None:
             raise CycleMissingCutoffError(
-                'Informe a data "Admitidos até" para abrir o ciclo.',
+                'Defina "Admitidos até" no cadastro do ciclo antes de abrir.',
             )
 
         locked.admitidos_ate = resolved

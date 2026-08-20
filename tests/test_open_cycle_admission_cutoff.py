@@ -199,9 +199,14 @@ def test_open_cycle_reenvio_ciclo_ja_aberto_nao_duplica(ciclo_aberto, colaborado
 
 @pytest.mark.django_db
 def test_ciclo_open_view_mensagem_sucesso_sem_todos_os_ativos(admin, lider, area, cargo_colab):
-    """T-open-3 / SC-008: mensagem sem “todos os ativos” / “colaboradores ativos”."""
+    """T-open-3 / SC-008: mensagem sem “todos os ativos” / “colaboradores ativos”.
+
+    UX: corte já vem do cadastro; POST Abrir sem campo ``admitidos_ate``.
+    """
     _close_all_open()
     ciclo = _make_encerrado(nome='Ciclo Mensagem')
+    ciclo.admitidos_ate = CUTOFF
+    ciclo.save(update_fields=['admitidos_ate'])
     _make_user(
         email='msg-elegivel@test.greenn.com.br',
         nome='Elegível Mensagem',
@@ -214,7 +219,7 @@ def test_ciclo_open_view_mensagem_sucesso_sem_todos_os_ativos(admin, lider, area
     client = Client()
     client.force_login(admin)
     url = reverse('cycles:ciclo_open', kwargs={'pk': ciclo.pk})
-    response = client.post(url, data={'admitidos_ate': CUTOFF.isoformat()})
+    response = client.post(url)  # sem override — usa corte do cadastro
 
     assert response.status_code == 302
     assert response.url == reverse('cycles:ciclo_list')
@@ -229,6 +234,44 @@ def test_ciclo_open_view_mensagem_sucesso_sem_todos_os_ativos(admin, lider, area
     ciclo.refresh_from_db()
     assert ciclo.status == Ciclo.Status.ABERTO
     assert ciclo.admitidos_ate == CUTOFF
+
+
+@pytest.mark.django_db
+def test_ciclo_form_exige_admitidos_ate_no_create(admin):
+    """Create UI exige Admitidos até; listagem Abrir não coleta a data."""
+    from apps.cycles.forms import CicloForm
+
+    today = date.today()
+    form = CicloForm(
+        data={
+            'nome': 'Ciclo Com Corte',
+            'data_inicio': today.isoformat(),
+            'data_fim': (today + timedelta(days=30)).isoformat(),
+        },
+    )
+    assert not form.is_valid()
+    assert 'admitidos_ate' in form.errors
+
+    form_ok = CicloForm(
+        data={
+            'nome': 'Ciclo Com Corte',
+            'data_inicio': today.isoformat(),
+            'data_fim': (today + timedelta(days=30)).isoformat(),
+            'admitidos_ate': CUTOFF.isoformat(),
+        },
+    )
+    assert form_ok.is_valid(), form_ok.errors
+    ciclo = form_ok.save()
+    assert ciclo.admitidos_ate == CUTOFF
+    assert ciclo.status == Ciclo.Status.ENCERRADO
+
+    client = Client()
+    client.force_login(admin)
+    list_resp = client.get(reverse('cycles:ciclo_list'))
+    assert list_resp.status_code == 200
+    html = list_resp.content.decode()
+    assert 'name="admitidos_ate"' not in html
+    assert 'data-ciclo-open-form' in html
 
 
 # --- T015/T016 [US2]: preview de contagens ------------------------------------

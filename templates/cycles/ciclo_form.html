@@ -4,13 +4,9 @@
 
 {% block content %}
 <div class="mx-auto max-w-lg">
-  <h1 class="mb-1 text-2xl font-semibold text-slate-800">
+  <h1 class="mb-6 text-2xl font-semibold text-slate-800">
     {% if object %}Editar ciclo{% else %}Novo ciclo{% endif %}
   </h1>
-  <p class="mb-6 text-slate-500">
-    Defina o nome e o período informativo. “Admitidos até” é opcional aqui;
-    o corte é exigido ao abrir o ciclo na listagem.
-  </p>
 
   <form method="post" novalidate class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
     {% csrf_token %}
@@ -36,14 +32,12 @@
     <div class="mb-4">
       <label for="{{ form.data_fim.id_for_label }}" class="mb-1 block text-sm font-medium text-slate-700">{{ form.data_fim.label }}</label>
       {{ form.data_fim }}
-      {% if form.data_fim.help_text %}<p class="mt-1 text-xs text-slate-500">{{ form.data_fim.help_text }}</p>{% endif %}
       {% if form.data_fim.errors %}<p class="mt-1 text-xs text-rose-600" role="alert">{{ form.data_fim.errors.0 }}</p>{% endif %}
     </div>
 
     <div class="mb-6">
       <label for="{{ form.admitidos_ate.id_for_label }}" class="mb-1 block text-sm font-medium text-slate-700">{{ form.admitidos_ate.label }}</label>
       {{ form.admitidos_ate }}
-      {% if form.admitidos_ate.help_text %}<p class="mt-1 text-xs text-slate-500">{{ form.admitidos_ate.help_text }}</p>{% endif %}
       {% if form.admitidos_ate.errors %}<p class="mt-1 text-xs text-rose-600" role="alert">{{ form.admitidos_ate.errors.0 }}</p>{% endif %}
     </div>
 

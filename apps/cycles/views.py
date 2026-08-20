@@ -384,10 +384,11 @@ class CicloDetailView(AdminCyclesMixin, DetailView):
 
 
 class CicloOpenView(AdminCyclesMixin, SingleObjectMixin, View):
-    """Abre o ciclo com corte ``admitidos_ate`` e matricula elegíveis.
+    """Abre o ciclo e matricula elegíveis.
 
-    Não lê ``build_rh_pre_open_checklist`` — checklist permanece avisório
-    (T026 / FR-008); abertura segue só ``open_cycle`` / ``cycle.py``.
+    O corte vem do ``admitidos_ate`` já gravado no cadastro. POST opcional
+    ``admitidos_ate`` permanece como override (testes / compat). Checklist
+    008 permanece avisório.
     """
 
     model = Ciclo
@@ -405,11 +406,11 @@ class CicloOpenView(AdminCyclesMixin, SingleObjectMixin, View):
 
     def post(self, request, *args, **kwargs):
         ciclo = self.get_object()
-        admitidos_ate = self._parse_admitidos_ate(
+        override = self._parse_admitidos_ate(
             request.POST.get('admitidos_ate', ''),
         )
         try:
-            opened = open_cycle(ciclo, admitidos_ate=admitidos_ate)
+            opened = open_cycle(ciclo, admitidos_ate=override)
         except CycleAlreadyOpenError as exc:
             messages.error(request, str(exc))
         except CycleMissingCutoffError as exc:
@@ -428,7 +429,7 @@ class CicloOpenPreviewView(AdminCyclesMixin, SingleObjectMixin, View):
     """Preview HTMX das 3 contagens de elegibilidade (admin-only).
 
     Mesmo gate de ``CicloOpenView``. Sem lista nominativa / PII; sem DRF.
-    Disparo: campo «Admitidos até» em ``ciclo_list_partial`` (hx-get).
+    Usa ``?admitidos_ate=`` ou o corte já persistido no ciclo.
     """
 
     model = Ciclo
@@ -440,6 +441,8 @@ class CicloOpenPreviewView(AdminCyclesMixin, SingleObjectMixin, View):
         admitidos_ate = CicloOpenView._parse_admitidos_ate(
             request.GET.get('admitidos_ate', ''),
         )
+        if admitidos_ate is None:
+            admitidos_ate = self.object.admitidos_ate
         context = {
             'ciclo': self.object,
             'admitidos_ate': admitidos_ate,
