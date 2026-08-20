@@ -5,6 +5,9 @@ crosswalk, notas, comentários, habilidades e PDIs.
 Colunas: ``contracts/column-mapping-contract.md``; pré-condições:
 ``contracts/import-command-contract.md``.
 
+015: ``parse_colaboradores_admission_xlsx`` lê ``Data admissão`` sem mutar
+``ColaboradorRow`` / caminho do importer 010 (datas via ``parse_legacy_date``).
+
 Falhas fatais pré-persistência (arquivo ausente/ilegível, OOXML inválido,
 colunas obrigatórias ausentes) → ``LegacyParseError`` (exit 1; zero writes).
 """
@@ -35,6 +38,18 @@ COLABORADORES_COLUMNS: tuple[str, ...] = (
     "Cargo ID",
     "Departamento",
     "Superior direto id",
+)
+
+# Backfill 015 — parser dedicado (MUST NOT mutar ColaboradorRow / importer 010).
+ADMISSION_BACKFILL_REQUIRED_COLUMNS: tuple[str, ...] = ("Data admissão",)
+
+ADMISSION_BACKFILL_COLUMNS: tuple[str, ...] = (
+    "Nome",
+    "E-mail empresarial",
+    "E-mail",
+    "E-mail pessoal",
+    "Identificador",
+    "Data admissão",
 )
 
 AVALIACOES_REQUIRED_COLUMNS: tuple[str, ...] = (
@@ -128,6 +143,26 @@ class ColaboradorRow:
     cargo_id: str
     departamento: str
     superior_direto_id: str
+
+
+@dataclass(frozen=True)
+class ColaboradorAdmissionRow:
+    """Linha mínima para backfill de ``data_entrada`` (015 — US4).
+
+    ``data_admissao`` permanece **cru** (datetime / serial Excel / ISO /
+    None) para ``dates.parse_legacy_date`` via
+    ``admission_backfill.resolve.parse_data_admissao``. ``identificador``
+    já canônico. Demais colunas do backup são ignoradas — **não** reabre
+    o caminho de persistência do importer 010.
+    """
+
+    linha: int
+    nome: str
+    email_empresarial: str
+    email: str
+    email_pessoal: str
+    identificador: str
+    data_admissao: Any
 
 
 @dataclass(frozen=True)
@@ -253,6 +288,14 @@ class ParsedColaboradores:
     """Resultado do parse de colaboradores (sem persistência)."""
 
     rows: tuple[ColaboradorRow, ...]
+    path: str
+
+
+@dataclass(frozen=True)
+class ParsedColaboradoresAdmission:
+    """Resultado do parse de colaboradores só para backfill 015."""
+
+    rows: tuple[ColaboradorAdmissionRow, ...]
     path: str
 
 
@@ -525,6 +568,54 @@ def parse_colaboradores_xlsx(path: str | Path) -> ParsedColaboradores:
         )
 
     return ParsedColaboradores(rows=tuple(result), path=str(path))
+
+
+def parse_colaboradores_admission_xlsx(
+    path: str | Path,
+) -> ParsedColaboradoresAdmission:
+    """Lê ``backup_colaboradores_*`` só para backfill de ``data_entrada`` (015).
+
+    Coluna obrigatória: ``Data admissão``. Lê e-mails, ``Identificador`` e
+    ``Nome`` quando presentes. ``Data admissão`` permanece crua para
+    ``parse_legacy_date`` (não grava; não toca importer 010).
+
+    Linhas sem chave de match (nenhum e-mail e sem ``Identificador``) são
+    descartadas. Células vazias de data **não** são erro de parse.
+
+    Raises:
+        LegacyParseError: arquivo / OOXML / coluna ``Data admissão`` ausente.
+    """
+    path = Path(path)
+    raw_rows = _load_sheet_rows(path)
+    if not raw_rows:
+        raise LegacyParseError(f"Planilha vazia (sem header): {path}")
+
+    header_index = _header_index(raw_rows[0])
+    _require_columns(path, header_index, ADMISSION_BACKFILL_REQUIRED_COLUMNS)
+
+    result: list[ColaboradorAdmissionRow] = []
+    for excel_row, row in enumerate(raw_rows[1:], start=2):
+        email_empresarial = _as_text(
+            _cell(row, header_index, "E-mail empresarial")
+        )
+        email = _as_text(_cell(row, header_index, "E-mail"))
+        email_pessoal = _as_text(_cell(row, header_index, "E-mail pessoal"))
+        identificador = canonicalize_id(_cell(row, header_index, "Identificador"))
+        if not email_empresarial and not email and not email_pessoal and not identificador:
+            continue
+        result.append(
+            ColaboradorAdmissionRow(
+                linha=excel_row,
+                nome=_as_text(_cell(row, header_index, "Nome")),
+                email_empresarial=email_empresarial,
+                email=email,
+                email_pessoal=email_pessoal,
+                identificador=identificador,
+                data_admissao=_cell(row, header_index, "Data admissão"),
+            )
+        )
+
+    return ParsedColaboradoresAdmission(rows=tuple(result), path=str(path))
 
 
 def parse_solicitacoes_xlsx(path: str | Path) -> ParsedSolicitacoes:

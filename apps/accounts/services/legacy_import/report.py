@@ -28,13 +28,19 @@ nome ou e-mail; IDs via ``mask_solides_id``.
 ``orfaos_solicitacao`` / ``conflitos`` via ``format_pdi_report``. NEVER
 emite nome, e-mail, linha bruta, título/objetivo/situação completos;
 IDs/digest via ``mask_solides_id`` / ``mask_pii``.
+
+015 (T028): totais + amostra mascarada do backfill ``data_entrada`` via
+``format_admission_backfill_report`` (contrato
+``admission-backfill-command-contract.md`` §Relatório; padrão 010
+``mask_email`` / ``mask_pii`` / truncagem máx. 5).
 """
 
 from __future__ import annotations
 
 import re
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
+from typing import Any
 
 # Contrato §Formato: amostra truncada a 5 itens por seção.
 _SAMPLE_MAX = 5
@@ -1205,6 +1211,88 @@ def format_pdi_report(report: ImportReport) -> str:
     lines.append("")
     lines.append("=== Fim ===")
     return _scrub_notas_comentarios_text("\n".join(lines) + "\n")
+
+
+def format_admission_backfill_report(report: Mapping[str, Any]) -> str:
+    """Serializa o relatório do backfill ``data_entrada`` (015 / T028).
+
+    Totais do contrato §Relatório + amostra mascarada (max 5 por seção,
+    padrão 010: ``mask_email`` / ``mask_pii`` / ``mask_solides_id``).
+    Aceita o ``AdmissionBackfillReport`` (TypedDict) do importer ou
+    objeto com os mesmos atributos. NEVER emite e-mail completo.
+    Superfície exclusiva de stdout/``--report-file``.
+    """
+    get = _backfill_get
+    dry_run = bool(get(report, "dry_run", False))
+    lines: list[str] = [
+        "=== Backfill data_entrada (admissão legado) ===",
+        f"modo: {'dry-run' if dry_run else 'persist'}",
+        f"dry_run: {dry_run}",
+        "",
+        "--- Resumo ---",
+        f"lidos: {int(get(report, 'lidos', 0))}",
+        f"matched: {int(get(report, 'matched', 0))}",
+        f"preenchidos: {int(get(report, 'preenchidos', 0))}",
+        f"ja_preenchidos: {int(get(report, 'ja_preenchidos', 0))}",
+        f"orfaos: {int(get(report, 'orfaos', 0))}",
+        f"conflitos: {int(get(report, 'conflitos', 0))}",
+        f"datas_ilegiveis: {int(get(report, 'datas_ilegiveis', 0))}",
+        "",
+        "--- Amostra (mascarada, max 5 por seção) ---",
+        "preenchidos:",
+    ]
+    lines.extend(
+        _sample_str_lines(get(report, "amostra_preenchidos", ()))
+    )
+    lines.append("ja_preenchidos:")
+    lines.extend(
+        _sample_str_lines(get(report, "amostra_ja_preenchidos", ()))
+    )
+    lines.append("orfaos:")
+    lines.extend(_sample_str_lines(get(report, "amostra_orfaos", ())))
+    lines.append("conflitos:")
+    lines.extend(_sample_str_lines(get(report, "amostra_conflitos", ())))
+    lines.append("datas_ilegiveis:")
+    lines.extend(
+        _sample_str_lines(get(report, "amostra_datas_ilegiveis", ()))
+    )
+    lines.append("")
+    lines.append("=== Fim ===")
+    return "\n".join(lines) + "\n"
+
+
+def _backfill_get(report: Mapping[str, Any] | object, key: str, default: Any) -> Any:
+    """Lê chave de Mapping ou atributo de objeto (testes aceitam ambos)."""
+    if isinstance(report, Mapping):
+        return report.get(key, default)
+    return getattr(report, key, default)
+
+
+def _sample_str_lines(values: Iterable[str]) -> list[str]:
+    """Amostra de chaves (e-mail / id / linha) mascaradas — max ``_SAMPLE_MAX``."""
+    lines: list[str] = []
+    for raw in list(values)[:_SAMPLE_MAX]:
+        text = str(raw).strip()
+        if not text:
+            continue
+        lines.append(f"  - {_mask_backfill_sample_key(text)}")
+    return lines
+
+
+def _mask_backfill_sample_key(value: str) -> str:
+    """Mascara chave de amostra do backfill (padrão 010).
+
+    E-mail → ``mask_email``; ``linha=N`` preservado; demais IDs →
+    ``mask_solides_id`` (com scrub de e-mail embutido).
+    """
+    text = value.strip()
+    if not text:
+        return ""
+    if "@" in text:
+        return mask_email(text)
+    if text.lower().startswith("linha="):
+        return _mask_emails_in_text(text)
+    return mask_solides_id(_mask_emails_in_text(text))
 
 
 def _sample_lines(

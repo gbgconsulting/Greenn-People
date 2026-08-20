@@ -148,16 +148,16 @@ Monólito Django na raiz (`apps/cycles`, `apps/reviews`, `apps/accounts`, `templ
 
 ### Tests for User Story 4
 
-- [ ] T024 [P] [US4] Criar `tests/test_backfill_data_entrada.py`: dry-run 0 writes; persist só `NULL`; idempotência delta 0; não chama `open_cycle`/`close_cycle`/`ensure_avaliacao_for_user`/`advance_stage`; amostra mascarada; demais campos intactos
+- [X] T024 [P] [US4] Criar `tests/test_backfill_data_entrada.py`: dry-run 0 writes; persist só `NULL`; idempotência delta 0; não chama `open_cycle`/`close_cycle`/`ensure_avaliacao_for_user`/`advance_stage`; amostra mascarada; demais campos intactos
 
 ### Implementation for User Story 4
 
-- [ ] T025 [P] [US4] Estender `apps/accounts/services/legacy_import/parse_xlsx.py` o mínimo necessário para ler coluna **“Data admissão”** (reuso `_load_sheet_rows` / headers); parse de datas via `parse_legacy_date` em `apps/accounts/services/legacy_import/dates.py` — **MUST NOT** reabrir allowlist do importer 010 full
-- [ ] T026 [US4] Implementar match + parse em `apps/accounts/services/admission_backfill/resolve.py` (e-mail iexact → `solides_id`/`canonicalize_id`; órfão/ambíguo sem inventar User) conforme [contracts/admission-backfill-command-contract.md](./contracts/admission-backfill-command-contract.md)
-- [ ] T027 [US4] Implementar orquestração dry-run/persist/report em `apps/accounts/services/admission_backfill/importer.py`: preenche só `data_entrada` NULL; `transaction.atomic` no persist; **MUST NOT** tocar nome/email/área/cargo/gestor/`is_active`; **MUST NOT** chamar open/close/ensure/advance
-- [ ] T028 [P] [US4] Estender `apps/accounts/services/legacy_import/report.py` com seções/totais do backfill + amostra mascarada (padrão 010) se necessário para o relatório do comando
-- [ ] T029 [US4] Completar management command `apps/accounts/management/commands/backfill_data_entrada.py` com `--colaboradores` obrigatório, `--dry-run`, `--report-file`; exit 0/1; CLI fina sem regra de domínio; sem UI
-- [ ] T030 [US4] Validar US4 via SC-007 e `pytest tests/test_backfill_data_entrada.py -q`; confirmar imports 010/011/013/014 **não** exigem corte
+- [X] T025 [P] [US4] Estender `apps/accounts/services/legacy_import/parse_xlsx.py` o mínimo necessário para ler coluna **“Data admissão”** (reuso `_load_sheet_rows` / headers); parse de datas via `parse_legacy_date` em `apps/accounts/services/legacy_import/dates.py` — **MUST NOT** reabrir allowlist do importer 010 full
+- [X] T026 [US4] Implementar match + parse em `apps/accounts/services/admission_backfill/resolve.py` (e-mail iexact → `solides_id`/`canonicalize_id`; órfão/ambíguo sem inventar User) conforme [contracts/admission-backfill-command-contract.md](./contracts/admission-backfill-command-contract.md)
+- [X] T027 [US4] Implementar orquestração dry-run/persist/report em `apps/accounts/services/admission_backfill/importer.py`: preenche só `data_entrada` NULL; `transaction.atomic` no persist; **MUST NOT** tocar nome/email/área/cargo/gestor/`is_active`; **MUST NOT** chamar open/close/ensure/advance
+- [X] T028 [P] [US4] Estender `apps/accounts/services/legacy_import/report.py` com seções/totais do backfill + amostra mascarada (padrão 010) se necessário para o relatório do comando
+- [X] T029 [US4] Completar management command `apps/accounts/management/commands/backfill_data_entrada.py` com `--colaboradores` obrigatório, `--dry-run`, `--report-file`; exit 0/1; CLI fina sem regra de domínio; sem UI
+- [X] T030 [US4] Validar US4 via SC-007 e `pytest tests/test_backfill_data_entrada.py -q`; confirmar imports 010/011/013/014 **não** exigem corte
 
 **Checkpoint**: Backfill operacional pronto para produção com legado (pré-req do corte)
 

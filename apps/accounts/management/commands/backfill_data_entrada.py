@@ -1,14 +1,18 @@
 """Management command: backfill one-shot de ``data_entrada`` a partir do Sólides.
 
-Superfície CLI fina — valida args e delega a
-``admission_backfill.backfill_data_entrada``. Sem UI de upload.
+Superfície CLI fina — valida args, chama ``backfill_data_entrada`` e emite o
+relatório (stdout e opcionalmente ``--report-file``). Sem UI de upload;
+sem regra de domínio no comando.
 
 Flags (``contracts/admission-backfill-command-contract.md``):
 - ``--colaboradores`` (obrigatório)
 - ``--dry-run`` / ``--report-file`` (opcionais)
 
-Exit: ``0`` sucesso operacional; ``1`` erro fatal (arquivo/OOXML/coluna).
-Stub T003 — implementação completa em T029.
+Códigos de saída:
+- ``0`` — sucesso operacional (persist ou dry-run; órfãos/conflitos ok)
+- ``1`` — erro fatal (args / arquivo / OOXML / coluna ausente)
+
+Não há exit ``2`` (args inválidos também → ``1``).
 """
 
 from __future__ import annotations
@@ -19,6 +23,10 @@ from pathlib import Path
 from django.core.management.base import BaseCommand, CommandError
 
 from apps.accounts.services.admission_backfill import backfill_data_entrada
+from apps.accounts.services.legacy_import import LegacyParseError
+from apps.accounts.services.legacy_import.report import (
+    format_admission_backfill_report,
+)
 
 
 class Command(BaseCommand):
@@ -59,9 +67,33 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options) -> int:
-        # Stub T003: superfície CLI pronta; domínio em NotImplementedError até T029.
-        backfill_data_entrada(
-            Path(options["colaboradores"]),
-            dry_run=options["dry_run"],
+        colaboradores_path = options["colaboradores"]
+        report_file = options["report_file"]
+        dry_run = options["dry_run"]
+
+        try:
+            report = backfill_data_entrada(
+                Path(colaboradores_path),
+                dry_run=dry_run,
+            )
+        except LegacyParseError as exc:
+            # Arquivo / OOXML / coluna “Data admissão” — zero writes.
+            raise CommandError(str(exc), returncode=1) from exc
+        except CommandError:
+            raise
+        except Exception as exc:
+            raise CommandError(
+                f"Falha no backfill de data_entrada: {exc}",
+                returncode=1,
+            ) from exc
+
+        self._emit_report(
+            format_admission_backfill_report(report),
+            report_file,
         )
         return 0
+
+    def _emit_report(self, text: str, report_file: str | None) -> None:
+        self.stdout.write(text, ending="")
+        if report_file:
+            Path(report_file).write_text(text, encoding="utf-8")

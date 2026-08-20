@@ -8,10 +8,11 @@ Chave natural alinhada à 010: e-mail ``iexact`` → ``solides_id`` /
 from __future__ import annotations
 
 from datetime import date
-from typing import TYPE_CHECKING, Literal
+from typing import Literal
 
-if TYPE_CHECKING:
-    from apps.accounts.models import CustomUser
+from apps.accounts.models import CustomUser
+from apps.accounts.services.legacy_import.dates import parse_legacy_date
+from apps.accounts.services.legacy_import.parse_xlsx import canonicalize_id
 
 MatchOutcome = Literal["matched", "orphan", "conflict"]
 
@@ -21,7 +22,10 @@ def parse_data_admissao(raw: object) -> date | None:
 
     Retorna ``None`` se vazio ou ilegível.
     """
-    raise NotImplementedError
+    try:
+        return parse_legacy_date(raw)
+    except (TypeError, ValueError):
+        return None
 
 
 def match_user_for_admission(
@@ -35,4 +39,32 @@ def match_user_for_admission(
     - Sem match → ``(None, "orphan")`` — órfão no relatório; NÃO cria User.
     - Ambíguo → ``(None, "conflict")`` — conflito no relatório; NÃO grava.
     """
-    raise NotImplementedError
+    normalized = _normalize_email(email)
+    if normalized:
+        by_email = list(
+            CustomUser.objects.filter(email__iexact=normalized)[:2]
+        )
+        if len(by_email) > 1:
+            return None, "conflict"
+        if len(by_email) == 1:
+            return by_email[0], "matched"
+
+    sid = canonicalize_id(solides_id)
+    if sid:
+        by_id = list(CustomUser.objects.filter(solides_id=sid)[:2])
+        if len(by_id) > 1:
+            return None, "conflict"
+        if len(by_id) == 1:
+            return by_id[0], "matched"
+
+    return None, "orphan"
+
+
+def _normalize_email(email: str | None) -> str:
+    """Normalização vigente (strip + ``CustomUserManager.normalize_email``)."""
+    if email is None:
+        return ""
+    text = str(email).strip()
+    if not text:
+        return ""
+    return CustomUser.objects.normalize_email(text)
