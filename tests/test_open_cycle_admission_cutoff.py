@@ -19,8 +19,12 @@ from apps.accounts.models import CustomUser
 from apps.cycles.exceptions import CycleAlreadyOpenError, CycleMissingCutoffError
 from apps.cycles.models import Ciclo
 from apps.cycles.services.cycle import close_cycle, open_cycle
-from apps.cycles.services.eligibility import preview_admission_counts
+from apps.cycles.services.eligibility import (
+    preview_admission_counts,
+    user_eligible_for_ciclo,
+)
 from apps.reviews.models import Avaliacao
+from apps.reviews.services.enrollment import ensure_avaliacao_for_user
 
 DEFAULT_PASSWORD = 'TestPass123!'
 CUTOFF = date(2024, 6, 30)
@@ -410,3 +414,102 @@ def test_ciclo_open_preview_anonimo_redirect_login(lider, area, cargo_colab):
     login_url = reverse('accounts:login')
     assert response.url.startswith(login_url)
     assert f'next={quote(url)}' in response.url
+
+
+# --- T032 [US5]: ciclo 011 / arquivo com admitidos_ate NULL (SC-005) ----------
+
+
+@pytest.mark.django_db
+def test_ciclo_historico_admitidos_ate_null_conjunto_avaliacoes_intacto(
+    lider, area, cargo_colab,
+):
+    """SC-005 / FR-008: encerrado com corte NULL — 0 criações/remoções ao reler.
+
+    Simula ciclo importado 011: ``admitidos_ate IS NULL``, Avaliações já
+    persistidas. Chamar ``ensure_avaliacao_for_user`` / predicado não altera
+    o conjunto de Avaliações.
+    """
+    _close_all_open()
+    today = date.today()
+    historico = Ciclo.objects.create(
+        nome='Ciclo 011 Arquivo Sem Corte',
+        data_inicio=today - timedelta(days=180),
+        data_fim=today - timedelta(days=90),
+        status=Ciclo.Status.ENCERRADO,
+        admitidos_ate=None,
+    )
+    assert historico.admitidos_ate is None
+
+    matriculado_a = _make_user(
+        email='hist-a@test.greenn.com.br',
+        nome='Histórico Matriculado A',
+        lider=lider,
+        area=area,
+        cargo_colab=cargo_colab,
+        data_entrada=CUTOFF - timedelta(days=30),
+    )
+    matriculado_b = _make_user(
+        email='hist-b@test.greenn.com.br',
+        nome='Histórico Matriculado B',
+        lider=lider,
+        area=area,
+        cargo_colab=cargo_colab,
+        data_entrada=None,  # no arquivo 011 pode não ter data
+    )
+    sem_avaliacao = _make_user(
+        email='hist-fora@test.greenn.com.br',
+        nome='Ativo Sem Avaliacao No Arquivo',
+        lider=lider,
+        area=area,
+        cargo_colab=cargo_colab,
+        data_entrada=CUTOFF,
+    )
+
+    av_a = Avaliacao.objects.create(
+        ciclo=historico,
+        usuario=matriculado_a,
+        etapa=Avaliacao.Etapa.FEEDBACK,
+    )
+    av_b = Avaliacao.objects.create(
+        ciclo=historico,
+        usuario=matriculado_b,
+        etapa=Avaliacao.Etapa.AVALIACAO,
+    )
+    snapshot_ids = frozenset(
+        Avaliacao.objects.filter(ciclo=historico).values_list('pk', flat=True)
+    )
+    snapshot_pairs = frozenset(
+        Avaliacao.objects.filter(ciclo=historico).values_list(
+            'usuario_id', flat=True,
+        )
+    )
+    assert snapshot_ids == frozenset({av_a.pk, av_b.pk})
+    assert snapshot_pairs == frozenset({matriculado_a.pk, matriculado_b.pk})
+
+    # Fail-closed no predicado; ensure no-op por ciclo encerrado — sem mutação.
+    assert user_eligible_for_ciclo(matriculado_a, historico) is False
+    assert user_eligible_for_ciclo(sem_avaliacao, historico) is False
+
+    for user in (matriculado_a, matriculado_b, sem_avaliacao, lider):
+        assert ensure_avaliacao_for_user(user, ciclo=historico) is None
+
+    historico.refresh_from_db()
+    assert historico.status == Ciclo.Status.ENCERRADO
+    assert historico.admitidos_ate is None
+
+    after_ids = frozenset(
+        Avaliacao.objects.filter(ciclo=historico).values_list('pk', flat=True)
+    )
+    after_pairs = frozenset(
+        Avaliacao.objects.filter(ciclo=historico).values_list(
+            'usuario_id', flat=True,
+        )
+    )
+    assert after_ids == snapshot_ids
+    assert after_pairs == snapshot_pairs
+    assert Avaliacao.objects.filter(ciclo=historico).count() == 2
+    assert not Avaliacao.objects.filter(
+        ciclo=historico, usuario=sem_avaliacao,
+    ).exists()
+    assert Avaliacao.objects.filter(ciclo=historico, usuario=matriculado_a).count() == 1
+    assert Avaliacao.objects.filter(ciclo=historico, usuario=matriculado_b).count() == 1

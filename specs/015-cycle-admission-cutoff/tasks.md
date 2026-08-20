@@ -171,9 +171,9 @@ Monólito Django na raiz (`apps/cycles`, `apps/reviews`, `apps/accounts`, `templ
 
 ### Tests / Gates for User Story 5
 
-- [ ] T031 [P] [US5] Rodar regressão denylist: `pytest tests/test_stage_machine.py tests/test_scope.py` (+ rejeição/fórmula vigentes) `-q` **sem** alterar asserts de negócio alheios; atualizar **somente** testes que assumiam matrícula = todos os ativos para o novo contrato
-- [ ] T032 [US5] Validar ciclo encerrado/importado com `admitidos_ate IS NULL` permanece com o mesmo conjunto de Avaliações (0 criações/remoções por “reler” elegibilidade) — teste dedicado em `tests/test_open_cycle_admission_cutoff.py` ou fixture 011 sample
-- [ ] T033 [US5] Gate gold: `git diff` vs base da feature nos paths denylist (`apps/cycles/services/stage.py`, `close_cycle`, `apps/goals/services/approval.py`, `apps/reviews/services/evaluation.py`, `apps/dashboard/services/adherence.py`, `apps/accounts/services/scope.py`, `apps/talent/`, PDI produto listado no contract, `apps/dashboard/urls.py`) = **vazio de comportamento**; allowlist restrita aos paths 015; confirmar checklist 008 ainda avisório na abertura
+- [X] T031 [P] [US5] Rodar regressão denylist: `pytest tests/test_stage_machine.py tests/test_scope.py` (+ rejeição/fórmula vigentes) `-q` **sem** alterar asserts de negócio alheios; atualizar **somente** testes que assumiam matrícula = todos os ativos para o novo contrato
+- [X] T032 [US5] Validar ciclo encerrado/importado com `admitidos_ate IS NULL` permanece com o mesmo conjunto de Avaliações (0 criações/remoções por “reler” elegibilidade) — teste dedicado em `tests/test_open_cycle_admission_cutoff.py` ou fixture 011 sample
+- [X] T033 [US5] Gate gold: `git diff` vs base da feature nos paths denylist (`apps/cycles/services/stage.py`, `close_cycle`, `apps/goals/services/approval.py`, `apps/reviews/services/evaluation.py`, `apps/dashboard/services/adherence.py`, `apps/accounts/services/scope.py`, `apps/talent/`, PDI produto listado no contract, `apps/dashboard/urls.py`) = **vazio de comportamento**; allowlist restrita aos paths 015; confirmar checklist 008 ainda avisório na abertura
 
 **Checkpoint**: SC-005 / SC-009 — histórico e denylist protegidos
 
@@ -183,9 +183,9 @@ Monólito Django na raiz (`apps/cycles`, `apps/reviews`, `apps/accounts`, `templ
 
 **Purpose**: Validação E2E e limpeza cross-cutting após US1–US5
 
-- [ ] T034 [P] Executar validação ponta a ponta de `specs/015-cycle-admission-cutoff/quickstart.md` (backfill dry-run → persist → abrir com preview → mid-cycle → histórico → AuthZ → gold)
-- [ ] T035 [P] Rodar suite focada: `pytest tests/test_open_cycle_admission_cutoff.py tests/test_mid_cycle_enrollment.py tests/test_backfill_data_entrada.py -q` e confirmar SC-001…SC-009 cobertos
-- [ ] T036 Revisar diff final: zero AlterField em `data_entrada`; zero M2M; zero Celery/DRF/SPA; mensagem de abertura alinhada a FR-013; `CustomUser.data_entrada` e RegisterForm opcional intactos
+- [X] T034 [P] Executar validação ponta a ponta de `specs/015-cycle-admission-cutoff/quickstart.md` (backfill dry-run → persist → abrir com preview → mid-cycle → histórico → AuthZ → gold)
+- [X] T035 [P] Rodar suite focada: `pytest tests/test_open_cycle_admission_cutoff.py tests/test_mid_cycle_enrollment.py tests/test_backfill_data_entrada.py -q` e confirmar SC-001…SC-009 cobertos
+- [X] T036 Revisar diff final: zero AlterField em `data_entrada`; zero M2M; zero Celery/DRF/SPA; mensagem de abertura alinhada a FR-013; `CustomUser.data_entrada` e RegisterForm opcional intactos
 
 ---
 
