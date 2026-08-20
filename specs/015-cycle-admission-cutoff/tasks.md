@@ -86,14 +86,14 @@ Monólito Django na raiz (`apps/cycles`, `apps/reviews`, `apps/accounts`, `templ
 
 > **NOTE: Escrever estes testes primeiro; garantir FAIL antes da implementação completa de T012–T014**
 
-- [ ] T010 [P] [US1] Criar `tests/test_open_cycle_admission_cutoff.py` cobrindo: elegíveis/inelegíveis na abertura; sem corte → `CycleMissingCutoffError` / status intacto / 0 Avaliações; um-aberto intacto; mensagem de sucesso **sem** “todos os ativos” / “colaboradores ativos” genérico (conforme plan §Testes)
+- [X] T010 [P] [US1] Criar `tests/test_open_cycle_admission_cutoff.py` cobrindo: elegíveis/inelegíveis na abertura; sem corte → `CycleMissingCutoffError` / status intacto / 0 Avaliações; um-aberto intacto; mensagem de sucesso **sem** “todos os ativos” / “colaboradores ativos” genérico (conforme plan §Testes)
 
 ### Implementation for User Story 1
 
-- [ ] T011 [US1] Estender `open_cycle(ciclo, *, admitidos_ate: date | None = None)` em `apps/cycles/services/cycle.py` conforme [contracts/open-cycle-cutoff-contract.md](./contracts/open-cycle-cutoff-contract.md): ordem atomic lock → um-aberto/já-aberto → exigir corte → persistir `admitidos_ate` → `status=aberto` → batch `ensure_avaliacao_for_user`; sem corte → `CycleMissingCutoffError` **antes** de abrir; **MUST NOT** alterar regra de `close_cycle`
-- [ ] T012 [US1] Atualizar `CicloOpenView` em `apps/cycles/views.py` para ler `admitidos_ate` do POST, passar a `open_cycle`, capturar `CycleMissingCutoffError` com `messages.error` visível, e trocar mensagem de sucesso para refletir elegibilidade do corte (não “todos os ativos”)
-- [ ] T013 [P] [US1] Expor campo date “Admitidos até” no fluxo de abertura em `apps/cycles/forms.py` e `templates/cycles/ciclo_list.html` / `ciclo_list_partial.html` (e `ciclo_form.html` opcional só para pré-preencher — gate permanece em `open_cycle`, não no save do create)
-- [ ] T014 [US1] Validar US1 via cenários SC-001/SC-002/SC-008 e `pytest tests/test_open_cycle_admission_cutoff.py -q`; confirmar checklist 008 permanece avisório (única trava **nova** = ausência de corte)
+- [X] T011 [US1] Estender `open_cycle(ciclo, *, admitidos_ate: date | None = None)` em `apps/cycles/services/cycle.py` conforme [contracts/open-cycle-cutoff-contract.md](./contracts/open-cycle-cutoff-contract.md): ordem atomic lock → um-aberto/já-aberto → exigir corte → persistir `admitidos_ate` → `status=aberto` → batch `ensure_avaliacao_for_user`; sem corte → `CycleMissingCutoffError` **antes** de abrir; **MUST NOT** alterar regra de `close_cycle`
+- [X] T012 [US1] Atualizar `CicloOpenView` em `apps/cycles/views.py` para ler `admitidos_ate` do POST, passar a `open_cycle`, capturar `CycleMissingCutoffError` com `messages.error` visível, e trocar mensagem de sucesso para refletir elegibilidade do corte (não “todos os ativos”)
+- [X] T013 [P] [US1] Expor campo date “Admitidos até” no fluxo de abertura em `apps/cycles/forms.py` e `templates/cycles/ciclo_list.html` / `ciclo_list_partial.html` (e `ciclo_form.html` opcional só para pré-preencher — gate permanece em `open_cycle`, não no save do create)
+- [X] T014 [US1] Validar US1 via cenários SC-001/SC-002/SC-008 e `pytest tests/test_open_cycle_admission_cutoff.py -q`; confirmar checklist 008 permanece avisório (única trava **nova** = ausência de corte)
 
 **Checkpoint**: US1 independentemente testável — MVP de abertura com corte
 

@@ -130,8 +130,25 @@
                 href="{% url 'cycles:ciclo_detail' ciclo.pk %}"
                 class="font-medium text-emerald-700 hover:text-emerald-800"
               >Visão gerencial</a>
-              <form method="post" action="{% url 'cycles:ciclo_open' ciclo.pk %}" class="inline">
+              <form
+                method="post"
+                action="{% url 'cycles:ciclo_open' ciclo.pk %}"
+                class="inline-flex flex-wrap items-center justify-end gap-x-2 gap-y-1"
+                data-ciclo-open-form
+              >
                 {% csrf_token %}
+                <label
+                  for="admitidos-ate-{{ ciclo.pk }}"
+                  class="font-ui text-xs font-medium text-slate-600"
+                >Admitidos até</label>
+                <input
+                  type="date"
+                  name="admitidos_ate"
+                  id="admitidos-ate-{{ ciclo.pk }}"
+                  value="{% if ciclo.admitidos_ate %}{{ ciclo.admitidos_ate|date:'Y-m-d' }}{% endif %}"
+                  class="rounded-lg border border-slate-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  aria-label="Admitidos até"
+                >
                 <button
                   type="submit"
                   class="font-semibold text-emerald-700 hover:text-emerald-800"

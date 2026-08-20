@@ -1,3 +1,4 @@
+from datetime import date
 from decimal import Decimal
 
 from django.contrib import messages
@@ -13,7 +14,11 @@ from django.views.generic.detail import SingleObjectMixin
 
 from apps.accounts.services.scope import get_visible_users
 from apps.core.mixins import HtmxPaginatedListMixin, RequiresAdminMixin
-from apps.cycles.exceptions import CycleAlreadyOpenError, CycleNotOpenError
+from apps.cycles.exceptions import (
+    CycleAlreadyOpenError,
+    CycleMissingCutoffError,
+    CycleNotOpenError,
+)
 from apps.cycles.forms import CicloForm
 from apps.cycles.models import Ciclo
 from apps.cycles.services.cycle import close_cycle, open_cycle
@@ -378,7 +383,7 @@ class CicloDetailView(AdminCyclesMixin, DetailView):
 
 
 class CicloOpenView(AdminCyclesMixin, SingleObjectMixin, View):
-    """Abre o ciclo e cria Avaliacao para colaboradores ativos (FR-015/016).
+    """Abre o ciclo com corte ``admitidos_ate`` e matricula elegíveis.
 
     Não lê ``build_rh_pre_open_checklist`` — checklist permanece avisório
     (T026 / FR-008); abertura segue só ``open_cycle`` / ``cycle.py``.
@@ -387,17 +392,33 @@ class CicloOpenView(AdminCyclesMixin, SingleObjectMixin, View):
     model = Ciclo
     http_method_names = ['post', 'options']
 
+    @staticmethod
+    def _parse_admitidos_ate(raw: str) -> date | None:
+        value = (raw or '').strip()
+        if not value:
+            return None
+        try:
+            return date.fromisoformat(value)
+        except ValueError:
+            return None
+
     def post(self, request, *args, **kwargs):
         ciclo = self.get_object()
+        admitidos_ate = self._parse_admitidos_ate(
+            request.POST.get('admitidos_ate', ''),
+        )
         try:
-            open_cycle(ciclo)
+            opened = open_cycle(ciclo, admitidos_ate=admitidos_ate)
         except CycleAlreadyOpenError as exc:
             messages.error(request, str(exc))
+        except CycleMissingCutoffError as exc:
+            messages.error(request, str(exc))
         else:
+            corte = opened.admitidos_ate.strftime('%d/%m/%Y')
             messages.success(
                 request,
-                f'Ciclo "{ciclo.nome}" aberto. Avaliações criadas para '
-                'colaboradores ativos.',
+                f'Ciclo "{opened.nome}" aberto. Avaliações criadas conforme '
+                f'elegibilidade (admitidos até {corte}).',
             )
         return HttpResponseRedirect(reverse('cycles:ciclo_list'))
 
