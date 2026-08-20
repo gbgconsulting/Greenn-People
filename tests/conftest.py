@@ -16,6 +16,9 @@ from apps.reviews.models import Avaliacao
 
 DEFAULT_PASSWORD = 'TestPass123!'
 
+# Admissão padrão das fixtures: elegível sob o corte de ``ciclo_aberto``.
+FIXTURE_DATA_ENTRADA = date(2020, 1, 15)
+
 
 @pytest.fixture
 def area(db) -> Area:
@@ -40,6 +43,7 @@ def admin(db) -> CustomUser:
         nome='Admin Teste',
         is_admin=True,
         is_staff=True,
+        data_entrada=FIXTURE_DATA_ENTRADA,
         email_confirmado_em=timezone.now(),
     )
 
@@ -53,6 +57,7 @@ def lider(db, admin, area, cargo_lider) -> CustomUser:
         cargo=cargo_lider,
         area=area,
         line_manager=admin,
+        data_entrada=FIXTURE_DATA_ENTRADA,
         email_confirmado_em=timezone.now(),
     )
 
@@ -66,25 +71,31 @@ def colaborador(db, lider, area, cargo_colab) -> CustomUser:
         cargo=cargo_colab,
         area=area,
         line_manager=lider,
+        data_entrada=FIXTURE_DATA_ENTRADA,
         email_confirmado_em=timezone.now(),
     )
 
 
 @pytest.fixture
 def ciclo_aberto(db, colaborador) -> Ciclo:
-    """Ciclo aberto com Avaliações para usuários ativos (via open_cycle).
+    """Ciclo aberto com Avaliações para elegíveis ativos (via open_cycle).
 
     Depende de ``colaborador`` para garantir a hierarquia admin→líder→colab
-    antes de abrir o ciclo.
+    antes de abrir o ciclo. Define ``admitidos_ate`` e preenche ``data_entrada``
+    ausente nos ativos para o predicado 015 não deixar a suite sem Avaliações.
     """
     for aberto in Ciclo.objects.filter(status=Ciclo.Status.ABERTO):
         close_cycle(aberto)
 
     today = date.today()
+    CustomUser.objects.filter(is_active=True, data_entrada__isnull=True).update(
+        data_entrada=FIXTURE_DATA_ENTRADA,
+    )
     ciclo = Ciclo.objects.create(
         nome='Ciclo Teste Aberto',
         data_inicio=today - timedelta(days=30),
         data_fim=today + timedelta(days=30),
+        admitidos_ate=today,
         status=Ciclo.Status.ENCERRADO,
     )
     open_cycle(ciclo)

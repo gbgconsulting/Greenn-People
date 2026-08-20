@@ -9,6 +9,10 @@ class CycleAlreadyOpenError(CycleError):
     """Raised when opening would violate the single-open-cycle rule."""
 
 
+class CycleMissingCutoffError(CycleError):
+    """Raised when opening without a resolved admitidos_ate cutoff."""
+
+
 class CycleNotOpenError(CycleError):
     """Raised when closing a cycle that is not currently open."""
 
