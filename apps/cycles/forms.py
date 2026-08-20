@@ -10,10 +10,10 @@ _INPUT = (
 
 
 class CicloForm(forms.ModelForm):
-    """Cadastro/edição de ciclo; status é controlado por abrir/encerrar.
+    """Cadastro/edição de ciclo.
 
-    ``admitidos_ate`` é definido aqui e reutilizado na abertura
-    (``open_cycle`` lê o valor já persistido).
+    No create, a view grava o ciclo e chama ``open_cycle`` (corte obrigatório).
+    Na edição, só atualiza campos — não reabre nem rematricula.
     """
 
     class Meta:

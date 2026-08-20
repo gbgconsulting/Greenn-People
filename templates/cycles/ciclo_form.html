@@ -43,7 +43,11 @@
 
     <div class="flex flex-wrap gap-3">
       {% url 'cycles:ciclo_list' as cancel_url %}
-      {% include "components/button.html" with label="Salvar" type="submit" variant="primary" %}
+      {% if object %}
+        {% include "components/button.html" with label="Salvar" type="submit" variant="primary" %}
+      {% else %}
+        {% include "components/button.html" with label="Criar e abrir" type="submit" variant="primary" %}
+      {% endif %}
       {% include "components/button.html" with label="Cancelar" href=cancel_url variant="secondary" %}
     </div>
   </form>

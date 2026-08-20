@@ -128,6 +128,13 @@ class CicloListView(AdminCyclesMixin, HtmxPaginatedListMixin, ListView):
 
 
 class CicloCreateView(AdminCyclesMixin, CreateView):
+    """Cria o ciclo e, em seguida, abre + matricula elegíveis via ``open_cycle``.
+
+    Persistência inicial como ``encerrado``; ``open_cycle`` aplica o gate de
+    corte, a regra de um-aberto e a matrícula. Se já houver ciclo aberto, o
+    cadastro permanece encerrado (com ``admitidos_ate``) para Abrir depois.
+    """
+
     model = Ciclo
     form_class = CicloForm
     template_name = 'cycles/ciclo_form.html'
@@ -135,8 +142,25 @@ class CicloCreateView(AdminCyclesMixin, CreateView):
 
     def form_valid(self, form):
         form.instance.status = Ciclo.Status.ENCERRADO
-        messages.success(self.request, 'Ciclo criado com sucesso.')
-        return super().form_valid(form)
+        self.object = form.save()
+        try:
+            opened = open_cycle(self.object)
+        except CycleAlreadyOpenError as exc:
+            messages.warning(
+                self.request,
+                f'Ciclo "{self.object.nome}" criado, mas não foi aberto: {exc} '
+                'Encerre o ciclo em andamento e use Abrir.',
+            )
+        except CycleMissingCutoffError as exc:
+            messages.error(self.request, str(exc))
+        else:
+            corte = opened.admitidos_ate.strftime('%d/%m/%Y')
+            messages.success(
+                self.request,
+                f'Ciclo "{opened.nome}" criado e aberto. Avaliações criadas '
+                f'conforme elegibilidade (admitidos até {corte}).',
+            )
+        return HttpResponseRedirect(self.get_success_url())
 
 
 class CicloUpdateView(AdminCyclesMixin, UpdateView):

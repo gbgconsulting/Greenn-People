@@ -274,6 +274,98 @@ def test_ciclo_form_exige_admitidos_ate_no_create(admin):
     assert 'data-ciclo-open-form' in html
 
 
+@pytest.mark.django_db
+def test_ciclo_create_unifica_abrir_e_matricula_elegiveis(admin, lider, area, cargo_colab):
+    """Create + open: elegíveis matriculados; inelegíveis fora; um-aberto."""
+    _close_all_open()
+    today = date.today()
+    elegivel = _make_user(
+        email='create-elegivel@test.greenn.com.br',
+        nome='Elegível Create',
+        lider=lider,
+        area=area,
+        cargo_colab=cargo_colab,
+        data_entrada=CUTOFF,
+    )
+    _make_user(
+        email='create-posterior@test.greenn.com.br',
+        nome='Posterior Create',
+        lider=lider,
+        area=area,
+        cargo_colab=cargo_colab,
+        data_entrada=CUTOFF + timedelta(days=1),
+    )
+    _make_user(
+        email='create-sem-data@test.greenn.com.br',
+        nome='Sem Data Create',
+        lider=lider,
+        area=area,
+        cargo_colab=cargo_colab,
+        data_entrada=None,
+    )
+
+    client = Client()
+    client.force_login(admin)
+    response = client.post(
+        reverse('cycles:ciclo_create'),
+        data={
+            'nome': 'Ciclo Unificado',
+            'data_inicio': today.isoformat(),
+            'data_fim': (today + timedelta(days=30)).isoformat(),
+            'admitidos_ate': CUTOFF.isoformat(),
+        },
+    )
+    assert response.status_code == 302
+    assert response.url == reverse('cycles:ciclo_list')
+
+    ciclo = Ciclo.objects.get(nome='Ciclo Unificado')
+    assert ciclo.status == Ciclo.Status.ABERTO
+    assert ciclo.admitidos_ate == CUTOFF
+    assert Avaliacao.objects.filter(ciclo=ciclo, usuario=elegivel).count() == 1
+    assert Avaliacao.objects.filter(ciclo=ciclo).count() == Avaliacao.objects.filter(
+        ciclo=ciclo,
+        usuario__data_entrada__lte=CUTOFF,
+        usuario__is_active=True,
+        usuario__data_entrada__isnull=False,
+    ).count()
+
+    texts = [str(m.message) for m in get_messages(response.wsgi_request)]
+    joined = ' '.join(texts).lower()
+    assert 'criado e aberto' in joined
+    assert 'todos os ativos' not in joined
+
+
+@pytest.mark.django_db
+def test_ciclo_create_com_outro_aberto_salva_encerrado_sem_matricular(
+    admin, ciclo_aberto, lider, area, cargo_colab,
+):
+    """Se já há ciclo aberto: cria encerrado, não matricula, avisa."""
+    today = date.today()
+    before = Avaliacao.objects.filter(ciclo=ciclo_aberto).count()
+    client = Client()
+    client.force_login(admin)
+    response = client.post(
+        reverse('cycles:ciclo_create'),
+        data={
+            'nome': 'Ciclo Em Espera',
+            'data_inicio': today.isoformat(),
+            'data_fim': (today + timedelta(days=30)).isoformat(),
+            'admitidos_ate': CUTOFF.isoformat(),
+        },
+    )
+    assert response.status_code == 302
+    novo = Ciclo.objects.get(nome='Ciclo Em Espera')
+    assert novo.status == Ciclo.Status.ENCERRADO
+    assert novo.admitidos_ate == CUTOFF
+    assert Avaliacao.objects.filter(ciclo=novo).count() == 0
+    assert Avaliacao.objects.filter(ciclo=ciclo_aberto).count() == before
+    ciclo_aberto.refresh_from_db()
+    assert ciclo_aberto.status == Ciclo.Status.ABERTO
+
+    texts = [str(m.message).lower() for m in get_messages(response.wsgi_request)]
+    assert any('não foi aberto' in t for t in texts)
+
+
 # --- T015/T016 [US2]: preview de contagens ------------------------------------
 
 
