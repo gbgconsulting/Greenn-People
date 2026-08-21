@@ -478,6 +478,119 @@ Dashboards piloto (`admin` / `team` / `personal`) consomem este include; não ma
 
 Piloto: listas `templates/cycles/ciclo_list.html` / `ciclo_list_partial.html` (e demais listagens que já usam `.table-frame`). **Não** envolver cada célula em card; o frame é o único chrome de lista.
 
+Listagens Category B (Áreas, Cargos, Usuários, Competências): além do chrome acima, aplicar o contrato de largura/colunas em **Table-frame · listas de cadastro (Category B / decisão B1)**.
+
+---
+
+## Table-frame · listas de cadastro (Category B / decisão B1)
+
+**Status:** Extensão pontual aprovada (`016-freeze-screen-conformity` · Clarifications B1 / FR-015–017 / SC-006). Contrato: `specs/016-freeze-screen-conformity/contracts/table-frame-listas-b.md`.
+
+**Não reabre** Freeze A/B/C/D (charts polish, slice `structure`, painel gerencial, densidade/histórico/empty, paleta, shell). Consome o chrome `.table-frame` da seção anterior; só acrescenta **cap de largura**, **colunas fixas/proporcionais** e **ações à direita** nas listagens de cadastro desta rodada.
+
+### Escopo
+
+| Superfície | Aplica B1? |
+|---|---|
+| Áreas, Cargos, Usuários (+ pendentes correlatos), Competências — **listas** | Sim |
+| Formulário B da mesma entidade | Cap de form próprio (`max-w-lg`) — **não** unificar com cap de lista |
+| Category A (painéis gerenciais, matriz, etc.) | **Não** — full-bleed do conteúdo do painel |
+| Listas fora do inventário B (ciclo, audit, notifications, …) | **Não** nesta decisão |
+
+### Layout de largura
+
+| Superfície | Regra | Token default |
+|---|---|---|
+| Lista B com **≤ 4** colunas | Container centralizado, cap médio-largo | `mx-auto w-full max-w-5xl` |
+| Lista B com **> 4** colunas | Mesmo padrão, um degrau maior | `mx-auto w-full max-w-6xl` |
+| Formulário B da mesma entidade | Cap de form já definido (mais estreito) | `mx-auto max-w-lg` |
+| Category A | Sem este cap | full-bleed do painel |
+
+Referência de contagem atual:
+
+| Lista | Colunas | Cap |
+|---|---|---|
+| Áreas / Cargos / Competências | 4 | `max-w-5xl` |
+| Usuários | 7 | `max-w-6xl` |
+| Usuários pendentes (correlata) | conforme nº de cols da tela | ≤4 → `max-w-5xl` / >4 → `max-w-6xl` |
+
+### Anatomia da tabela B
+
+1. Wrapper: `.table-frame` (chrome Freeze — borda/surface, **sem** sombra; `overflow-x` no frame).
+2. `table` com `table-fixed w-full` + `<colgroup>` (larguras fixas/proporcionais).
+3. Coluna **nome** não pode esticar a ponto de afastar as ações.
+4. Coluna **Ações**:
+   - Alinhamento à direita (`text-right` em `th`/`td`)
+   - Links com separador leve: espaço ou ponto médio muted (`·`)
+   - **Proibido** separador `\|` denso
+5. Viewport ~375px: scroll horizontal **dentro** do `.table-frame`; página sem bleed.
+
+#### Proporções default (ponto de partida)
+
+Ajustáveis por tela **sem** nova decisão de produto, desde que preservem ações à direita e legibilidade:
+
+| Perfil | Sugestão |
+|---|---|
+| 4 colunas (nome · meta · status · ações) | ~40% / ~25% / ~15% / ~20% |
+| 7 colunas (usuários) | nome+email maiores; ações ~12–15% fixos à direita |
+
+### Componentes
+
+| Peça | Uso |
+|---|---|
+| Frame | `.table-frame` apenas — **não** cardificar linhas |
+| Status | `badge_status` (sem chip ad hoc) |
+| Empty | `empty_state` no estado vazio / célula vazia |
+| Paginação | `components/pagination.html` (fonte única) |
+| CTAs de header | `button` |
+
+### Exemplo mínimo
+
+```html
+<div class="mx-auto w-full max-w-5xl">
+  <div class="table-frame">
+    <table class="table-fixed w-full">
+      <colgroup>
+        <col class="w-[40%]" />
+        <col class="w-[25%]" />
+        <col class="w-[15%]" />
+        <col class="w-[20%]" />
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Meta</th>
+          <th>Status</th>
+          <th class="text-right">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>…</td>
+          <td>…</td>
+          <td>{% include "components/badge_status.html" with status="alta" %}</td>
+          <td class="text-right">
+            <a href="…">Editar</a>
+            <span class="text-ink-muted"> · </span>
+            <a href="…">Excluir</a>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+```
+
+Form da mesma entidade: `mx-auto max-w-lg` (não reutilizar o cap da lista). Lista com >4 colunas: trocar o container para `max-w-6xl`.
+
+### Non-goals
+
+- Inventar outro frame de tabela
+- Aplicar cap B1 em painéis Category A
+- Unificar largura lista ↔ form
+- Mudar AuthZ, paginação backend ou schema
+- Reabrir charts / painel gerencial / densidade (Freeze A/B/C/D)
+
 ---
 
 ## Charts polish (DS v2)
