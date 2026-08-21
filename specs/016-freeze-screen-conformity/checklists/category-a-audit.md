@@ -54,6 +54,33 @@
 
 Notas / violações:
 
+**US1 progresso (T007 · 2026-08-21)** — escopo: bloco `#pipeline-heading` + `chart_ciclo_progresso` / `AdminDashboardView._chart_ciclo_progresso` / `categorical_counts_payload`. Contratos consumidos (não editados): 009 chart-catalog / managerial-panel; 012 density-history-empty.
+
+| # | Critério auditoria | Resultado | Evidência |
+|---|-------------------|-----------|-----------|
+| V1 | Fake markup (barra `style="width"` / HTML ad hoc) | **Pass** | Com `has_ciclo`: só `{% include "dashboard/_chart_block.html" %}`; sem barra fake no template |
+| V2 | Tipo catálogo Freeze A | **Pass** | `type=bar_horizontal`; Chart.js `@4.5.1` em `extra_js` |
+| V3 | Mono teal + amber só no gargalo | **Pass** | `highlight_max=True` → `mono_finish_colors`; amber só se pico estrito; JS: bar sem `colors` → mono teal (T012), não Triad |
+| V4 | Empty Freeze D / kinds | **Pass** | V-E1/V-E3 remediados T011; V-E2 remediado T009 |
+| V5 | Highlight fora do gargalo | **Pass** | Sem arco-íris; Triad não entra no payload com `highlight_max`; fallback JS de barra não é Triad (T012) |
+| V6 | Série inventada | **Pass** | `series_payload`: `has_data` só se `total > 0`; labels/values vazios no empty |
+
+Violações abertas (remediação):
+
+| ID | Severidade | Onde | Violação | Task |
+|----|------------|------|----------|------|
+| V-E1 | Alta (A7 / 012) | `apps/dashboard/views.py` `_chart_ciclo_progresso` | Ciclo com **zero** avaliações: `empty_message` ad hoc `'Ainda não há avaliações neste ciclo.'` em vez de `empty_kind_payload(kind=EMPTY_KIND_SEM_DADO)` (012: sem avaliações → `sem_dado`) | **Remediado T011** — zero avaliações → `empty_kind_payload(SEM_DADO)` |
+| V-E2 | Média (A2/A7) | `templates/dashboard/admin.html` | Sem ciclo: `empty_state` **solto** (title “Sem ciclo aberto”) — não passa por `_chart_block` do progresso | **Remediado T009** — ramo sem ciclo usa `_chart_block` + `chart_ciclo_progresso` (`operacional`) |
+| V-E3 | Baixa (contexto) | `AdminDashboardView` branch `visao=historico` | `chart_ciclo_progresso` recebe `EMPTY_KIND_SEM_NOTA` (cópia de desempenho); 012 reserva `sem_nota` p/ desempenho/gap/aderência. Não renderiza no histórico, mas kind errado no context | **Remediado T011** — histórico: progresso → `SEM_DADO`; aderência permanece `SEM_NOTA` |
+| V-P1 | Baixa (polish A) | `admin.html` progresso | Insight genérico (“Quantas avaliações…”) — DS pede callout do gargalo; sem mini-KPI `Total` (exemplo DS `_chart_block`) | **Remediado T009** — insight do gargalo via `ciclo_kpis.gargalo_label`; mini-KPI `Total` + `kpi_body` |
+| V-L1 | Latente | `static/js/dashboard_charts.js` `buildSingleSeriesConfig` | Fallback `STATUS_TRIAD` se `colors` ausente em `bar_horizontal` — hoje mitigado porque `highlight_max` emite `colors` | **Remediado T012** — bar/`bar_horizontal` sem `colors` → mono teal; Triad só doughnut |
+
+**T009 (2026-08-21)**: V-E2 + V-P1 fechados no template. **T011 (2026-08-21)**: V-E1 / V-E3 fechados (presentation). **T012 (2026-08-21)**: V-L1 fechado (JS presentation).
+
+**T013 (2026-08-21) — gate US1**: quickstart Admin 1.1–1.2 + SC-003 **PASS** (HTML/payload live + browser `?ciclo=11`: `_chart_block` + `bar_horizontal`, amber só em Metas, Chart.js 4.5.1; empty operacional sem série inventada; denylist WT vazio).
+
+Não ESCALATE: tokens/componentes/chart existem no Freeze; remediação = presentation-only allowlist.
+
 ---
 
 ### A · Painel do time
@@ -153,6 +180,33 @@ Notas / violações:
 - [ ] A9 Pass
 
 Notas / violações:
+
+**US1 progresso (T008 · 2026-08-21)** — escopo: bloco `#progresso-heading` + `chart_ciclo_progresso` / `CicloDetailView._chart_ciclo_progresso` / `categorical_counts_payload`. Espelho presentation de admin (T007). Contratos consumidos (não editados): 009 chart-catalog / managerial-panel / cycle-managerial-detail; 012 density-history-empty. **Denylist**: `cycle.py` / `stage.py` intocados (auditoria only).
+
+| # | Critério auditoria | Resultado | Evidência |
+|---|-------------------|-----------|-----------|
+| V1 | Fake markup (barra `style="width"` / HTML ad hoc) | **Pass** | Sempre `{% include "dashboard/_chart_block.html" %}` (has_data e empty); sem barra fake no template |
+| V2 | Tipo catálogo Freeze A | **Pass** | `CHART_TYPE_BAR_HORIZONTAL`; Chart.js `@4.5.1` em `extra_js` |
+| V3 | Mono teal + amber só no gargalo | **Pass** | `highlight_max=True` → mesmo path `categorical_counts_payload` / `mono_finish_colors` que admin; JS T012 mono se sem `colors` |
+| V4 | Empty Freeze D / kinds | **Pass** | V-E1 remediado T011 (`sem_dado`) |
+| V5 | Highlight fora do gargalo | **Pass** | Sem cores manuais; Triad não entra com `highlight_max`; fallback JS de barra não é Triad (T012) |
+| V6 | Série inventada | **Pass** | `has_data` falso zera labels/values; test `test_ciclo_detail_quickstart_s3_empty_local_sem_inventar` |
+| V7 | Sem ciclo / empty solto | **N/A → Pass** | `DetailView` sempre tem `ciclo`; empty do progresso passa por `_chart_block` (sem análogo a V-E2 do admin) |
+| V8 | `visao=historico` vs pipeline | **Pass** | Pipeline do `pk` montado **antes** do branch histórico e mantido; aderência/gap viram `sem_nota` — kind correto p/ desempenho, não polui `chart_ciclo_progresso` (melhor que admin V-E3) |
+
+Violações abertas (remediação):
+
+| ID | Severidade | Onde | Violação | Task |
+|----|------------|------|----------|------|
+| V-E1 | Alta (A7 / 012) | `apps/cycles/views.py` `_chart_ciclo_progresso` | Zero avaliações: `empty_message` ad hoc `'Não há avaliações neste ciclo para exibir progresso.'` em vez de `empty_kind_payload(kind=EMPTY_KIND_SEM_DADO)` / `EMPTY_KIND_COPY[SEM_DADO]` (012: sem avaliações → `sem_dado`) | **Remediado T011** — zero avaliações → `empty_kind_payload(SEM_DADO)` |
+| V-P1 | Baixa (polish A) | `ciclo_detail.html` `#progresso-heading` | Insight genérico (“Quantas avaliações estão em cada etapa.”) — DS pede callout do gargalo; sem mini-KPI `Total` | **Remediado T010** — insight do gargalo via `progresso_gargalo_label` (presentation-only); mini-KPI `Total` + `kpi_body` |
+| V-L1 | Latente | `static/js/dashboard_charts.js` `buildSingleSeriesConfig` | Mesmo fallback Triad se `colors` ausente — mitigado por `highlight_max`; compartilhado com admin | **Remediado T012** — bar/`bar_horizontal` sem `colors` → mono teal; Triad só doughnut |
+
+**T010 (2026-08-21)**: V-P1 fechado (template + context presentation `progresso_gargalo_label`). **T011 (2026-08-21)**: V-E1 fechado (presentation). **T012 (2026-08-21)**: V-L1 fechado (JS presentation, compartilhado).
+
+**T013 (2026-08-21) — gate US1**: quickstart 1.3 + SC-003 **PASS** (`/cycles/11/` espelho admin: `bar_horizontal`, amber no gargalo, Chart.js 4.5.1, mini-KPI + insight; denylist WT vazio).
+
+Não ESCALATE: tokens/componentes/chart existem no Freeze; remediação = presentation-only allowlist. Diff denylist domínio (`cycle.py` / `stage.py`) = vazio nesta task.
 
 ---
 

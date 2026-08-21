@@ -797,8 +797,10 @@ class AdminDashboardView(LoginRequiredMixin, RequiresAdminMixin, TemplateView):
             context['avaliacoes_resumo'] = self._avaliacoes_resumo(None)
             context['aderencia_resumo'] = self._aderencia_resumo(None)
             context['snapshots_destaque'] = []
+            # Pipeline não é série de desempenho: ``sem_nota`` fica só na aderência.
+            # Slot operacional fica de lado no histórico — empty ``sem_dado`` no context.
             context['chart_ciclo_progresso'] = empty_kind_payload(
-                kind=EMPTY_KIND_SEM_NOTA,
+                kind=EMPTY_KIND_SEM_DADO,
                 chart_id='chart-ciclo-progresso',
                 chart_type=CHART_TYPE_BAR_HORIZONTAL,
                 title='Progresso das avaliações no ciclo',
@@ -996,14 +998,16 @@ class AdminDashboardView(LoginRequiredMixin, RequiresAdminMixin, TemplateView):
 
         Barras horizontais expressivas + amber no maior volume (acabamento);
         counts e chaves de etapa inalterados (FR-001 / data-model).
+        Zero avaliações → empty ``sem_dado`` (012 / Freeze D) — sem copy ad hoc.
         """
         chart_type = CHART_TYPE_BAR_HORIZONTAL
         title = 'Progresso das avaliações no ciclo'
+        chart_id = 'chart-ciclo-progresso'
         if ciclo is None:
             # Sem aberto / sem ?ciclo=: empty operacional (não plota arquivo).
             return empty_kind_payload(
                 kind=EMPTY_KIND_OPERACIONAL,
-                chart_id='chart-ciclo-progresso',
+                chart_id=chart_id,
                 chart_type=chart_type,
                 title=title,
             )
@@ -1017,16 +1021,20 @@ class AdminDashboardView(LoginRequiredMixin, RequiresAdminMixin, TemplateView):
                 .annotate(total=Count('pk'))
             )
         }
-        # Zero avaliações → has_data false + mensagem PT-BR (sem série fictícia).
+        if not key_counts or sum(key_counts.values()) == 0:
+            return empty_kind_payload(
+                kind=EMPTY_KIND_SEM_DADO,
+                chart_id=chart_id,
+                chart_type=chart_type,
+                title=title,
+            )
         return categorical_counts_payload(
             key_counts,
             ordered_keys=etapa_keys,
             labels_by_key=labels_by_key,
-            chart_id='chart-ciclo-progresso',
+            chart_id=chart_id,
             chart_type=chart_type,
             title=title,
-            empty_message=(
-                'Ainda não há avaliações neste ciclo.'
-            ),
+            empty_message=EMPTY_KIND_COPY[EMPTY_KIND_SEM_DADO],
             highlight_max=True,
         )

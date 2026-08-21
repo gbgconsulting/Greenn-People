@@ -118,7 +118,7 @@ Para **cada** entidade: Áreas, Cargos, Usuários (+ pendentes), Competências �
 
 - [ ] SC-001: 100% inventário A no checklist A
 - [ ] SC-002: 100% inventário B no checklist B (incl. B1)
-- [ ] SC-003: progresso admin + detalhe sem barra fake
+- [x] SC-003: progresso admin + detalhe sem barra fake (T013 · 2026-08-21)
 - [ ] SC-004: 0 scroll horizontal de página em ~375px
 - [ ] SC-005: 0 sombra card/KPI, chip ad hoc ou cor fora da paleta na amostragem
 - [ ] SC-006: DS só +B1; A/B/C/D não reabertos

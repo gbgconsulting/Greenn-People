@@ -33,6 +33,7 @@ from apps.dashboard.chart_payloads import (
     CHART_TYPE_BAR,
     CHART_TYPE_BAR_HORIZONTAL,
     EMPTY_KIND_COPY,
+    EMPTY_KIND_SEM_DADO,
     EMPTY_KIND_SEM_NOTA,
     HISTORY_DEFAULT_N,
 )
@@ -171,8 +172,11 @@ def test_ciclo_detail_quickstart_s3_empty_local_sem_inventar(admin, db):
     assert resp.context['chart_cobertura_area']['has_data'] is False
     assert resp.context['chart_cobertura_cargo']['has_data'] is False
     html = resp.content.decode()
-    # Empty via _chart_block / empty_state — sem série inventada no canvas.
-    assert 'chart-ciclo-progresso' in html or 'Não há avaliações' in html
+    # Empty via _chart_block / empty_state — kind ``sem_dado`` (012); sem série inventada.
+    assert resp.context['chart_ciclo_progresso']['empty_message'] == (
+        EMPTY_KIND_COPY[EMPTY_KIND_SEM_DADO]
+    )
+    assert 'chart-ciclo-progresso' in html or EMPTY_KIND_COPY[EMPTY_KIND_SEM_DADO] in html
     assert 'data-chart-payload="chart-cobertura-area"' not in html
     assert 'data-chart-payload="chart-cobertura-cargo"' not in html
     assert 'Cobertura por área e cargo' not in html

@@ -149,11 +149,15 @@ def _assert_empty_operacional(resp) -> None:
 
     assert 'data-chart-payload="chart-ciclo-progresso"' not in html
     assert 'data-chart-payload="chart-aderencia-distribuicao"' not in html
-    # T016: empty operacional de página — sem grade de charts nem pipeline.
-    assert 'id="pipeline-heading"' not in html
+    # T009/T016: empty operacional via ``_chart_block`` no slot do pipeline
+    # (não empty solto fora do bloco; sem canvas ``data-chart-payload``).
+    assert 'id="pipeline-heading"' in html
     assert 'id="visualizacoes-heading"' not in html
     assert 'id="aderencia-heading"' not in html
     assert html.count('role="status"') >= 1
+    progresso = resp.context.get('chart_ciclo_progresso') or {}
+    assert progresso.get('empty_message') == copy
+    assert copy in html
     for nome in Ciclo.objects.filter(status=Ciclo.Status.ENCERRADO).values_list(
         'nome',
         flat=True,

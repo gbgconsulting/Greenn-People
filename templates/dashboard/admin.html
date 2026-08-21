@@ -96,8 +96,12 @@
 
     <div class="grid min-w-0 grid-cols-1 gap-4 {% if chart_aderencia_distribuicao.has_data %}lg:grid-cols-2 lg:items-start{% endif %}">
       <div class="min-w-0" id="pipeline-heading">
-        {% if chart_ciclo_progresso.has_data %}
-          {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" insight="Quantas avaliações estão em cada etapa." %}
+        {% if chart_ciclo_progresso.has_data and ciclo_kpis.gargalo_label %}
+          {% with insight_txt="Mais avaliações em "|add:ciclo_kpis.gargalo_label|add:" — concentre a atenção aí." %}
+          {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" insight=insight_txt kpi_label="Total" kpi_value=chart_ciclo_progresso.total kpi_body="avaliações no ciclo" %}
+          {% endwith %}
+        {% elif chart_ciclo_progresso.has_data %}
+          {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" kpi_label="Total" kpi_value=chart_ciclo_progresso.total kpi_body="avaliações no ciclo" %}
         {% else %}
           {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" %}
         {% endif %}
@@ -169,9 +173,8 @@
       {% include "components/card.html" with label="Pendências" value="—" body="Disponível quando houver um ciclo selecionado." %}
       {% include "components/card.html" with label="Sem avaliação" value="—" body="Disponível quando houver um ciclo selecionado." %}
     </div>
-    <div class="min-w-0">
-      {% url 'cycles:ciclo_list' as ciclos_url %}
-      {% include "components/empty_state.html" with title="Sem ciclo aberto" message=chart_ciclo_progresso.empty_message cta_label="Gerenciar ciclos" cta_href=ciclos_url %}
+    <div class="min-w-0" id="pipeline-heading">
+      {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" %}
     </div>
     {% endif %}
   </div>

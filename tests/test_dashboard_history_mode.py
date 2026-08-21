@@ -703,6 +703,19 @@ def test_t034_superficies_com_chart_usam_min_w0_e_canvas_css():
 # --- T037: Chart.js 4.5.1 / DOMContentLoaded / FR-017 ---
 
 
+def test_t012_dashboard_charts_bar_fallback_mono_not_triad():
+    """T012 / V-L1: bar sem colors → mono teal; Status Triad só no doughnut."""
+    source = _DASHBOARD_CHARTS_JS.read_text(encoding='utf-8')
+    assert 'COLOR_FINISH_TEAL' in source
+    assert 'isDoughnut ? STATUS_TRIAD : [COLOR_FINISH_TEAL]' in source
+    assert 'isDoughnut ? STATUS_TRIAD[0] : COLOR_FINISH_TEAL' in source
+    # Não regressar ao fallback Triad cego em buildSingleSeriesConfig.
+    assert (
+        "payload.colors && payload.colors.length ? payload.colors : STATUS_TRIAD"
+        not in source
+    )
+
+
 def test_t037_dashboard_charts_init_sem_htmx_after_swap():
     """T037 / FR-017: init só em DOMContentLoaded; sem htmx:afterSwap; sem plugin npm."""
     source = _DASHBOARD_CHARTS_JS.read_text(encoding='utf-8')
