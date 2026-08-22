@@ -117,11 +117,11 @@ Para **cada** entidade: Áreas, Cargos, Usuários (+ pendentes), Competências �
 ## Aceite mensurável (espelha SC)
 
 - [x] SC-001: 100% inventário A no checklist A (T023 · 2026-08-22)
-- [ ] SC-002: 100% inventário B no checklist B (incl. B1)
+- [x] SC-002: 100% inventário B no checklist B (incl. B1) (T034 · 2026-08-22)
 - [x] SC-003: progresso admin + detalhe sem barra fake (T013 · 2026-08-21)
-- [x] SC-004: 0 scroll horizontal de página em ~375px (T023 amostral · 2026-08-22 — `min-w-0` + canvas CSS + sem cap B1)
-- [x] SC-005: 0 sombra card/KPI, chip ad hoc ou cor fora da paleta na amostragem (T023 · 2026-08-22)
-- [ ] SC-006: DS só +B1; A/B/C/D não reabertos
+- [x] SC-004: 0 scroll horizontal de página em ~375px (T023 A + T034 B amostral · 2026-08-22 — `min-w-0` forms B / `.table-frame` listas; canvas A; caps B1 só em B)
+- [x] SC-005: 0 sombra card/KPI, chip ad hoc ou cor fora da paleta na amostragem (T023 A + T034 B · 2026-08-22)
+- [ ] SC-006: DS só +B1; A/B/C/D não reabertos (B1 já em DS — confirmação formal em T042)
 
 ## Quando parar e perguntar
 

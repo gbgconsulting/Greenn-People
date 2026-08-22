@@ -1,7 +1,16 @@
 <div id="list-container">
-<div class="table-frame">
-  <table>
-    <thead>
+  <div class="table-frame">
+    <table class="table-fixed w-full">
+      <colgroup>
+        <col class="w-[19%]" />
+        <col class="w-[19%]" />
+        <col class="w-[12%]" />
+        <col class="w-[12%]" />
+        <col class="w-[11%]" />
+        <col class="w-[12%]" />
+        <col class="w-[15%]" />
+      </colgroup>
+      <thead>
       <tr>
         <th>Nome</th>
         <th>E-mail</th>
@@ -18,7 +27,7 @@
         <td class="font-medium text-slate-800">
           {{ u.nome }}
           {% if u.is_admin %}
-            <span class="ml-1 inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 font-ui text-xs font-medium text-slate-600">Admin</span>
+            {% include "components/badge_status.html" with status="admin" label="Admin" extra_class="ml-1" %}
           {% endif %}
         </td>
         <td class="text-slate-600">{{ u.email }}</td>
@@ -36,7 +45,7 @@
         </td>
         <td class="text-right">
           <a href="{% url 'talent:classify' u.pk %}" class="font-medium text-slate-600 hover:text-slate-800">Classificar</a>
-          <span class="mx-2 text-slate-300">|</span>
+          <span class="text-ink-muted"> · </span>
           <a href="{% url 'organization:user_update' u.pk %}" class="font-medium text-emerald-700 hover:text-emerald-800">Editar</a>
         </td>
       </tr>
@@ -47,9 +56,9 @@
         </td>
       </tr>
       {% endfor %}
-    </tbody>
-  </table>
-</div>
+      </tbody>
+    </table>
+  </div>
 
-{% include "components/pagination.html" with page_obj=page_obj %}
+  {% include "components/pagination.html" with page_obj=page_obj %}
 </div>
