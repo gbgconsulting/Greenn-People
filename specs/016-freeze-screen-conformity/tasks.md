@@ -169,10 +169,17 @@ Monólito Django na raiz. Allowlist completa em `specs/016-freeze-screen-conform
 
 ### Implementation for User Story 4
 
-- [ ] T035 [US4] Auditar `templates/components/pagination.html` contra Freeze (links Anterior/Próxima com classes ad hoc vs `button`/tokens) e remediar **somente** nesta fonte única
-- [ ] T036 [P] [US4] Confirmar reuso do include (sem segunda implementação) nas listas B allowlisted: `templates/organization/{area,cargo,user,user_pending}_list*.html` e `templates/competencies/competencia_list*.html`
-- [ ] T037 [P] [US4] Onde filtros/busca existirem nas listas B, garantir `input`/`.form-control` + `button` canônicos — **sem** criar componente novo de paginação/filtro
-- [ ] T038 [US4] Validar US4 via quickstart § US4 (4.1–4.3); HTMX `#list-container` e canvas A intactos; SC-005 amostral na paginação
+- [x] T035 [US4] Auditar `templates/components/pagination.html` contra Freeze (links Anterior/Próxima com classes ad hoc vs `button`/tokens) e remediar **somente** nesta fonte única
+- [x] T036 [P] [US4] Confirmar reuso do include (sem segunda implementação) nas listas B allowlisted: `templates/organization/{area,cargo,user,user_pending}_list*.html` e `templates/competencies/competencia_list*.html`
+- [x] T037 [P] [US4] Onde filtros/busca existirem nas listas B, garantir `input`/`.form-control` + `button` canônicos — **sem** criar componente novo de paginação/filtro
+  **DONE 2026-08-22**: Auditoria das 10 superfícies allowlisted (5 entidades × lista+partial): `area_*`, `cargo_*`, `user_*`, `user_pending_*`, `competencia_*`. **N/A remediação** — 0× `<form role="search">`, 0× `type="search"`, 0× `<input>`/`<select>` de filtro nas listas B; views `AreaListView`/`CargoListView`/`UserListView`/`UserPendingListView`/`CompetenciaListView` sem query params de busca/filtro. Paginação consome `pagination.html` (T035/T036); `querystring` preserva filtros futuros sem componente novo. Referência canônica documentada: `auditlog_list.html` / `structure.html` (`.form-control` + `button.html`). Sem ESCALATE; denylist intocada.
+- [x] T038 [US4] Validar US4 via quickstart § US4 (4.1–4.3); HTMX `#list-container` e canvas A intactos; SC-005 amostral na paginação
+  **DONE 2026-08-22**: Gate US4 fechado — quickstart § US4 **PASS**.
+  - **4.1**: Única fonte `templates/components/pagination.html`; Anterior/Próxima via `button.html` `secondary`; chrome `border-slate-200` / `text-slate-500` (tokens DS); 0× links ad hoc.
+  - **4.2**: 5 partials B allowlisted (`area`/`cargo`/`user`/`user_pending`/`competencia_list_partial`) incluem o componente; shells `*_list.html` só embutem o partial; 0× HTML paralelo de paginação nas listas B (`Anterior`/`has_previous`/`page_obj` fora do include = vazio).
+  - **4.3**: `hx_target="#list-container"` + `hx_swap="outerHTML"` na fonte; cada partial B abre com `<div id="list-container">`. Canvas A intacto: `_chart_block` + Chart.js 4.5.1 ficam **fora** dos partials HTMX (`adherence.html`/`team.html`/etc.); swap não toca charts.
+  - **SC-005 amostral (paginação)**: 0× `shadow-` / chip / cor fora da paleta em `pagination.html`; CTAs só canônico `secondary` (sem sombra de card/KPI na fonte). Sem ESCALATE.
+  Checkpoint: Uma fonte Freeze-compliant; B consome sem forks — Phase 7 (T039+) pode iniciar.
 
 **Checkpoint**: Uma fonte de paginação Freeze-compliant; B consome sem forks
 

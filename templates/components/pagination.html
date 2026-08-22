@@ -3,6 +3,7 @@
   Uso: {% include "components/pagination.html" with page_obj=page_obj %}
   Preserva demais query params (filtros) ao trocar de página.
   Requer #list-container no partial da listagem (hx-target / outerHTML).
+  Anterior/Próxima: components/button.html secondary (fonte única US4).
 {% endcomment %}
 {% if page_obj.paginator.num_pages > 1 %}
 <nav
@@ -15,24 +16,12 @@
   </p>
   <div class="flex gap-2">
     {% if page_obj.has_previous %}
-      <a
-        href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}"
-        hx-get="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}"
-        hx-target="#list-container"
-        hx-swap="outerHTML"
-        hx-push-url="true"
-        class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-      >Anterior</a>
+      {% querystring page=page_obj.previous_page_number as prev_url %}
+      {% include "components/button.html" with label="Anterior" variant="secondary" href=prev_url hx_get=prev_url hx_target="#list-container" hx_swap="outerHTML" attrs='hx-push-url="true"' %}
     {% endif %}
     {% if page_obj.has_next %}
-      <a
-        href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}"
-        hx-get="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}"
-        hx-target="#list-container"
-        hx-swap="outerHTML"
-        hx-push-url="true"
-        class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-      >Próxima</a>
+      {% querystring page=page_obj.next_page_number as next_url %}
+      {% include "components/button.html" with label="Próxima" variant="secondary" href=next_url hx_get=next_url hx_target="#list-container" hx_swap="outerHTML" attrs='hx-push-url="true"' %}
     {% endif %}
   </div>
 </nav>
