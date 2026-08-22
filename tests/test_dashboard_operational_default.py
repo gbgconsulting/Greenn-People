@@ -1,4 +1,4 @@
-"""T011 / T018 [US1] + T022 [US2] — default operacional (admin / time / estrutura / aderência).
+"""T011 / T018 [US1] + T022 [US2] — default operacional (admin / time / estrutura / aderência / pessoal).
 
 Contrato: ``density-history-empty.md`` §1 / FR-001 / FR-002 / FR-004 / FR-017.
 GET ``/dashboard/admin/``: ciclo aberto ou empty ``operacional``; ``?ciclo=``
@@ -149,11 +149,17 @@ def _assert_empty_operacional(resp) -> None:
 
     assert 'data-chart-payload="chart-ciclo-progresso"' not in html
     assert 'data-chart-payload="chart-aderencia-distribuicao"' not in html
-    # T016: empty operacional de página — sem grade de charts nem pipeline.
-    assert 'id="pipeline-heading"' not in html
+    # T009/T014: empty operacional via ``_chart_block`` nos slots pipeline +
+    # aderência (não ``<p>`` ad hoc; sem canvas ``data-chart-payload``).
+    assert 'id="pipeline-heading"' in html
+    assert 'id="aderencia-heading"' in html
     assert 'id="visualizacoes-heading"' not in html
-    assert 'id="aderencia-heading"' not in html
-    assert html.count('role="status"') >= 1
+    assert html.count('role="status"') >= 2
+    progresso = resp.context.get('chart_ciclo_progresso') or {}
+    assert progresso.get('empty_message') == copy
+    aderencia = resp.context.get('chart_aderencia_distribuicao') or {}
+    assert aderencia.get('empty_message') == copy
+    assert copy in html
     for nome in Ciclo.objects.filter(status=Ciclo.Status.ENCERRADO).values_list(
         'nome',
         flat=True,
@@ -1064,3 +1070,44 @@ def test_team_lider_sem_subordinados_visiveis_empty_escopo(
     assert _COPY_ESCOPO in html
     assert 'data-chart-payload="chart-escopo-status"' not in html
     assert resp.context.get('destaque_atencao') == []
+
+
+# --- T022 [US2] meu painel — empty kinds D (presentation-only views) ---------
+
+_COPY_SEM_DADO = EMPTY_KIND_COPY[EMPTY_KIND_SEM_DADO]
+_COPY_SEM_NOTA = EMPTY_KIND_COPY[EMPTY_KIND_SEM_NOTA]
+
+
+def _personal_gap_chart(fr005: dict) -> dict:
+    from apps.dashboard.views import PersonalDashboardView
+
+    return PersonalDashboardView()._chart_gaps_competencia(fr005)
+
+
+def test_personal_vinculo_pendente_empty_sem_dado_t022():
+    """T022 / A7: vínculo pendente → ``sem_dado`` canônico (não copy ad hoc)."""
+    chart = _personal_gap_chart({'vinculo_pendente': True, 'competencias_resumo': []})
+    _assert_chart_empty_kind(chart, kind_copy=_COPY_SEM_DADO)
+
+
+def test_personal_sem_competencias_empty_sem_dado_t022():
+    """T022 / A7: cargo sem competências → ``sem_dado`` canônico."""
+    chart = _personal_gap_chart({'vinculo_pendente': False, 'competencias_resumo': []})
+    _assert_chart_empty_kind(chart, kind_copy=_COPY_SEM_DADO)
+
+
+def test_personal_sem_notas_comparaveis_empty_sem_nota_t022():
+    """T022 / A7: competências sem nota → ``sem_nota`` canônico."""
+    from types import SimpleNamespace
+
+    chart = _personal_gap_chart({
+        'vinculo_pendente': False,
+        'competencias_resumo': [
+            {
+                'competencia': SimpleNamespace(nome='Comp A'),
+                'nivel_esperado': 3,
+                'nota_atual': None,
+            },
+        ],
+    })
+    _assert_chart_empty_kind(chart, kind_copy=_COPY_SEM_NOTA)

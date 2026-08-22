@@ -3,6 +3,7 @@
 {% block title %}Usuários pendentes — Greenn People{% endblock %}
 
 {% block content %}
+<div class="mx-auto w-full max-w-6xl">
 <header class="mb-6 flex flex-wrap items-start justify-between gap-3">
   <div>
     <h1 class="font-display text-2xl font-semibold text-slate-800">Usuários pendentes de vínculo</h1>
@@ -42,20 +43,16 @@
   </p>
   {% endif %}
 
-  <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
-    <a
-      href="{% url 'cycles:ciclo_list' %}"
-      class="font-ui text-sm font-medium text-emerald-700 hover:text-emerald-800"
-    >Ver checklist nos ciclos</a>
+  <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
+    {% url 'cycles:ciclo_list' as ciclos_guidance_url %}
+    {% include "components/button.html" with label="Ver checklist nos ciclos" href=ciclos_guidance_url variant="secondary" %}
     {% if rh_has_cargo_blockers %}
-    <a
-      href="{% url 'organization:cargo_list' %}"
-      class="font-ui text-sm font-medium text-emerald-700 hover:text-emerald-800"
-      data-blocker-kind="cargo_missing_competencies"
-    >Revisar cargos sem competências/pesos</a>
+      {% url 'organization:cargo_list' as cargo_guidance_url %}
+      {% include "components/button.html" with label="Revisar cargos sem competências/pesos" href=cargo_guidance_url variant="secondary" attrs='data-blocker-kind="cargo_missing_competencies"' %}
     {% endif %}
   </div>
 </section>
 
 {% include "organization/user_pending_list_partial.html" %}
+</div>
 {% endblock %}

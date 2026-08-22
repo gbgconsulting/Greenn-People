@@ -3,7 +3,7 @@
 {% block title %}{% if object %}Editar cargo{% else %}Novo cargo{% endif %} — Greenn People{% endblock %}
 
 {% block content %}
-<div class="mx-auto max-w-lg">
+<div class="mx-auto min-w-0 max-w-lg">
   <header class="mb-6">
     <h1 class="font-display text-2xl font-semibold text-slate-800">
       {% if object %}Editar cargo{% else %}Novo cargo{% endif %}
@@ -11,38 +11,34 @@
     <p class="mt-1 font-ui text-sm text-slate-500">Nome e nível de senioridade do cargo.</p>
   </header>
 
-  <form method="post" novalidate class="rounded-xl border border-line bg-surface-card p-6">
-    {% csrf_token %}
+  <div class="rounded-xl border border-line bg-surface-card p-6">
+    <form method="post" novalidate>
+      {% csrf_token %}
 
-    {% if form.non_field_errors %}
-      <div class="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 font-ui text-sm text-rose-700" role="alert">
-        {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+      {% if form.non_field_errors %}
+        <div class="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700" role="alert">
+          {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+        </div>
+      {% endif %}
+
+      {% include "components/input.html" with label=form.nome.label name=form.nome.html_name type="text" value=form.nome.value id=form.nome.id_for_label error=form.nome.errors.0 %}
+
+      {% include "components/input.html" with label=form.nivel.label name=form.nivel.html_name type="number" value=form.nivel.value id=form.nivel.id_for_label error=form.nivel.errors.0 attrs='min="1"' %}
+
+      <div class="mb-6 flex items-center gap-2">
+        {{ form.is_active }}
+        <label for="{{ form.is_active.id_for_label }}" class="text-sm text-slate-700">{{ form.is_active.label }}</label>
+        {% if form.is_active.errors %}
+          <p class="text-xs text-rose-600" role="alert">{{ form.is_active.errors.0 }}</p>
+        {% endif %}
       </div>
-    {% endif %}
 
-    <div class="mb-4">
-      <label for="{{ form.nome.id_for_label }}" class="mb-1 block font-ui text-sm font-medium text-slate-700">{{ form.nome.label }}</label>
-      {{ form.nome }}
-      {% if form.nome.errors %}<p class="mt-1 font-ui text-xs text-rose-600" role="alert">{{ form.nome.errors.0 }}</p>{% endif %}
-    </div>
-
-    <div class="mb-4">
-      <label for="{{ form.nivel.id_for_label }}" class="mb-1 block font-ui text-sm font-medium text-slate-700">{{ form.nivel.label }}</label>
-      {{ form.nivel }}
-      {% if form.nivel.errors %}<p class="mt-1 font-ui text-xs text-rose-600" role="alert">{{ form.nivel.errors.0 }}</p>{% endif %}
-    </div>
-
-    <div class="mb-6 flex items-center gap-2">
-      {{ form.is_active }}
-      <label for="{{ form.is_active.id_for_label }}" class="font-ui text-sm text-slate-700">{{ form.is_active.label }}</label>
-      {% if form.is_active.errors %}<p class="font-ui text-xs text-rose-600" role="alert">{{ form.is_active.errors.0 }}</p>{% endif %}
-    </div>
-
-    <div class="flex flex-wrap gap-3">
-      {% url 'organization:cargo_list' as cancel_url %}
-      {% include "components/button.html" with label="Salvar" type="submit" variant="primary" %}
-      {% include "components/button.html" with label="Cancelar" href=cancel_url variant="secondary" %}
-    </div>
-  </form>
+      <div class="flex flex-wrap gap-3">
+        {% url 'organization:cargo_list' as cancel_url %}
+        {% include "components/button.html" with label="Salvar" type="submit" variant="primary" %}
+        {% include "components/button.html" with label="Cancelar" href=cancel_url variant="secondary" %}
+      </div>
+    </form>
+  </div>
 </div>
 {% endblock %}

@@ -34,9 +34,9 @@
     <h2 id="filtros-heading" class="font-display text-lg font-medium text-slate-800">
       Filtros
     </h2>
-        <p class="mt-0.5 text-sm text-slate-500">
-          Escolha o ciclo, a área e o cargo para ajustar a visão.
-        </p>
+    <p class="mt-0.5 text-sm text-slate-500">
+      Escolha o ciclo, a área e o cargo para ajustar a visão.
+    </p>
   </div>
   <form method="get" class="grid grid-cols-1 gap-3 sm:flex sm:flex-wrap sm:items-end" role="search" aria-label="Filtrar estrutura">
     {% include "dashboard/_ciclo_selector.html" with ciclo_selector_embed=True %}
@@ -114,28 +114,19 @@
       {% endif %}
     </div>
 
-    {% if cobertura_resumo.has_ciclo %}
-    {% if chart_cobertura_area.has_data or chart_cobertura_cargo.has_data %}
-    <div class="min-w-0" aria-labelledby="cobertura-charts-heading">
-      <div class="mb-3">
-        <h3 id="cobertura-charts-heading" class="font-display text-lg font-medium text-slate-800">
-          Cobertura por área e cargo
-        </h3>
-        <p class="mt-0.5 text-sm text-slate-500">
-          Percentual de pessoas com avaliação. Quem está mais atrás aparece em destaque.
-        </p>
-      </div>
-      <div class="grid grid-cols-1 gap-4 {% if chart_cobertura_area.has_data and chart_cobertura_cargo.has_data %}lg:grid-cols-2{% endif %}">
-        {% if chart_cobertura_area.has_data %}
-          {% include "dashboard/_chart_block.html" with chart=chart_cobertura_area script_id="chart-cobertura-area" insight="Quanto por cento das pessoas de cada área já têm avaliação. Áreas menores ficam em Outros." %}
-        {% endif %}
+    <div class="min-w-0 grid grid-cols-1 gap-4 lg:grid-cols-2" aria-label="Cobertura por área e cargo">
+      {% if chart_cobertura_area.has_data %}
+        {% include "dashboard/_chart_block.html" with chart=chart_cobertura_area script_id="chart-cobertura-area" insight="Quanto por cento das pessoas de cada área já têm avaliação. Áreas menores ficam em Outros." %}
+      {% else %}
+        {% include "dashboard/_chart_block.html" with chart=chart_cobertura_area script_id="chart-cobertura-area" %}
+      {% endif %}
 
-        {% if chart_cobertura_cargo.has_data %}
-          {% include "dashboard/_chart_block.html" with chart=chart_cobertura_cargo script_id="chart-cobertura-cargo" insight="Quanto por cento das pessoas de cada cargo já têm avaliação. Cargos menores ficam em Outros." %}
-        {% endif %}
-      </div>
+      {% if chart_cobertura_cargo.has_data %}
+        {% include "dashboard/_chart_block.html" with chart=chart_cobertura_cargo script_id="chart-cobertura-cargo" insight="Quanto por cento das pessoas de cada cargo já têm avaliação. Cargos menores ficam em Outros." %}
+      {% else %}
+        {% include "dashboard/_chart_block.html" with chart=chart_cobertura_cargo script_id="chart-cobertura-cargo" %}
+      {% endif %}
     </div>
-    {% endif %}
 
     <div class="min-w-0" aria-labelledby="lideres-heading">
       <div class="mb-3">
@@ -143,29 +134,29 @@
           Líderes da estrutura
         </h3>
         <p class="mt-0.5 text-sm text-slate-500">
-          Aderência de cada líder. Para o detalhe completo, use Ver aderência.
+          Visão secundária por líder. Para o detalhe completo de aderência, use Ver aderência.
         </p>
       </div>
       <div class="table-frame">
-        <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
-          <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+        <table>
+          <thead>
             <tr>
-              <th class="px-4 py-3 font-medium">Líder</th>
-              <th class="px-4 py-3 font-medium">Área</th>
-              <th class="px-4 py-3 font-medium">Cargo</th>
-              <th class="px-4 py-3 font-medium">Aderência</th>
+              <th>Líder</th>
+              <th>Área</th>
+              <th>Cargo</th>
+              <th>Aderência</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100">
+          <tbody>
             {% for item in lideres_resumo %}
-            <tr class="hover:bg-slate-50">
-              <td class="px-4 py-3">
+            <tr>
+              <td>
                 <p class="font-medium text-slate-800">{{ item.lider.nome|default:item.lider.email }}</p>
                 <p class="text-xs text-slate-500">{{ item.lider.email }}</p>
               </td>
-              <td class="px-4 py-3 text-slate-600">{{ item.lider.area.nome|default:"—" }}</td>
-              <td class="px-4 py-3 text-slate-600">{{ item.lider.cargo.nome|default:"—" }}</td>
-              <td class="px-4 py-3 font-semibold tabular-nums text-slate-800">
+              <td class="text-slate-600">{{ item.lider.area.nome|default:"—" }}</td>
+              <td class="text-slate-600">{{ item.lider.cargo.nome|default:"—" }}</td>
+              <td class="font-semibold tabular-nums text-slate-800">
                 {% if item.snapshot %}
                   {{ item.snapshot.percentual }}%
                 {% else %}
@@ -175,8 +166,12 @@
             </tr>
             {% empty %}
             <tr>
-              <td colspan="4" class="px-4 py-8">
-                {% include "components/empty_state.html" with title="Nenhum líder encontrado" message="Não há líderes para os filtros atuais. Tente outro ciclo, área ou cargo." %}
+              <td colspan="4" class="!py-8">
+                {% if cobertura_resumo.has_ciclo %}
+                  {% include "components/empty_state.html" with title="Nenhum líder encontrado" message="Ainda não há informações nesta seção." %}
+                {% else %}
+                  {% include "components/empty_state.html" with title="Sem ciclo aberto" message="Não há ciclo aberto. Você pode escolher outro ciclo pelo seletor." %}
+                {% endif %}
               </td>
             </tr>
             {% endfor %}
@@ -195,33 +190,37 @@
         </p>
       </div>
       <div class="table-frame">
-        <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
-          <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+        <table>
+          <thead>
             <tr>
-              <th class="px-4 py-3 font-medium">Área</th>
-              <th class="px-4 py-3 font-medium">Competência</th>
-              <th class="px-4 py-3 font-medium">Média nota</th>
-              <th class="px-4 py-3 font-medium">Média esperado</th>
-              <th class="px-4 py-3 font-medium">Lacuna média</th>
-              <th class="px-4 py-3 font-medium">Com lacuna</th>
+              <th>Área</th>
+              <th>Competência</th>
+              <th>Média nota</th>
+              <th>Média esperado</th>
+              <th>Lacuna média</th>
+              <th>Com lacuna</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100">
+          <tbody>
             {% for row in lacunas_por_area %}
-            <tr class="hover:bg-slate-50">
-              <td class="px-4 py-3 font-medium text-slate-800">{{ row.area_nome }}</td>
-              <td class="px-4 py-3 text-slate-600">{{ row.competencia_nome }}</td>
-              <td class="px-4 py-3 tabular-nums text-slate-800">{{ row.media_nota|default:"—" }}</td>
-              <td class="px-4 py-3 tabular-nums text-slate-800">{{ row.media_esperado|default:"—" }}</td>
-              <td class="px-4 py-3 font-semibold tabular-nums {% if row.media_lacuna and row.media_lacuna > 0 %}text-rose-700{% else %}text-slate-800{% endif %}">
+            <tr>
+              <td class="font-medium text-slate-800">{{ row.area_nome }}</td>
+              <td class="text-slate-600">{{ row.competencia_nome }}</td>
+              <td class="tabular-nums text-slate-800">{{ row.media_nota|default:"—" }}</td>
+              <td class="tabular-nums text-slate-800">{{ row.media_esperado|default:"—" }}</td>
+              <td class="font-semibold tabular-nums {% if row.media_lacuna and row.media_lacuna > 0 %}text-rose-600{% else %}text-slate-800{% endif %}">
                 {{ row.media_lacuna|default:"—" }}
               </td>
-              <td class="px-4 py-3 tabular-nums text-slate-600">{{ row.com_lacuna }}/{{ row.total }}</td>
+              <td class="tabular-nums text-slate-600">{{ row.com_lacuna }}/{{ row.total }}</td>
             </tr>
             {% empty %}
             <tr>
-              <td colspan="6" class="px-4 py-8">
-                {% include "components/empty_state.html" with title="Sem diferenças por área" message="Ainda não há notas do líder para comparar com o esperado por área." %}
+              <td colspan="6" class="!py-8">
+                {% if cobertura_resumo.has_ciclo %}
+                  {% include "components/empty_state.html" with title="Sem diferenças por área" message="Ainda não há informações nesta seção." %}
+                {% else %}
+                  {% include "components/empty_state.html" with title="Sem ciclo aberto" message="Não há ciclo aberto. Você pode escolher outro ciclo pelo seletor." %}
+                {% endif %}
               </td>
             </tr>
             {% endfor %}
@@ -240,33 +239,37 @@
         </p>
       </div>
       <div class="table-frame">
-        <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
-          <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+        <table>
+          <thead>
             <tr>
-              <th class="px-4 py-3 font-medium">Cargo</th>
-              <th class="px-4 py-3 font-medium">Competência</th>
-              <th class="px-4 py-3 font-medium">Média nota</th>
-              <th class="px-4 py-3 font-medium">Média esperado</th>
-              <th class="px-4 py-3 font-medium">Lacuna média</th>
-              <th class="px-4 py-3 font-medium">Com lacuna</th>
+              <th>Cargo</th>
+              <th>Competência</th>
+              <th>Média nota</th>
+              <th>Média esperado</th>
+              <th>Lacuna média</th>
+              <th>Com lacuna</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100">
+          <tbody>
             {% for row in lacunas_por_cargo %}
-            <tr class="hover:bg-slate-50">
-              <td class="px-4 py-3 font-medium text-slate-800">{{ row.cargo_nome }}</td>
-              <td class="px-4 py-3 text-slate-600">{{ row.competencia_nome }}</td>
-              <td class="px-4 py-3 tabular-nums text-slate-800">{{ row.media_nota|default:"—" }}</td>
-              <td class="px-4 py-3 tabular-nums text-slate-800">{{ row.media_esperado|default:"—" }}</td>
-              <td class="px-4 py-3 font-semibold tabular-nums {% if row.media_lacuna and row.media_lacuna > 0 %}text-rose-700{% else %}text-slate-800{% endif %}">
+            <tr>
+              <td class="font-medium text-slate-800">{{ row.cargo_nome }}</td>
+              <td class="text-slate-600">{{ row.competencia_nome }}</td>
+              <td class="tabular-nums text-slate-800">{{ row.media_nota|default:"—" }}</td>
+              <td class="tabular-nums text-slate-800">{{ row.media_esperado|default:"—" }}</td>
+              <td class="font-semibold tabular-nums {% if row.media_lacuna and row.media_lacuna > 0 %}text-rose-600{% else %}text-slate-800{% endif %}">
                 {{ row.media_lacuna|default:"—" }}
               </td>
-              <td class="px-4 py-3 tabular-nums text-slate-600">{{ row.com_lacuna }}/{{ row.total }}</td>
+              <td class="tabular-nums text-slate-600">{{ row.com_lacuna }}/{{ row.total }}</td>
             </tr>
             {% empty %}
             <tr>
-              <td colspan="6" class="px-4 py-8">
-                {% include "components/empty_state.html" with title="Sem diferenças por cargo" message="Ainda não há notas do líder para comparar com o esperado por cargo." %}
+              <td colspan="6" class="!py-8">
+                {% if cobertura_resumo.has_ciclo %}
+                  {% include "components/empty_state.html" with title="Sem diferenças por cargo" message="Ainda não há informações nesta seção." %}
+                {% else %}
+                  {% include "components/empty_state.html" with title="Sem ciclo aberto" message="Não há ciclo aberto. Você pode escolher outro ciclo pelo seletor." %}
+                {% endif %}
               </td>
             </tr>
             {% endfor %}
@@ -274,11 +277,6 @@
         </table>
       </div>
     </div>
-    {% else %}
-    <div class="min-w-0">
-      {% include "components/empty_state.html" with title="Sem ciclo aberto" message=chart_cobertura_area.empty_message %}
-    </div>
-    {% endif %}
   </div>
 </section>
 {% endblock %}

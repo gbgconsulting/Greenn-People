@@ -142,57 +142,41 @@ class PersonalDashboardView(LoginRequiredMixin, TemplateView):
         """Barras esperado × nota a partir de ``competencias_resumo`` (US1).
 
         Type canônico ``bar_grouped`` (chart-catalog) — só apresentação.
-        Empty honesto (has_data false + empty_state via _chart_block):
-        vínculo pendente / lista vazia / nenhuma nota comparável.
-        Densidade: Top-N por |gap| só entre competências **com nota**;
-        resto omitido (sem média / sem rótulo ``Outros``). ``null`` em
-        ``nota_atual`` permanece null — não vira 0 (FR-006). MUST NOT
-        ler ``visao=`` (FR-016 — pessoal sem tendência).
+        Empty honesto via kinds D (012) + ``_chart_block``:
+        vínculo pendente / lista vazia → ``sem_dado``; nenhuma nota
+        comparável → ``sem_nota``. Densidade: Top-N por |gap| só entre
+        competências **com nota**; resto omitido (sem média / sem rótulo
+        ``Outros``). ``null`` em ``nota_atual`` permanece null — não vira 0
+        (FR-006). MUST NOT ler ``visao=`` (FR-016 — pessoal sem tendência).
         """
         title = 'Esperado × nota por competência'
         chart_type = CHART_TYPE_BAR_GROUPED
-        empty_sem_notas = (
-            'Ainda não há notas por competência para comparar com o esperado.'
-        )
+        chart_id = 'chart-gaps-competencia'
 
         if fr005.get('vinculo_pendente'):
-            return grouped_series_payload(
-                chart_id='chart-gaps-competencia',
+            return empty_kind_payload(
+                kind=EMPTY_KIND_SEM_DADO,
+                chart_id=chart_id,
                 chart_type=chart_type,
                 title=title,
-                labels=[],
-                series=[],
-                empty_message=(
-                    'Seu cargo ou competências ainda não foram definidos. '
-                    'Peça ao RH para concluir o cadastro.'
-                ),
-                has_data=False,
             )
 
         competencias: list[dict] = list(fr005.get('competencias_resumo') or [])
         if not competencias:
-            return grouped_series_payload(
-                chart_id='chart-gaps-competencia',
+            return empty_kind_payload(
+                kind=EMPTY_KIND_SEM_DADO,
+                chart_id=chart_id,
                 chart_type=chart_type,
                 title=title,
-                labels=[],
-                series=[],
-                empty_message=(
-                    'Não há competências no seu cargo para mostrar o comparativo.'
-                ),
-                has_data=False,
             )
 
         # Sem nenhuma nota → empty honesto (não desenhar só níveis esperados).
         if all(item.get('nota_atual') is None for item in competencias):
-            return grouped_series_payload(
-                chart_id='chart-gaps-competencia',
+            return empty_kind_payload(
+                kind=EMPTY_KIND_SEM_NOTA,
+                chart_id=chart_id,
                 chart_type=chart_type,
                 title=title,
-                labels=[],
-                series=[],
-                empty_message=empty_sem_notas,
-                has_data=False,
             )
 
         # Top-N por |gap| com nota; resto omitido (sem média inventada).
@@ -217,7 +201,7 @@ class PersonalDashboardView(LoginRequiredMixin, TemplateView):
             nota_values.append(float(nota) if nota is not None else None)
 
         return grouped_series_payload(
-            chart_id='chart-gaps-competencia',
+            chart_id=chart_id,
             chart_type=chart_type,
             title=title,
             labels=labels,
@@ -233,7 +217,7 @@ class PersonalDashboardView(LoginRequiredMixin, TemplateView):
                     'values': nota_values,
                 },
             ],
-            empty_message=empty_sem_notas,
+            empty_message=EMPTY_KIND_COPY[EMPTY_KIND_SEM_NOTA],
             has_data=True,
             total=len(labels),
         )
@@ -797,8 +781,10 @@ class AdminDashboardView(LoginRequiredMixin, RequiresAdminMixin, TemplateView):
             context['avaliacoes_resumo'] = self._avaliacoes_resumo(None)
             context['aderencia_resumo'] = self._aderencia_resumo(None)
             context['snapshots_destaque'] = []
+            # Pipeline não é série de desempenho: ``sem_nota`` fica só na aderência.
+            # Slot operacional fica de lado no histórico — empty ``sem_dado`` no context.
             context['chart_ciclo_progresso'] = empty_kind_payload(
-                kind=EMPTY_KIND_SEM_NOTA,
+                kind=EMPTY_KIND_SEM_DADO,
                 chart_id='chart-ciclo-progresso',
                 chart_type=CHART_TYPE_BAR_HORIZONTAL,
                 title='Progresso das avaliações no ciclo',
@@ -996,14 +982,16 @@ class AdminDashboardView(LoginRequiredMixin, RequiresAdminMixin, TemplateView):
 
         Barras horizontais expressivas + amber no maior volume (acabamento);
         counts e chaves de etapa inalterados (FR-001 / data-model).
+        Zero avaliações → empty ``sem_dado`` (012 / Freeze D) — sem copy ad hoc.
         """
         chart_type = CHART_TYPE_BAR_HORIZONTAL
         title = 'Progresso das avaliações no ciclo'
+        chart_id = 'chart-ciclo-progresso'
         if ciclo is None:
             # Sem aberto / sem ?ciclo=: empty operacional (não plota arquivo).
             return empty_kind_payload(
                 kind=EMPTY_KIND_OPERACIONAL,
-                chart_id='chart-ciclo-progresso',
+                chart_id=chart_id,
                 chart_type=chart_type,
                 title=title,
             )
@@ -1017,16 +1005,20 @@ class AdminDashboardView(LoginRequiredMixin, RequiresAdminMixin, TemplateView):
                 .annotate(total=Count('pk'))
             )
         }
-        # Zero avaliações → has_data false + mensagem PT-BR (sem série fictícia).
+        if not key_counts or sum(key_counts.values()) == 0:
+            return empty_kind_payload(
+                kind=EMPTY_KIND_SEM_DADO,
+                chart_id=chart_id,
+                chart_type=chart_type,
+                title=title,
+            )
         return categorical_counts_payload(
             key_counts,
             ordered_keys=etapa_keys,
             labels_by_key=labels_by_key,
-            chart_id='chart-ciclo-progresso',
+            chart_id=chart_id,
             chart_type=chart_type,
             title=title,
-            empty_message=(
-                'Ainda não há avaliações neste ciclo.'
-            ),
+            empty_message=EMPTY_KIND_COPY[EMPTY_KIND_SEM_DADO],
             highlight_max=True,
         )

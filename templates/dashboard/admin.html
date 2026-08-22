@@ -69,11 +69,13 @@
 
     {% include "dashboard/_chart_block.html" with chart=chart_stage_history script_id="chart-stage-history" %}
 
-    {% if chart_aderencia_distribuicao.has_data %}
-      {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" %}
-    {% elif chart_aderencia_distribuicao %}
-    <p class="text-sm text-slate-500">{{ chart_aderencia_distribuicao.empty_message }}</p>
-    {% endif %}
+    <div class="min-w-0" id="aderencia-heading">
+      {% if chart_aderencia_distribuicao.has_data %}
+        {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" insight="Alta, média e baixa — o número no centro é o total de líderes." %}
+      {% else %}
+        {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" %}
+      {% endif %}
+    </div>
     </div>
     {% elif ciclo_kpis.has_ciclo %}
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores do ciclo">
@@ -94,26 +96,30 @@
       {% include "components/card.html" with label="Sem avaliação" value=ciclo_kpis.sem_avaliacao body="Pessoas ativas que ainda não entraram no ciclo." %}
     </div>
 
-    <div class="grid min-w-0 grid-cols-1 gap-4 {% if chart_aderencia_distribuicao.has_data %}lg:grid-cols-2 lg:items-start{% endif %}">
+    <div class="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
       <div class="min-w-0" id="pipeline-heading">
-        {% if chart_ciclo_progresso.has_data %}
-          {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" insight="Quantas avaliações estão em cada etapa." %}
+        {% if chart_ciclo_progresso.has_data and ciclo_kpis.gargalo_label %}
+          {% with insight_txt="Mais avaliações em "|add:ciclo_kpis.gargalo_label|add:" — concentre a atenção aí." %}
+          {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" insight=insight_txt kpi_label="Total" kpi_value=chart_ciclo_progresso.total kpi_body="avaliações no ciclo" %}
+          {% endwith %}
+        {% elif chart_ciclo_progresso.has_data %}
+          {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" kpi_label="Total" kpi_value=chart_ciclo_progresso.total kpi_body="avaliações no ciclo" %}
         {% else %}
           {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" %}
         {% endif %}
       </div>
-      {% if chart_aderencia_distribuicao.has_data %}
       <div class="min-w-0" id="aderencia-heading">
-        {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" insight="Alta, média e baixa — o número no centro é o total de líderes." %}
+        {% if chart_aderencia_distribuicao.has_data %}
+          {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" insight="Alta, média e baixa — o número no centro é o total de líderes." %}
+        {% else %}
+          {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" %}
+        {% endif %}
       </div>
-      {% elif chart_aderencia_distribuicao %}
-      <p class="text-sm text-slate-500">{{ chart_aderencia_distribuicao.empty_message }}</p>
-      {% endif %}
     </div>
 
     <div class="min-w-0" aria-labelledby="baixa-aderencia-heading">
-      <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-        <div>
+      <div class="mb-3 flex flex-wrap items-start justify-between gap-2">
+        <div class="min-w-0">
           <h3 id="baixa-aderencia-heading" class="font-display text-lg font-medium text-slate-800">
             Líderes com menor aderência
           </h3>
@@ -121,9 +127,8 @@
             Quem precisa de mais atenção neste ciclo.
           </p>
         </div>
-        <a href="{% url 'dashboard:adherence' %}" class="text-sm font-medium text-emerald-700 hover:text-emerald-800">
-          Ver todos
-        </a>
+        {% url 'dashboard:adherence' as adherence_todos_url %}
+        {% include "components/button.html" with label="Ver todos" href=adherence_todos_url variant="secondary" %}
       </div>
 
       <div class="table-frame">
@@ -169,9 +174,13 @@
       {% include "components/card.html" with label="Pendências" value="—" body="Disponível quando houver um ciclo selecionado." %}
       {% include "components/card.html" with label="Sem avaliação" value="—" body="Disponível quando houver um ciclo selecionado." %}
     </div>
-    <div class="min-w-0">
-      {% url 'cycles:ciclo_list' as ciclos_url %}
-      {% include "components/empty_state.html" with title="Sem ciclo aberto" message=chart_ciclo_progresso.empty_message cta_label="Gerenciar ciclos" cta_href=ciclos_url %}
+    <div class="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
+      <div class="min-w-0" id="pipeline-heading">
+        {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" %}
+      </div>
+      <div class="min-w-0" id="aderencia-heading">
+        {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" %}
+      </div>
     </div>
     {% endif %}
   </div>

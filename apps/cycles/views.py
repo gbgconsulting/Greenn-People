@@ -229,7 +229,13 @@ class CicloDetailView(AdminCyclesMixin, DetailView):
         context['visao'] = None
         context['chart_stage_history'] = None
         # Pipeline do ``pk`` sempre (modo operacional e histórico).
-        context['chart_ciclo_progresso'] = self._chart_ciclo_progresso(ciclo)
+        # Presentation only (US1 / T010): gargalo_label do pico estrito — mesmos
+        # counts; sem mutar etapa/QS. Espelho de admin ``ciclo_kpis.gargalo_label``.
+        chart_progresso = self._chart_ciclo_progresso(ciclo)
+        context['chart_ciclo_progresso'] = chart_progresso
+        context['progresso_gargalo_label'] = self._progresso_gargalo_label(
+            chart_progresso,
+        )
         context['avaliacoes_resumo'] = self._avaliacoes_resumo(
             ciclo,
             sem_desempenho=sem_desempenho,
@@ -328,7 +334,13 @@ class CicloDetailView(AdminCyclesMixin, DetailView):
         }
 
     def _chart_ciclo_progresso(self, ciclo: Ciclo) -> dict:
-        """Contagem ``Avaliacao.etapa`` no ciclo → payload catálogo (US1)."""
+        """Contagem ``Avaliacao.etapa`` no ciclo → payload catálogo (US1).
+
+        Zero avaliações → empty ``sem_dado`` (012 / Freeze D) — espelho admin.
+        """
+        chart_type = CHART_TYPE_BAR_HORIZONTAL
+        title = 'Progresso das avaliações no ciclo'
+        chart_id = 'chart-ciclo-progresso'
         etapa_keys = [choice.value for choice in Avaliacao.Etapa]
         labels_by_key = dict(Avaliacao.Etapa.choices)
         key_counts = {
@@ -339,18 +351,42 @@ class CicloDetailView(AdminCyclesMixin, DetailView):
                 .annotate(total=Count('pk'))
             )
         }
+        if not key_counts or sum(key_counts.values()) == 0:
+            return empty_kind_payload(
+                kind=EMPTY_KIND_SEM_DADO,
+                chart_id=chart_id,
+                chart_type=chart_type,
+                title=title,
+            )
         return categorical_counts_payload(
             key_counts,
             ordered_keys=etapa_keys,
             labels_by_key=labels_by_key,
-            chart_id='chart-ciclo-progresso',
-            chart_type=CHART_TYPE_BAR_HORIZONTAL,
-            title='Progresso das avaliações no ciclo',
-            empty_message=(
-                'Não há avaliações neste ciclo para exibir progresso.'
-            ),
+            chart_id=chart_id,
+            chart_type=chart_type,
+            title=title,
+            empty_message=empty_kind_message(EMPTY_KIND_SEM_DADO),
             highlight_max=True,
         )
+
+    @staticmethod
+    def _progresso_gargalo_label(chart: dict) -> str | None:
+        """Rótulo do pico estrito (mesmo critério de ``highlight_max`` / amber).
+
+        Só apresentação para insight do ``_chart_block`` — não altera counts.
+        Empate total (máx == mín) → ``None`` (mono, sem callout de gargalo).
+        """
+        if not chart.get('has_data'):
+            return None
+        values = chart.get('values') or []
+        labels = chart.get('labels') or []
+        if not values or len(values) != len(labels):
+            return None
+        max_index = max(range(len(values)), key=lambda i: values[i])
+        peak = values[max_index]
+        if peak <= 0 or peak <= min(values):
+            return None
+        return labels[max_index]
 
     def _chart_aderencia_distribuicao(
         self,

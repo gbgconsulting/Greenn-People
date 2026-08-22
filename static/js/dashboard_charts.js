@@ -448,16 +448,21 @@
     var type = resolveChartType(payload.type);
     var labels = payload.labels || [];
     var values = (payload.values || []).map(asNullableNumber);
-    var colors =
-      payload.colors && payload.colors.length ? payload.colors : STATUS_TRIAD;
     var isDoughnut = type === 'doughnut';
     var horizontal = payload.type === 'bar_horizontal';
+    // Doughnut = Status Triad; bar / bar_horizontal = mono teal.
+    // Amber no gargalo só quando o payload (highlight_max) traz colors.
+    var defaultColors = isDoughnut ? STATUS_TRIAD : [COLOR_FINISH_TEAL];
+    var colors =
+      payload.colors && payload.colors.length ? payload.colors : defaultColors;
     var valueUnit = payload.value_unit || '';
     // Barra categórica: cores por faixa quando o payload traz triad/lista;
     // legenda Chart.js oculta (datalabel + figcaption). Doughnut: legenda com texto.
     var perCategoryColors =
       isDoughnut || (colors.length > 1 && colors.length >= labels.length);
-    var fill = perCategoryColors ? colors : colors[0] || STATUS_TRIAD[0];
+    var fill = perCategoryColors
+      ? colors
+      : colors[0] || (isDoughnut ? STATUS_TRIAD[0] : COLOR_FINISH_TEAL);
 
     var dataset = {
       label: payload.title || '',

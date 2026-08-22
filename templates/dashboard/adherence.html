@@ -72,12 +72,13 @@
       {% endif %}
     </div>
 
-    {% if aderencia_resumo.has_ciclo %}
-    {% if chart_aderencia_distribuicao.has_data %}
-      {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" kpi_label="Líderes" kpi_value=chart_aderencia_distribuicao.total kpi_body="com aderência no escopo" insight="Distribuição em alta, média e baixa — o centro mostra o total." %}
-    {% else %}
-      {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" %}
-    {% endif %}
+    <div class="min-w-0" id="aderencia-chart-heading">
+      {% if chart_aderencia_distribuicao.has_data %}
+        {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" kpi_label="Líderes" kpi_value=chart_aderencia_distribuicao.total kpi_body="com aderência no escopo" insight="Alta, média e baixa — o número no centro é o total de líderes." %}
+      {% else %}
+        {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" %}
+      {% endif %}
+    </div>
 
     <div class="min-w-0" aria-labelledby="aderencia-drilldown-heading">
       <div class="mb-3">
@@ -90,11 +91,6 @@
       </div>
       {% include "dashboard/adherence_list_partial.html" %}
     </div>
-    {% else %}
-    <div class="min-w-0">
-      {% include "components/empty_state.html" with title="Sem ciclo aberto" message=chart_aderencia_distribuicao.empty_message %}
-    </div>
-    {% endif %}
   </div>
 </section>
 {% endblock %}
