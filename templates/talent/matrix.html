@@ -23,7 +23,7 @@
   </div>
 </header>
 
-<section class="mb-8" aria-labelledby="filtros-heading">
+<section class="mb-8 min-w-0" aria-labelledby="filtros-heading">
   <div class="mb-3">
     <h2 id="filtros-heading" class="font-display text-lg font-medium tracking-tight text-slate-800">
       Filtros
@@ -93,7 +93,7 @@
   {% include "components/empty_state.html" with title="Ciclo necessário" message="Nenhum ciclo disponível. Abra ou selecione um ciclo nos filtros acima para visualizar a matriz." %}
 </section>
 {% else %}
-<section aria-labelledby="matriz-heading">
+<section class="min-w-0" aria-labelledby="matriz-heading">
   <div class="mb-3">
     <h2 id="matriz-heading" class="font-display text-lg font-medium tracking-tight text-slate-800">
       Grade 9-box
@@ -103,7 +103,7 @@
     </p>
   </div>
 
-  <div class="flex flex-col gap-4 xl:flex-row xl:items-start">
+  <div class="flex min-w-0 flex-col gap-4 xl:flex-row xl:items-start">
     <div
       id="matrix-results"
       class="relative min-w-0 flex-1"
@@ -156,7 +156,7 @@
     </div>
 
     <aside
-      class="relative w-full shrink-0 rounded-lg border border-line bg-surface-card p-4 xl:sticky xl:top-4 xl:w-80"
+      class="relative min-w-0 w-full shrink-0 rounded-lg border border-line bg-surface-card p-4 xl:sticky xl:top-4 xl:w-80"
       aria-label="Detalhe da classificação"
     >
       <div class="pointer-events-none absolute right-3 top-3 z-10">

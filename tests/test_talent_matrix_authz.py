@@ -516,6 +516,8 @@ def test_matrix_drawer_get_admin_write_controls(
     assert 'Salvar' in body
     assert 'Liberar' in body or 'Ocultar' in body
     assert 'data-drawer-classify-fallback' in body
+    assert 'text-emerald-700 underline' not in body
+    assert 'data-drawer-close' in body
     assert 'data-drawer-potencial-readonly' not in body
     assert 'data-drawer-readonly-hint' not in body
 
@@ -783,6 +785,30 @@ def test_talent_mine_liberado_mostra_classificacao(
     body = resp.content.decode().lower()
     assert 'nível 2 de 3' in body or 'nivel 2 de 3' in body
     assert 'matriz 9-box' in body
+
+
+@pytest.mark.django_db
+def test_matrix_surface_t020_freeze_markers(
+    classificacao,
+    admin,
+    ciclo_aberto,
+):
+    """T020 [US2]: matriz consome Freeze (table-frame, empty_state, min-w-0; sem cap B1)."""
+    client = Client()
+    client.force_login(admin)
+
+    resp = client.get(reverse('talent:matrix'), data={'ciclo': ciclo_aberto.pk})
+    assert resp.status_code == 200
+    body = resp.content.decode()
+    assert 'ninebox-matrix' in body or 'ninebox-matrix-empty' in body
+    assert 'table-frame' in body
+    assert 'empty_state.html' not in body  # include renderizado, não path
+    assert 'components/empty_state' not in body
+    assert 'max-w-5xl' not in body
+    assert 'max-w-6xl' not in body
+    assert 'min-w-0' in body
+    assert 'badge_status' not in body  # include renderizado
+    assert 'Visível' in body or 'Oculto' in body or 'classificado' in body
 
 
 @pytest.mark.django_db

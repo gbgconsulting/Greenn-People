@@ -65,13 +65,7 @@
       </p>
       {% endif %}
     </div>
-    <button
-      type="button"
-      class="shrink-0 rounded-md px-2 py-1 text-sm font-medium text-ink-muted transition-colors hover:bg-slate-50 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
-      data-drawer-close
-    >
-      Fechar
-    </button>
+    {% include "components/button.html" with label="Fechar" type="button" variant="secondary" extra_class="h-auto shrink-0 px-2 py-1 text-sm" attrs="data-drawer-close" %}
   </header>
 
   <dl class="grid grid-cols-1 gap-3 border-t border-line pt-4 text-sm">
@@ -190,15 +184,10 @@
     {% endif %}
   </form>
 
-  <p class="border-t border-line pt-4 text-sm">
-    <a
-      href="{% url 'talent:classify' usuario.pk %}"
-      class="font-medium text-emerald-700 underline-offset-2 transition-colors hover:text-emerald-800 hover:underline"
-      data-drawer-classify-fallback
-    >
-      Abrir classificação clássica
-    </a>
-  </p>
+  <div class="border-t border-line pt-4">
+    {% url 'talent:classify' usuario.pk as classify_url %}
+    {% include "components/button.html" with label="Abrir classificação clássica" href=classify_url variant="secondary" extra_class="w-full sm:w-auto" attrs="data-drawer-classify-fallback" %}
+  </div>
   {% endif %}
 </section>
 {% endwith %}

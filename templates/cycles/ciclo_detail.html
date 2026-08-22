@@ -96,7 +96,7 @@
       {% include "dashboard/_chart_block.html" with chart=chart_stage_history script_id="chart-stage-history" %}
     {% endif %}
 
-    <div class="grid min-w-0 grid-cols-1 gap-4 {% if chart_aderencia_distribuicao.has_data %}lg:grid-cols-2 lg:items-start{% endif %}">
+    <div class="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
       <div class="min-w-0" id="progresso-heading">
         {% if chart_ciclo_progresso.has_data and progresso_gargalo_label %}
           {% with insight_txt="Mais avaliações em "|add:progresso_gargalo_label|add:" — concentre a atenção aí." %}
@@ -108,50 +108,31 @@
           {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" %}
         {% endif %}
       </div>
-      {% if chart_aderencia_distribuicao.has_data %}
       <div class="min-w-0" id="aderencia-ciclo-heading">
-        {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" insight="Alta, média e baixa — o número no centro é o total de líderes." %}
+        {% if chart_aderencia_distribuicao.has_data %}
+          {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" insight="Alta, média e baixa — o número no centro é o total de líderes." %}
+        {% else %}
+          {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" %}
+        {% endif %}
       </div>
-      {% elif chart_aderencia_distribuicao %}
-      <div class="min-w-0" id="aderencia-ciclo-heading">
-        <h3 class="font-display text-lg font-medium text-slate-800">Aderência da liderança</h3>
-        <p class="mt-1 text-sm text-slate-500">{{ chart_aderencia_distribuicao.empty_message }}</p>
-      </div>
+    </div>
+
+    <div class="min-w-0 grid grid-cols-1 gap-4 lg:grid-cols-2" aria-label="Cobertura por área e cargo">
+      {% if chart_cobertura_area.has_data %}
+        {% include "dashboard/_chart_block.html" with chart=chart_cobertura_area script_id="chart-cobertura-area" insight="Quanto por cento das pessoas de cada área já têm avaliação. As áreas menores ficam agrupadas em Outros." %}
+      {% else %}
+        {% include "dashboard/_chart_block.html" with chart=chart_cobertura_area script_id="chart-cobertura-area" %}
+      {% endif %}
+
+      {% if chart_cobertura_cargo.has_data %}
+        {% include "dashboard/_chart_block.html" with chart=chart_cobertura_cargo script_id="chart-cobertura-cargo" insight="Quanto por cento das pessoas de cada cargo já têm avaliação. Os cargos menores ficam agrupados em Outros." %}
+      {% else %}
+        {% include "dashboard/_chart_block.html" with chart=chart_cobertura_cargo script_id="chart-cobertura-cargo" %}
       {% endif %}
     </div>
 
-    {% if chart_cobertura_area.has_data or chart_cobertura_cargo.has_data %}
-    <div class="min-w-0" aria-labelledby="cobertura-ciclo-heading">
-      <div class="mb-3">
-        <h3 id="cobertura-ciclo-heading" class="font-display text-lg font-medium text-slate-800">
-          Cobertura por área e cargo
-        </h3>
-        <p class="mt-0.5 text-sm text-slate-500">
-          Percentual de pessoas que já têm avaliação, por área e por cargo.
-        </p>
-      </div>
-      <div class="grid grid-cols-1 gap-4 {% if chart_cobertura_area.has_data and chart_cobertura_cargo.has_data %}lg:grid-cols-2{% endif %}">
-        {% if chart_cobertura_area.has_data %}
-          {% include "dashboard/_chart_block.html" with chart=chart_cobertura_area script_id="chart-cobertura-area" insight="Quanto por cento das pessoas de cada área já têm avaliação. As áreas menores ficam agrupadas em Outros." %}
-        {% endif %}
-
-        {% if chart_cobertura_cargo.has_data %}
-          {% include "dashboard/_chart_block.html" with chart=chart_cobertura_cargo script_id="chart-cobertura-cargo" insight="Quanto por cento das pessoas de cada cargo já têm avaliação. Os cargos menores ficam agrupados em Outros." %}
-        {% endif %}
-      </div>
-    </div>
-    {% endif %}
-
     {% if chart_gaps_competencia %}
-    <div class="min-w-0" aria-labelledby="gaps-ciclo-heading">
-      <div class="mb-3">
-        <h3 id="gaps-ciclo-heading" class="font-display text-lg font-medium text-slate-800">
-          Esperado × nota
-        </h3>
-        <p class="mt-0.5 text-sm text-slate-500">
-          Comparativo entre o nível esperado e a nota — aparece só quando há notas.
-        </p>
-      </div>
+    <div class="min-w-0" id="gaps-ciclo-heading">
       {% include "dashboard/_chart_block.html" with chart=chart_gaps_competencia script_id="chart-gaps-competencia" %}
     </div>
     {% endif %}
@@ -196,16 +177,10 @@
             </span>
             {% if item.fix_url_name == 'organization:user_pending' %}
               {% url 'organization:user_pending' as fix_href %}
-              <a
-                href="{{ fix_href }}"
-                class="inline-flex min-h-11 w-full shrink-0 items-center font-ui text-sm font-medium text-emerald-700 hover:text-emerald-800 sm:w-auto sm:min-h-0"
-              >Corrigir vínculos</a>
+              {% include "components/button.html" with label="Corrigir vínculos" href=fix_href variant="secondary" extra_class="w-full shrink-0 sm:w-auto" %}
             {% elif item.fix_url_name == 'organization:cargo_list' %}
               {% url 'organization:cargo_list' as fix_href %}
-              <a
-                href="{{ fix_href }}"
-                class="inline-flex min-h-11 w-full shrink-0 items-center font-ui text-sm font-medium text-emerald-700 hover:text-emerald-800 sm:w-auto sm:min-h-0"
-              >Revisar cargos</a>
+              {% include "components/button.html" with label="Revisar cargos" href=fix_href variant="secondary" extra_class="w-full shrink-0 sm:w-auto" %}
             {% endif %}
           </li>
           {% endfor %}

@@ -96,15 +96,15 @@
       {% endif %}
     </div>
 
-    {% if team_resumo.has_ciclo %}
     <div class="min-w-0" id="pipeline-heading">
       {% if chart_escopo_status.has_data %}
-        {% include "dashboard/_chart_block.html" with chart=chart_escopo_status script_id="chart-escopo-status" insight=chart_escopo_status.insight %}
+        {% include "dashboard/_chart_block.html" with chart=chart_escopo_status script_id="chart-escopo-status" insight=chart_escopo_status.insight kpi_label="Total" kpi_value=chart_escopo_status.total kpi_body="pessoas no escopo" %}
       {% else %}
         {% include "dashboard/_chart_block.html" with chart=chart_escopo_status script_id="chart-escopo-status" %}
       {% endif %}
     </div>
 
+    {% if team_resumo.has_ciclo %}
     <div class="min-w-0" aria-labelledby="team-destaque-heading">
       <div class="mb-3">
         <h3 id="team-destaque-heading" class="font-display text-lg font-medium text-slate-800">
@@ -172,6 +172,7 @@
         {% endif %}
       {% endif %}
     </div>
+    {% endif %}
 
     <div class="min-w-0" aria-labelledby="team-drilldown-heading">
       <div class="mb-3">
@@ -184,11 +185,6 @@
       </div>
       {% include "dashboard/team_list_partial.html" %}
     </div>
-    {% else %}
-    <div class="min-w-0">
-      {% include "components/empty_state.html" with title="Sem ciclo aberto" message=chart_escopo_status.empty_message %}
-    </div>
-    {% endif %}
     {% endif %}
   </div>
 </section>

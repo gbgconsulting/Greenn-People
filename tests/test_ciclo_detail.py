@@ -124,8 +124,9 @@ def test_ciclo_detail_quickstart_s3_painel_secoes(admin, ciclo_aberto):
     for needle in (
         'managerial-panel',
         'Progresso das avaliações',
-        'Cobertura por área e cargo',
-        'Aderência da liderança',
+        'Cobertura por área',
+        'Cobertura por cargo',
+        'Distribuição de aderência',
         'Checklist operacional',
         'chart.js@4.5.1',
         'dashboard_charts.js',
@@ -172,14 +173,18 @@ def test_ciclo_detail_quickstart_s3_empty_local_sem_inventar(admin, db):
     assert resp.context['chart_cobertura_area']['has_data'] is False
     assert resp.context['chart_cobertura_cargo']['has_data'] is False
     html = resp.content.decode()
-    # Empty via _chart_block / empty_state — kind ``sem_dado`` (012); sem série inventada.
+    # Empty via _chart_block / empty_state — kinds D (012); sem série inventada.
     assert resp.context['chart_ciclo_progresso']['empty_message'] == (
         EMPTY_KIND_COPY[EMPTY_KIND_SEM_DADO]
     )
     assert 'chart-ciclo-progresso' in html or EMPTY_KIND_COPY[EMPTY_KIND_SEM_DADO] in html
     assert 'data-chart-payload="chart-cobertura-area"' not in html
     assert 'data-chart-payload="chart-cobertura-cargo"' not in html
-    assert 'Cobertura por área e cargo' not in html
+    assert 'data-chart-payload="chart-aderencia-distribuicao"' not in html
+    # Slots always present via _chart_block (titles + empty kinds), sem canvas.
+    assert 'Cobertura por área' in html
+    assert 'Cobertura por cargo' in html
+    assert 'Distribuição de aderência' in html
 
 
 # --- T012 [US1] / quickstart §1.5 (empty ``sem_nota``) ----------------------
@@ -485,7 +490,8 @@ def test_ciclo_detail_visao_historico_resto_da_pagina_intacto(
 
     for needle in (
         'managerial-panel',
-        'Cobertura por área e cargo',
+        'Cobertura por área',
+        'Cobertura por cargo',
         'Checklist operacional',
         'chart.js@4.5.1',
         'dashboard_charts.js',
