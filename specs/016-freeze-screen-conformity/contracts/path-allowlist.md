@@ -156,10 +156,12 @@ Baseline de consumo dos paths de fundação (canônicos + Chart.js 4.5.1): [cano
 
 ## Checklist de revisão de diff
 
-- [ ] Todo path ∈ allowlist da story
-- [ ] `scope.py` / `get_visible_users` = diff vazio
-- [ ] Sem migrations / models
-- [ ] Chart.js permanece 4.5.1
-- [ ] DS só ganhou seção B1 (ou diff vazio se já documentado na mesma PR)
-- [ ] Nenhuma tela fora do inventário A/B
-- [ ] Paginação: no máximo um include fonte alterado
+**Baseline feature 016**: `ee5d6ce...HEAD` (T040, 2026-08-22).
+
+- [x] Todo path ∈ allowlist da story
+- [x] `scope.py` / `get_visible_users` = diff vazio
+- [x] Sem migrations / models
+- [x] Chart.js permanece 4.5.1
+- [x] DS só ganhou seção B1 (ou diff vazio se já documentado na mesma PR)
+- [x] Nenhuma tela fora do inventário A/B
+- [x] Paginação: no máximo um include fonte alterado

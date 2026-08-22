@@ -189,10 +189,23 @@ Monólito Django na raiz. Allowlist completa em `specs/016-freeze-screen-conform
 
 **Purpose**: Gates de aceite mensuráveis, regressão de domínio, confirmação de escopo
 
-- [ ] T039 [P] Rodar regressão de domínio **sem** alterar asserts: `pytest tests/test_stage_machine.py tests/test_scope.py tests/test_reject_stage_invariant.py`
-- [ ] T040 [P] Revisar diff final contra `specs/016-freeze-screen-conformity/contracts/path-allowlist.md` e `non-goals-denylist.md` — `scope.py` / stage / approval / fórmulas / models / migrations / nav / login = diff vazio
-- [ ] T041 Executar aceite completo `specs/016-freeze-screen-conformity/quickstart.md` (gates SC-001…SC-006; personas; ~375px; ESCALATE documentado se houver gap Freeze)
-- [ ] T042 Confirmar `docs/design-system.md` ganhou **somente** B1 (SC-006) e Chart.js permanece 4.5.1 nos templates A que carregam charts
+- [X] T039 [P] Rodar regressão de domínio **sem** alterar asserts: `pytest tests/test_stage_machine.py tests/test_scope.py tests/test_reject_stage_invariant.py`
+  **DONE 2026-08-22**: `pytest tests/test_stage_machine.py tests/test_scope.py tests/test_reject_stage_invariant.py -q` → **25 PASSED** (~32s). Asserts de domínio **não** alterados (só execução).
+- [X] T040 [P] Revisar diff final contra `specs/016-freeze-screen-conformity/contracts/path-allowlist.md` e `non-goals-denylist.md` — `scope.py` / stage / approval / fórmulas / models / migrations / nav / login = diff vazio
+  **DONE 2026-08-22**: Diff feature `ee5d6ce...HEAD` (5 commits 016) revisado.
+  - **Denylist diff vazio**: `scope.py`, `mixins.py` (ScopedObjectMixin), `stage.py`, `cycle.py`, `approval.py`, `evaluation.py`, `adherence.py`, `templates/accounts/**` (login/`base_auth`), `nav_menu.html`, models, migrations, `urls.py`, contratos 009/012.
+  - **Allowlist-only**: templates A/B + `pagination.html` + `dashboard_charts.js` + `docs/design-system.md` (só § B1) + `apps/dashboard/views.py` / `apps/cycles/views.py` (presentation: empty kinds / progresso gargalo) + testes de superfície. `organization`/`competencies`/`talent` views = diff vazio. Fora-inventário (ciclo_list, escala, goals, pdi, reviews, audit, shell) = diff vazio.
+  - **Chart.js 4.5.1** intacto nas superfícies A. Tooling `.cursor/mcp.json` / `.specify/feature.json` fora de domínio (não denylist). Checklist de revisão em `path-allowlist.md` marcado Pass.
+- [X] T041 Executar aceite completo `specs/016-freeze-screen-conformity/quickstart.md` (gates SC-001…SC-006; personas; ~375px; ESCALATE documentado se houver gap Freeze)
+  **DONE 2026-08-22**: Aceite completo PASS.
+  - **Gate 0**: denylist/allowlist reaffirm T040 (`ee5d6ce...HEAD`); `pytest tests/test_stage_machine.py tests/test_scope.py tests/test_reject_stage_invariant.py -q` → **25 PASSED** (~18s). Sem ESCALATE (tokens Freeze+B1 bastaram em toda a feature).
+  - **SC-001…SC-005**: PASS (T023 / T034 / T013 / T038 + re-check estático: 0× `shadow-`/`style="width"` inventário A; Chart.js **4.5.1** em 6 templates A; listas B com caps B1 + `pagination.html`; smoke HTTP 302→login nas rotas Marina/Bruno/Ana).
+  - **SC-006**: evidência PASS — `docs/design-system.md` diff feature = **+113** só § B1 (Freeze A/B/C/D intocados); Chart.js 4.5.1 intacto. **Confirmação formal** permanece em T042.
+  - **Personas / ~375px**: consolidados de T013 (1.1–1.3), T023 (Marina/Bruno/Ana A), T034 (Admin 1.5 B), T038 (US4); SC-004 amostral `min-w-0` / `.table-frame`.
+- [X] T042 Confirmar `docs/design-system.md` ganhou **somente** B1 (SC-006) e Chart.js permanece 4.5.1 nos templates A que carregam charts
+  **DONE 2026-08-22**: SC-006 **PASS** (confirmação formal).
+  - **DS**: `git diff ee5d6ce...HEAD -- docs/design-system.md` → **+113 / −0**; único bloco novo = `## Table-frame · listas de cadastro (Category B / decisão B1)` (FR-017). Headers Freeze A (Charts polish), B/C (Painel), D (Densidade) e KPI/Table-frame base **inalterados** (0 linhas removidas/editadas fora do insert B1).
+  - **Chart.js 4.5.1**: CDN idêntico em 6 templates A com chart — `admin.html`, `team.html`, `personal.html`, `adherence.html`, `structure.html`, `ciclo_detail.html` (`chart.js@4.5.1/dist/chart.umd.min.js`). Nenhuma outra versão em `templates/` / `static/`. DS continua a pinanar 4.5.1.
 
 **Checkpoint**: Feature pronta para `/speckit-implement` / PR — conformidade A+B+B1 sem reabrir domínio
 
