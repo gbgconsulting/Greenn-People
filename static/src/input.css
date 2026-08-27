@@ -154,6 +154,23 @@
     @apply bg-slate-50;
   }
 
+  /* Autoavaliação — botões de escala discretos */
+  .rating-radio-label {
+    @apply flex h-16 w-16 cursor-pointer items-center justify-center rounded-lg border border-line bg-surface-card text-lg font-medium text-slate-600 shadow-sm transition-all hover:bg-slate-50;
+  }
+
+  .rating-radio:checked + .rating-radio-label {
+    @apply border-emerald-600 bg-emerald-600 text-white shadow-md;
+  }
+
+  .rating-radio:focus-visible + .rating-radio-label {
+    @apply ring-2 ring-emerald-500 ring-offset-2 ring-offset-surface outline-none;
+  }
+
+  .rating-radio:disabled + .rating-radio-label {
+    @apply cursor-not-allowed opacity-60;
+  }
+
   /* Filtros/selects — docs → Inputs e formulários (.form-control)
    * Experimento Figma Input: altura ~48px (h-12) + hover de borda. */
   .form-control {

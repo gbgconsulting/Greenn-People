@@ -8,6 +8,13 @@ from django.forms import BaseModelFormSet, modelformset_factory
 from apps.accounts.services.scope import user_in_scope
 from apps.cycles.models import Ciclo
 from apps.reviews.models import Avaliacao, AvaliacaoCompetencia, Feedback
+from apps.reviews.services.evaluation import (
+    MSG_AUTOAVALIACAO_INCOMPLETA,
+    self_assessment_complete,
+)
+from apps.reviews.widgets import ScaleRatingWidget
+
+_DISCRETE_SCALE_MAX_OPTIONS = 10
 
 _INPUT = (
     'w-full max-w-[8rem] rounded-lg border border-slate-200 px-3 py-2 text-sm '
@@ -49,16 +56,33 @@ class SelfAssessmentForm(forms.ModelForm):
             if competencia is not None:
                 escala = getattr(competencia, 'escala', None)
 
-        attrs = {
-            'class': _INPUT,
-            'step': '0.01',
-            'inputmode': 'decimal',
-        }
+        field = self.fields['nota_autoavaliacao']
+        field.required = False
+
         if escala is not None:
-            attrs['min'] = str(escala.valor_minimo)
-            attrs['max'] = str(escala.valor_maximo)
-        self.fields['nota_autoavaliacao'].widget.attrs.update(attrs)
-        self.fields['nota_autoavaliacao'].required = False
+            span = escala.valor_maximo - escala.valor_minimo
+            if span < _DISCRETE_SCALE_MAX_OPTIONS:
+                field.widget = ScaleRatingWidget(
+                    min_value=escala.valor_minimo,
+                    max_value=escala.valor_maximo,
+                )
+            else:
+                attrs = {
+                    'class': _INPUT,
+                    'step': '0.01',
+                    'inputmode': 'decimal',
+                    'min': str(escala.valor_minimo),
+                    'max': str(escala.valor_maximo),
+                }
+                field.widget.attrs.update(attrs)
+        else:
+            field.widget.attrs.update(
+                {
+                    'class': _INPUT,
+                    'step': '0.01',
+                    'inputmode': 'decimal',
+                },
+            )
 
     def clean_nota_autoavaliacao(self):
         nota = self.cleaned_data.get('nota_autoavaliacao')
@@ -117,12 +141,19 @@ SelfAssessmentFormSet = modelformset_factory(
 
 
 def leader_assessment_editable(avaliacao: Avaliacao | None) -> bool:
-    """True se o líder pode registrar notas na etapa de avaliação."""
+    """True se a etapa/ciclo permitem avaliação do líder (sem ordem auto→líder)."""
     if avaliacao is None:
         return False
     if avaliacao.ciclo.status != Ciclo.Status.ABERTO:
         return False
     return avaliacao.etapa == Avaliacao.Etapa.AVALIACAO
+
+
+def leader_assessment_permitted(avaliacao: Avaliacao | None) -> bool:
+    """True se o líder pode registrar notas (etapa correta + autoavaliação concluída)."""
+    return leader_assessment_editable(avaliacao) and self_assessment_complete(
+        avaliacao,
+    )
 
 
 def can_leader_assess(assessor, avaliacao: Avaliacao) -> bool:
@@ -206,6 +237,8 @@ class LeaderAssessmentForm(forms.ModelForm):
                 'A avaliação do líder só pode ser registrada na etapa de '
                 'avaliação de um ciclo aberto.',
             )
+        if not self_assessment_complete(avaliacao):
+            raise forms.ValidationError(MSG_AUTOAVALIACAO_INCOMPLETA)
         return cleaned
 
 
@@ -227,6 +260,8 @@ class BaseLeaderAssessmentFormSet(BaseModelFormSet):
                     'A avaliação do líder só pode ser registrada na etapa de '
                     'avaliação de um ciclo aberto.',
                 )
+            if not self_assessment_complete(avaliacao):
+                raise forms.ValidationError(MSG_AUTOAVALIACAO_INCOMPLETA)
 
 
 LeaderAssessmentFormSet = modelformset_factory(

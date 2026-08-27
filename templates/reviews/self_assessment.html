@@ -3,128 +3,328 @@
 {% block title %}Autoavaliação — Greenn People{% endblock %}
 
 {% block content %}
-<div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-  <div class="min-w-0">
-    <h1 class="font-display text-2xl font-semibold text-slate-800">Autoavaliação</h1>
-    <p class="mt-1 font-ui text-slate-500">
-      Preencha as notas das competências na sua avaliação, com base na escala de cada uma.
-      {% if avaliacao.ciclo %}
-        Ciclo: {{ avaliacao.ciclo.nome }}.
-      {% endif %}
-    </p>
-  </div>
+<div class="mx-auto w-full max-w-[1440px] pb-28">
+  {# —— Cartão de contexto do colaborador —— #}
+  <div class="mb-8 flex flex-col gap-6 rounded-xl border border-line bg-surface-card p-6 shadow-[0_2px_4px_rgba(0,0,0,0.04)] md:flex-row md:items-center md:justify-between">
+    <div class="flex min-w-0 items-center gap-5">
+      <div
+        class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2 border-slate-200 bg-emerald-50 font-display text-xl font-semibold text-emerald-700"
+        aria-hidden="true"
+      >
+        {% if colaborador.nome %}
+          {{ colaborador.nome|slice:":1"|upper }}
+        {% else %}
+          {{ colaborador.email|slice:":1"|upper }}
+        {% endif %}
+      </div>
+      <div class="min-w-0">
+        <h2 class="font-display text-xl font-medium tracking-tight text-slate-800">
+          {{ colaborador.nome|default:colaborador.email }}
+        </h2>
+        {% if colaborador.cargo %}
+        <p class="mt-1 flex items-center gap-2 font-ui text-sm text-slate-500">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true">
+            <path fill-rule="evenodd" d="M6 6V5a3 3 0 0 1 3-3h2a3 3 0 0 1 3 3v1h2a2 2 0 0 1 2 2v3.57A22.952 22.952 0 0 0 10 13a22.95 22.95 0 0 0-8-1.43V8a2 2 0 0 1 2-2h2Zm2-1a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1H8V5Zm1 5a1 1 0 0 1 1-1h.01a1 1 0 1 1 0 2H10a1 1 0 0 1-1-1Z" clip-rule="evenodd" />
+            <path d="M2 13.692V16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2.308A24.974 24.974 0 0 0 10 15c-2.796 0-5.487-.46-8-1.308Z" />
+          </svg>
+          {{ colaborador.cargo.nome }}
+        </p>
+        {% endif %}
+      </div>
+    </div>
 
-  {% if not linhas_vazias and notas_total %}
-  <div
-    class="shrink-0 rounded-lg border border-line bg-surface-card px-3 py-2 font-ui text-sm"
-    data-field="progresso-notas"
-    role="status"
-    aria-live="polite"
-  >
-    {% if avaliacao_progresso_completo %}
-    <p class="font-medium text-emerald-700">
-      Todas as {{ notas_total }} notas preenchidas
-    </p>
-    {% elif notas_restantes == 1 %}
-    <p class="font-medium text-amber-800">Falta 1 nota</p>
-    <p class="mt-0.5 text-xs text-slate-500">
-      {{ notas_preenchidas }} de {{ notas_total }} preenchidas
-    </p>
-    {% else %}
-    <p class="font-medium text-amber-800">
-      Faltam {{ notas_restantes }} notas
-    </p>
-    <p class="mt-0.5 text-xs text-slate-500">
-      {{ notas_preenchidas }} de {{ notas_total }} preenchidas
-    </p>
+    {% if avaliacao.ciclo %}
+    <div class="shrink-0 rounded-lg border border-line bg-slate-50 px-4 py-3 text-right">
+      <p class="font-ui text-xs font-medium uppercase tracking-wider text-slate-500">
+        Período de Avaliação
+      </p>
+      <p class="mt-0.5 font-display text-lg font-medium text-emerald-700">
+        {{ avaliacao.ciclo.nome }}
+      </p>
+    </div>
     {% endif %}
   </div>
-  {% endif %}
-</div>
 
-{% if linhas_vazias %}
-<div
-  class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 font-ui text-sm text-amber-900"
-  role="status"
->
-  <p class="font-medium">Linhas de competência indisponíveis</p>
-  <p class="mt-1 text-amber-800">
-    Ainda não há competências registradas para esta avaliação.
-    Elas são criadas ao entrar na etapa de avaliação.
-  </p>
-  <div class="mt-4">
-    {% url 'dashboard:personal' as cancel_url %}
-    {% include "components/button.html" with label="Voltar" href=cancel_url variant="secondary" %}
+  <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div class="max-w-3xl">
+      <h1 class="font-display text-2xl font-semibold text-slate-800">Autoavaliação</h1>
+      <p class="mt-2 font-ui text-base leading-relaxed text-slate-500">
+        Reflita sobre o seu desempenho neste ciclo. Avalie cada competência com sinceridade,
+        com base na escala de cada uma.
+      </p>
+    </div>
+
+    {% if not linhas_vazias and notas_total %}
+    <div
+      class="shrink-0 rounded-lg border border-line bg-surface-card px-3 py-2 font-ui text-sm"
+      data-field="progresso-notas"
+      role="status"
+      aria-live="polite"
+    >
+      {% if avaliacao_progresso_completo %}
+      <p class="font-medium text-emerald-700">
+        Todas as {{ notas_total }} notas preenchidas
+      </p>
+      {% elif notas_restantes == 1 %}
+      <p class="font-medium text-amber-800">Falta 1 nota</p>
+      <p class="mt-0.5 text-xs text-slate-500">
+        {{ notas_preenchidas }} de {{ notas_total }} preenchidas
+      </p>
+      {% else %}
+      <p class="font-medium text-amber-800">
+        Faltam {{ notas_restantes }} notas
+      </p>
+      <p class="mt-0.5 text-xs text-slate-500">
+        {{ notas_preenchidas }} de {{ notas_total }} preenchidas
+      </p>
+      {% endif %}
+    </div>
+    {% endif %}
   </div>
-</div>
-{% else %}
-<form method="post" novalidate class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-  {% csrf_token %}
-  {{ formset.management_form }}
 
-  {% if formset.non_form_errors %}
-  <div class="border-b border-rose-200 bg-rose-50 px-4 py-3 font-ui text-sm text-rose-700" role="alert">
-    {% for error in formset.non_form_errors %}{{ error }}{% endfor %}
+  {% if linhas_vazias %}
+  <div
+    class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 font-ui text-sm text-amber-900"
+    role="status"
+  >
+    <p class="font-medium">Linhas de competência indisponíveis</p>
+    <p class="mt-1 text-amber-800">
+      Ainda não há competências registradas para esta avaliação.
+      Elas são criadas ao entrar na etapa de avaliação.
+    </p>
+    <div class="mt-4">
+      {% url 'dashboard:personal' as cancel_url %}
+      {% include "components/button.html" with label="Voltar" href=cancel_url variant="secondary" %}
+    </div>
   </div>
-  {% endif %}
+  {% else %}
+  <form method="post" novalidate id="self-assessment-form">
+    {% csrf_token %}
+    {{ formset.management_form }}
 
-  <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
-    <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-      <tr>
-        <th class="px-4 py-3 font-medium">Competência</th>
-        <th class="px-4 py-3 font-medium">Tipo</th>
-        <th class="px-4 py-3 font-medium">Nível esperado</th>
-        <th class="px-4 py-3 font-medium">Escala</th>
-        <th class="px-4 py-3 font-medium">Sua nota</th>
-      </tr>
-    </thead>
-    <tbody class="divide-y divide-slate-100">
-      {% for form in formset %}
-      <tr class="hover:bg-slate-50" id="competencia-row-{{ form.instance.pk }}">
-        {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
-        <td class="px-4 py-3 font-medium text-slate-800">
-          {{ form.instance.competencia.nome }}
-          {% if form.non_field_errors %}
-            <p class="mt-1 text-xs font-normal text-rose-600" role="alert">
-              {{ form.non_field_errors.0 }}
+    {% if formset.non_form_errors %}
+    <div class="mb-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 font-ui text-sm text-rose-700" role="alert">
+      {% for error in formset.non_form_errors %}{{ error }}{% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 items-start gap-6 xl:grid-cols-12">
+      {# —— Coluna principal: competências —— #}
+      <div class="flex flex-col gap-8 xl:col-span-8">
+        {% for form in formset %}
+        <article
+          class="relative overflow-hidden rounded-xl border border-line bg-surface-card p-6 shadow-[0_2px_4px_rgba(0,0,0,0.04)]"
+          id="competencia-row-{{ form.instance.pk }}"
+        >
+          <div class="absolute inset-x-0 top-0 h-1 bg-brand-gradient" aria-hidden="true"></div>
+
+          {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+
+          <div class="mt-2">
+            <h3 class="font-display text-lg font-medium tracking-tight text-slate-800">
+              {{ form.instance.competencia.nome }}
+            </h3>
+            {% if form.instance.competencia.descricao %}
+            <p class="mt-1.5 font-ui text-sm leading-relaxed text-slate-500">
+              {{ form.instance.competencia.descricao }}
             </p>
+            {% endif %}
+            <p class="mt-2 font-ui text-xs text-slate-400">
+              {{ form.instance.competencia.get_tipo_display }}
+              · Nível esperado {{ form.instance.nivel_esperado_utilizado }}
+              · Escala {{ form.instance.competencia.escala.nome }}
+              ({{ form.instance.competencia.escala.valor_minimo }}–{{ form.instance.competencia.escala.valor_maximo }})
+            </p>
+          </div>
+
+          {% if form.non_field_errors %}
+          <p class="mt-3 text-sm text-rose-600" role="alert">
+            {{ form.non_field_errors.0 }}
+          </p>
           {% endif %}
-        </td>
-        <td class="px-4 py-3 text-slate-600">
-          {{ form.instance.competencia.get_tipo_display }}
-        </td>
-        <td class="px-4 py-3 text-slate-800">
-          {{ form.instance.nivel_esperado_utilizado }}
-        </td>
-        <td class="px-4 py-3 text-slate-600">
-          {{ form.instance.competencia.escala.nome }}
-          <span class="text-slate-400">
-            ({{ form.instance.competencia.escala.valor_minimo }}–{{ form.instance.competencia.escala.valor_maximo }})
-          </span>
-        </td>
-        <td class="px-4 py-3">
-          {{ form.nota_autoavaliacao }}
-          {% if form.nota_autoavaliacao.errors %}
-            <p class="mt-1 text-xs text-rose-600" role="alert">
+
+          <div class="mt-6" data-field="competencia-nota">
+            <p class="mb-3 font-ui text-sm font-medium text-slate-600">
+              Autoavaliação ({{ form.instance.competencia.escala.valor_minimo }}–{{ form.instance.competencia.escala.valor_maximo }})
+            </p>
+            {{ form.nota_autoavaliacao }}
+            <p
+              class="mt-2 hidden font-ui text-xs text-emerald-700"
+              data-field="nota-selecionada"
+              aria-live="polite"
+            ></p>
+            {% if form.nota_autoavaliacao.errors %}
+            <p class="mt-2 text-xs text-rose-600" role="alert">
               {{ form.nota_autoavaliacao.errors.0 }}
             </p>
-          {% endif %}
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+            {% endif %}
+          </div>
+        </article>
+        {% endfor %}
+      </div>
 
-  {% if pode_editar %}
-  <div class="flex flex-wrap items-center gap-3 border-t border-slate-200 bg-slate-50 px-4 py-4">
-    {% include "components/button.html" with label="Salvar autoavaliação" type="submit" variant="primary" %}
-    {% url 'dashboard:personal' as cancel_url %}
-    {% include "components/button.html" with label="Voltar" href=cancel_url variant="secondary" %}
-    <p class="w-full font-ui text-xs leading-relaxed text-slate-500" role="note" data-field="save-confirm-hint">
-      Ao salvar, a confirmação aparece no topo da página (mensagem de sucesso).
-    </p>
-  </div>
+      {# —— Coluna lateral: metas e dica —— #}
+      <aside class="flex flex-col gap-6 xl:col-span-4 xl:sticky xl:top-20">
+        <section class="rounded-xl border border-emerald-200/60 bg-surface-card p-6 shadow-[0_2px_4px_rgba(0,0,0,0.04)]">
+          <div class="mb-5 flex items-center justify-between gap-3">
+            <h3 class="font-display text-lg font-medium tracking-tight text-slate-800">
+              Metas do Ciclo
+            </h3>
+            <span class="rounded bg-emerald-50 px-2 py-1 text-[11px] font-bold uppercase tracking-wider text-emerald-700">
+              Referência
+            </span>
+          </div>
+          <p class="mb-5 font-ui text-sm leading-relaxed text-slate-500">
+            Resumo das metas atreladas a você neste período para auxiliar na sua autoavaliação.
+          </p>
+
+          {% if metas_ciclo %}
+          <ul class="space-y-4">
+            {% for meta in metas_ciclo %}
+            <li class="flex items-start gap-3 {% if meta.status == 'reprovada' %}opacity-60{% endif %}">
+              {% if meta.status == 'reprovada' %}
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="mt-0.5 h-5 w-5 shrink-0 text-slate-400" aria-hidden="true">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.28 7.22a.75.75 0 0 0-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L10 8.94 8.28 7.22Z" clip-rule="evenodd" />
+              </svg>
+              {% elif meta.progresso is not None and meta.progresso >= 100 %}
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" aria-hidden="true">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd" />
+              </svg>
+              {% else %}
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" aria-hidden="true">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd" />
+              </svg>
+              {% endif %}
+              <div class="min-w-0">
+                <p class="font-ui text-sm font-semibold text-slate-800 {% if meta.status == 'reprovada' %}line-through{% endif %}">
+                  {{ meta.descricao }}
+                </p>
+                <p class="mt-0.5 font-ui text-xs text-slate-500">
+                  {% if meta.progresso is not None %}
+                    Progresso: {{ meta.progresso }}%
+                  {% else %}
+                    {{ meta.get_status_display }}
+                  {% endif %}
+                </p>
+              </div>
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <p class="font-ui text-sm text-slate-500">
+            Você ainda não possui metas vinculadas para este período.
+          </p>
+          {% endif %}
+        </section>
+
+        <section class="rounded-xl border border-emerald-200/40 bg-emerald-50/40 p-5">
+          <div class="mb-2 flex items-center gap-2 text-emerald-700">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5 shrink-0" aria-hidden="true">
+              <path d="M11.983 1.907a.75.75 0 0 0-1.292-.657l-8.5 9.5A.75.75 0 0 0 2.75 12h6.572l-1.305 6.093a.75.75 0 0 0 1.292.657l8.5-9.5A.75.75 0 0 0 17.25 8h-6.572l1.305-6.186Z" />
+            </svg>
+            <span class="font-ui text-sm font-semibold">Dica de Preenchimento</span>
+          </div>
+          <p class="font-ui text-sm leading-relaxed text-slate-600">
+            A autoavaliação é o momento de ser protagonista da sua carreira. Tente usar a metodologia
+            <strong>STAR</strong> (Situação, Tarefa, Ação e Resultado) ao refletir sobre cada competência.
+          </p>
+        </section>
+      </aside>
+    </div>
+
+    {% if pode_editar %}
+    <div
+      class="fixed bottom-0 right-0 z-20 flex w-full flex-col items-end gap-2 border-t border-line bg-surface-card px-4 py-4 shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.05)] sm:flex-row sm:items-center sm:justify-between md:w-[calc(100%-16rem)] md:px-6"
+      data-component="self-assessment-actions"
+    >
+      <p class="font-ui text-xs text-slate-500" data-field="save-hint" role="note">
+        Suas notas são gravadas ao clicar em “Salvar autoavaliação”.
+      </p>
+      <div class="flex items-center gap-3">
+      {% url 'dashboard:personal' as cancel_url %}
+      {% include "components/button.html" with label="Voltar" href=cancel_url variant="secondary" %}
+      {% include "components/button.html" with label="Salvar autoavaliação" type="submit" variant="primary" extra_class="gap-2" %}
+      </div>
+    </div>
+    {% endif %}
+  </form>
   {% endif %}
-</form>
-{% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function initSelfAssessmentFeedback() {
+    const form = document.getElementById('self-assessment-form');
+    if (!form) return;
+
+    const progressBox = document.querySelector('[data-field="progresso-notas"]');
+
+    function countFilledRatings() {
+      const names = new Set();
+      form.querySelectorAll('input.rating-radio').forEach((input) => {
+        names.add(input.name);
+      });
+      let filled = 0;
+      names.forEach((name) => {
+        if (form.querySelector(`input.rating-radio[name="${CSS.escape(name)}"]:checked`)) {
+          filled += 1;
+        }
+      });
+      return { filled, total: names.size };
+    }
+
+    function updateProgress() {
+      const { filled, total } = countFilledRatings();
+      if (!progressBox || total === 0) return;
+
+      const restantes = total - filled;
+      if (restantes === 0) {
+        progressBox.innerHTML =
+          `<p class="font-medium text-emerald-700">Todas as ${total} notas preenchidas</p>`;
+      } else if (restantes === 1) {
+        progressBox.innerHTML =
+          `<p class="font-medium text-amber-800">Falta 1 nota</p>` +
+          `<p class="mt-0.5 text-xs text-slate-500">${filled} de ${total} preenchidas</p>`;
+      } else {
+        progressBox.innerHTML =
+          `<p class="font-medium text-amber-800">Faltam ${restantes} notas</p>` +
+          `<p class="mt-0.5 text-xs text-slate-500">${filled} de ${total} preenchidas</p>`;
+      }
+    }
+
+    function updateCompetencyHint(radio, isDirty) {
+      const section = radio.closest('[data-field="competencia-nota"]');
+      if (!section) return;
+      const hint = section.querySelector('[data-field="nota-selecionada"]');
+      if (!hint) return;
+
+      const checked = section.querySelector('input.rating-radio:checked');
+      if (!checked) {
+        hint.textContent = '';
+        hint.classList.add('hidden');
+        return;
+      }
+
+      hint.textContent = isDirty
+        ? `Nota selecionada: ${checked.value} — clique em Salvar para gravar`
+        : `Nota registrada: ${checked.value}`;
+      hint.classList.remove('hidden');
+    }
+
+    form.addEventListener('change', (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement) || !target.classList.contains('rating-radio')) {
+        return;
+      }
+      updateCompetencyHint(target, true);
+      updateProgress();
+    });
+
+    form.querySelectorAll('input.rating-radio:checked').forEach((radio) => {
+      updateCompetencyHint(radio, false);
+    });
+    updateProgress();
+  })();
+</script>
 {% endblock %}

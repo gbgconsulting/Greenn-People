@@ -13,6 +13,7 @@ from apps.cycles.exceptions import CycleClosedError, StageTransitionError
 from apps.cycles.models import Ciclo
 from apps.cycles.services.stage import advance_stage, can_advance
 from apps.goals.forms import get_open_ciclo
+from apps.goals.models import Meta
 from apps.reviews.exceptions import CalculationError
 from apps.reviews.forms import (
     FeedbackForm,
@@ -22,11 +23,16 @@ from apps.reviews.forms import (
     can_leader_assess,
     feedback_create_allowed,
     leader_assessment_editable,
+    leader_assessment_permitted,
     resolve_feedback_tipo,
     self_assessment_editable,
 )
 from apps.reviews.models import Avaliacao, AvaliacaoCompetencia, Feedback
-from apps.reviews.services.evaluation import calcular_nota_final_lider
+from apps.reviews.services.evaluation import (
+    MSG_AUTOAVALIACAO_INCOMPLETA,
+    calcular_nota_final_lider,
+    self_assessment_complete,
+)
 from apps.reviews.services.guidance import (
     build_stage_stepper,
     detect_owner_correction_kind,
@@ -129,7 +135,7 @@ class AvaliacaoListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedList
                     'pode_avaliar_lider': (
                         not is_self
                         and can_leader_assess(user, avaliacao)
-                        and leader_assessment_editable(avaliacao)
+                        and leader_assessment_permitted(avaliacao)
                     ),
                 },
             )
@@ -178,7 +184,7 @@ class AvaliacaoDetailView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
                 'pode_avaliar_lider': (
                     not is_self
                     and can_leader_assess(user, avaliacao)
-                    and leader_assessment_editable(avaliacao)
+                    and leader_assessment_permitted(avaliacao)
                 ),
                 'pode_criar_feedback': feedback_create_allowed(user, avaliacao),
                 **_advance_context(user, avaliacao),
@@ -217,15 +223,20 @@ class AvaliacaoDetailView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
         owner_correction_kind = (
             detect_owner_correction_kind(avaliacao) if is_self else None
         )
+        role = self._guidance_role(is_self=is_self)
+        auto_complete = None
+        if role == 'lider' and avaliacao.etapa == Avaliacao.Etapa.AVALIACAO:
+            auto_complete = self_assessment_complete(avaliacao)
         return {
             'next_step': resolve_next_step(
-                role=self._guidance_role(is_self=is_self),
+                role=role,
                 etapa=avaliacao.etapa,
                 avaliacao_pk=avaliacao.pk,
                 has_open_ciclo=has_open_ciclo,
                 vinculo_pendente=False,
                 concluida=bool(avaliacao.concluida),
                 owner_correction_kind=owner_correction_kind,
+                self_assessment_complete=auto_complete,
             ),
             'stage_stepper': build_stage_stepper(
                 etapa=avaliacao.etapa,
@@ -353,7 +364,11 @@ class SelfAssessmentView(LoginRequiredMixin, DetailView):
         return obj
 
     def get_queryset(self):
-        return Avaliacao.objects.select_related('ciclo', 'usuario')
+        return Avaliacao.objects.select_related(
+            'ciclo',
+            'usuario',
+            'usuario__cargo',
+        )
 
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
@@ -395,10 +410,22 @@ class SelfAssessmentView(LoginRequiredMixin, DetailView):
                 'formset': formset,
                 'pode_editar': True,
                 'linhas_vazias': len(formset.forms) == 0,
+                'colaborador': self.object.usuario,
+                'metas_ciclo': self._metas_ciclo(),
                 **self._progress_flags(formset),
             },
         )
         return context
+
+    def _metas_ciclo(self):
+        return (
+            Meta.objects.filter(
+                usuario_id=self.object.usuario_id,
+                objetivo_estrategico__ciclo_id=self.object.ciclo_id,
+            )
+            .select_related('objetivo_estrategico')
+            .order_by('id')
+        )
 
     @staticmethod
     def _nota_autoavaliacao_presente(form) -> bool:
@@ -486,11 +513,19 @@ class LeaderAssessmentView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
             )
             return HttpResponseRedirect(reverse('dashboard:personal'))
 
+        if not leader_assessment_permitted(self.object):
+            messages.error(request, MSG_AUTOAVALIACAO_INCOMPLETA)
+            return HttpResponseRedirect(reverse('dashboard:personal'))
+
         return super().dispatch(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
         if not can_leader_assess(request.user, self.object):
+            return HttpResponseRedirect(reverse('dashboard:personal'))
+
+        if not leader_assessment_permitted(self.object):
+            messages.error(request, MSG_AUTOAVALIACAO_INCOMPLETA)
             return HttpResponseRedirect(reverse('dashboard:personal'))
 
         formset = LeaderAssessmentFormSet(

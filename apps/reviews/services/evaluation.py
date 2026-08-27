@@ -17,6 +17,20 @@ NOTA_ORIGEM_AUTOAVALIACAO = 'autoavaliacao'
 
 _NOTA_FINAL_QUANT = Decimal('0.0001')
 
+MSG_AUTOAVALIACAO_INCOMPLETA = (
+    'O colaborador deve concluir a autoavaliação antes da avaliação do líder.'
+)
+
+
+def self_assessment_complete(avaliacao: Avaliacao | None) -> bool:
+    """True se todas as linhas de competência têm ``nota_autoavaliacao``."""
+    if avaliacao is None:
+        return False
+    linhas = AvaliacaoCompetencia.objects.filter(avaliacao_id=avaliacao.pk)
+    if not linhas.exists():
+        return False
+    return not linhas.filter(nota_autoavaliacao__isnull=True).exists()
+
 
 def normalize_score(nota: Decimal, escala: Escala) -> Decimal:
     """Normaliza nota para [0, 1]: (nota - valor_minimo) / (valor_maximo - valor_minimo)."""

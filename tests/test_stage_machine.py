@@ -197,6 +197,26 @@ def test_avaliacao_bloqueia_sem_linhas_competencia(avaliacao, lider):
 
 
 @pytest.mark.django_db
+def test_avaliacao_bloqueia_sem_autoavaliacao_completa(avaliacao, lider, cargo_colab):
+    _set_etapa(avaliacao, Avaliacao.Etapa.AVALIACAO)
+    cc = _vincular_competencia(cargo_colab)
+    AvaliacaoCompetencia.objects.create(
+        avaliacao=avaliacao,
+        competencia=cc.competencia,
+        peso_utilizado=cc.peso,
+        nivel_esperado_utilizado=cc.nivel_esperado,
+        nota_lider=Decimal('4.00'),
+    )
+    avaliacao.nota_final_lider = Decimal('0.5000')
+    avaliacao.save(update_fields=['nota_final_lider', 'updated_at'])
+
+    ok, motivo = can_advance(avaliacao)
+    assert ok is False
+    assert 'autoavaliação' in motivo.lower()
+    assert avaliacao.etapa == Avaliacao.Etapa.AVALIACAO
+
+
+@pytest.mark.django_db
 def test_avaliacao_bloqueia_sem_nota_lider(avaliacao, lider, cargo_colab):
     _set_etapa(avaliacao, Avaliacao.Etapa.AVALIACAO)
     cc = _vincular_competencia(cargo_colab)
@@ -205,6 +225,7 @@ def test_avaliacao_bloqueia_sem_nota_lider(avaliacao, lider, cargo_colab):
         competencia=cc.competencia,
         peso_utilizado=cc.peso,
         nivel_esperado_utilizado=cc.nivel_esperado,
+        nota_autoavaliacao=Decimal('3.00'),
         nota_lider=None,
     )
 
@@ -221,6 +242,7 @@ def test_avaliacao_bloqueia_sem_nota_final_lider(avaliacao, lider, cargo_colab):
         competencia=cc.competencia,
         peso_utilizado=cc.peso,
         nivel_esperado_utilizado=cc.nivel_esperado,
+        nota_autoavaliacao=Decimal('3.00'),
         nota_lider=Decimal('4.00'),
     )
     assert avaliacao.nota_final_lider is None

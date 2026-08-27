@@ -22,7 +22,7 @@ from apps.goals.models import Meta
 from apps.reviews.forms import (
     can_leader_assess,
     feedback_create_allowed,
-    leader_assessment_editable,
+    leader_assessment_permitted,
 )
 from apps.reviews.models import Avaliacao, Feedback
 
@@ -95,7 +95,7 @@ def _count_avaliacoes(leader, ciclo, visible_ids) -> int:
         etapa=Avaliacao.Etapa.AVALIACAO,
     ).select_related('ciclo', 'usuario')
     for avaliacao in qs:
-        if can_leader_assess(leader, avaliacao) and leader_assessment_editable(
+        if can_leader_assess(leader, avaliacao) and leader_assessment_permitted(
             avaliacao
         ):
             count += 1

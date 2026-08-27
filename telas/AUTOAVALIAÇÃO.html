@@ -1,0 +1,349 @@
+<!DOCTYPE html><html class="light" lang="pt-BR"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Autoavaliação - Greenn People</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&amp;family=Source+Sans+3:ital,wght@0,200..900;1,200..900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "border-subtle": "#e2e8f0",
+                        "secondary-container": "#6df5e1",
+                        "primary": "#006948",
+                        "error-container": "#ffdad6",
+                        "status-success": "#10b981",
+                        "primary-fixed-dim": "#68dba9",
+                        "outline": "#6d7a72",
+                        "status-warning": "#f59e0b",
+                        "surface-tint": "#006c4a",
+                        "surface-bright": "#f7f9fb",
+                        "text-body": "#64748b",
+                        "error": "#ba1a1a",
+                        "secondary-fixed": "#71f8e4",
+                        "primary-container": "#00855d",
+                        "surface-dim": "#d8dadc",
+                        "inverse-primary": "#68dba9",
+                        "on-secondary-fixed": "#00201c",
+                        "surface-variant": "#e0e3e5",
+                        "inverse-on-surface": "#eff1f3",
+                        "tertiary-container": "#ba5551",
+                        "brand-gradient": "linear-gradient(135deg, #059669 0%, #14b8a6 100%)",
+                        "on-surface": "#191c1e",
+                        "primary-fixed": "#85f8c4",
+                        "on-secondary-container": "#006f64",
+                        "on-primary-fixed-variant": "#005137",
+                        "secondary": "#006b5f",
+                        "tertiary-fixed": "#ffdad7",
+                        "surface": "#f7f9fb",
+                        "surface-container": "#eceef0",
+                        "on-tertiary": "#ffffff",
+                        "secondary-fixed-dim": "#4fdbc8",
+                        "surface-container-low": "#f2f4f6",
+                        "on-tertiary-container": "#fffbff",
+                        "on-primary-container": "#f5fff7",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed": "#002114",
+                        "inverse-surface": "#2d3133",
+                        "surface-container-lowest": "#ffffff",
+                        "outline-variant": "#bccac0",
+                        "on-tertiary-fixed": "#410004",
+                        "background": "#f7f9fb",
+                        "tertiary": "#9b3e3b",
+                        "surface-container-highest": "#e0e3e5",
+                        "status-critical": "#f43f5e",
+                        "surface-container-high": "#e6e8ea",
+                        "on-error": "#ffffff",
+                        "on-secondary-fixed-variant": "#005048",
+                        "tertiary-fixed-dim": "#ffb3ae",
+                        "on-primary": "#ffffff",
+                        "on-surface-variant": "#3d4a42",
+                        "on-tertiary-fixed-variant": "#7f2928",
+                        "on-background": "#191c1e",
+                        "on-secondary": "#ffffff",
+                        "text-heading": "#1e293b"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "container-padding": "32px",
+                        "sidebar-width": "280px",
+                        "unit": "4px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["\"Source Sans 3\""],
+                        "headline-lg": ["Fraunces"],
+                        "display-lg": ["Fraunces"],
+                        "label-md": ["\"Source Sans 3\""],
+                        "body-md": ["\"Source Sans 3\""],
+                        "body-lg": ["\"Source Sans 3\""],
+                        "headline-md": ["Fraunces"],
+                        "body-sm": ["\"Source Sans 3\""],
+                        "headline-sm": ["Fraunces"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Custom styles for highly specific radio button logic without JS */
+        .rating-radio:checked + label {
+            background-color: theme('colors.primary');
+            color: theme('colors.on-primary');
+            border-color: theme('colors.primary');
+        }
+        .rating-radio:focus-visible + label {
+            outline: 2px solid theme('colors.primary-fixed');
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface min-h-screen flex font-body-md text-body-md overflow-x-hidden">
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 h-full w-sidebar-width bg-surface-container-lowest border-r border-border-subtle flex flex-col py-6 z-20">
+<div class="px-6 mb-8 flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">spa</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">Greenn People</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Governança</p>
+</div>
+</div>
+<nav class="flex-1 flex flex-col gap-1 px-3 overflow-y-auto">
+<!-- Active Item: Ciclos (Intent mapping for Performance Cycle) -->
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-primary font-bold bg-secondary-container/10 border-l-4 border-primary transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">refresh</span>
+<span class="font-label-md text-label-md">Ciclos</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">check_circle</span>
+<span class="font-label-md text-label-md">Aderência</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Painel admin</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">grid_view</span>
+<span class="font-label-md text-label-md">Estrutura/Matriz</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">domain</span>
+<span class="font-label-md text-label-md">Áreas</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">work</span>
+<span class="font-label-md text-label-md">Cargos</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-md text-label-md">Usuários</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">star</span>
+<span class="font-label-md text-label-md">Competências</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">security</span>
+<span class="font-label-md text-label-md">Auditoria</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">notifications</span>
+<span class="font-label-md text-label-md">Notificações</span>
+</a>
+</nav>
+<div class="px-3 mt-auto">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-label-md text-label-md">Sair</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Wrapper -->
+<div class="flex-1 ml-sidebar-width flex flex-col min-h-screen relative">
+<!-- TopNavBar -->
+<header class="bg-surface-bright border-b border-border-subtle flex justify-between items-center h-16 px-gutter docked full-width top-0 sticky z-10">
+<div class="flex items-center">
+<nav class="flex space-x-6">
+<a class="font-label-md text-label-md text-primary font-bold border-b-2 border-primary pb-1 pt-1 mt-1" href="#">Ciclo de Performance 2024</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors scale-95 active:scale-90 flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">logout</span>
+                    Logout
+                </button>
+</div>
+</header>
+<!-- Canvas -->
+<main class="flex-1 p-container-padding max-w-[1440px] mx-auto w-full pb-32">
+<!-- Page Header / Collaborator Context -->
+<div class="mb-8 bg-surface-container-lowest rounded-xl border border-border-subtle p-6 shadow-[0_2px_4px_rgba(0,0,0,0.02)] flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+<div class="flex items-center gap-5">
+<div class="w-16 h-16 rounded-full overflow-hidden border-2 border-surface-container-high shrink-0">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="A professional headshot of a smiling young Latina woman with dark curly hair, wearing a stylish emerald green blazer over a white blouse. The lighting is soft and natural, suggesting a bright modern corporate office with subtle greenery in the blurred background. High-key light-mode aesthetic, crisp and professional." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPJS465tp9HJCfbuRYZlPvUaJ_e9jlJNdprfsdjDtFCWVXUjWdFq1a72H1wpOOw2M5KbiSELjE_fWmKWAtLC3qLDAP9UyBI80vlsrX0NFXNhS9ogLIvO1_KMqq29XDXxG0l7NRsz9isn_9cUvD2rz6A83TJfEYlLgZ93zaZ_e1g0lIGD7b0v971hdhnrTiYM-vbwvXH91C4_PVYHFTUBx_eBanforNwCJB7MkJthY4RbBrG4c08370">
+</div>
+<div>
+<h2 class="font-headline-sm text-headline-sm text-text-heading mb-1">Marina Costa Silva</h2>
+<p class="font-body-md text-body-md text-text-body flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">work</span>
+                            Desenvolvedora Front-end Sênior
+                        </p>
+</div>
+</div>
+<div class="bg-surface-container-low px-4 py-3 rounded-lg border border-border-subtle text-right">
+<p class="font-label-sm text-label-sm text-text-body uppercase tracking-wider mb-1">Período de Avaliação</p>
+<p class="font-headline-sm text-headline-sm text-primary">2024 Q3</p>
+</div>
+</div>
+<div class="mb-8">
+<h1 class="font-display-lg text-display-lg text-text-heading mb-2">Autoavaliação</h1>
+<p class="font-body-lg text-body-lg text-text-body max-w-3xl">Reflita sobre o seu desempenho neste ciclo. Avalie cada competência com sinceridade e forneça exemplos concretos na sua justificativa.</p>
+</div>
+<!-- Bento Grid Layout for Content -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-gutter items-start">
+<!-- Left Column: Competencies Form (Main Focus) -->
+<div class="xl:col-span-8 flex flex-col gap-10">
+<!-- Competency 1 -->
+<div class="bg-surface-container-lowest rounded-xl border border-border-subtle p-6 shadow-[0_2px_4px_rgba(0,0,0,0.02)] relative overflow-hidden">
+<!-- Top Accent Bar for visual hierarchy -->
+<div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-secondary-container"></div>
+<div class="flex flex-col md:flex-row md:items-baseline justify-between gap-4 mb-4 mt-2">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-text-heading">Liderança Técnica</h3>
+<p class="font-body-sm text-body-sm text-text-body mt-1">Capacidade de guiar a equipe técnica, tomar decisões arquiteturais sólidas e mentorear pares.</p>
+</div>
+</div>
+<div class="mb-6">
+<p class="font-label-md text-label-md text-on-surface-variant mb-3">Autoavaliação (1-5)</p>
+<div class="flex flex-wrap gap-3">
+<!-- Ratings 1 to 5 -->
+<div class="relative">
+<input class="sr-only rating-radio" id="lid_1" name="comp_lideranca" type="radio" value="1">
+<label class="flex items-center justify-center rounded-lg border border-border-subtle font-label-md cursor-pointer transition-all hover:bg-surface-container-low text-on-surface-variant bg-surface-container-lowest shadow-sm w-16 h-16 text-body-lg" for="lid_1">1</label>
+</div>
+<div class="relative">
+<input class="sr-only rating-radio" id="lid_2" name="comp_lideranca" type="radio" value="2">
+<label class="flex items-center justify-center rounded-lg border border-border-subtle font-label-md cursor-pointer transition-all hover:bg-surface-container-low text-on-surface-variant bg-surface-container-lowest shadow-sm w-16 h-16 text-body-lg" for="lid_2">2</label>
+</div>
+<div class="relative">
+<input class="sr-only rating-radio" id="lid_3" name="comp_lideranca" type="radio" value="3">
+<label class="flex items-center justify-center rounded-lg border border-border-subtle font-label-md cursor-pointer transition-all hover:bg-surface-container-low text-on-surface-variant bg-surface-container-lowest shadow-sm w-16 h-16 text-body-lg" for="lid_3">3</label>
+</div>
+<div class="relative">
+<input class="sr-only rating-radio" id="lid_4" name="comp_lideranca" type="radio" value="4">
+<label class="flex items-center justify-center rounded-lg border border-border-subtle font-label-md cursor-pointer transition-all hover:bg-surface-container-low text-on-surface-variant bg-surface-container-lowest shadow-sm w-16 h-16 text-body-lg" for="lid_4">4</label>
+</div>
+<div class="relative">
+<input class="sr-only rating-radio" id="lid_5" name="comp_lideranca" type="radio" value="5">
+<label class="flex items-center justify-center rounded-lg border border-border-subtle font-label-md cursor-pointer transition-all hover:bg-surface-container-low text-on-surface-variant bg-surface-container-lowest shadow-sm w-16 h-16 text-body-lg" for="lid_5">5</label>
+</div>
+</div>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-2" for="just_lid">Justificativa / Comentários</label>
+<textarea class="w-full bg-surface-container-low border border-transparent rounded-lg p-4 font-body-sm text-body-sm text-on-surface focus:bg-surface-container-lowest focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-y min-h-[120px] shadow-inner" id="just_lid" placeholder="Descreva exemplos específicos de como você demonstrou esta competência..."></textarea>
+</div>
+</div>
+<!-- Competency 2 -->
+<div class="bg-surface-container-lowest rounded-xl border border-border-subtle p-6 shadow-[0_2px_4px_rgba(0,0,0,0.02)] relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-secondary-container"></div>
+<div class="flex flex-col md:flex-row md:items-baseline justify-between gap-4 mb-4 mt-2">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-text-heading">Comunicação e Colaboração</h3>
+<p class="font-body-sm text-body-sm text-text-body mt-1">Clareza na expressão de ideias, escuta ativa e facilidade para trabalhar de forma interdisciplinar.</p>
+</div>
+</div>
+<div class="mb-6">
+<p class="font-label-md text-label-md text-on-surface-variant mb-3">Autoavaliação (1-5)</p>
+<div class="flex flex-wrap gap-3">
+<div class="relative"><input class="sr-only rating-radio" id="com_1" name="comp_comunicacao" type="radio" value="1"><label class="flex items-center justify-center rounded-lg border border-border-subtle font-label-md cursor-pointer transition-all hover:bg-surface-container-low text-on-surface-variant bg-surface-container-lowest shadow-sm w-16 h-16 text-body-lg" for="com_1">1</label></div>
+<div class="relative"><input class="sr-only rating-radio" id="com_2" name="comp_comunicacao" type="radio" value="2"><label class="flex items-center justify-center rounded-lg border border-border-subtle font-label-md cursor-pointer transition-all hover:bg-surface-container-low text-on-surface-variant bg-surface-container-lowest shadow-sm w-16 h-16 text-body-lg" for="com_2">2</label></div>
+<div class="relative"><input class="sr-only rating-radio" id="com_3" name="comp_comunicacao" type="radio" value="3"><label class="flex items-center justify-center rounded-lg border border-border-subtle font-label-md cursor-pointer transition-all hover:bg-surface-container-low text-on-surface-variant bg-surface-container-lowest shadow-sm w-16 h-16 text-body-lg" for="com_3">3</label></div>
+<div class="relative"><input class="sr-only rating-radio" id="com_4" name="comp_comunicacao" type="radio" value="4"><label class="flex items-center justify-center rounded-lg border border-border-subtle font-label-md cursor-pointer transition-all hover:bg-surface-container-low text-on-surface-variant bg-surface-container-lowest shadow-sm w-16 h-16 text-body-lg" for="com_4">4</label></div>
+<div class="relative"><input class="sr-only rating-radio" id="com_5" name="comp_comunicacao" type="radio" value="5"><label class="flex items-center justify-center rounded-lg border border-border-subtle font-label-md cursor-pointer transition-all hover:bg-surface-container-low text-on-surface-variant bg-surface-container-lowest shadow-sm w-16 h-16 text-body-lg" for="com_5">5</label></div>
+</div>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-2" for="just_com">Justificativa / Comentários</label>
+<textarea class="w-full bg-surface-container-low border border-transparent rounded-lg p-4 font-body-sm text-body-sm text-on-surface focus:bg-surface-container-lowest focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-y min-h-[120px] shadow-inner" id="just_com" placeholder="Descreva exemplos específicos de como você demonstrou esta competência..."></textarea>
+</div>
+</div>
+<!-- General Comments -->
+<div class="bg-surface-container-lowest rounded-xl border border-border-subtle p-6 shadow-[0_2px_4px_rgba(0,0,0,0.02)] relative mt-4">
+<div class="flex items-center gap-3 mb-4">
+<span class="material-symbols-outlined text-outline">speaker_notes</span>
+<h3 class="font-headline-sm text-headline-sm text-text-heading">Comentários Gerais</h3>
+</div>
+<p class="font-body-sm text-body-sm text-text-body mb-4">Utilize este espaço para reflexões adicionais, desafios superados ou qualquer outro ponto que não se encaixe nas competências acima.</p>
+<textarea class="w-full bg-surface-container-low border border-transparent rounded-lg p-4 font-body-md text-body-md text-on-surface focus:bg-surface-container-lowest focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-y min-h-[160px] shadow-inner" placeholder="Suas considerações finais sobre o ciclo..."></textarea>
+</div>
+</div>
+<!-- Right Column: Context & Reference (Sticky on Desktop) -->
+<div class="xl:col-span-4 flex flex-col gap-6 xl:sticky xl:top-24">
+<!-- Achieved Goals Summary Card -->
+<div class="bg-surface-container-lowest rounded-xl border border-border-subtle p-6 shadow-[0_2px_4px_rgba(0,0,0,0.02)] bg-surface-container-low border-primary/20 shadow-md">
+<div class="flex items-center justify-between mb-5">
+<h3 class="font-headline-sm text-headline-sm text-text-heading">Metas do Ciclo</h3>
+<span class="bg-status-success/10 text-status-success px-2 py-1 rounded text-[12px] font-bold tracking-wider">REFERÊNCIA</span>
+</div>
+<p class="font-body-sm text-body-sm text-text-body mb-6">Resumo das metas atreladas a você neste período para auxiliar na sua autoavaliação.</p>
+<ul class="space-y-4">
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-status-success mt-0.5 text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<div>
+<p class="font-label-md text-label-md text-on-surface">Migração do Design System</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Concluído 100% (Prazo original: 15/Ago)</p>
+</div>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-status-success mt-0.5 text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<div>
+<p class="font-label-md text-label-md text-on-surface">Redução de dívida técnica (Frontend)</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Atingiu 85% de cobertura de testes.</p>
+</div>
+</li>
+<li class="flex items-start gap-3 opacity-60">
+<span class="material-symbols-outlined text-outline mt-0.5 text-[20px]">radio_button_unchecked</span>
+<div>
+<p class="font-label-md text-label-md text-on-surface line-through">Mentoria de Devs Juniores</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Pausado devido a reestruturação da equipe.</p>
+</div>
+</li>
+</ul>
+</div>
+<!-- Helpful Tip Card -->
+<div class="bg-surface-bright rounded-xl border border-border-subtle p-5 bg-primary/5 border-primary/30">
+<div class="flex items-center gap-2 mb-2 text-primary">
+<span class="material-symbols-outlined text-[20px]">lightbulb</span>
+<span class="font-label-md text-label-md font-bold">Dica de Preenchimento</span>
+</div>
+<p class="font-body-sm text-body-sm text-text-body">A autoavaliação é o momento de ser protagonista da sua carreira. Tente usar a metodologia <strong>STAR</strong> (Situação, Tarefa, Ação e Resultado) nas suas justificativas para trazer mais clareza e impacto.</p>
+</div>
+</div>
+</div>
+</main>
+<!-- Sticky Bottom Action Bar for Premium Feel -->
+<div class="fixed bottom-0 right-0 w-full md:w-[calc(100%-280px)] bg-surface-container-lowest border-t border-border-subtle px-gutter py-4 flex justify-end items-center gap-4 shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.05)] z-20">
+<button class="px-6 py-2.5 border border-outline text-primary rounded-lg font-label-md text-label-md hover:bg-surface-container-low transition-colors duration-200" type="button">
+                Salvar Rascunho
+            </button>
+<button class="px-6 py-2.5 bg-gradient-to-r from-[#059669] to-[#14b8a6] text-white rounded-lg font-label-md text-label-md shadow-sm hover:shadow-md hover:opacity-90 transition-all duration-200 transform hover:-translate-y-0.5 flex items-center gap-2" type="button">
+<span class="">Enviar Autoavaliação</span>
+<span class="material-symbols-outlined text-[18px]">send</span>
+</button>
+</div>
+</div>
+
+
+</body></html>
