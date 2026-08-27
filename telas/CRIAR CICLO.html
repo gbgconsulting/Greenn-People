@@ -1,0 +1,545 @@
+<!DOCTYPE html><html class="antialiased" lang="pt-BR"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Greenn People - Nova Configuração de Ciclo</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..900&amp;family=Source+Sans+3:wght@400..700&amp;display=swap" rel="stylesheet">
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind Config -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "status-critical": "#f43f5e",
+                    "on-primary-fixed-variant": "#005137",
+                    "on-surface-variant": "#3d4a42",
+                    "secondary-fixed": "#71f8e4",
+                    "surface-container-lowest": "#ffffff",
+                    "on-secondary-container": "#006f64",
+                    "brand-gradient": "linear-gradient(135deg, #059669 0%, #14b8a6 100%)",
+                    "surface": "#f7f9fb",
+                    "tertiary-fixed": "#ffdad7",
+                    "secondary-fixed-dim": "#4fdbc8",
+                    "on-surface": "#191c1e",
+                    "error-container": "#ffdad6",
+                    "on-primary": "#ffffff",
+                    "surface-tint": "#006c4a",
+                    "on-primary-container": "#f5fff7",
+                    "primary": "#006948",
+                    "status-warning": "#f59e0b",
+                    "background": "#f7f9fb",
+                    "surface-bright": "#f7f9fb",
+                    "on-secondary-fixed": "#00201c",
+                    "on-secondary": "#ffffff",
+                    "surface-container-low": "#f2f4f6",
+                    "tertiary-container": "#ba5551",
+                    "on-background": "#191c1e",
+                    "on-error": "#ffffff",
+                    "tertiary": "#9b3e3b",
+                    "error": "#ba1a1a",
+                    "on-error-container": "#93000a",
+                    "on-tertiary": "#ffffff",
+                    "status-success": "#10b981",
+                    "secondary": "#006b5f",
+                    "surface-container-high": "#e6e8ea",
+                    "outline-variant": "#bccac0",
+                    "text-body": "#64748b",
+                    "tertiary-fixed-dim": "#ffb3ae",
+                    "on-tertiary-fixed-variant": "#7f2928",
+                    "text-heading": "#1e293b",
+                    "on-tertiary-container": "#fffbff",
+                    "surface-container": "#eceef0",
+                    "surface-dim": "#d8dadc",
+                    "on-secondary-fixed-variant": "#005048",
+                    "inverse-surface": "#2d3133",
+                    "surface-container-highest": "#e0e3e5",
+                    "primary-fixed-dim": "#68dba9",
+                    "primary-container": "#00855d",
+                    "on-primary-fixed": "#002114",
+                    "inverse-on-surface": "#eff1f3",
+                    "on-tertiary-fixed": "#410004",
+                    "outline": "#6d7a72",
+                    "inverse-primary": "#68dba9",
+                    "secondary-container": "#6df5e1",
+                    "border-subtle": "#e2e8f0",
+                    "surface-variant": "#e0e3e5",
+                    "primary-fixed": "#85f8c4"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "sidebar-width": "280px",
+                    "container-padding": "32px",
+                    "gutter": "24px",
+                    "unit": "4px"
+            },
+            "fontFamily": {
+                    "body-md": [
+                            "\"Source Sans 3\""
+                    ],
+                    "label-sm": [
+                            "\"Source Sans 3\""
+                    ],
+                    "headline-sm": [
+                            "Fraunces"
+                    ],
+                    "headline-md": [
+                            "Fraunces"
+                    ],
+                    "display-lg": [
+                            "Fraunces"
+                    ],
+                    "body-sm": [
+                            "\"Source Sans 3\""
+                    ],
+                    "label-md": [
+                            "\"Source Sans 3\""
+                    ],
+                    "body-lg": [
+                            "\"Source Sans 3\""
+                    ],
+                    "headline-lg": [
+                            "Fraunces"
+                    ]
+            },
+            "fontSize": {
+                    "body-md": [
+                            "16px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "label-sm": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "headline-sm": [
+                            "20px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "headline-md": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "display-lg": [
+                            "48px",
+                            {
+                                    "lineHeight": "56px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-sm": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "label-md": [
+                            "14px",
+                            {
+                                    "lineHeight": "16px",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-lg": [
+                            "18px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-lg": [
+                            "32px",
+                            {
+                                    "lineHeight": "40px",
+                                    "fontWeight": "600"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        .step-transition {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .step-hidden {
+            opacity: 0;
+            pointer-events: none;
+            position: absolute;
+            transform: translateY(10px);
+            visibility: hidden;
+        }
+        .step-active {
+            opacity: 1;
+            pointer-events: auto;
+            position: relative;
+            transform: translateY(0);
+            visibility: visible;
+        }
+        
+        .bg-brand-gradient {
+            background-image: linear-gradient(135deg, #059669 0%, #14b8a6 100%);
+        }
+        
+        input:focus-within ~ label,
+        input:not(:placeholder-shown) ~ label {
+            transform: translateY(-1.5rem) scale(0.85);
+            color: #006948;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md h-screen overflow-hidden flex">
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-full w-sidebar-width bg-surface-container-lowest dark:bg-surface-dim border-r border-outline-variant dark:border-outline flex flex-col py-6 z-50">
+<div class="px-6 mb-8 flex flex-col gap-1">
+<h1 class="font-headline-md text-headline-md font-semibold bg-brand-gradient bg-clip-text text-transparent tracking-tight">Greenn People</h1>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">HR Intelligence</span>
+</div>
+<div class="flex-1 overflow-y-auto flex flex-col gap-1 px-2">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:text-primary hover:bg-surface-container-low transition-all rounded-lg font-label-md text-label-md group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">dashboard</span>
+<span class="">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:text-primary hover:bg-surface-container-low transition-all rounded-lg font-label-md text-label-md group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">group</span>
+<span class="">Team Directory</span>
+</a>
+<a class="relative flex items-center gap-3 px-4 py-3 bg-primary/5 text-primary font-semibold rounded-lg font-label-md text-label-md before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-2/3 before:w-1 before:bg-brand-gradient before:rounded-r-full hover:bg-surface-container-low transition-all scale-95 duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined icon-fill">fact_check</span>
+<span class="">Performance Reviews</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:text-primary hover:bg-surface-container-low transition-all rounded-lg font-label-md text-label-md group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">ads_click</span>
+<span class="">Goals &amp; OKRs</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:text-primary hover:bg-surface-container-low transition-all rounded-lg font-label-md text-label-md group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">school</span>
+<span class="">Training &amp; Development</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:text-primary hover:bg-surface-container-low transition-all rounded-lg font-label-md text-label-md group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">settings</span>
+<span class="">Admin Settings</span>
+</a>
+</div>
+<div class="px-6 mt-auto">
+<button class="w-full py-3 px-4 bg-brand-gradient text-on-primary rounded-lg font-label-md text-label-md font-semibold shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[20px]">add</span>
+                New Review Cycle
+            </button>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col ml-sidebar-width h-screen relative">
+<!-- TopNavBar -->
+<header class="flex justify-between items-center h-16 px-container-padding sticky top-0 z-40 bg-surface/80 dark:bg-surface-dim/80 backdrop-blur-md border-b border-outline-variant dark:border-outline shadow-sm">
+<div class="flex items-center h-full">
+<h2 class="font-headline-sm text-headline-sm text-primary font-bold border-b-2 border-primary h-full flex items-center pt-1">Cycle Configuration</h2>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden md:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+<input class="pl-10 pr-4 py-2 bg-surface-container-low border-none rounded-full font-body-sm text-body-sm focus:ring-2 focus:ring-primary/20 w-64 transition-all outline-none text-on-surface" placeholder="Search configurations..." type="text">
+</div>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/50 transition-all opacity-80 hover:opacity-100 hover:scale-95">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/50 transition-all opacity-80 hover:opacity-100 hover:scale-95">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-border-subtle ml-2">
+<img alt="HR Administrator Profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDH2nJmmTLVJsLbTYOsIq43-GQXYdcrNbYHpKF-sU4YkQjx2RycddVpJPYW4IgfzYRLjy0_6bBfUFz-zNFfjdr7sI6cX51tqQc9woZG90RzfyZeKTYWDxpIA7MYYCcbrZV0ljTsM05uJbXDubc6gDRpYNVULvJQDMLETWxn8PfpHN28m_QHQ3H4vuoWGIalgPoR4ZTUdiVCIGSwaXqV6hUTBt9B2SvMpsro-a8iiWyR6hHiR7F51ibu">
+</div>
+</div>
+</header>
+<!-- Canvas / Form Area -->
+<main class="flex-1 overflow-y-auto p-container-padding flex justify-center items-start pt-12 pb-24">
+<div class="w-full max-w-3xl bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm relative overflow-hidden">
+<!-- Decorative Top Bar -->
+<div class="h-1 w-full bg-brand-gradient"></div>
+<div class="p-8 md:p-10">
+<!-- Header & Stepper -->
+<div class="mb-10">
+<h2 class="font-headline-md text-headline-md text-text-heading mb-8">Criar Novo Ciclo de Desempenho</h2>
+<div class="relative flex justify-between items-center w-full">
+<!-- Line -->
+<div class="absolute left-0 top-1/2 -translate-y-1/2 w-full h-0.5 bg-surface-container-highest z-0"></div>
+<div class="absolute left-0 top-1/2 -translate-y-1/2 w-0 h-0.5 bg-brand-gradient z-0 transition-all duration-500 ease-in-out" id="progress-bar" style="width: 0%;"></div>
+<!-- Step 1 -->
+<div class="relative z-10 flex flex-col items-center gap-2 bg-surface-container-lowest px-2">
+<div class="w-8 h-8 rounded-full flex items-center justify-center font-label-sm text-label-sm font-bold bg-brand-gradient text-on-primary shadow-sm transition-all duration-300 scale-110 ring-4 ring-primary/10" id="indicator-1">1</div>
+<span class="font-label-sm text-label-sm text-primary font-bold transition-all duration-300" id="label-1">Informações Gerais</span>
+</div>
+<!-- Step 2 -->
+<div class="relative z-10 flex flex-col items-center gap-2 bg-surface-container-lowest px-2">
+<div class="w-8 h-8 rounded-full flex items-center justify-center font-label-sm text-label-sm font-bold bg-surface-container-highest text-on-surface-variant border border-outline-variant transition-all duration-300" id="indicator-2">2</div>
+<span class="font-label-sm text-label-sm text-text-body transition-all duration-300" id="label-2">Público-alvo</span>
+</div>
+<!-- Step 3 -->
+<div class="relative z-10 flex flex-col items-center gap-2 bg-surface-container-lowest px-2">
+<div class="w-8 h-8 rounded-full flex items-center justify-center font-label-sm text-label-sm font-bold bg-surface-container-highest text-on-surface-variant border border-outline-variant transition-all duration-300" id="indicator-3">3</div>
+<span class="font-label-sm text-label-sm text-text-body transition-all duration-300" id="label-3">Metodologia</span>
+</div>
+</div>
+</div>
+<form class="relative min-h-[350px]" id="cycle-form">
+<!-- STEP 1: Informações Gerais -->
+<div class="step-transition step-active w-full" id="step-1">
+<div class="space-y-6">
+<div class="relative">
+<label class="block font-label-sm text-label-sm text-on-surface-variant mb-1.5" for="cycle-name">Nome do Ciclo <span class="text-status-critical">*</span></label>
+<input class="block w-full rounded-lg border-0 py-3 px-4 text-text-heading shadow-sm ring-1 ring-inset ring-outline-variant focus:ring-2 focus:ring-inset focus:ring-primary bg-surface sm:text-body-sm sm:leading-6 transition-all duration-200 outline-none" id="cycle-name" name="cycle-name" placeholder="Ex: Avaliação Anual 2024" type="text">
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="relative">
+<label class="block font-label-sm text-label-sm text-on-surface-variant mb-1.5" for="cycle-year">Ano de Referência <span class="text-status-critical">*</span></label>
+<select class="block w-full rounded-lg border-0 py-3 px-4 text-text-heading shadow-sm ring-1 ring-inset ring-outline-variant focus:ring-2 focus:ring-inset focus:ring-primary bg-surface sm:text-body-sm sm:leading-6 transition-all duration-200 outline-none appearance-none" id="cycle-year" name="cycle-year">
+<option value="2024">2024</option>
+<option value="2025">2025</option>
+<option value="2026">2026</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-[38px] text-on-surface-variant pointer-events-none">expand_more</span>
+</div>
+ <!-- Spacer -->
+<div class="relative">
+<label class="block font-label-sm text-label-sm text-on-surface-variant mb-1.5" for="cutoff-date">Admitidos até <span class="text-status-critical">*</span></label>
+<input class="block w-full rounded-lg border-0 py-3 px-4 text-text-heading shadow-sm ring-1 ring-inset ring-outline-variant focus:ring-2 focus:ring-inset focus:ring-primary bg-surface sm:text-body-sm sm:leading-6 transition-all duration-200 outline-none text-on-surface-variant" id="cutoff-date" name="cutoff-date" type="date">
+</div><div class="relative">
+<label class="block font-label-sm text-label-sm text-on-surface-variant mb-1.5" for="start-date">Data de Início <span class="text-status-critical">*</span></label>
+<input class="block w-full rounded-lg border-0 py-3 px-4 text-text-heading shadow-sm ring-1 ring-inset ring-outline-variant focus:ring-2 focus:ring-inset focus:ring-primary bg-surface sm:text-body-sm sm:leading-6 transition-all duration-200 outline-none text-on-surface-variant" id="start-date" name="start-date" type="date">
+</div>
+<div class="relative">
+<label class="block font-label-sm text-label-sm text-on-surface-variant mb-1.5" for="end-date">Data de Encerramento <span class="text-status-critical">*</span></label>
+<input class="block w-full rounded-lg border-0 py-3 px-4 text-text-heading shadow-sm ring-1 ring-inset ring-outline-variant focus:ring-2 focus:ring-inset focus:ring-primary bg-surface sm:text-body-sm sm:leading-6 transition-all duration-200 outline-none text-on-surface-variant" id="end-date" name="end-date" type="date">
+</div>
+</div>
+</div>
+</div>
+<!-- STEP 2: Público-alvo -->
+<div class="step-transition step-hidden w-full" id="step-2">
+<p class="font-body-md text-text-body mb-6">Selecione quem será avaliado neste ciclo. Você poderá configurar os avaliadores posteriormente.</p>
+<div class="space-y-4">
+<!-- Option 1 -->
+<label class="relative flex items-start p-4 cursor-pointer rounded-lg border border-outline-variant bg-surface hover:bg-surface-container-highest transition-colors group has-[:checked]:border-primary has-[:checked]:bg-primary/5 has-[:checked]:ring-1 has-[:checked]:ring-primary">
+<div class="flex items-center h-6">
+<input checked="" class="h-4 w-4 text-primary border-outline-variant focus:ring-primary accent-primary" name="audience" type="radio" value="all">
+</div>
+<div class="ml-3 flex flex-col">
+<span class="font-label-md text-label-md text-text-heading group-hover:text-primary transition-colors">Toda a Empresa</span>
+<span class="font-body-sm text-body-sm text-text-body mt-1">Todos os colaboradores ativos serão incluídos automaticamente.</span>
+</div>
+<span class="material-symbols-outlined ml-auto text-on-surface-variant opacity-50 group-hover:opacity-100 group-hover:text-primary transition-all">corporate_fare</span>
+</label>
+<!-- Option 2 -->
+<label class="relative flex items-start p-4 cursor-pointer rounded-lg border border-outline-variant bg-surface hover:bg-surface-container-highest transition-colors group has-[:checked]:border-primary has-[:checked]:bg-primary/5 has-[:checked]:ring-1 has-[:checked]:ring-primary">
+<div class="flex items-center h-6">
+<input class="h-4 w-4 text-primary border-outline-variant focus:ring-primary accent-primary" name="audience" type="radio" value="depts">
+</div>
+<div class="ml-3 flex flex-col">
+<span class="font-label-md text-label-md text-text-heading group-hover:text-primary transition-colors">Departamentos Específicos</span>
+<span class="font-body-sm text-body-sm text-text-body mt-1">Selecione um ou mais departamentos (ex: Vendas, Engenharia).</span>
+</div>
+<span class="material-symbols-outlined ml-auto text-on-surface-variant opacity-50 group-hover:opacity-100 group-hover:text-primary transition-all">domain</span>
+</label>
+<!-- Option 3 -->
+<label class="relative flex items-start p-4 cursor-pointer rounded-lg border border-outline-variant bg-surface hover:bg-surface-container-highest transition-colors group has-[:checked]:border-primary has-[:checked]:bg-primary/5 has-[:checked]:ring-1 has-[:checked]:ring-primary">
+<div class="flex items-center h-6">
+<input class="h-4 w-4 text-primary border-outline-variant focus:ring-primary accent-primary" name="audience" type="radio" value="roles">
+</div>
+<div class="ml-3 flex flex-col">
+<span class="font-label-md text-label-md text-text-heading group-hover:text-primary transition-colors">Cargos Específicos</span>
+<span class="font-body-sm text-body-sm text-text-body mt-1">Filtre por níveis ou nomenclaturas de cargo específicas.</span>
+</div>
+<span class="material-symbols-outlined ml-auto text-on-surface-variant opacity-50 group-hover:opacity-100 group-hover:text-primary transition-all">badge</span>
+</label>
+</div>
+</div>
+<!-- STEP 3: Seleção de Metodologia -->
+<div class="step-transition step-hidden w-full" id="step-3">
+<p class="font-body-md text-text-body mb-6">Qual será a base principal de avaliação para este ciclo?</p>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<!-- Metodologia 1 -->
+<label class="relative flex flex-col p-5 cursor-pointer rounded-xl border border-outline-variant bg-surface hover:bg-surface-container-highest transition-all duration-200 group has-[:checked]:border-primary has-[:checked]:bg-primary/5 has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:shadow-md hover:-translate-y-1">
+<input checked="" class="sr-only" name="methodology" type="radio" value="9box">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center mb-4 group-has-[:checked]:bg-brand-gradient group-has-[:checked]:text-on-primary text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined">grid_view</span>
+</div>
+<span class="font-label-md text-label-md text-text-heading mb-2 group-has-[:checked]:text-primary transition-colors">Matriz 9-Box</span>
+<span class="font-body-sm text-body-sm text-text-body line-clamp-3">Avaliação bidimensional cruzando Desempenho e Potencial para mapeamento de talentos e sucessão.</span>
+<div class="absolute top-4 right-4 w-5 h-5 rounded-full border-2 border-outline-variant group-has-[:checked]:border-primary flex items-center justify-center transition-colors">
+<div class="w-2.5 h-2.5 rounded-full bg-primary opacity-0 group-has-[:checked]:opacity-100 transition-opacity"></div>
+</div>
+</label>
+<!-- Metodologia 2 -->
+<label class="relative flex flex-col p-5 cursor-pointer rounded-xl border border-outline-variant bg-surface hover:bg-surface-container-highest transition-all duration-200 group has-[:checked]:border-primary has-[:checked]:bg-primary/5 has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:shadow-md hover:-translate-y-1">
+<input class="sr-only" name="methodology" type="radio" value="smart">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center mb-4 group-has-[:checked]:bg-brand-gradient group-has-[:checked]:text-on-primary text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined">flag</span>
+</div>
+<span class="font-label-md text-label-md text-text-heading mb-2 group-has-[:checked]:text-primary transition-colors">Metas SMART</span>
+<span class="font-body-sm text-body-sm text-text-body line-clamp-3">Foco exclusivo no atingimento de objetivos quantitativos e qualitativos definidos previamente.</span>
+<div class="absolute top-4 right-4 w-5 h-5 rounded-full border-2 border-outline-variant group-has-[:checked]:border-primary flex items-center justify-center transition-colors">
+<div class="w-2.5 h-2.5 rounded-full bg-primary opacity-0 group-has-[:checked]:opacity-100 transition-opacity"></div>
+</div>
+</label>
+<!-- Metodologia 3 -->
+<label class="relative flex flex-col p-5 cursor-pointer rounded-xl border border-outline-variant bg-surface hover:bg-surface-container-highest transition-all duration-200 group has-[:checked]:border-primary has-[:checked]:bg-primary/5 has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:shadow-md hover:-translate-y-1">
+<input class="sr-only" name="methodology" type="radio" value="competency">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center mb-4 group-has-[:checked]:bg-brand-gradient group-has-[:checked]:text-on-primary text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined">psychology</span>
+</div>
+<span class="font-label-md text-label-md text-text-heading mb-2 group-has-[:checked]:text-primary transition-colors">Competências</span>
+<span class="font-body-sm text-body-sm text-text-body line-clamp-3">Avaliação comportamental baseada nos valores da empresa e nas habilidades exigidas para o cargo.</span>
+<div class="absolute top-4 right-4 w-5 h-5 rounded-full border-2 border-outline-variant group-has-[:checked]:border-primary flex items-center justify-center transition-colors">
+<div class="w-2.5 h-2.5 rounded-full bg-primary opacity-0 group-has-[:checked]:opacity-100 transition-opacity"></div>
+</div>
+</label>
+</div>
+</div>
+</form>
+<!-- Footer Actions -->
+<div class="mt-12 pt-6 border-t border-border-subtle flex justify-between items-center bg-surface-container-lowest">
+<button class="px-5 py-2.5 bg-surface-container-lowest border border-outline-variant text-on-surface-variant rounded-lg hover:bg-surface-container-low transition-colors font-label-md text-label-md opacity-0 pointer-events-none flex items-center gap-2" id="btn-back" type="button">
+<span class="material-symbols-outlined text-[18px]">arrow_back</span>
+                            Voltar
+                        </button>
+<div class="flex gap-4 ml-auto">
+<button class="px-5 py-2.5 text-primary hover:bg-primary/5 rounded-lg transition-colors font-label-md text-label-md" type="button">
+                                Cancelar
+                            </button>
+<button class="px-6 py-2.5 bg-brand-gradient text-on-primary rounded-lg shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 font-label-md text-label-md font-semibold flex items-center gap-2" id="btn-next" type="button">Próximo <span class="material-symbols-outlined text-[18px]">arrow_forward</span></button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Interactive Logic -->
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            let currentStep = 1;
+            const totalSteps = 3;
+            
+            const btnNext = document.getElementById('btn-next');
+            const btnBack = document.getElementById('btn-back');
+            const progressBar = document.getElementById('progress-bar');
+            
+            function updateUI() {
+                // Steps visibility
+                for (let i = 1; i <= totalSteps; i++) {
+                    const stepEl = document.getElementById(`step-${i}`);
+                    if (i === currentStep) {
+                        stepEl.classList.remove('step-hidden');
+                        stepEl.classList.add('step-active');
+                    } else {
+                        stepEl.classList.remove('step-active');
+                        stepEl.classList.add('step-hidden');
+                    }
+                }
+                
+                // Stepper Visuals
+                for (let i = 1; i <= totalSteps; i++) {
+                    const indicator = document.getElementById(`indicator-${i}`);
+                    const label = document.getElementById(`label-${i}`);
+                    
+                    if (i < currentStep) {
+                        // Completed
+                        indicator.className = 'w-8 h-8 rounded-full flex items-center justify-center font-label-sm text-label-sm font-bold bg-brand-gradient text-on-primary shadow-sm transition-all duration-300';
+                        indicator.innerHTML = '<span class="material-symbols-outlined text-[18px]">check</span>';
+                        label.className = 'font-label-sm text-label-sm text-primary transition-all duration-300';
+                    } else if (i === currentStep) {
+                        // Active
+                        indicator.className = 'w-8 h-8 rounded-full flex items-center justify-center font-label-sm text-label-sm font-bold bg-brand-gradient text-on-primary shadow-sm transition-all duration-300 scale-110 ring-4 ring-primary/10';
+                        indicator.innerHTML = i;
+                        label.className = 'font-label-sm text-label-sm text-primary font-bold transition-all duration-300';
+                    } else {
+                        // Pending
+                        indicator.className = 'w-8 h-8 rounded-full flex items-center justify-center font-label-sm text-label-sm font-bold bg-surface-container-highest text-on-surface-variant border border-outline-variant transition-all duration-300';
+                        indicator.innerHTML = i;
+                        label.className = 'font-label-sm text-label-sm text-text-body transition-all duration-300';
+                    }
+                }
+                
+                // Progress Bar width
+                const progressPercentage = ((currentStep - 1) / (totalSteps - 1)) * 100;
+                progressBar.style.width = `${progressPercentage}%`;
+                
+                // Buttons
+                if (currentStep === 1) {
+                    btnBack.classList.add('opacity-0', 'pointer-events-none');
+                    btnBack.classList.remove('opacity-100', 'pointer-events-auto');
+                } else {
+                    btnBack.classList.remove('opacity-0', 'pointer-events-none');
+                    btnBack.classList.add('opacity-100', 'pointer-events-auto');
+                }
+                
+                if (currentStep === totalSteps) {
+                    btnNext.innerHTML = 'Concluir <span class="material-symbols-outlined text-[18px]">check_circle</span>';
+                } else {
+                    btnNext.innerHTML = 'Próximo <span class="material-symbols-outlined text-[18px]">arrow_forward</span>';
+                }
+            }
+            
+            btnNext.addEventListener('click', () => {
+                if (currentStep < totalSteps) {
+                    currentStep++;
+                    updateUI();
+                } else {
+                    // Simulate completion
+                    btnNext.innerHTML = '<span class="material-symbols-outlined animate-spin text-[18px]">autorenew</span> Salvando...';
+                    btnNext.classList.add('opacity-80', 'pointer-events-none');
+                    setTimeout(() => {
+                        alert('Ciclo criado com sucesso!');
+                        currentStep = 1;
+                        btnNext.classList.remove('opacity-80', 'pointer-events-none');
+                        updateUI();
+                    }, 1000);
+                }
+            });
+            
+            btnBack.addEventListener('click', () => {
+                if (currentStep > 1) {
+                    currentStep--;
+                    updateUI();
+                }
+            });
+            
+            // Init
+            updateUI();
+        });
+    </script>
+
+
+</body></html>

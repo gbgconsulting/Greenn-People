@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+
+<html class="light" lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Nova Meta - Greenn People</title>
+<!-- Google Fonts: Fraunces & Source Sans 3 -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;500;600;700&amp;family=Source+Sans+3:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS with custom config -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "secondary-fixed": "#71f8e4",
+                        "surface-container-high": "#e6e8ea",
+                        "tertiary-container": "#ba5551",
+                        "on-surface-variant": "#3d4a42",
+                        "surface-bright": "#f7f9fb",
+                        "tertiary": "#9b3e3b",
+                        "error-container": "#ffdad6",
+                        "on-primary-fixed-variant": "#005137",
+                        "primary": "#006948",
+                        "primary-fixed": "#85f8c4",
+                        "inverse-on-surface": "#eff1f3",
+                        "on-primary-fixed": "#002114",
+                        "surface-container-low": "#f2f4f6",
+                        "on-surface": "#191c1e",
+                        "outline": "#6d7a72",
+                        "on-tertiary": "#ffffff",
+                        "surface-container": "#eceef0",
+                        "on-primary-container": "#f5fff7",
+                        "background": "#f7f9fb",
+                        "on-secondary-fixed": "#00201c",
+                        "text-heading": "#1e293b",
+                        "border-subtle": "#e2e8f0",
+                        "surface": "#f7f9fb",
+                        "surface-container-lowest": "#ffffff",
+                        "status-warning": "#f59e0b",
+                        "on-secondary-container": "#006f64",
+                        "surface-variant": "#e0e3e5",
+                        "on-tertiary-fixed": "#410004",
+                        "inverse-surface": "#2d3133",
+                        "tertiary-fixed-dim": "#ffb3ae",
+                        "status-critical": "#f43f5e",
+                        "text-body": "#64748b",
+                        "on-tertiary-container": "#fffbff",
+                        "on-background": "#191c1e",
+                        "on-error-container": "#93000a",
+                        "on-primary": "#ffffff",
+                        "outline-variant": "#bccac0",
+                        "secondary-container": "#6df5e1",
+                        "status-success": "#10b981",
+                        "surface-container-highest": "#e0e3e5",
+                        "surface-tint": "#006c4a",
+                        "primary-fixed-dim": "#68dba9",
+                        "inverse-primary": "#68dba9",
+                        "on-error": "#ffffff",
+                        "on-tertiary-fixed-variant": "#7f2928",
+                        "surface-dim": "#d8dadc",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed": "#ffdad7",
+                        "secondary": "#006b5f",
+                        "on-secondary-fixed-variant": "#005048",
+                        "primary-container": "#00855d",
+                        "brand-gradient": "linear-gradient(135deg, #059669 0%, #14b8a6 100%)",
+                        "on-secondary": "#ffffff",
+                        "secondary-fixed-dim": "#4fdbc8"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "unit": "4px",
+                        "container-padding": "32px",
+                        "sidebar-width": "280px",
+                        "gutter": "24px"
+                    },
+                    fontFamily: {
+                        "body-sm": ["\"Source Sans 3\""],
+                        "headline-sm": ["Fraunces"],
+                        "body-lg": ["\"Source Sans 3\""],
+                        "label-md": ["\"Source Sans 3\""],
+                        "body-md": ["\"Source Sans 3\""],
+                        "display-lg": ["Fraunces"],
+                        "headline-md": ["Fraunces"],
+                        "headline-lg": ["Fraunces"],
+                        "label-sm": ["\"Source Sans 3\""]
+                    },
+                    fontSize: {
+                        "body-sm": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+                        "headline-sm": ["20px", { lineHeight: "28px", fontWeight: "500" }],
+                        "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }],
+                        "label-md": ["14px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "600" }],
+                        "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+                        "display-lg": ["48px", { lineHeight: "56px", letterSpacing: "-0.02em", fontWeight: "600" }],
+                        "headline-md": ["24px", { lineHeight: "32px", fontWeight: "500" }],
+                        "headline-lg": ["32px", { lineHeight: "40px", fontWeight: "600" }],
+                        "label-sm": ["12px", { lineHeight: "16px", fontWeight: "600" }]
+                    },
+                    boxShadow: {
+                        'ambient': '0 2px 4px rgba(0, 0, 0, 0.04)',
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-fill {
+            font-variation-settings: 'FILL' 1;
+        }
+        
+        /* Form Input Autocomplete Override to match design system */
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover, 
+        input:-webkit-autofill:focus, 
+        input:-webkit-autofill:active{
+            -webkit-box-shadow: 0 0 0 30px #ffffff inset !important;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen flex flex-col font-body-md antialiased selection:bg-primary/20 selection:text-primary">
+<!-- 
+      Navigation Shell Suppressed:
+      Per semantic mapping rules, task-focused/transactional screens ("Nova / Editar") 
+      that imply a temporary departure from global nav must suppress the SideNav and TopNavBar
+      to prioritize the canvas and prevent user distraction. 
+    -->
+<!-- Main Canvas -->
+<main class="flex-1 w-full max-w-4xl mx-auto px-gutter py-12 flex flex-col">
+<!-- Contextual Back Action -->
+<div class="mb-8 flex items-center">
+<button class="group flex items-center gap-2 text-primary hover:text-primary-container transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md p-1 -ml-1">
+<span class="material-symbols-outlined text-[20px] transition-transform group-hover:-translate-x-1" data-icon="arrow_back">arrow_back</span>
+<span class="font-label-md text-label-md">Voltar para Metas</span>
+</button>
+</div>
+<!-- Form Card -->
+<article class="bg-surface-container-lowest border border-border-subtle rounded-xl shadow-ambient overflow-hidden flex flex-col">
+<!-- Card Header -->
+<header class="px-10 pt-10 pb-6 border-b border-border-subtle/50">
+<h1 class="font-headline-lg text-headline-lg text-text-heading mb-2">Nova Meta</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Defina os parâmetros para o novo objetivo de performance.</p>
+<!-- Status Context Banner -->
+<div class="mt-6 bg-surface-container-low border border-surface-variant rounded-lg p-4 flex gap-3 items-start">
+<span class="material-symbols-outlined text-primary mt-0.5 icon-fill" data-icon="info">info</span>
+<div>
+<h3 class="font-label-md text-label-md text-on-surface mb-1">Contexto de Criação</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                            Novas metas são cadastradas inicialmente com o status <span class="font-semibold text-on-surface">Pendente</span>. Elas integrarão o Ciclo Atual (Q3/24) e necessitam da aprovação do gestor direto para entrarem em vigência.
+                        </p>
+</div>
+</div>
+</header>
+<!-- Form Content -->
+<form class="px-10 py-8 flex flex-col gap-8">
+<!-- Field: Strategic Objective -->
+<div class="flex flex-col gap-2">
+<label class="font-label-md text-label-md text-on-surface-variant" for="strategic_objective">Objetivo Estratégico Relacionado</label>
+<div class="relative">
+<select class="w-full appearance-none bg-surface-container-low border border-transparent hover:bg-surface-variant/50 focus:bg-surface-container-lowest focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-4 py-3 font-body-md text-body-md text-on-surface outline-none transition-all cursor-pointer" id="strategic_objective" name="strategic_objective">
+<option disabled="" selected="" value="">Selecione um objetivo ativo do ciclo...</option>
+<option value="1">Aumentar a retenção de talentos em 15%</option>
+<option value="2">Expandir market share na América Latina</option>
+<option value="3">Otimizar processos internos de onboarding</option>
+<option value="4">Lançar nova suíte de produtos B2B</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Field: Goal Title -->
+<div class="flex flex-col gap-2">
+<label class="font-label-md text-label-md text-on-surface-variant" for="goal_title">Título da Meta</label>
+<input class="w-full bg-surface-container-low border border-transparent hover:bg-surface-variant/50 focus:bg-surface-container-lowest focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-4 py-3 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant/60 outline-none transition-all" id="goal_title" name="goal_title" placeholder="Ex: Reduzir tempo de resposta do suporte em 20%" type="text"/>
+</div>
+<!-- Field: Description & Success Criteria -->
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-baseline">
+<label class="font-label-md text-label-md text-on-surface-variant" for="goal_description">Descrição &amp; Critérios de Sucesso</label>
+<span class="font-label-sm text-label-sm text-on-surface-variant/70">Opcional, porém recomendado</span>
+</div>
+<textarea class="w-full resize-y min-h-[120px] bg-surface-container-low border border-transparent hover:bg-surface-variant/50 focus:bg-surface-container-lowest focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-4 py-3 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant/60 outline-none transition-all" id="goal_description" name="goal_description" placeholder="Descreva detalhadamente como o sucesso desta meta será mensurado e quais os entregáveis esperados..." rows="5"></textarea>
+</div>
+<!-- Field: Weight -->
+<div class="flex flex-col gap-2 w-full md:w-1/3">
+<label class="font-label-md text-label-md text-on-surface-variant" for="goal_weight">Peso na Avaliação</label>
+<div class="relative flex items-center">
+<input class="w-full bg-surface-container-low border border-transparent hover:bg-surface-variant/50 focus:bg-surface-container-lowest focus:border-primary focus:ring-1 focus:ring-primary rounded-lg pl-4 pr-10 py-3 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant/60 outline-none transition-all" id="goal_weight" max="100" min="0" name="goal_weight" placeholder="0" type="number"/>
+<div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+<span class="font-body-md text-body-md text-on-surface-variant">%</span>
+</div>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Soma total atual: 80%</p>
+</div>
+</form>
+<!-- Card Footer / Actions -->
+<footer class="px-10 py-6 border-t border-border-subtle bg-surface-bright flex items-center justify-end gap-4 rounded-b-xl">
+<button class="font-label-md text-label-md text-primary hover:bg-primary/5 px-6 py-3 rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary" type="button">
+                    Cancelar
+                </button>
+<button class="font-label-md text-label-md text-on-primary bg-brand-gradient hover:-translate-y-0.5 px-6 py-3 rounded-lg shadow-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-bright flex items-center gap-2" type="submit">
+<span class="material-symbols-outlined text-[18px]" data-icon="save">save</span>
+                    Salvar Meta
+                </button>
+</footer>
+</article>
+</main>
+</body></html>

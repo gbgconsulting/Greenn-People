@@ -3,58 +3,108 @@
 {% block title %}{% if item_reprovado or meta_reprovada %}{{ rotulo_editar|default:"Corrigir" }} meta{% elif meta %}Editar meta{% else %}Nova meta{% endif %} — Greenn People{% endblock %}
 
 {% block content %}
-<div class="mx-auto max-w-lg">
-  <h1 class="mb-1 text-2xl font-semibold text-slate-800">
-    {% if item_reprovado or meta_reprovada %}{{ rotulo_editar|default:"Corrigir" }} meta{% elif meta %}Editar meta{% else %}Nova meta{% endif %}
-  </h1>
-  <p class="mb-6 {% if proximo_passo_hint %}text-amber-700{% else %}text-slate-500{% endif %}">
-    {% if proximo_passo_hint %}
-      {{ proximo_passo_hint }}
-    {% elif meta %}
-      Atualize a meta vinculada a um objetivo estratégico do ciclo aberto.
-    {% else %}
-      Vincule a meta a um objetivo estratégico do ciclo aberto. Novas metas nascem com status pendente.
-    {% endif %}
-  </p>
+{% url 'goals:meta_list' as cancel_url %}
+<div class="mx-auto flex w-full max-w-3xl flex-col pt-2 pb-8 md:pt-4">
+  <div class="mb-6">
+    <a
+      href="{{ cancel_url }}"
+      class="group inline-flex items-center gap-2 rounded-md p-1 -ml-1 font-ui text-sm font-semibold tracking-wide text-emerald-700 transition-colors hover:text-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5 transition-transform group-hover:-translate-x-0.5" aria-hidden="true">
+        <path fill-rule="evenodd" d="M17 10a.75.75 0 0 1-.75.75H5.612l4.158 3.96a.75.75 0 1 1-1.04 1.08l-5.5-5.25a.75.75 0 0 1 0-1.08l5.5-5.25a.75.75 0 1 1 1.04 1.08L5.612 9.25H16.25A.75.75 0 0 1 17 10Z" clip-rule="evenodd" />
+      </svg>
+      Voltar para Metas
+    </a>
+  </div>
 
-  <form method="post" novalidate class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-    {% csrf_token %}
+  <article class="overflow-hidden rounded-xl border border-line bg-surface-card shadow-[0_2px_4px_rgba(0,0,0,0.04)]">
+    <header class="px-8 pt-8 pb-6 md:px-10 md:pt-10">
+      <h1 class="mb-2 font-display text-2xl font-semibold tracking-tight text-slate-800 md:text-[2rem] md:leading-10">
+        {% if item_reprovado or meta_reprovada %}
+          {{ rotulo_editar|default:"Corrigir" }} meta
+        {% elif meta %}
+          Editar meta
+        {% else %}
+          Nova Meta
+        {% endif %}
+      </h1>
+      <p class="font-ui text-base {% if proximo_passo_hint %}text-amber-700{% else %}text-slate-500{% endif %}">
+        {% if proximo_passo_hint %}
+          {{ proximo_passo_hint }}
+        {% elif meta %}
+          Atualize a meta vinculada a um objetivo estratégico do ciclo aberto.
+        {% else %}
+          Defina os parâmetros para o novo objetivo de performance.
+        {% endif %}
+      </p>
 
-    {% if form.non_field_errors %}
-      <div class="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700" role="alert">
-        {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+      {% if not meta %}
+        <div class="mt-6 flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-100 p-4">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="mt-0.5 h-5 w-5 shrink-0 text-emerald-700" aria-hidden="true">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z" clip-rule="evenodd" />
+          </svg>
+          <div>
+            <h2 class="mb-1 font-ui text-sm font-semibold tracking-wide text-slate-800">Contexto de Criação</h2>
+            <p class="font-ui text-sm leading-5 text-slate-600">
+              Novas metas são cadastradas inicialmente com o status
+              <span class="font-semibold text-slate-800">Pendente</span>.
+              {% if ciclo_aberto %}
+                Elas integrarão o ciclo <span class="font-semibold text-slate-800">{{ ciclo_aberto.nome }}</span>
+                e necessitam da aprovação do gestor direto para entrarem em vigência.
+              {% else %}
+                Elas necessitam da aprovação do gestor direto para entrarem em vigência.
+              {% endif %}
+            </p>
+          </div>
+        </div>
+      {% endif %}
+    </header>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="flex flex-col gap-8 px-8 py-8 md:px-10">
+        {% if form.non_field_errors %}
+          <div class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 font-ui text-sm text-rose-700" role="alert">
+            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+          </div>
+        {% endif %}
+
+        <div class="flex flex-col gap-2">
+          <label for="{{ form.objetivo_estrategico.id_for_label }}" class="font-ui text-sm font-semibold tracking-wide text-slate-600">
+            {{ form.objetivo_estrategico.label }}
+          </label>
+          {{ form.objetivo_estrategico }}
+          {% if form.objetivo_estrategico.errors %}
+            <p class="font-ui text-xs text-rose-600" role="alert">{{ form.objetivo_estrategico.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <div class="mt-6 flex flex-col gap-2">
+          <label for="{{ form.descricao.id_for_label }}" class="font-ui text-sm font-semibold tracking-wide text-slate-600">
+            {{ form.descricao.label }}
+          </label>
+          {{ form.descricao }}
+          {% if form.descricao.errors %}
+            <p class="font-ui text-xs text-rose-600" role="alert">{{ form.descricao.errors.0 }}</p>
+          {% endif %}
+        </div>
       </div>
-    {% endif %}
 
-    <div class="mb-4">
-      <label for="{{ form.objetivo_estrategico.id_for_label }}" class="mb-1 block text-sm font-medium text-slate-700">
-        {{ form.objetivo_estrategico.label }}
-      </label>
-      {{ form.objetivo_estrategico }}
-      {% if form.objetivo_estrategico.errors %}
-        <p class="mt-1 text-xs text-rose-600" role="alert">{{ form.objetivo_estrategico.errors.0 }}</p>
-      {% endif %}
-    </div>
-
-    <div class="mb-6">
-      <label for="{{ form.descricao.id_for_label }}" class="mb-1 block text-sm font-medium text-slate-700">
-        {{ form.descricao.label }}
-      </label>
-      {{ form.descricao }}
-      {% if form.descricao.errors %}
-        <p class="mt-1 text-xs text-rose-600" role="alert">{{ form.descricao.errors.0 }}</p>
-      {% endif %}
-    </div>
-
-    <div class="flex flex-wrap gap-3">
-      {% url 'goals:meta_list' as cancel_url %}
-      {% if item_reprovado or meta_reprovada %}
-        {% include "components/button.html" with label=rotulo_editar|default:"Corrigir" type="submit" variant="primary" %}
-      {% else %}
-        {% include "components/button.html" with label="Salvar" type="submit" variant="primary" %}
-      {% endif %}
-      {% include "components/button.html" with label="Cancelar" href=cancel_url variant="secondary" %}
-    </div>
-  </form>
+      <footer class="flex items-center justify-end gap-4 rounded-b-xl border-t border-line bg-slate-50 px-8 py-6 md:px-10">
+        <a
+          href="{{ cancel_url }}"
+          class="inline-flex h-12 items-center justify-center rounded-lg px-6 font-ui text-sm font-semibold tracking-tight text-emerald-700 transition-colors hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50"
+        >
+          Cancelar
+        </a>
+        {% if item_reprovado or meta_reprovada %}
+          {% include "components/button.html" with label=rotulo_editar|default:"Corrigir" type="submit" variant="primary" %}
+        {% else %}
+          {% include "components/button.html" with label="Salvar" type="submit" variant="primary" %}
+        {% endif %}
+      </footer>
+    </form>
+  </article>
 </div>
 {% endblock %}

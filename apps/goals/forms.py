@@ -7,14 +7,18 @@ from apps.goals.models import Meta, ObjetivoEstrategico
 from apps.reviews.models import Avaliacao
 
 _INPUT = (
-    'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm '
-    'focus:outline-none focus:ring-2 focus:ring-emerald-500 '
-    'focus:border-transparent'
+    'w-full rounded-lg border border-transparent bg-slate-100 px-4 py-3 '
+    'font-ui text-sm text-slate-800 transition-all '
+    'placeholder:text-slate-400 hover:bg-slate-200/60 '
+    'focus:border-emerald-600 focus:bg-white focus:outline-none '
+    'focus:ring-1 focus:ring-emerald-600'
 )
 _TEXTAREA = (
-    'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm '
-    'focus:outline-none focus:ring-2 focus:ring-emerald-500 '
-    'focus:border-transparent min-h-[6rem]'
+    'w-full min-h-[7.5rem] resize-y rounded-lg border border-transparent '
+    'bg-slate-100 px-4 py-3 font-ui text-sm text-slate-800 transition-all '
+    'placeholder:text-slate-400 hover:bg-slate-200/60 '
+    'focus:border-emerald-600 focus:bg-white focus:outline-none '
+    'focus:ring-1 focus:ring-emerald-600'
 )
 
 
@@ -139,25 +143,34 @@ class MetaForm(forms.ModelForm):
         model = Meta
         fields = ('objetivo_estrategico', 'descricao')
         labels = {
-            'objetivo_estrategico': 'Objetivo estratégico',
-            'descricao': 'Descrição da meta',
+            'objetivo_estrategico': 'Objetivo Estratégico Relacionado',
+            'descricao': 'Título da Meta',
         }
         widgets = {
-            'descricao': forms.Textarea(attrs={'rows': 4}),
+            'descricao': forms.TextInput(),
         }
 
     def __init__(self, *args, user=None, **kwargs):
         self.user = user
         super().__init__(*args, **kwargs)
         self.fields['objetivo_estrategico'].widget.attrs.update({'class': _INPUT})
-        self.fields['descricao'].widget.attrs.update({'class': _TEXTAREA})
+        self.fields['descricao'].widget.attrs.update(
+            {
+                'class': _INPUT,
+                'placeholder': (
+                    'Ex: Reduzir tempo de resposta do suporte em 20%'
+                ),
+            },
+        )
 
         ciclo = get_open_ciclo()
         objetivos = ObjetivoEstrategico.objects.none()
         if ciclo is not None:
             objetivos = ObjetivoEstrategico.objects.filter(ciclo=ciclo).order_by('id')
         self.fields['objetivo_estrategico'].queryset = objetivos
-        self.fields['objetivo_estrategico'].empty_label = '— Selecione —'
+        self.fields['objetivo_estrategico'].empty_label = (
+            'Selecione um objetivo ativo do ciclo...'
+        )
 
     def clean(self):
         cleaned = super().clean()

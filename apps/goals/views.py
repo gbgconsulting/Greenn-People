@@ -414,6 +414,11 @@ class MetaCreateView(LoginRequiredMixin, CreateView):
         kwargs['user'] = self.request.user
         return kwargs
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['ciclo_aberto'] = get_open_ciclo()
+        return context
+
     def form_valid(self, form):
         form.instance.usuario = self.request.user
         form.instance.status = Meta.Status.PENDENTE
@@ -460,6 +465,7 @@ class MetaUpdateView(LoginRequiredMixin, ScopedObjectMixin, UpdateView):
         context.update(cta)
         # Alias legado do template: mesma semântica de ``item_reprovado``.
         context['meta_reprovada'] = cta['item_reprovado']
+        context['ciclo_aberto'] = get_open_ciclo()
         return context
 
     def get_form_kwargs(self):
