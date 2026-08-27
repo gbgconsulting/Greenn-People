@@ -54,6 +54,37 @@ _COLLABORATOR_ADVANCE_ETAPAS = frozenset(
 # CTAs 008 pouco úteis nesta superfície (já há painel ou copy local).
 _EXPECTATIONS_SURFACE_CTA_SKIP = frozenset({'dashboard:personal'})
 
+# Labels de senioridade (contrato 003 §3) — só apresentação.
+_CARGO_NIVEL_LABELS = {
+    1: 'Estagiário',
+    2: 'Júnior',
+    3: 'Pleno',
+    4: 'Sênior',
+    5: 'Especialista',
+    6: 'Principal',
+}
+
+
+def _cargo_nivel_label(cargo) -> str:
+    """Rótulo de senioridade a partir de ``Cargo.nivel`` (1–6)."""
+    if cargo is None:
+        return ''
+    return _CARGO_NIVEL_LABELS.get(cargo.nivel, str(cargo.nivel))
+
+
+def _competencia_segments(nivel_esperado, valor_minimo: int, valor_maximo: int) -> list[bool]:
+    """Segmentos preenchidos para a barra de nível esperado (apresentação)."""
+    if valor_maximo is None or valor_minimo is None or valor_maximo < valor_minimo:
+        return []
+    try:
+        filled_level = int(round(float(nivel_esperado)))
+    except (TypeError, ValueError):
+        filled_level = valor_minimo
+    return [
+        level <= filled_level
+        for level in range(valor_minimo, valor_maximo + 1)
+    ]
+
 
 def _proximo_passo_pos_reprovacao(avaliacao, meta, *, is_owner, pode_progresso):
     """Hint + rótulos de CTA quando o item está reprovado (FR-007 / T021).
@@ -247,6 +278,22 @@ class ExpectationsView(LoginRequiredMixin, TemplateView):
         context['metas'] = metas
         # T034: CTA compacto via mapa 008 — sem hub next_step/stepper nesta tela.
         context['surface_cta'] = self._surface_cta_context(fr005)
+        # Apresentação do mock de expectativas (sem mudar FR-005 / AuthZ).
+        cargo = fr005.get('cargo')
+        context['area'] = getattr(user, 'area', None)
+        context['cargo_nivel_label'] = _cargo_nivel_label(cargo)
+        context['competencias_cards'] = [
+            {
+                **item,
+                'segments': _competencia_segments(
+                    item['nivel_esperado'],
+                    item['competencia'].escala.valor_minimo,
+                    item['competencia'].escala.valor_maximo,
+                ),
+                'nivel_esperado_display': item['nivel_esperado'],
+            }
+            for item in fr005.get('competencias_resumo') or []
+        ]
         return context
 
     def _surface_cta_context(self, fr005: dict) -> dict | None:
@@ -315,6 +362,8 @@ class MetaListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin
             .get_queryset()
             .select_related(
                 'usuario',
+                'usuario__cargo',
+                'usuario__area',
                 'objetivo_estrategico',
                 'objetivo_estrategico__ciclo',
             )

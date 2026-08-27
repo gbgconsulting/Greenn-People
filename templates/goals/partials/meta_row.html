@@ -1,8 +1,29 @@
 <tr id="meta-row-{{ meta.pk }}">
   <td class="font-medium text-slate-800">{{ meta.descricao }}</td>
-  <td class="text-slate-600">{{ meta.usuario.nome }}</td>
-  <td class="text-slate-600">{{ meta.objetivo_estrategico.descricao }}</td>
-  <td class="text-slate-600">
+  <td>
+    <div class="flex min-w-0 items-center gap-3">
+      <span
+        class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line bg-emerald-50 font-ui text-xs font-bold text-emerald-700"
+        aria-hidden="true"
+      >
+        {{ meta.usuario.nome|default:meta.usuario.email|make_list|first|upper }}
+      </span>
+      <div class="min-w-0">
+        <p class="truncate font-ui text-sm font-medium text-slate-800">{{ meta.usuario.nome }}</p>
+        {% if meta.usuario.cargo or meta.usuario.area %}
+        <p class="truncate font-ui text-xs text-slate-500">
+          {% if meta.usuario.cargo %}{{ meta.usuario.cargo.nome }}{% endif %}{% if meta.usuario.cargo and meta.usuario.area %} · {% endif %}{% if meta.usuario.area %}{{ meta.usuario.area.nome }}{% endif %}
+        </p>
+        {% endif %}
+      </div>
+    </div>
+  </td>
+  <td>
+    <span class="inline-flex max-w-[12rem] items-center truncate rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 font-ui text-xs font-medium text-slate-700" title="{{ meta.objetivo_estrategico.descricao }}">
+      {{ meta.objetivo_estrategico.descricao }}
+    </span>
+  </td>
+  <td>
     {% if pode_atualizar_progresso and progress_form %}
     <form
       method="post"
@@ -37,9 +58,24 @@
       {% endif %}
     </form>
     {% elif meta.progresso is not None %}
-      <span class="tabular-nums">{{ meta.progresso }}%</span>
+    <div class="flex min-w-[7rem] max-w-[11rem] items-center gap-3">
+      <div
+        class="h-2 flex-1 overflow-hidden rounded-full bg-slate-200"
+        role="progressbar"
+        aria-valuenow="{{ meta.progresso }}"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-label="Progresso {{ meta.progresso }}%"
+      >
+        <div
+          class="h-full rounded-full {% if meta.progresso >= 50 %}bg-emerald-500{% elif meta.progresso > 0 %}bg-amber-500{% else %}bg-slate-400{% endif %}"
+          style="width: {{ meta.progresso }}%"
+        ></div>
+      </div>
+      <span class="shrink-0 font-ui text-sm font-medium tabular-nums text-slate-800">{{ meta.progresso }}%</span>
+    </div>
     {% else %}
-      —
+      <span class="font-ui text-sm text-slate-500">—</span>
     {% endif %}
   </td>
   <td>

@@ -1,60 +1,66 @@
 {% extends "base.html" %}
 
-{% block title %}Metas — Greenn People{% endblock %}
+{% block title %}Gestão de Metas — Greenn People{% endblock %}
 
 {% block content %}
-<header class="mb-6 flex flex-wrap items-start justify-between gap-3">
-  <div>
-    <h1 class="font-display text-2xl font-semibold text-slate-800">Metas</h1>
-    <p class="mt-1 text-sm text-slate-500">
-      {% if ciclo_aberto %}
-        Ciclo aberto: {{ ciclo_aberto.nome }}. Cadastre e acompanhe metas vinculadas aos objetivos estratégicos.
-      {% else %}
-        Não há ciclo aberto no momento.
+<div class="mx-auto w-full max-w-6xl">
+  <header class="mb-6 flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <h1 class="font-display text-2xl font-semibold text-slate-800">Gestão de Metas</h1>
+      <p class="mt-1 font-ui text-sm text-slate-500">
+        {% if ciclo_aberto %}
+          Acompanhe e gerencie o progresso das metas do ciclo {{ ciclo_aberto.nome }}.
+        {% else %}
+          Não há ciclo aberto no momento.
+        {% endif %}
+      </p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      {% if avaliacao_pk and rotulo_avanco %}
+        <form method="post" action="{% url 'reviews:advance' avaliacao_pk %}" class="inline">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{% url 'goals:meta_list' %}">
+          {% include "components/button.html" with label=rotulo_avanco type="submit" variant="secondary" disabled=avanco_desabilitado %}
+        </form>
       {% endif %}
-    </p>
-  </div>
-  <div class="flex flex-wrap items-center gap-2">
-    {% if pode_criar %}
-      {% url 'goals:meta_create' as create_url %}
-      {% include "components/button.html" with label="Nova meta" href=create_url variant="primary" %}
-    {% endif %}
-    {% if avaliacao_pk and rotulo_avanco %}
-      <form method="post" action="{% url 'reviews:advance' avaliacao_pk %}" class="inline">
-        {% csrf_token %}
-        <input type="hidden" name="next" value="{% url 'goals:meta_list' %}">
-        {% include "components/button.html" with label=rotulo_avanco type="submit" variant="secondary" disabled=avanco_desabilitado %}
-      </form>
-    {% endif %}
-  </div>
-</header>
+      {% if pode_criar %}
+        {% url 'goals:meta_create' as create_url %}
+        {% include "components/button.html" with label="Nova meta" href=create_url variant="primary" %}
+      {% endif %}
+    </div>
+  </header>
 
-{% if avaliacao_pk and rotulo_avanco and not pode_avancar and motivo_bloqueio_avanco %}
-<p class="mb-4 font-ui text-sm text-amber-700" role="status">{{ motivo_bloqueio_avanco }}</p>
-{% endif %}
-{% if proximo_passo_lista_hint %}
-<p
-  class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 font-ui text-sm leading-relaxed text-amber-900"
-  role="status"
->
-  {{ proximo_passo_lista_hint }}
-</p>
-{% endif %}
+  {% if avaliacao_pk and rotulo_avanco and not pode_avancar and motivo_bloqueio_avanco %}
+  <p class="mb-4 font-ui text-sm text-amber-700" role="status">{{ motivo_bloqueio_avanco }}</p>
+  {% endif %}
+  {% if proximo_passo_lista_hint %}
+  <p
+    class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 font-ui text-sm leading-relaxed text-amber-900"
+    role="status"
+  >
+    {{ proximo_passo_lista_hint }}
+  </p>
+  {% endif %}
 
-{% if ciclo_aberto %}
-<nav class="mb-4 flex flex-wrap gap-2" aria-label="Filtro por status">
-  <a
-    href="{% url 'goals:meta_list' %}"
-    class="rounded-lg px-3 py-1.5 font-ui text-sm {% if not status_filtro %}bg-emerald-50 font-medium text-emerald-700{% else %}border border-line bg-surface-card text-slate-600 hover:bg-slate-50{% endif %}"
-  >Todos</a>
-  {% for value, label in status_choices %}
-  <a
-    href="?status={{ value }}"
-    class="rounded-lg px-3 py-1.5 font-ui text-sm {% if status_filtro == value %}bg-emerald-50 font-medium text-emerald-700{% else %}border border-line bg-surface-card text-slate-600 hover:bg-slate-50{% endif %}"
-  >{{ label }}</a>
-  {% endfor %}
-</nav>
-{% endif %}
+  {% if ciclo_aberto %}
+  <nav class="mb-4 flex flex-wrap gap-2" aria-label="Filtro por status">
+    <div class="inline-flex flex-wrap gap-1 rounded-xl bg-slate-100 p-1">
+      <a
+        href="{% url 'goals:meta_list' %}"
+        class="rounded-lg px-3 py-1.5 font-ui text-sm transition-colors {% if not status_filtro %}bg-white font-semibold text-emerald-700 shadow-sm{% else %}font-medium text-slate-600 hover:bg-slate-200/60 hover:text-slate-800{% endif %}"
+        {% if not status_filtro %}aria-current="page"{% endif %}
+      >Todos</a>
+      {% for value, label in status_choices %}
+      <a
+        href="?status={{ value }}"
+        class="rounded-lg px-3 py-1.5 font-ui text-sm transition-colors {% if status_filtro == value %}bg-white font-semibold text-emerald-700 shadow-sm{% else %}font-medium text-slate-600 hover:bg-slate-200/60 hover:text-slate-800{% endif %}"
+        {% if status_filtro == value %}aria-current="page"{% endif %}
+      >{{ label }}</a>
+      {% endfor %}
+    </div>
+  </nav>
+  {% endif %}
 
-{% include "goals/meta_list_partial.html" %}
+  {% include "goals/meta_list_partial.html" %}
+</div>
 {% endblock %}
