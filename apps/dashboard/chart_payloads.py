@@ -101,6 +101,7 @@ CHART_TYPE_DOUGHNUT_OR_BAR = 'doughnut_or_bar'
 CHART_TYPE_BAR_GROUPED = 'bar_grouped'
 CHART_TYPE_BAR_HORIZONTAL = 'bar_horizontal'
 CHART_TYPE_AREA = 'area'
+CHART_TYPE_RADAR = 'radar'
 
 CHART_TYPES: frozenset[str] = frozenset({
     CHART_TYPE_BAR,
@@ -109,6 +110,7 @@ CHART_TYPES: frozenset[str] = frozenset({
     CHART_TYPE_BAR_GROUPED,
     CHART_TYPE_BAR_HORIZONTAL,
     CHART_TYPE_AREA,
+    CHART_TYPE_RADAR,
 })
 
 # Série única: bar / doughnut / doughnut_or_bar / bar_horizontal / area
@@ -120,9 +122,10 @@ SINGLE_SERIES_TYPES: frozenset[str] = frozenset({
     CHART_TYPE_AREA,
 })
 
-# Multi-série: bar_grouped (esperado×nota) ou area (tendência multi)
+# Multi-série: bar_grouped / radar (esperado×nota) ou area (tendência multi)
 MULTI_SERIES_TYPES: frozenset[str] = frozenset({
     CHART_TYPE_BAR_GROUPED,
+    CHART_TYPE_RADAR,
     CHART_TYPE_AREA,
 })
 
@@ -508,9 +511,10 @@ def grouped_series_payload(
 ) -> dict[str, Any]:
     """Monta payload multi-série no shape do contrato.
 
-    Types típicos: ``bar_grouped`` (esperado × nota) ou ``area`` (tendência
-    multi). Valores ``None`` em ``series[].values`` permanecem null (não viram 0).
-    ``total`` é opcional (compatível com o shape canônico); não inventa soma.
+    Types típicos: ``bar_grouped`` / ``radar`` (esperado × nota) ou ``area``
+    (tendência multi). Valores ``None`` em ``series[].values`` permanecem null
+    (não viram 0). ``total`` é opcional (compatível com o shape canônico);
+    não inventa soma.
     """
     resolved_has_data = bool(has_data) if has_data is not None else bool(labels)
     normalized_series: list[dict[str, Any]] = []
@@ -613,6 +617,30 @@ def categorical_counts_payload(
     )
 
 
+def _sort_coverage_bars_exception_first(
+    dense: Sequence[Mapping[str, Any]],
+    *,
+    label_key: str,
+    value_key: str = 'percentual',
+) -> list[dict[str, Any]]:
+    """Ordena barras por % ASC (pior primeiro); ``Outros`` fica fixo no final."""
+    real: list[dict[str, Any]] = []
+    others: list[dict[str, Any]] = []
+    for row in dense:
+        item = dict(row)
+        if str(item.get(label_key) or '') == OTHERS_LABEL:
+            others.append(item)
+        else:
+            real.append(item)
+    real.sort(
+        key=lambda r: (
+            _as_number(r.get(value_key)),
+            str(r.get(label_key) or '').lower(),
+        ),
+    )
+    return real + others
+
+
 def coverage_bar_payload(
     rows: Sequence[Mapping[str, Any]],
     *,
@@ -629,6 +657,8 @@ def coverage_bar_payload(
     ``rows`` vêm de ``coverage_by_area`` / ``coverage_by_cargo`` (composição).
     Eixo longo: Top-N por volume (``total``) **antes** de emitir labels;
     residual vira ``Outros`` com % = ``sum(com)/sum(total)`` (nunca média).
+    Depois do corte, itens reais ordenam por % ASC (exceção primeiro);
+    ``Outros`` permanece no final, fora dessa ordenação.
     Amber no índice de **menor** cobertura só quando há gargalo real
     (mínimo estritamente menor que o máximo) — sem inventar métrica.
     Etapas e doughnut de aderência não usam este builder.
@@ -645,11 +675,15 @@ def coverage_bar_payload(
             empty_message=empty_message,
         )
 
-    dense = top_n_with_others(
-        usable,
-        n=DENSITY_TOP_N,
-        strategy='coverage',
+    dense = _sort_coverage_bars_exception_first(
+        top_n_with_others(
+            usable,
+            n=DENSITY_TOP_N,
+            strategy='coverage',
+            label_key=label_key,
+        ),
         label_key=label_key,
+        value_key=value_key,
     )
     labels = [str(row.get(label_key) or '') for row in dense]
     # Charts de %: sempre inteiro no payload (datalabel / legend sem decimal).

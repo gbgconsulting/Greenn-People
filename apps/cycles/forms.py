@@ -3,9 +3,10 @@ from django import forms
 from apps.cycles.models import Ciclo
 
 _INPUT = (
-    'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm '
-    'focus:outline-none focus:ring-2 focus:ring-emerald-500 '
-    'focus:border-transparent'
+    'h-12 w-full rounded-lg border border-line bg-surface px-4 text-sm '
+    'text-slate-800 shadow-sm transition-colors placeholder:text-slate-400 '
+    'hover:border-slate-300 focus:border-transparent focus:outline-none '
+    'focus:ring-2 focus:ring-emerald-500'
 )
 
 
@@ -20,9 +21,9 @@ class CicloForm(forms.ModelForm):
         model = Ciclo
         fields = ('nome', 'data_inicio', 'data_fim', 'admitidos_ate')
         labels = {
-            'nome': 'Nome',
-            'data_inicio': 'Data de início',
-            'data_fim': 'Data de fim',
+            'nome': 'Nome do Ciclo',
+            'data_inicio': 'Data de Início',
+            'data_fim': 'Data de Encerramento',
             'admitidos_ate': 'Admitidos até',
         }
         help_texts = {
@@ -43,16 +44,10 @@ class CicloForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['nome'].widget.attrs.update({'class': _INPUT})
+        self.fields['nome'].widget.attrs.update(
+            {
+                'class': _INPUT,
+                'placeholder': 'Ex: Avaliação Anual 2024',
+            },
+        )
         self.fields['admitidos_ate'].required = True
-
-    def clean(self):
-        cleaned = super().clean()
-        inicio = cleaned.get('data_inicio')
-        fim = cleaned.get('data_fim')
-        if inicio and fim and fim < inicio:
-            self.add_error(
-                'data_fim',
-                'A data de fim deve ser igual ou posterior à data de início.',
-            )
-        return cleaned

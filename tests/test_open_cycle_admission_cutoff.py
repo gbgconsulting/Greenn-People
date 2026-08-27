@@ -11,6 +11,7 @@ from urllib.parse import quote
 
 import pytest
 from django.contrib.messages import get_messages
+from django.core.exceptions import ValidationError
 from django.test import Client
 from django.urls import reverse
 from django.utils import timezone
@@ -272,6 +273,51 @@ def test_ciclo_form_exige_admitidos_ate_no_create(admin):
     html = list_resp.content.decode()
     assert 'name="admitidos_ate"' not in html
     assert 'data-ciclo-open-form' in html
+
+
+@pytest.mark.django_db
+def test_ciclo_rejeita_data_fim_antes_de_data_inicio():
+    """Model e form bloqueiam fim anterior ao início (mesmo ciclo aberto)."""
+    from apps.cycles.forms import CicloForm
+
+    today = date.today()
+    inicio = today
+    fim_antes = today - timedelta(days=1)
+
+    ciclo = Ciclo(
+        nome='Ciclo Datas Invertidas',
+        data_inicio=inicio,
+        data_fim=fim_antes,
+        status=Ciclo.Status.ENCERRADO,
+    )
+    with pytest.raises(ValidationError) as exc_full:
+        ciclo.full_clean()
+    assert 'data_fim' in exc_full.value.message_dict
+
+    with pytest.raises(ValidationError) as exc_save:
+        ciclo.save()
+    assert 'data_fim' in exc_save.value.message_dict
+
+    form = CicloForm(
+        data={
+            'nome': 'Ciclo Datas Invertidas',
+            'data_inicio': inicio.isoformat(),
+            'data_fim': fim_antes.isoformat(),
+            'admitidos_ate': CUTOFF.isoformat(),
+        },
+    )
+    assert not form.is_valid()
+    assert 'data_fim' in form.errors
+
+    form_igual = CicloForm(
+        data={
+            'nome': 'Ciclo Mesmo Dia',
+            'data_inicio': inicio.isoformat(),
+            'data_fim': inicio.isoformat(),
+            'admitidos_ate': CUTOFF.isoformat(),
+        },
+    )
+    assert form_igual.is_valid(), form_igual.errors
 
 
 @pytest.mark.django_db

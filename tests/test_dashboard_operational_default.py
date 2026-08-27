@@ -3,7 +3,7 @@
 Contrato: ``density-history-empty.md`` §1 / FR-001 / FR-002 / FR-004 / FR-017.
 GET ``/dashboard/admin/``: ciclo aberto ou empty ``operacional``; ``?ciclo=``
 só com intenção explícita; ``percentual_encerrados`` não é KPI de saúde.
-GET ``/cycles/``: aberto em Operacional; arquivo paginado (``paginate_by=20``);
+GET ``/cycles/``: aberto em Operacional; arquivo paginado (``paginate_by=5`` na lista de cards);
 partial sem ``_chart_block``.
 GET ``/dashboard/team|structure|adherence/``: mesmo default aberto + empty
 ``operacional`` / ``escopo``; ``?ciclo=`` explícito; pipeline/KPIs só do escopo.
@@ -28,6 +28,7 @@ from apps.core.mixins import HtmxPaginatedListMixin
 from apps.cycles.models import Ciclo
 from apps.cycles.views import CicloListView
 from apps.dashboard.chart_payloads import (
+    CHART_TYPE_BAR,
     CHART_TYPE_BAR_HORIZONTAL,
     CHART_TYPE_DOUGHNUT,
     EMPTY_KIND_COPY,
@@ -205,7 +206,11 @@ def test_admin_sem_ciclo_aberto_empty_operacional(admin, colaborador):
     assert kpis.get('has_ciclo') is False
     assert kpis.get('total') is None
     html = resp.content.decode()
-    assert f'{N_ARQUIVO} ciclos encerrados' in html
+    assert 'name="ciclo"' not in html
+    resp_hist = client.get(_admin_url(), {'visao': 'historico'})
+    html_hist = resp_hist.content.decode()
+    assert f'{N_ARQUIVO} ciclos encerrados' in html_hist
+    assert 'name="ciclo"' in html_hist
 
 
 @pytest.mark.django_db
@@ -222,15 +227,16 @@ def test_admin_sem_ciclo_aberto_nao_seleciona_encerrado_implicito(
 
     assert resp.status_code == 200
     html = resp.content.decode()
-    # Arquivo pode aparecer no seletor; não vira indicador nem seleção implícita.
+    # Visão operacional: sem seletor; arquivo fica no histórico.
+    assert 'name="ciclo"' not in html
     assert resp.context.get('ciclo_indicador') is None
     assert resp.context.get('ciclo_selecionado') is None
-    assert 'name="ciclo"' in html
-    assert 'Nenhum ciclo aberto' in html
-    assert f'value="{mais_recente.pk}"' in html
     progresso = resp.context.get('chart_ciclo_progresso') or {}
     assert progresso.get('has_data') is not True
     assert _pipeline_total(progresso) == 0
+    html_hist = client.get(_admin_url(), {'visao': 'historico'}).content.decode()
+    assert 'name="ciclo"' in html_hist
+    assert f'value="{mais_recente.pk}"' in html_hist
 
 
 # --- Com ciclo aberto (quickstart §1.7) --------------------------------------
@@ -301,11 +307,7 @@ def test_admin_com_ciclo_aberto_kpis_e_pipeline_so_desse_ciclo(
 
     html = resp.content.decode()
     assert ciclo_aberto.nome in html
-    assert 'name="ciclo"' in html
-    assert 'optgroup label="Encerrados"' in html
-    # Arquivo no seletor; totais/pipeline continuam só do aberto (acima).
-    assert f'value="{alvo_arquivo.pk}"' in html
-    assert f'{N_ARQUIVO} ciclos encerrados' in html
+    assert 'name="ciclo"' not in html
     _assert_percentual_encerrados_nao_e_kpi(resp)
 
 
@@ -328,7 +330,9 @@ def test_admin_percentual_encerrados_nao_e_kpi_de_saude(
     assert resp.status_code == 200
     _assert_percentual_encerrados_nao_e_kpi(resp)
     html = resp.content.decode()
-    assert f'{encerrados} ciclos encerrados' in html
+    assert 'name="ciclo"' not in html
+    resp_hist = client.get(_admin_url(), {'visao': 'historico'})
+    assert f'{encerrados} ciclos encerrados' in resp_hist.content.decode()
     kpis = resp.context['ciclo_kpis']
     assert kpis['has_ciclo'] is True
     assert kpis['total'] == Avaliacao.objects.filter(ciclo=ciclo_aberto).count()
@@ -338,18 +342,17 @@ def test_admin_percentual_encerrados_nao_e_kpi_de_saude(
 
 
 @pytest.mark.django_db
-def test_admin_ciclo_query_explicito_carrega_arquivo_sem_virar_default(
+def test_admin_operacional_ignora_ciclo_query_arquivo(
     admin,
     colaborador,
     lider,
     area,
     cargo_colab,
 ):
-    """``?ciclo=<pk>`` mostra o arquivo pedido; a home sem query não grava isso."""
+    """Visão operacional usa só o aberto; ``?ciclo=`` de arquivo é ignorado."""
     assert not Ciclo.objects.filter(status=Ciclo.Status.ABERTO).exists()
     arquivo = _seed_arquivo(usuario=colaborador)
     alvo = arquivo[0]
-    mais_recente = arquivo[-1]
     extras = _usuarios_extra(4, area=area, cargo_colab=cargo_colab, lider=lider)
     for user in extras:
         Avaliacao.objects.create(
@@ -359,43 +362,26 @@ def test_admin_ciclo_query_explicito_carrega_arquivo_sem_virar_default(
             concluida=True,
         )
     alvo_total = Avaliacao.objects.filter(ciclo=alvo).count()
-    recente_total = Avaliacao.objects.filter(ciclo=mais_recente).count()
-    assert alvo.pk != mais_recente.pk
-    assert alvo_total > recente_total
+    assert alvo_total > 0
 
     client = _login_admin(admin)
     url = _admin_url()
 
-    resp_arquivo = client.get(url, {'ciclo': alvo.pk})
-    assert resp_arquivo.status_code == 200
-    assert resp_arquivo.context.get('ciclo_aberto') is None
-    assert resp_arquivo.context['ciclo_selecionado'].pk == alvo.pk
-    opts_arquivo = resp_arquivo.context['grouped_ciclo_options']
-    assert any(c.pk == alvo.pk for c in opts_arquivo['arquivo'])
-    assert resp_arquivo.context['avaliacoes_resumo']['total'] == alvo_total
-    kpis_arquivo = resp_arquivo.context['ciclo_kpis']
-    assert kpis_arquivo['has_ciclo'] is True
-    assert kpis_arquivo['total'] == alvo_total
-    progresso_arquivo = resp_arquivo.context['chart_ciclo_progresso']
-    assert progresso_arquivo['has_data'] is True
-    assert _pipeline_total(progresso_arquivo) == alvo_total
-    html_arquivo = resp_arquivo.content.decode()
-    assert 'name="ciclo"' in html_arquivo
-    assert 'optgroup label="Encerrados"' in html_arquivo
-    assert alvo.nome in html_arquivo
+    resp_operacional = client.get(url, {'ciclo': alvo.pk})
+    assert resp_operacional.status_code == 200
+    assert resp_operacional.context.get('ciclo_aberto') is None
+    assert resp_operacional.context.get('ciclo_selecionado') is None
+    _assert_empty_operacional(resp_operacional)
+    html_operacional = resp_operacional.content.decode()
+    assert 'name="ciclo"' not in html_operacional
 
-    resp_home = client.get(url)
-    assert resp_home.status_code == 200
-    _assert_empty_operacional(resp_home)
-    # Seletor lista o arquivo, mas a home sem query não usa o ciclo escolhido.
-    assert resp_home.context.get('ciclo_selecionado') is None
-    assert resp_home.context['ciclo_kpis']['has_ciclo'] is False
-    resumo_home = resp_home.context.get('avaliacoes_resumo') or {}
-    assert resumo_home.get('total', 0) == 0
-    html_home = resp_home.content.decode()
-    assert 'name="ciclo"' in html_home
-    assert 'optgroup label="Em andamento"' in html_home
-    assert 'Nenhum ciclo aberto' in html_home
+    resp_historico = client.get(url, {'visao': 'historico', 'ciclo': alvo.pk})
+    assert resp_historico.status_code == 200
+    assert resp_historico.context.get('visao') == 'historico'
+    html_historico = resp_historico.content.decode()
+    assert 'name="ciclo"' in html_historico
+    assert 'optgroup label="Encerrados"' in html_historico
+    assert alvo.nome in html_historico
 
 
 # --- T016 [US1] hierarquia KPI → pipeline → drill ---------------------------
@@ -522,11 +508,11 @@ def _ciclo_list_url() -> str:
     return reverse('cycles:ciclo_list')
 
 
-def test_ciclo_list_paginate_by_vem_do_mixin():
-    """T018: ``paginate_by=20`` do mixin intacto — a view não redefine."""
+def test_ciclo_list_paginate_by_cards():
+    """Lista de ciclos em cards: página menor; mixin permanece 20 para outras listas."""
     assert HtmxPaginatedListMixin.paginate_by == 20
-    assert CicloListView.paginate_by == 20
-    assert 'paginate_by' not in CicloListView.__dict__
+    assert CicloListView.paginate_by == 5
+    assert CicloListView.__dict__['paginate_by'] == 5
 
 
 def test_ciclo_list_partial_nao_inclui_chart_block():
@@ -563,6 +549,7 @@ def test_ciclo_list_agrupa_aberto_vs_arquivo(admin, ciclo_aberto, colaborador):
     assert 'Encerrados' in html
     assert '_chart_block' not in html
     assert 'data-chart-payload' not in html
+    assert 'data-ciclo-create-cta' in html
 
 
 @pytest.mark.django_db
@@ -585,13 +572,13 @@ def test_ciclo_list_sem_aberto_empty_operacional_arquivo_paginado(admin, colabor
 
 
 @pytest.mark.django_db
-def test_ciclo_list_arquivo_paginate_by_20_aberto_fixo(
+def test_ciclo_list_arquivo_paginate_by_cards_aberto_fixo(
     admin,
     ciclo_aberto,
     colaborador,
 ):
-    """T018: arquivo pagina em 20; aberto continua visível fora do corte."""
-    n_arquivo = HtmxPaginatedListMixin.paginate_by + 1
+    """Arquivo pagina em 5 (cards); aberto continua visível fora do corte."""
+    n_arquivo = CicloListView.paginate_by + 1
     arquivo = _seed_arquivo(n=n_arquivo, usuario=colaborador)
     client = _login_admin(admin)
     url = _ciclo_list_url()
@@ -599,13 +586,14 @@ def test_ciclo_list_arquivo_paginate_by_20_aberto_fixo(
     page1 = client.get(url)
     assert page1.status_code == 200
     paginator = page1.context['paginator']
-    assert paginator.per_page == 20
+    assert paginator.per_page == 5
     assert paginator.count == n_arquivo
     assert page1.context['arquivo_total'] == n_arquivo
-    assert len(page1.context['object_list']) == 20
+    assert len(page1.context['object_list']) == 5
     assert page1.context['ciclo_operacional'].pk == ciclo_aberto.pk
     html1 = page1.content.decode()
     assert f'id="ciclo-row-{ciclo_aberto.pk}"' in html1
+    assert 'data-ciclo-create-cta' in html1
     assert page1.context['page_obj'].has_next()
 
     page2 = client.get(url, {'page': 2})
@@ -614,6 +602,7 @@ def test_ciclo_list_arquivo_paginate_by_20_aberto_fixo(
     assert page2.context['ciclo_operacional'].pk == ciclo_aberto.pk
     html2 = page2.content.decode()
     assert f'id="ciclo-row-{ciclo_aberto.pk}"' in html2
+    assert 'data-ciclo-create-cta' not in html2
     arquivo_pks = {c.pk for c in arquivo}
     assert {c.pk for c in page1.context['object_list']} <= arquivo_pks
     assert {c.pk for c in page2.context['object_list']} <= arquivo_pks
@@ -644,7 +633,6 @@ def test_ciclo_list_htmx_partial_sem_chart(admin, ciclo_aberto, colaborador):
 
 _TEAM_CHART_KEYS = ('chart_escopo_status',)
 _STRUCTURE_CHART_KEYS = ('chart_cobertura_area', 'chart_cobertura_cargo')
-_ADERENCIA_CHART_KEYS = ('chart_aderencia_distribuicao',)
 _COPY_OPERACIONAL = EMPTY_KIND_COPY[EMPTY_KIND_OPERACIONAL]
 _COPY_ESCOPO = EMPTY_KIND_COPY[EMPTY_KIND_ESCOPO]
 
@@ -705,7 +693,7 @@ def test_team_sem_ciclo_aberto_empty_operacional(lider, colaborador):
 
     chart = resp.context['chart_escopo_status']
     _assert_chart_empty_kind(chart, kind_copy=_COPY_OPERACIONAL)
-    assert chart['type'] == CHART_TYPE_BAR_HORIZONTAL
+    assert chart['type'] == CHART_TYPE_BAR
     html = resp.content.decode()
     assert _COPY_OPERACIONAL in html
     assert 'data-chart-payload="chart-escopo-status"' not in html
@@ -756,13 +744,15 @@ def test_adherence_sem_ciclo_aberto_empty_operacional(admin, lider, colaborador)
     assert resumo['has_ciclo'] is False
     assert resumo['media'] is None
     assert resumo['baixa'] is None
+    assert resumo['alta'] is None
+    assert resumo['media_n'] is None
+    assert 'chart_aderencia_distribuicao' not in resp.context
 
-    chart = resp.context['chart_aderencia_distribuicao']
-    _assert_chart_empty_kind(chart, kind_copy=_COPY_OPERACIONAL)
     html = resp.content.decode()
     assert _COPY_OPERACIONAL in html
     assert 'data-chart-payload="chart-aderencia-distribuicao"' not in html
-    _assert_no_arquivo_in_chart_labels(resp, _ADERENCIA_CHART_KEYS)
+    assert 'chart.js' not in html.lower()
+    assert 'Alta ·' not in html
 
 
 @pytest.mark.django_db
@@ -838,7 +828,7 @@ def test_team_com_ciclo_aberto_pipeline_kpis_so_do_escopo(
 
     chart = resp.context['chart_escopo_status']
     assert chart['has_data'] is True
-    assert chart['type'] == CHART_TYPE_BAR_HORIZONTAL
+    assert chart['type'] == CHART_TYPE_BAR
     assert _pipeline_total(chart) == 2
     assert _pipeline_count(chart, Avaliacao.Etapa.AVALIACAO) == 1
     keys = list(chart.get('keys') or [])
@@ -899,7 +889,7 @@ def test_adherence_com_ciclo_aberto_so_snapshots_do_ciclo(
     lider,
     colaborador,
 ):
-    """T022: aderência com aberto → doughnut/KPIs só do ciclo aberto."""
+    """T022: aderência com aberto → KPIs/pills só do ciclo aberto."""
     arquivo = _seed_arquivo(usuario=colaborador)
     _seed_snapshot(lider=lider, ciclo=ciclo_aberto, percentual='72.00')
     _seed_snapshot(lider=lider, ciclo=arquivo[-1], percentual='11.00')
@@ -913,11 +903,17 @@ def test_adherence_com_ciclo_aberto_so_snapshots_do_ciclo(
     assert resumo['has_ciclo'] is True
     assert resumo['total_lideres'] == 1
     assert resumo['media'] == Decimal('72.00')
+    assert resumo['alta'] == 0
+    assert resumo['media_n'] == 1
+    assert resumo['baixa'] == 0
+    assert 'chart_aderencia_distribuicao' not in resp.context
 
-    chart = resp.context['chart_aderencia_distribuicao']
-    assert chart['has_data'] is True
-    assert chart['type'] == CHART_TYPE_DOUGHNUT
-    assert 'data-chart-payload="chart-aderencia-distribuicao"' in resp.content.decode()
+    html = resp.content.decode()
+    assert 'Alta · 0' in html
+    assert 'Média · 1' in html
+    assert 'Baixa · 0' in html
+    assert 'data-chart-payload="chart-aderencia-distribuicao"' not in html
+    assert 'chart.js' not in html.lower()
 
 
 @pytest.mark.django_db
@@ -997,6 +993,164 @@ def test_structure_ciclo_query_explicito_sem_virar_default(
 
 
 @pytest.mark.django_db
+def test_structure_header_badge_reflete_ciclo_do_filtro(
+    admin,
+    colaborador,
+    ciclo_aberto,
+):
+    """Badge do topo segue ``ciclo_filtro``, não só existência de ciclo aberto."""
+    arquivo = _seed_arquivo(usuario=colaborador)
+    alvo = arquivo[0]
+    client = _login_admin(admin)
+    url = _structure_url()
+
+    resp_aberto = client.get(url)
+    assert resp_aberto.status_code == 200
+    html_aberto = resp_aberto.content.decode()
+    assert f'Ativo · {ciclo_aberto.nome}' in html_aberto
+    assert 'Sem ciclo aberto' not in html_aberto
+
+    resp_arquivo = client.get(url, {'ciclo': alvo.pk})
+    assert resp_arquivo.status_code == 200
+    assert resp_arquivo.context['ciclo_filtro'].pk == alvo.pk
+    assert resp_arquivo.context['ciclo_aberto'].pk == ciclo_aberto.pk
+    html_arquivo = resp_arquivo.content.decode()
+    assert alvo.nome in html_arquivo
+    assert f'Ativo · {ciclo_aberto.nome}' not in html_arquivo
+    assert 'Sem ciclo aberto' not in html_arquivo
+
+
+@pytest.mark.django_db
+def test_structure_header_badge_sem_ciclo_filtro(
+    admin,
+    colaborador,
+):
+    """Sem ciclo aberto e sem ``?ciclo=`` → badge ``Sem ciclo aberto``."""
+    assert not Ciclo.objects.filter(status=Ciclo.Status.ABERTO).exists()
+    _seed_arquivo(usuario=colaborador)
+
+    client = _login_admin(admin)
+    resp = client.get(_structure_url())
+    assert resp.status_code == 200
+    assert resp.context.get('ciclo_filtro') is None
+    assert 'Sem ciclo aberto' in resp.content.decode()
+
+
+@pytest.mark.django_db
+def test_structure_lider_sem_snapshot_mostra_sem_avaliacao_registrada(
+    admin,
+    lider,
+    colaborador,
+    ciclo_aberto,
+):
+    """Líder sem snapshot → badge neutro ``Sem avaliação registrada`` (não ``—``)."""
+    assert not AderenciaSnapshot.objects.filter(
+        ciclo=ciclo_aberto,
+        lider=lider,
+    ).exists()
+
+    client = _login_admin(admin)
+    resp = client.get(_structure_url())
+    assert resp.status_code == 200
+
+    lideres = resp.context['lideres_resumo']
+    lider_row = next(item for item in lideres if item['lider'].pk == lider.pk)
+    assert lider_row['snapshot'] is None
+    assert lider_row['status'] is None
+
+    html = resp.content.decode()
+    assert 'Sem avaliação registrada' in html
+    # Traço isolado na célula de aderência não deve permanecer como empty.
+    assert 'text-slate-400">—</span>' not in html
+
+
+@pytest.mark.django_db
+def test_structure_remove_visao_por_area_mantem_charts_e_alertas(
+    admin,
+    colaborador,
+    ciclo_aberto,
+):
+    """Sem bloco Visão por Área; charts horizontais + Alertas Em breve permanecem."""
+    client = _login_admin(admin)
+    resp = client.get(_structure_url())
+    assert resp.status_code == 200
+    assert 'cobertura_por_area' not in resp.context
+
+    html = resp.content.decode()
+    assert 'Visão por Área' not in html
+    assert 'id="cobertura-charts"' in html
+    assert 'Alertas de Gestão' in html
+    assert 'Em breve' in html
+
+
+@pytest.mark.django_db
+def test_structure_oculta_lacunas_por_cargo_quando_um_cargo(
+    admin,
+    colaborador,
+    cargo_colab,
+    ciclo_aberto,
+):
+    """Com ≤1 cargo distinto no escopo filtrado, some Diferenças por cargo."""
+    client = _login_admin(admin)
+    resp = client.get(_structure_url(), {'cargo': cargo_colab.pk})
+    assert resp.status_code == 200
+    assert resp.context['mostrar_lacunas_por_cargo'] is False
+    assert 'Diferenças por cargo' not in resp.content.decode()
+    assert 'Diferenças por área' in resp.content.decode()
+
+
+@pytest.mark.django_db
+def test_structure_mostra_lacunas_por_cargo_quando_varios(
+    admin,
+    colaborador,
+    ciclo_aberto,
+):
+    """Hierarquia padrão (líder + colab) → ≥2 cargos → tabela de cargo visível."""
+    client = _login_admin(admin)
+    resp = client.get(_structure_url())
+    assert resp.status_code == 200
+    assert resp.context['mostrar_lacunas_por_cargo'] is True
+    assert 'Diferenças por cargo' in resp.content.decode()
+
+
+@pytest.mark.django_db
+def test_structure_sem_busca_ciclo_encerrado_e_lacunas_colapsaveis(
+    admin,
+    colaborador,
+    ciclo_aberto,
+):
+    """Estrutura: sem campo Buscar ciclo; diferenças atrás de Ver tabela."""
+    # Garante que o seletor *poderia* mostrar q (>20 arquivo), mas a tela oculta.
+    from datetime import timedelta
+
+    from apps.cycles.models import Ciclo
+
+    today = date.today()
+    for i in range(22):
+        Ciclo.objects.create(
+            nome=f'Arquivo Extra {i}',
+            data_inicio=today - timedelta(days=400 + i),
+            data_fim=today - timedelta(days=370 + i),
+            status=Ciclo.Status.ENCERRADO,
+        )
+
+    client = _login_admin(admin)
+    resp = client.get(_structure_url())
+    assert resp.status_code == 200
+    html = resp.content.decode()
+    assert 'Buscar ciclo encerrado' not in html
+    assert 'name="q"' not in html
+    assert 'Ver tabela' in html
+    assert 'Ver todas' not in html
+    assert html.count('<details') >= 1
+    assert 'gp-structure-scroll-top' in html
+    assert 'sm:max-w-[16rem]' in html
+    # Hint sob o select de ciclo some no compact; título da página pode citar arquivo.
+    assert 'id="ciclo-arquivo-hint"' not in html
+
+
+
+@pytest.mark.django_db
 def test_adherence_ciclo_query_explicito_sem_virar_default(
     admin,
     lider,
@@ -1016,16 +1170,197 @@ def test_adherence_ciclo_query_explicito_sem_virar_default(
     assert resp_arquivo.context['ciclo_filtro'].pk == alvo.pk
     assert resp_arquivo.context['aderencia_resumo']['has_ciclo'] is True
     assert resp_arquivo.context['aderencia_resumo']['media'] == Decimal('55.00')
-    assert resp_arquivo.context['chart_aderencia_distribuicao']['has_data'] is True
+    assert resp_arquivo.context['aderencia_resumo']['media_n'] == 1
+    assert 'chart_aderencia_distribuicao' not in resp_arquivo.context
+    assert 'Média · 1' in resp_arquivo.content.decode()
 
     resp_home = client.get(url)
     assert resp_home.status_code == 200
     assert resp_home.context.get('ciclo_filtro') is None
     assert resp_home.context['aderencia_resumo']['has_ciclo'] is False
-    _assert_chart_empty_kind(
-        resp_home.context['chart_aderencia_distribuicao'],
-        kind_copy=_COPY_OPERACIONAL,
+    assert 'chart_aderencia_distribuicao' not in resp_home.context
+    assert _COPY_OPERACIONAL in resp_home.content.decode()
+
+
+@pytest.mark.django_db
+def test_adherence_header_badge_reflete_ciclo_do_filtro(
+    admin,
+    colaborador,
+    ciclo_aberto,
+):
+    """Badge do topo segue ``ciclo_filtro`` (mesmo include da estrutura)."""
+    arquivo = _seed_arquivo(usuario=colaborador)
+    alvo = arquivo[0]
+    client = _login_admin(admin)
+    url = _adherence_url()
+
+    resp_aberto = client.get(url)
+    assert resp_aberto.status_code == 200
+    html_aberto = resp_aberto.content.decode()
+    assert f'Ativo · {ciclo_aberto.nome}' in html_aberto
+    assert 'Sem ciclo aberto' not in html_aberto
+
+    resp_arquivo = client.get(url, {'ciclo': alvo.pk})
+    assert resp_arquivo.status_code == 200
+    assert resp_arquivo.context['ciclo_filtro'].pk == alvo.pk
+    html_arquivo = resp_arquivo.content.decode()
+    assert alvo.nome in html_arquivo
+    assert f'Ativo · {ciclo_aberto.nome}' not in html_arquivo
+    assert 'Sem ciclo aberto' not in html_arquivo
+
+
+@pytest.mark.django_db
+def test_adherence_lista_ordena_percentual_asc_e_filtra_nivel(
+    admin,
+    ciclo_aberto,
+    lider,
+    area,
+    cargo_lider,
+):
+    """Lista: % ASC (pior primeiro); ``?nivel=`` filtra no servidor (paginação HTMX)."""
+    lider_alto = CustomUser.objects.create_user(
+        email='ader.alto@test.greenn.com.br',
+        password=DEFAULT_PASSWORD,
+        nome='Ader Alto',
+        cargo=cargo_lider,
+        area=area,
+        line_manager=admin,
+        email_confirmado_em=timezone.now(),
     )
+    lider_medio = CustomUser.objects.create_user(
+        email='ader.medio@test.greenn.com.br',
+        password=DEFAULT_PASSWORD,
+        nome='Ader Medio',
+        cargo=cargo_lider,
+        area=area,
+        line_manager=admin,
+        email_confirmado_em=timezone.now(),
+    )
+    _seed_snapshot(lider=lider, ciclo=ciclo_aberto, percentual='15.00')
+    _seed_snapshot(lider=lider_medio, ciclo=ciclo_aberto, percentual='60.00')
+    _seed_snapshot(lider=lider_alto, ciclo=ciclo_aberto, percentual='90.00')
+
+    client = _login_admin(admin)
+    resp = client.get(_adherence_url())
+    assert resp.status_code == 200
+    ordered = [item['snapshot'].lider.email for item in resp.context['snapshots_resumo']]
+    assert ordered == [
+        lider.email,
+        lider_medio.email,
+        lider_alto.email,
+    ]
+    resumo = resp.context['aderencia_resumo']
+    assert resumo['baixa'] == 1
+    assert resumo['media_n'] == 1
+    assert resumo['alta'] == 1
+
+    resp_baixa = client.get(_adherence_url(), {'nivel': 'baixa'})
+    assert resp_baixa.status_code == 200
+    assert resp_baixa.context['filtro_nivel'] == 'baixa'
+    filtrados = [
+        item['snapshot'].lider.email for item in resp_baixa.context['snapshots_resumo']
+    ]
+    assert filtrados == [lider.email]
+    # Contagens das pills permanecem do escopo completo (não do filtro).
+    assert resp_baixa.context['aderencia_resumo']['alta'] == 1
+    assert resp_baixa.context['aderencia_resumo']['media_n'] == 1
+    assert resp_baixa.context['aderencia_resumo']['baixa'] == 1
+    html_baixa = resp_baixa.content.decode()
+    assert 'aria-pressed="true"' in html_baixa
+    assert lider.email in html_baixa
+    assert lider_alto.email not in html_baixa
+
+    # Toggle: mesmo nível limpa o filtro.
+    resp_toggle = client.get(_adherence_url())
+    assert resp_toggle.context.get('filtro_nivel') is None
+    assert len(resp_toggle.context['snapshots_resumo']) == 3
+
+
+@pytest.mark.django_db
+def test_adherence_componente_total_zero_exibe_traco(
+    admin,
+    ciclo_aberto,
+    lider,
+):
+    """Componentes 0/0 não mostram (100.00%) — evita inflar adesão sem itens."""
+    AderenciaSnapshot.objects.create(
+        lider=lider,
+        ciclo=ciclo_aberto,
+        percentual=Decimal('100.00'),
+        componentes={
+            'aprovacoes': {'total': 0, 'no_prazo': 0, 'percentual': '100.00'},
+            'feedbacks': {'total': 0, 'no_prazo': 0, 'percentual': '100.00'},
+            'acoes_pdi': {'total': 2, 'no_prazo': 1, 'percentual': '50.00'},
+        },
+        calculado_em=timezone.now(),
+    )
+    client = _login_admin(admin)
+    html = client.get(_adherence_url()).content.decode()
+    assert '0/0' not in html
+    assert '0/0 (100.00%)' not in html
+    assert '1/2 (50.00%)' in html
+
+
+@pytest.mark.django_db
+def test_adherence_filtro_area_reduz_lista_e_kpis(
+    admin,
+    ciclo_aberto,
+    lider,
+    area,
+    cargo_lider,
+):
+    """``?area=`` reduz lista + KPIs/pills (AuthZ intacta); compõe com ``?nivel=``."""
+    from apps.organization.models import Area
+
+    outra = Area.objects.create(nome='Área Outra Aderência')
+    lider_outra = CustomUser.objects.create_user(
+        email='ader.outra.area@test.greenn.com.br',
+        password=DEFAULT_PASSWORD,
+        nome='Ader Outra Área',
+        cargo=cargo_lider,
+        area=outra,
+        line_manager=admin,
+        email_confirmado_em=timezone.now(),
+    )
+    _seed_snapshot(lider=lider, ciclo=ciclo_aberto, percentual='20.00')
+    _seed_snapshot(lider=lider_outra, ciclo=ciclo_aberto, percentual='90.00')
+
+    client = _login_admin(admin)
+    url = _adherence_url()
+
+    resp_all = client.get(url)
+    assert resp_all.status_code == 200
+    assert resp_all.context['aderencia_resumo']['total_lideres'] == 2
+    assert resp_all.context['aderencia_resumo']['baixa'] == 1
+    assert resp_all.context['aderencia_resumo']['alta'] == 1
+    assert 'name="area"' in resp_all.content.decode()
+    assert 'id="area"' in resp_all.content.decode()
+
+    resp_area = client.get(url, {'area': area.pk})
+    assert resp_area.status_code == 200
+    assert resp_area.context['filtro_area_id'] == area.pk
+    emails = [
+        item['snapshot'].lider.email for item in resp_area.context['snapshots_resumo']
+    ]
+    assert emails == [lider.email]
+    resumo = resp_area.context['aderencia_resumo']
+    assert resumo['total_lideres'] == 1
+    assert resumo['baixa'] == 1
+    assert resumo['alta'] == 0
+    assert resumo['media'] == Decimal('20.00')
+    html_area = resp_area.content.decode()
+    assert 'Baixa · 1' in html_area
+    assert 'Alta · 0' in html_area
+    assert lider_outra.email not in html_area
+
+    # Nível aplica sobre o resultado já reduzido por área.
+    resp_combo = client.get(url, {'area': area.pk, 'nivel': 'alta'})
+    assert resp_combo.status_code == 200
+    assert resp_combo.context['filtro_nivel'] == 'alta'
+    assert resp_combo.context['snapshots_resumo'] == []
+    # Pills/KPIs seguem a área (sem nível).
+    assert resp_combo.context['aderencia_resumo']['baixa'] == 1
+    assert resp_combo.context['aderencia_resumo']['alta'] == 0
 
 
 @pytest.mark.django_db
@@ -1111,3 +1446,119 @@ def test_personal_sem_notas_comparaveis_empty_sem_nota_t022():
         ],
     })
     _assert_chart_empty_kind(chart, kind_copy=_COPY_SEM_NOTA)
+
+
+@pytest.mark.django_db
+def test_team_busca_filtra_lista_sem_afetar_pipeline(
+    lider,
+    colaborador,
+    ciclo_aberto,
+    area,
+    cargo_colab,
+):
+    """``?busca=`` filtra a tabela; gráfico/KPI permanecem no escopo completo."""
+    CustomUser.objects.create_user(
+        email='outro.membro@test.greenn.com.br',
+        password=DEFAULT_PASSWORD,
+        nome='Bruno Outro',
+        cargo=cargo_colab,
+        area=area,
+        line_manager=lider,
+        email_confirmado_em=timezone.now(),
+    )
+    client = _login_lider(lider)
+    resp = client.get(_team_url(), {'busca': colaborador.nome.split()[0]})
+
+    assert resp.status_code == 200
+    assert resp.context['filtro_busca']
+    assert resp.context['filtro_ativo'] is True
+    nomes = [m['usuario'].pk for m in resp.context['membros_resumo']]
+    assert colaborador.pk in nomes
+    assert len(nomes) == 1
+    # Pipeline não encolhe com a busca.
+    assert resp.context['team_resumo']['total_escopo'] == 2
+    assert _pipeline_total(resp.context['chart_escopo_status']) == 2
+    html = resp.content.decode()
+    assert 'Buscar colaborador...' in html
+    assert 'de 2 colaborador' in html
+
+
+@pytest.mark.django_db
+def test_team_etapa_filtra_lista_e_ignora_invalida(
+    lider,
+    colaborador,
+    ciclo_aberto,
+    area,
+    cargo_colab,
+):
+    """``?etapa=`` filtra por bucket do pipeline; valor inválido é ignorado."""
+    extra = CustomUser.objects.create_user(
+        email='sem.av@test.greenn.com.br',
+        password=DEFAULT_PASSWORD,
+        nome='Sem Aval',
+        cargo=cargo_colab,
+        area=area,
+        line_manager=lider,
+        email_confirmado_em=timezone.now(),
+    )
+    av = Avaliacao.objects.get(ciclo=ciclo_aberto, usuario=colaborador)
+    av.etapa = Avaliacao.Etapa.AVALIACAO
+    av.save(update_fields=['etapa'])
+
+    client = _login_lider(lider)
+    resp = client.get(_team_url(), {'etapa': Avaliacao.Etapa.AVALIACAO})
+    assert resp.status_code == 200
+    assert resp.context['filtro_etapa'] == Avaliacao.Etapa.AVALIACAO
+    pks = {m['usuario'].pk for m in resp.context['membros_resumo']}
+    assert pks == {colaborador.pk}
+    assert resp.context['team_resumo']['total_escopo'] == 2
+
+    resp_sem = client.get(_team_url(), {'etapa': SEM_AVALIACAO_KEY})
+    pks_sem = {m['usuario'].pk for m in resp_sem.context['membros_resumo']}
+    assert pks_sem == {extra.pk}
+
+    resp_bad = client.get(_team_url(), {'etapa': 'etapa_inventada'})
+    assert resp_bad.context['filtro_etapa'] == ''
+    assert len(resp_bad.context['membros_resumo']) == 2
+
+
+@pytest.mark.django_db
+def test_team_etapa_nao_aplica_no_historico(lider, colaborador, ciclo_aberto):
+    """No histórico, ``?etapa=`` não filtra; busca por nome permanece."""
+    client = _login_lider(lider)
+    resp = client.get(
+        _team_url(),
+        {
+            'visao': 'historico',
+            'etapa': Avaliacao.Etapa.AVALIACAO,
+            'busca': 'zzzz-nao-existe',
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.context['visao'] == 'historico'
+    assert resp.context['filtro_etapa'] == ''
+    assert resp.context['filtro_busca'] == 'zzzz-nao-existe'
+    assert resp.context['membros_resumo'] == []
+    html = resp.content.decode()
+    assert 'Nenhum colaborador encontrado' in html
+    assert 'Filtrar por estágio do ciclo' not in html
+
+
+@pytest.mark.django_db
+def test_team_htmx_partial_traz_contador_e_chips(
+    lider,
+    colaborador,
+    ciclo_aberto,
+):
+    client = _login_lider(lider)
+    resp = client.get(
+        _team_url(),
+        {'etapa': Avaliacao.Etapa.INPUT_METAS},
+        HTTP_HX_REQUEST='true',
+    )
+    assert resp.status_code == 200
+    html = resp.content.decode()
+    assert 'id="list-container"' in html
+    assert 'team-busca-input' in html
+    assert 'aria-pressed="true"' in html
+    assert 'hx-trigger="keyup changed delay:300ms, search"' in html

@@ -1,7 +1,7 @@
 <div id="list-container">
 {% if rh_pre_open_checklist and rh_checklist_has_blockers %}
 <p
-  class="mb-3 font-ui text-xs leading-relaxed text-amber-800 sm:text-sm"
+  class="mb-4 font-ui text-xs leading-relaxed text-amber-800 sm:text-sm"
   role="status"
   data-field="rh-checklist-hint"
 >
@@ -9,152 +9,71 @@
 </p>
 {% endif %}
 
-<section class="mb-5" aria-labelledby="ciclo-operacional-heading" data-ciclo-group="operacional">
+<section class="mb-8" aria-labelledby="ciclo-operacional-heading" data-ciclo-group="operacional">
   <h2
     id="ciclo-operacional-heading"
-    class="font-ui text-xs font-medium uppercase tracking-wide text-ink-muted"
+    class="font-ui text-xs font-medium uppercase tracking-wider text-ink-muted"
   >Em andamento</h2>
-  <div class="table-frame mt-2">
-    <table>
-      <thead>
-        <tr>
-          <th>Nome</th>
-          <th>Início</th>
-          <th>Fim</th>
-          <th>Status</th>
-          <th>Avaliações</th>
-          <th class="text-right">Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% if ciclo_operacional %}
-        {% with ciclo=ciclo_operacional %}
-        <tr
-          class="border-l-4 border-l-emerald-500 bg-emerald-50/30 hover:bg-emerald-50/50"
-          id="ciclo-row-{{ ciclo.pk }}"
-          data-ciclo-group="operacional"
-        >
-          <td>
-            <a
-              href="{% url 'cycles:ciclo_detail' ciclo.pk %}"
-              class="font-display font-semibold text-emerald-700 hover:text-emerald-800"
-            >{{ ciclo.nome }}</a>
-          </td>
-          <td class="text-slate-600 tabular-nums">{{ ciclo.data_inicio|date:"d/m/Y" }}</td>
-          <td class="text-slate-600 tabular-nums">{{ ciclo.data_fim|date:"d/m/Y" }}</td>
-          <td>
-            {% include "components/badge_status.html" with status="ativo" label="Aberto" %}
-          </td>
-          <td class="tabular-nums text-slate-600">{{ ciclo.avaliacoes_count }}</td>
-          <td class="text-right">
-            <div class="inline-flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
-              <a
-                href="{% url 'cycles:ciclo_detail' ciclo.pk %}"
-                class="font-medium text-emerald-700 hover:text-emerald-800"
-              >Visão gerencial</a>
-              <form method="post" action="{% url 'cycles:ciclo_close' ciclo.pk %}" class="inline">
-                {% csrf_token %}
-                <button
-                  type="submit"
-                  class="font-semibold text-amber-700 hover:text-amber-800"
-                >Encerrar</button>
-              </form>
-              <a href="{% url 'cycles:objetivo_list' ciclo.pk %}" class="font-medium text-emerald-700 hover:text-emerald-800">Objetivos</a>
-              <a href="{% url 'cycles:ciclo_update' ciclo.pk %}" class="font-medium text-slate-600 hover:text-slate-800">Editar</a>
-              <a href="{% url 'cycles:ciclo_delete' ciclo.pk %}" class="font-medium text-rose-600 hover:text-rose-700">Excluir</a>
-            </div>
-          </td>
-        </tr>
-        {% endwith %}
-        {% else %}
-        <tr data-ciclo-group="operacional" data-empty="operacional">
-          <td colspan="6" class="!py-8">
-            {% include "components/empty_state.html" with title="Nenhum ciclo aberto" message="Não há ciclo aberto. O arquivo histórico continua acessível abaixo." %}
-          </td>
-        </tr>
-        {% endif %}
-      </tbody>
-    </table>
+
+  <div class="mt-4 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+    {# CTA de criação só na página principal (não no arquivo paginado). #}
+    {% if not page_obj or page_obj.number == 1 %}
+    {% url 'cycles:ciclo_create' as create_url %}
+    <a
+      href="{{ create_url }}"
+      class="flex min-h-72 flex-col items-center justify-center rounded-xl border-2 border-dashed border-line bg-slate-50 px-6 py-10 text-center transition-colors hover:border-emerald-700 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+      data-ciclo-create-cta
+    >
+      <span class="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+        <svg class="h-7 w-7" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
+        </svg>
+      </span>
+      <span class="font-display text-lg font-medium text-slate-800">Criar novo ciclo</span>
+      <span class="mt-2 max-w-xs font-ui text-sm leading-relaxed text-slate-500">
+        Inicie a configuração de um novo ciclo de avaliação.
+      </span>
+    </a>
+    {% endif %}
+
+    {% if ciclo_operacional %}
+      {% include "cycles/_ciclo_card.html" with ciclo=ciclo_operacional group="operacional" %}
+    {% else %}
+    <div
+      class="rounded-xl border border-line bg-surface-card px-4 py-2{% if not page_obj or page_obj.number == 1 %} md:col-span-1 xl:col-span-2{% else %} col-span-full{% endif %}"
+      data-ciclo-group="operacional"
+      data-empty="operacional"
+    >
+      {% include "components/empty_state.html" with title="Nenhum ciclo aberto" message="Não há ciclo aberto. O arquivo histórico continua acessível abaixo." %}
+    </div>
+    {% endif %}
   </div>
 </section>
 
 <section aria-labelledby="ciclo-arquivo-heading" data-ciclo-group="arquivo">
-  <div class="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+  <div class="mb-4 flex flex-wrap items-baseline justify-between gap-2">
     <h2
       id="ciclo-arquivo-heading"
-      class="font-ui text-xs font-medium uppercase tracking-wide text-ink-muted"
+      class="font-ui text-xs font-medium uppercase tracking-wider text-ink-muted"
     >Encerrados</h2>
     <p class="font-ui text-xs text-ink-muted">
       {{ arquivo_total|default:0 }} ciclo{{ arquivo_total|default:0|pluralize }} no arquivo
     </p>
   </div>
-  <div class="table-frame">
-    <table>
-      <thead>
-        <tr>
-          <th>Nome</th>
-          <th>Início</th>
-          <th>Fim</th>
-          <th>Status</th>
-          <th>Avaliações</th>
-          <th class="text-right">Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for ciclo in ciclos %}
-        <tr id="ciclo-row-{{ ciclo.pk }}" data-ciclo-group="arquivo">
-          <td>
-            <a
-              href="{% url 'cycles:ciclo_detail' ciclo.pk %}"
-              class="font-display font-semibold text-emerald-700 hover:text-emerald-800"
-            >{{ ciclo.nome }}</a>
-          </td>
-          <td class="text-slate-600 tabular-nums">{{ ciclo.data_inicio|date:"d/m/Y" }}</td>
-          <td class="text-slate-600 tabular-nums">{{ ciclo.data_fim|date:"d/m/Y" }}</td>
-          <td>
-            {% include "components/badge_status.html" with status="arquivado" label="Encerrado" %}
-          </td>
-          <td class="tabular-nums text-slate-600">{{ ciclo.avaliacoes_count }}</td>
-          <td class="text-right">
-            <div class="inline-flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
-              <a
-                href="{% url 'cycles:ciclo_detail' ciclo.pk %}"
-                class="font-medium text-emerald-700 hover:text-emerald-800"
-              >Visão gerencial</a>
-              <form
-                method="post"
-                action="{% url 'cycles:ciclo_open' ciclo.pk %}"
-                class="inline"
-                data-ciclo-open-form
-              >
-                {% csrf_token %}
-                <button
-                  type="submit"
-                  class="font-semibold text-emerald-700 hover:text-emerald-800"
-                  title="{% if ciclo.admitidos_ate %}Admitidos até {{ ciclo.admitidos_ate|date:'d/m/Y' }}{% else %}Defina Admitidos até em Editar antes de abrir{% endif %}"
-                  {% if rh_pre_open_checklist %}aria-describedby="rh-pre-open-checklist"{% endif %}
-                >Abrir</button>
-              </form>
-              <a href="{% url 'cycles:objetivo_list' ciclo.pk %}" class="font-medium text-emerald-700 hover:text-emerald-800">Objetivos</a>
-              <a href="{% url 'cycles:ciclo_update' ciclo.pk %}" class="font-medium text-slate-600 hover:text-slate-800">Editar</a>
-              <a href="{% url 'cycles:ciclo_delete' ciclo.pk %}" class="font-medium text-rose-600 hover:text-rose-700">Excluir</a>
-            </div>
-          </td>
-        </tr>
-        {% empty %}
-        <tr data-empty="arquivo">
-          <td colspan="6" class="!py-8">
-            {% if ciclo_operacional %}
-              {% include "components/empty_state.html" with title="Nenhum ciclo no arquivo" message="Ciclos encerrados aparecerão aqui, paginados." %}
-            {% else %}
-              {% url 'cycles:ciclo_create' as create_url %}
-              {% include "components/empty_state.html" with title="Nenhum ciclo cadastrado" message="Crie o primeiro ciclo de avaliação para abrir o período operacional." cta_label="Novo ciclo" cta_href=create_url %}
-            {% endif %}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+
+  <div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+    {% for ciclo in ciclos %}
+      {% include "cycles/_ciclo_card.html" with ciclo=ciclo group="arquivo" %}
+    {% empty %}
+    <div class="col-span-full rounded-xl border border-line bg-surface-card px-4 py-2" data-empty="arquivo">
+      {% if ciclo_operacional %}
+        {% include "components/empty_state.html" with title="Nenhum ciclo no arquivo" message="Ciclos encerrados aparecerão aqui, paginados." %}
+      {% else %}
+        {% url 'cycles:ciclo_create' as create_url %}
+        {% include "components/empty_state.html" with title="Nenhum ciclo cadastrado" message="Crie o primeiro ciclo de avaliação para abrir o período operacional." cta_label="Novo ciclo" cta_href=create_url %}
+      {% endif %}
+    </div>
+    {% endfor %}
   </div>
 
   {% include "components/pagination.html" with page_obj=page_obj %}

@@ -1,129 +1,150 @@
 {% extends "base.html" %}
 {% load static review_display %}
 
-{% block title %}Meu painel — Greenn People{% endblock %}
+{% block title %}Meu Painel — Greenn People{% endblock %}
 
 {% block content %}
-<header class="mb-6">
-  <div class="flex flex-wrap items-start justify-between gap-3">
-    <div>
-      <h1 class="font-display text-2xl font-semibold tracking-tight text-slate-800">Meu painel</h1>
-      <p class="mt-1 text-sm text-slate-500">
+<header class="mb-8">
+  <div class="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+    <div class="max-w-3xl">
+      <h1 class="font-display text-3xl font-semibold tracking-tight text-slate-800 sm:text-4xl">
+        Meu Painel
+      </h1>
+      <p class="mt-2 text-base leading-relaxed text-slate-500">
         Bem-vindo{% if user.nome %}, {{ user.nome }}{% endif %}.
         Veja sua nota, o que o cargo espera de você e o próximo passo no ciclo.
       </p>
+      {% if grouped_ciclo_options.arquivo_total %}
+        <p class="mt-1 text-xs text-slate-500">
+          {{ grouped_ciclo_options.arquivo_total }} ciclo{{ grouped_ciclo_options.arquivo_total|pluralize }} encerrado{{ grouped_ciclo_options.arquivo_total|pluralize }} disponíveis no seletor
+        </p>
+      {% endif %}
     </div>
     {% if ciclo_aberto %}
-      {% include "components/badge_status.html" with status="ativo" label=ciclo_aberto.nome extra_class="mt-1" %}
+      <span class="inline-flex shrink-0 items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold tracking-wide text-emerald-700">
+        <span class="h-2 w-2 rounded-full bg-emerald-600" aria-hidden="true"></span>
+        {{ ciclo_aberto.nome }} — Em andamento
+      </span>
     {% else %}
-      {% include "components/badge_status.html" with status="arquivado" label="Sem ciclo aberto" extra_class="mt-1" %}
+      {% include "components/badge_status.html" with status="arquivado" label="Sem ciclo aberto" %}
     {% endif %}
   </div>
 </header>
 
+<section class="mb-8 min-w-0" aria-label="Selecionar ciclo">
+  {% include "dashboard/_ciclo_selector.html" with hide_q_filter=True hide_arquivo_hint=True compact=True %}
+</section>
+
 <section class="mb-8 min-w-0 space-y-6" aria-labelledby="orientacao-heading">
   <h2 id="orientacao-heading" class="sr-only">Orientação do ciclo</h2>
   {% include "components/next_step.html" with next_step=next_step %}
-  {% include "components/stage_stepper.html" with stage_stepper=stage_stepper %}
+
+  <div class="rounded-xl border border-line bg-surface-card p-4 sm:p-6" aria-labelledby="timeline-heading">
+    <h3 id="timeline-heading" class="font-display text-lg font-medium tracking-tight text-slate-800 mb-6">
+      Linha do Tempo do Ciclo
+    </h3>
+    {% include "components/stage_stepper.html" with stage_stepper=stage_stepper %}
+  </div>
 </section>
 
 <section class="mb-8 min-w-0" aria-labelledby="desempenho-heading">
-  <div class="mb-3">
-    <h2 id="desempenho-heading" class="font-display text-lg font-medium tracking-tight text-slate-800">
-      Meu desempenho
-    </h2>
-    <p class="mt-0.5 text-sm text-slate-500">
-      Sua nota e o nível esperado do cargo. Em seguida, o comparativo por competência.
-    </p>
-  </div>
+  <h2 id="desempenho-heading" class="sr-only">Meu desempenho</h2>
 
   <div class="managerial-panel">
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2" aria-label="Indicadores pessoais">
+    {% url 'goals:expectations' as expectations_url %}
+    <div class="grid grid-cols-1 items-stretch gap-6 sm:grid-cols-2" aria-label="Indicadores pessoais">
       {% if nota_atual is not None %}
         {% if nota_atual_origem == "lider" %}
-          {% include "components/card.html" with label="Nota atual" value=nota_atual|nota_percentual badge_status="concluida" badge_label="Nota do líder" body="Nota dada pelo seu líder neste ciclo." %}
+          {% include "components/card.html" with label="Nota atual" value=nota_atual|nota_percentual badge_status="concluida" badge_label="Nota do líder" body="Nota dada pelo seu líder neste ciclo." accent="success" value_size="lg" %}
         {% elif nota_atual_origem == "autoavaliacao" %}
-          {% include "components/card.html" with label="Nota atual" value=nota_atual|nota_percentual badge_status="em_andamento" badge_label="Autoavaliação" body="Nota da sua autoavaliação neste ciclo." %}
+          {% include "components/card.html" with label="Nota atual" value=nota_atual|nota_percentual badge_status="em_andamento" badge_label="Autoavaliação" body="Nota da sua autoavaliação neste ciclo." accent="warning" value_size="lg" %}
         {% else %}
-          {% include "components/card.html" with label="Nota atual" value=nota_atual|nota_percentual badge_status="arquivado" badge_label="Sem nota" body="Ainda não há nota neste ciclo." %}
+          {% include "components/card.html" with label="Nota atual" value=nota_atual|nota_percentual badge_status="arquivado" badge_label="Sem nota" body="Ainda não há nota neste ciclo." value_size="lg" %}
         {% endif %}
       {% elif nota_atual_origem == "lider" %}
-        {% include "components/card.html" with label="Nota atual" value="—" badge_status="concluida" badge_label="Nota do líder" body="Nota dada pelo seu líder neste ciclo." %}
+        {% include "components/card.html" with label="Nota atual" value="—" badge_status="concluida" badge_label="Nota do líder" body="Nota dada pelo seu líder neste ciclo." accent="success" value_size="lg" %}
       {% elif nota_atual_origem == "autoavaliacao" %}
-        {% include "components/card.html" with label="Nota atual" value="—" badge_status="em_andamento" badge_label="Autoavaliação" body="Nota da sua autoavaliação neste ciclo." %}
+        {% include "components/card.html" with label="Nota atual" value="—" badge_status="em_andamento" badge_label="Autoavaliação" body="Nota da sua autoavaliação neste ciclo." accent="warning" value_size="lg" %}
       {% else %}
-        {% include "components/card.html" with label="Nota atual" value="—" badge_status="arquivado" badge_label="Sem nota" body="Ainda não há nota neste ciclo." %}
+        {% include "components/card.html" with label="Nota atual" value="—" badge_status="arquivado" badge_label="Sem nota" body="Ainda não há nota neste ciclo." value_size="lg" %}
       {% endif %}
 
       {% if vinculo_pendente %}
-        {% include "components/card.html" with label="Nível esperado" value="—" badge_status="pendente" badge_label="Cadastro incompleto" body="Seu cargo ou competências ainda não foram definidos." %}
+        {% include "components/card.html" with label="Nível esperado" value="—" badge_status="pendente" badge_label="Cadastro incompleto" body="Seu cargo ou competências ainda não foram definidos." accent="warning" value_size="lg" %}
       {% else %}
-        {% include "components/card.html" with label="Nível esperado" value=competencias_resumo|length badge_status="ativo" badge_label="Competências do cargo" body="Quantas competências o seu cargo avalia." %}
+        {% include "components/card.html" with label="Nível esperado" value=competencias_resumo|length accent="primary" value_size="lg" body="Quantas competências o seu cargo avalia." footer_label="Ver competências do cargo" footer_href=expectations_url %}
       {% endif %}
     </div>
 
-    <div class="min-w-0" id="gaps-heading">
-      {% if chart_gaps_competencia.has_data %}
-        {% include "dashboard/_chart_block.html" with chart=chart_gaps_competencia script_id="chart-gaps-competencia" kpi_label="Competências" kpi_value=chart_gaps_competencia.total kpi_body="mostradas no gráfico" insight="Maiores diferenças entre o esperado e a sua nota. O restante está na tabela abaixo." %}
-      {% else %}
-        {% include "dashboard/_chart_block.html" with chart=chart_gaps_competencia script_id="chart-gaps-competencia" %}
-      {% endif %}
-    </div>
+    <div class="grid min-w-0 grid-cols-1 items-stretch gap-6 lg:grid-cols-3">
+      <div class="flex min-w-0 w-full lg:col-span-1" id="gaps-heading">
+        {% include "dashboard/_chart_block.html" with chart=chart_gaps_competencia script_id="chart-gaps-competencia" title="Esperado vs Nota por competência" canvas_class="dashboard-chart-canvas--radar" extra_class="h-full w-full" %}
+      </div>
 
-    {% if not vinculo_pendente and competencias_resumo %}
-    <div class="min-w-0" aria-labelledby="competencias-resumo-heading">
-      <div class="mb-3 flex flex-wrap items-start justify-between gap-2">
-        <div class="min-w-0">
-          <h3 id="competencias-resumo-heading" class="font-display text-lg font-medium tracking-tight text-slate-800">
+      <div class="flex min-w-0 w-full lg:col-span-2">
+        {% if not vinculo_pendente and competencias_resumo %}
+        <div
+          class="flex h-full min-w-0 w-full flex-col rounded-xl border border-line bg-surface-card p-4 sm:p-5"
+          aria-labelledby="competencias-resumo-heading"
+        >
+          <div class="mb-5 flex flex-wrap items-start justify-between gap-3">
+            <div class="min-w-0">
+              <h3 id="competencias-resumo-heading" class="font-display text-lg font-medium tracking-tight text-slate-800">
+                Níveis esperados
+              </h3>
+              <p class="mt-1 text-sm text-slate-500">
+                Lista completa das competências do seu cargo{% if cargo %}: <span class="font-medium text-slate-700">{{ cargo.nome }}</span>{% endif %}.
+              </p>
+            </div>
+            {% include "components/button.html" with label="Ver expectativas" href=expectations_url variant="secondary" extra_class="!h-10 shrink-0 !px-4" %}
+          </div>
+          <div class="min-w-0 flex-1 overflow-x-auto">
+            <table class="min-w-full divide-y divide-line text-left text-sm text-ink">
+              <thead>
+                <tr class="border-b border-line text-xs uppercase tracking-wide text-ink-muted">
+                  <th class="py-3 pr-4 font-semibold">Competência</th>
+                  <th class="w-32 py-3 px-4 font-semibold">Nível esperado</th>
+                  <th class="w-32 py-3 pl-4 text-right font-semibold">Nota atual</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-line">
+                {% for item in competencias_resumo %}
+                <tr class="transition-colors hover:bg-slate-50/80">
+                  <td class="py-4 pr-4 font-medium text-slate-800">{{ item.competencia.nome }}</td>
+                  <td class="px-4 py-4 tabular-nums text-slate-600">{{ item.nivel_esperado }}</td>
+                  <td class="py-4 pl-4 text-right tabular-nums">
+                    {% if item.nota_atual is not None %}
+                      <span class="font-semibold text-slate-800">{{ item.nota_atual }}</span>
+                    {% else %}
+                      <span class="text-slate-400">—</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% elif vinculo_pendente %}
+        <div
+          class="flex h-full min-w-0 w-full flex-col rounded-xl border border-line bg-surface-card p-4 sm:p-5"
+          aria-labelledby="vinculo-pendente-heading"
+        >
+          <h3 id="vinculo-pendente-heading" class="font-display text-lg font-medium tracking-tight text-slate-800 mb-3">
             Níveis esperados
           </h3>
-          <p class="mt-0.5 text-sm text-slate-500">
-            Lista completa das competências do seu cargo{% if cargo %}: <span class="font-medium text-slate-700">{{ cargo.nome }}</span>{% endif %}.
-          </p>
+          {% if not cargo %}
+            {% include "components/empty_state.html" with title="Cadastro incompleto" message="Seu perfil ainda não tem cargo. Peça ao RH para concluir o cadastro antes de ver o nível esperado." %}
+          {% else %}
+            <p class="mb-1 text-center text-sm text-slate-500">
+              Cargo: <span class="font-medium text-slate-700">{{ cargo.nome }}</span>
+            </p>
+            {% include "components/empty_state.html" with title="Cadastro incompleto" message="Este cargo ainda não tem competências definidas. Peça ao RH para concluir o cadastro." %}
+          {% endif %}
         </div>
-        {% url 'goals:expectations' as expectations_url %}
-        {% include "components/button.html" with label="Ver expectativas" href=expectations_url variant="secondary" %}
-      </div>
-      <div class="table-frame">
-        <table>
-          <thead>
-            <tr>
-              <th>Competência</th>
-              <th>Nível esperado</th>
-              <th>Nota atual</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for item in competencias_resumo %}
-            <tr>
-              <td class="font-medium text-slate-800">{{ item.competencia.nome }}</td>
-              <td class="tabular-nums text-slate-800">{{ item.nivel_esperado }}</td>
-              <td>
-                {% if item.nota_atual is not None %}
-                  <span class="font-semibold tabular-nums text-slate-800">{{ item.nota_atual }}</span>
-                {% else %}
-                  <span class="text-slate-400">—</span>
-                {% endif %}
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+        {% endif %}
       </div>
     </div>
-    {% elif vinculo_pendente %}
-    <div class="min-w-0" aria-labelledby="vinculo-pendente-heading">
-      <h3 id="vinculo-pendente-heading" class="sr-only">Níveis esperados</h3>
-      {% if not cargo %}
-        {% include "components/empty_state.html" with title="Cadastro incompleto" message="Seu perfil ainda não tem cargo. Peça ao RH para concluir o cadastro antes de ver o nível esperado." %}
-      {% else %}
-        <p class="mb-1 text-center text-sm text-slate-500">
-          Cargo: <span class="font-medium text-slate-700">{{ cargo.nome }}</span>
-        </p>
-        {% include "components/empty_state.html" with title="Cadastro incompleto" message="Este cargo ainda não tem competências definidas. Peça ao RH para concluir o cadastro." %}
-      {% endif %}
-    </div>
-    {% endif %}
   </div>
 </section>
 
@@ -158,7 +179,7 @@
       Dados cadastrais do seu vínculo na organização.
     </p>
   </div>
-  <div class="rounded-xl border border-line bg-surface-card p-4">
+  <div class="rounded-xl border border-line bg-surface-card p-4 sm:p-5">
     <dl class="grid gap-4 sm:grid-cols-2">
       <div>
         <dt class="text-xs font-medium uppercase tracking-wide text-ink-muted">E-mail</dt>

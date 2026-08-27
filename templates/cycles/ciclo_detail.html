@@ -4,120 +4,113 @@
 {% block title %}{{ ciclo.nome }} — Ciclo — Greenn People{% endblock %}
 
 {% block content %}
-<header class="mb-6">
-  <div class="flex flex-wrap items-start justify-between gap-3">
-    <div>
-      <p class="mb-1 text-sm text-slate-500">
+<div class="mx-auto max-w-[90rem]">
+<header class="mb-8">
+  <div class="flex flex-col justify-between gap-6 md:flex-row md:items-start">
+    <div class="max-w-2xl">
+      <p class="mb-2 text-sm text-slate-500">
         <a href="{% url 'cycles:ciclo_list' %}" class="font-medium text-emerald-700 hover:text-emerald-800">Ciclos</a>
         <span aria-hidden="true"> / </span>
         <span>Visão gerencial</span>
       </p>
-      <h1 class="font-display text-2xl font-semibold text-slate-800">{{ ciclo.nome }}</h1>
-      <p class="mt-1 text-sm text-slate-500">
-        Visão geral deste ciclo: andamento das avaliações, quem já entrou e a aderência dos líderes.
+      <h1 class="font-display text-3xl font-semibold tracking-tight text-slate-800">{{ ciclo.nome }}</h1>
+      <p class="mt-2 text-base leading-relaxed text-slate-500">
+        Visão deste ciclo: andamento das avaliações, cobertura e aderência dos líderes.
+      </p>
+      <p class="mt-2 text-sm text-slate-500">
+        {{ ciclo.data_inicio|date:"d/m/Y" }} — {{ ciclo.data_fim|date:"d/m/Y" }}
       </p>
     </div>
-    <div class="flex flex-wrap items-center gap-2">
+    <div class="flex shrink-0 flex-col items-start gap-4 md:items-end">
       {% if ciclo.status == "aberto" %}
-        {% include "components/badge_status.html" with status="ativo" label=ciclo.get_status_display extra_class="mt-1" %}
+        <span class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-700">
+          <span class="h-2 w-2 animate-pulse rounded-full bg-emerald-500" aria-hidden="true"></span>
+          Ativo · {{ ciclo.get_status_display }}
+        </span>
       {% else %}
-        {% include "components/badge_status.html" with status="arquivado" label=ciclo.get_status_display extra_class="mt-1" %}
+        {% include "components/badge_status.html" with status="arquivado" label=ciclo.get_status_display %}
       {% endif %}
-      {% url 'cycles:ciclo_list' as ciclos_url %}
-      {% include "components/button.html" with label="Voltar à lista" href=ciclos_url variant="secondary" %}
-      {% url 'dashboard:adherence' as adherence_url %}
-      {% include "components/button.html" with label="Ver aderência" href=adherence_url variant="secondary" %}
+      <div class="flex flex-wrap gap-3">
+        {% url 'cycles:ciclo_list' as ciclos_url %}
+        {% include "components/button.html" with label="Voltar à lista" href=ciclos_url variant="secondary" %}
+        {% url 'dashboard:adherence' as adherence_url %}
+        {% include "components/button.html" with label="Ver aderência" href=adherence_url variant="secondary" %}
+        {% if ciclo.status == "aberto" %}
+          {% url 'dashboard:admin' as admin_url %}
+          {% include "components/button.html" with label="Painel admin" href=admin_url variant="primary" %}
+        {% endif %}
+      </div>
     </div>
   </div>
-  <p class="mt-3 text-sm text-slate-500">
-    {{ ciclo.data_inicio|date:"d/m/Y" }} — {{ ciclo.data_fim|date:"d/m/Y" }}
-  </p>
 </header>
 
-<section class="mb-8 min-w-0" aria-labelledby="ciclo-detail-heading">
-  <div class="mb-3 flex flex-wrap items-start justify-between gap-3">
-    <div class="min-w-0">
-      <h2 id="ciclo-detail-heading" class="font-display text-lg font-medium text-slate-800">
-        {% if visao == 'historico' %}
-          Como os ciclos avançaram
-        {% else %}
-          Onde o ciclo está
-        {% endif %}
-      </h2>
-      <p class="mt-0.5 text-sm text-slate-500">
-        {% if visao == 'historico' %}
-          Andamento dos últimos ciclos. Abaixo, o detalhe deste ciclo continua igual.
-        {% else %}
-          Resumo do andamento e da cobertura das pessoas neste ciclo.
-        {% endif %}
-      </p>
-    </div>
-    {% include "dashboard/_visao_toggle.html" %}
+<section class="min-w-0" aria-labelledby="ciclo-detail-heading">
+  <div class="mb-6">
+    <h2 id="ciclo-detail-heading" class="font-display text-2xl font-medium tracking-tight text-slate-800">
+      Indicadores do ciclo
+    </h2>
+    <p class="mt-1 text-sm leading-relaxed text-slate-500">
+      Números de {{ ciclo.nome }} — progresso, cobertura e checklist deste ciclo.
+    </p>
   </div>
 
   <div class="managerial-panel">
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores do ciclo">
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-3" aria-label="Indicadores do ciclo">
       {% if avaliacoes_resumo.percentual_concluidas is not None %}
         {% with val=avaliacoes_resumo.percentual_concluidas|stringformat:"d"|add:"%" %}
         {% if avaliacoes_resumo.sem_desempenho %}
-        {% include "components/card.html" with label="Avaliações concluídas" value=val body="Concluíram as etapas — não significa desempenho completo." %}
+        {% include "components/card.html" with label="Avaliações concluídas" value=val body="Concluíram as etapas — não significa desempenho completo." accent="primary" value_size="lg" %}
         {% else %}
-        {% include "components/card.html" with label="Avaliações concluídas" value=val body="Concluíram as etapas deste ciclo." %}
+        {% include "components/card.html" with label="Avaliações concluídas" value=val body="Concluíram as etapas deste ciclo." accent="primary" value_size="lg" %}
         {% endif %}
         {% endwith %}
       {% else %}
-        {% include "components/card.html" with label="Avaliações concluídas" value="—" body="Ainda não há avaliações neste ciclo." %}
+        {% include "components/card.html" with label="Avaliações concluídas" value="—" body="Ainda não há avaliações neste ciclo." accent="primary" value_size="lg" %}
       {% endif %}
 
       {% if cobertura_resumo.has_ciclo and cobertura_resumo.percentual is not None %}
         {% with val=cobertura_resumo.percentual|stringformat:"d"|add:"%" %}
-        {% include "components/card.html" with label="Cobertura" value=val body="Percentual de pessoas ativas que já têm avaliação." %}
+        {% include "components/card.html" with label="Cobertura" value=val body="Percentual de pessoas ativas que já têm avaliação." accent="success" icon="trending_up" value_size="lg" %}
         {% endwith %}
       {% elif cobertura_resumo.has_ciclo %}
-        {% include "components/card.html" with label="Cobertura" value="—" body="Não há pessoas ativas para calcular a cobertura." %}
+        {% include "components/card.html" with label="Cobertura" value="—" body="Não há pessoas ativas para calcular a cobertura." accent="success" value_size="lg" %}
       {% else %}
-        {% include "components/card.html" with label="Cobertura" value="—" body="Não foi possível calcular a cobertura neste ciclo." %}
+        {% include "components/card.html" with label="Cobertura" value="—" body="Não foi possível calcular a cobertura neste ciclo." accent="success" value_size="lg" %}
       {% endif %}
 
       {% if rh_pre_open_checklist %}
         {% if rh_checklist_has_blockers %}
           {% with blockers=rh_pre_open_checklist.items|length %}
-          {% include "components/card.html" with label="Pendências do checklist" value=blockers badge_status="pendente" badge_label="Revisar" body="Há avisos de cadastro — você ainda pode abrir o ciclo." %}
+          {% include "components/card.html" with label="Pendências do checklist" value=blockers badge_status="pendente" badge_label="Revisar" body="Há avisos de cadastro — você ainda pode abrir o ciclo." accent="warning" value_size="lg" %}
           {% endwith %}
         {% else %}
-          {% include "components/card.html" with label="Pendências do checklist" value="0" badge_status="concluida" badge_label="Em dia" body="Cadastros em ordem no momento." %}
+          {% include "components/card.html" with label="Pendências do checklist" value="0" badge_status="concluida" badge_label="Em dia" body="Cadastros em ordem no momento." accent="warning" value_size="lg" %}
         {% endif %}
       {% else %}
-        {% include "components/card.html" with label="Pendências do checklist" value="—" body="Checklist indisponível nesta página." %}
+        {% include "components/card.html" with label="Pendências do checklist" value="—" body="Checklist indisponível nesta página." accent="warning" value_size="lg" %}
       {% endif %}
     </div>
 
-    {% if visao == 'historico' and chart_stage_history %}
-      {% include "dashboard/_chart_block.html" with chart=chart_stage_history script_id="chart-stage-history" %}
-    {% endif %}
-
-    <div class="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
-      <div class="min-w-0" id="progresso-heading">
+    <div class="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-2 lg:items-stretch">
+      <div class="flex min-w-0 h-full flex-col" id="pipeline-heading">
         {% if chart_ciclo_progresso.has_data and progresso_gargalo_label %}
           {% with insight_txt="Mais avaliações em "|add:progresso_gargalo_label|add:" — concentre a atenção aí." %}
-          {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" insight=insight_txt kpi_label="Total" kpi_value=chart_ciclo_progresso.total kpi_body="avaliações no ciclo" %}
+          {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" insight=insight_txt extra_class="h-full" %}
           {% endwith %}
-        {% elif chart_ciclo_progresso.has_data %}
-          {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" kpi_label="Total" kpi_value=chart_ciclo_progresso.total kpi_body="avaliações no ciclo" %}
         {% else %}
-          {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" %}
+          {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" extra_class="h-full" %}
         {% endif %}
       </div>
-      <div class="min-w-0" id="aderencia-ciclo-heading">
+      <div class="flex min-w-0 h-full flex-col" id="aderencia-heading">
         {% if chart_aderencia_distribuicao.has_data %}
-          {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" insight="Alta, média e baixa — o número no centro é o total de líderes." %}
+          {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" insight="Alta, média e baixa — o número no centro é o total de líderes." extra_class="h-full" %}
         {% else %}
-          {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" %}
+          {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" extra_class="h-full" %}
         {% endif %}
       </div>
     </div>
 
-    <div class="min-w-0 grid grid-cols-1 gap-4 lg:grid-cols-2" aria-label="Cobertura por área e cargo">
+    <div class="min-w-0 grid grid-cols-1 gap-6 lg:grid-cols-2" aria-label="Cobertura por área e cargo">
       {% if chart_cobertura_area.has_data %}
         {% include "dashboard/_chart_block.html" with chart=chart_cobertura_area script_id="chart-cobertura-area" insight="Quanto por cento das pessoas de cada área já têm avaliação. As áreas menores ficam agrupadas em Outros." %}
       {% else %}
@@ -138,11 +131,11 @@
     {% endif %}
 
     <div class="min-w-0" aria-labelledby="checklist-ciclo-heading">
-      <div class="mb-3">
-        <h3 id="checklist-ciclo-heading" class="font-display text-lg font-medium text-slate-800">
+      <div class="mb-4">
+        <h3 id="checklist-ciclo-heading" class="font-display text-xl font-medium tracking-tight text-slate-800">
           Checklist operacional
         </h3>
-        <p class="mt-0.5 text-sm text-slate-500">
+        <p class="mt-1 text-sm text-slate-500">
           Pendências de cadastro para revisar — não impedem abrir o ciclo.
         </p>
       </div>
@@ -150,7 +143,7 @@
       {% if rh_pre_open_checklist %}
       <section
         id="rh-pre-open-checklist"
-        class="rounded-xl border {% if rh_checklist_has_blockers %}border-amber-200 bg-amber-50{% else %}border-emerald-200 bg-emerald-50/60{% endif %} px-4 py-4"
+        class="rounded-xl border {% if rh_checklist_has_blockers %}border-amber-200 bg-amber-50{% else %}border-emerald-200 bg-emerald-50/60{% endif %} px-4 py-4 sm:px-5"
         aria-labelledby="rh-pre-open-checklist-title"
         data-component="rh-pre-open-checklist"
         data-advisory-only="true"
@@ -197,6 +190,7 @@
     </div>
   </div>
 </section>
+</div>
 {% endblock %}
 
 {% block extra_js %}

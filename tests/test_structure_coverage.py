@@ -12,6 +12,7 @@ Não altera asserts de stage/approval; sem mutar ``scope.py``.
 from __future__ import annotations
 
 import inspect
+from decimal import Decimal
 
 import pytest
 from django.utils import timezone
@@ -28,11 +29,15 @@ from apps.dashboard.chart_payloads import (
     EMPTY_KIND_OPERACIONAL,
     OTHERS_LABEL,
 )
+from apps.dashboard.models import AderenciaSnapshot
 from apps.dashboard.services.structure import (
     build_structure_coverage,
     coverage_by_area,
     coverage_by_cargo,
     coverage_summary,
+    distinct_cargo_count,
+    leaders_with_adherence,
+    partition_gap_rows,
 )
 from apps.organization.models import Area, Cargo
 from apps.reviews.models import Avaliacao
@@ -550,3 +555,119 @@ def test_build_structure_coverage_receives_visible_never_calls_scope(
     pack_after = build_structure_coverage(visible, ciclo_aberto)
     assert pack_after['resumo']['total'] == 1
     assert pack_after['resumo']['com_avaliacao'] <= 1
+
+
+# --- Ordenação por exceção (líderes + partition de lacunas) ---
+
+
+@pytest.mark.django_db
+def test_leaders_with_adherence_orders_by_percent_asc(
+    admin,
+    lider,
+    colaborador,
+    area,
+    cargo_lider,
+    cargo_colab,
+    ciclo_aberto,
+):
+    """Líderes: sem snapshot primeiro, depois % ASC (pior aderência no topo)."""
+    lider_alto = CustomUser.objects.create_user(
+        email='lider.alto@test.greenn.com.br',
+        password=DEFAULT_PASSWORD,
+        nome='Líder Alto',
+        cargo=cargo_lider,
+        area=area,
+        line_manager=admin,
+        email_confirmado_em=timezone.now(),
+    )
+    lider_baixo = CustomUser.objects.create_user(
+        email='lider.baixo@test.greenn.com.br',
+        password=DEFAULT_PASSWORD,
+        nome='Líder Baixo',
+        cargo=cargo_lider,
+        area=area,
+        line_manager=admin,
+        email_confirmado_em=timezone.now(),
+    )
+    CustomUser.objects.create_user(
+        email='colab.alto@test.greenn.com.br',
+        password=DEFAULT_PASSWORD,
+        nome='Colab Alto',
+        cargo=cargo_colab,
+        area=area,
+        line_manager=lider_alto,
+        email_confirmado_em=timezone.now(),
+    )
+    CustomUser.objects.create_user(
+        email='colab.baixo@test.greenn.com.br',
+        password=DEFAULT_PASSWORD,
+        nome='Colab Baixo',
+        cargo=cargo_colab,
+        area=area,
+        line_manager=lider_baixo,
+        email_confirmado_em=timezone.now(),
+    )
+
+    now = timezone.now()
+    AderenciaSnapshot.objects.create(
+        lider=lider_alto,
+        ciclo=ciclo_aberto,
+        percentual=Decimal('90.00'),
+        componentes={},
+        calculado_em=now,
+    )
+    AderenciaSnapshot.objects.create(
+        lider=lider_baixo,
+        ciclo=ciclo_aberto,
+        percentual=Decimal('20.00'),
+        componentes={},
+        calculado_em=now,
+    )
+    # ``lider`` (fixture) permanece sem snapshot → exceção no topo.
+
+    visible = _visible_ativos(admin)
+    rows = leaders_with_adherence(visible, ciclo_aberto)
+    tracked = {lider.email, lider_baixo.email, lider_alto.email}
+    ordered = [item['lider'].email for item in rows if item['lider'].email in tracked]
+
+    assert ordered == [lider.email, lider_baixo.email, lider_alto.email]
+    by_email = {item['lider'].email: item for item in rows}
+    assert by_email[lider.email]['snapshot'] is None
+    assert by_email[lider_baixo.email]['snapshot'].percentual == Decimal('20.00')
+    assert by_email[lider_alto.email]['snapshot'].percentual == Decimal('90.00')
+
+
+def test_partition_gap_rows_keeps_positive_first():
+    """Lacuna média > 0 fica prioritária; ≤0 / None vão para restantes."""
+    rows = [
+        {'competencia_nome': 'A', 'media_lacuna': Decimal('1.50')},
+        {'competencia_nome': 'B', 'media_lacuna': Decimal('0.00')},
+        {'competencia_nome': 'C', 'media_lacuna': None},
+        {'competencia_nome': 'D', 'media_lacuna': Decimal('-0.25')},
+        {'competencia_nome': 'E', 'media_lacuna': Decimal('0.01')},
+    ]
+    prioritarias, restantes = partition_gap_rows(rows)
+
+    assert [r['competencia_nome'] for r in prioritarias] == ['A', 'E']
+    assert [r['competencia_nome'] for r in restantes] == ['B', 'C', 'D']
+
+
+@pytest.mark.django_db
+def test_distinct_cargo_count_respects_filters(
+    admin,
+    lider,
+    colaborador,
+    area,
+    cargo_lider,
+    cargo_colab,
+):
+    """≤1 cargo no escopo filtrado → contagem 1; sem filtro → ≥2 na hierarquia padrão."""
+    visible = _visible_ativos(admin)
+    assert distinct_cargo_count(visible) >= 2
+    assert (
+        distinct_cargo_count(visible, cargo_id=cargo_colab.pk) == 1
+    )
+    assert (
+        distinct_cargo_count(visible, area_id=area.pk, cargo_id=cargo_lider.pk)
+        == 1
+    )

@@ -4,12 +4,12 @@
 {% block title %}Painel do time — Greenn People{% endblock %}
 
 {% block content %}
-<header class="mb-6">
+<header class="mb-5">
   <div class="flex flex-wrap items-start justify-between gap-3">
     <div>
       <h1 class="font-display text-2xl font-semibold text-slate-800">Painel do time</h1>
       <p class="mt-1 text-sm text-slate-500">
-        Onde o time está no ciclo — e quem precisa da sua ação agora.
+        Visão geral do seu time no ciclo atual de performance.
       </p>
       {% if grouped_ciclo_options.arquivo_total %}
         <p class="mt-1 text-xs text-slate-500">
@@ -17,19 +17,21 @@
         </p>
       {% endif %}
     </div>
-    {% if ciclo_aberto %}
-      {% include "components/badge_status.html" with status="ativo" label=ciclo_aberto.nome extra_class="mt-1" %}
+    {% if ciclo_selecionado %}
+      {% with ciclo_label="Ciclo: "|add:ciclo_selecionado.nome %}
+        {% include "components/badge_status.html" with status="ativo" label=ciclo_label extra_class="mt-1" %}
+      {% endwith %}
     {% else %}
-      {% include "components/badge_status.html" with status="arquivado" label="Sem ciclo aberto" extra_class="mt-1" %}
+      {% include "components/badge_status.html" with status="arquivado" label="Sem ciclo selecionado" extra_class="mt-1" %}
     {% endif %}
   </div>
 </header>
 
-<section class="mb-6 min-w-0" aria-label="Selecionar ciclo">
-  {% include "dashboard/_ciclo_selector.html" %}
+<section class="mb-5 min-w-0" aria-label="Selecionar ciclo">
+  {% include "dashboard/_ciclo_selector.html" with hide_q_filter=True %}
 </section>
 
-<section class="mb-8 min-w-0" aria-labelledby="team-status-heading">
+<section class="mb-6 min-w-0" aria-labelledby="team-status-heading">
   <div class="mb-3 flex flex-wrap items-start justify-between gap-3">
     <div class="min-w-0">
       <h2 id="team-status-heading" class="font-display text-lg font-medium text-slate-800">
@@ -43,147 +45,157 @@
         {% if visao == 'historico' %}
           Quem avançou, quem ficou no mesmo ponto e quem ainda não entrou.
         {% elif ciclo_selecionado %}
-          Contagens de {{ ciclo_selecionado.nome }} no escopo — a tabela no final detalha cada pessoa.
+          {{ ciclo_selecionado.nome }} — pendências e lista do escopo.
         {% else %}
-          Contagens e distribuição no escopo — a tabela no final detalha cada pessoa.
+          Pendências e distribuição do escopo.
         {% endif %}
       </p>
     </div>
     {% include "dashboard/_visao_toggle.html" %}
   </div>
 
-  <div class="managerial-panel">
+  <div class="flex flex-col gap-3 sm:gap-4">
     {% if visao == 'historico' %}
-    <div class="flex flex-col gap-4">
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Resumo destes ciclos">
-      {% include "components/card.html" with label="Avançaram" value=history_kpis.evoluiu body="Pessoas da equipe que avançaram de etapa ou concluíram." %}
-      {% include "components/card.html" with label="No mesmo ponto" value=history_kpis.estavel body="Pessoas da equipe que não mudaram de etapa nesses ciclos." %}
-      {% include "components/card.html" with label="Sem registro" value=history_kpis.sem_dado body="Pessoas da equipe que não chegaram a entrar nesses ciclos." %}
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3" aria-label="Resumo destes ciclos">
+      {% include "components/card.html" with label="Avançaram" value=history_kpis.evoluiu body="Avançaram de etapa ou concluíram." extra_class="!p-3" %}
+      {% include "components/card.html" with label="No mesmo ponto" value=history_kpis.estavel body="Sem mudança de etapa." extra_class="!p-3" %}
+      {% include "components/card.html" with label="Sem registro" value=history_kpis.sem_dado body="Não entraram nesses ciclos." extra_class="!p-3" %}
     </div>
 
-    {% include "dashboard/_chart_block.html" with chart=chart_stage_history script_id="chart-stage-history" %}
+    {% include "dashboard/_chart_block.html" with chart=chart_stage_history script_id="chart-stage-history" canvas_class="dashboard-chart-canvas--compact" %}
 
     <div class="min-w-0" aria-labelledby="team-drilldown-heading">
-      <div class="mb-3">
-        <h3 id="team-drilldown-heading" class="font-display text-lg font-medium text-slate-800">
-          Todo o time
-        </h3>
-        <p class="mt-0.5 text-sm text-slate-500">
-          Etapa, nota e ações de cada pessoa.
-        </p>
-      </div>
       {% include "dashboard/team_list_partial.html" %}
     </div>
-    </div>
     {% else %}
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores do time">
-      {% include "components/card.html" with label="No escopo" value=team_resumo.total_escopo body="Pessoas da sua equipe." %}
-
-      {% if team_resumo.has_ciclo and team_resumo.aguardando_acao is not None %}
-        {% if team_resumo.aguardando_acao > 0 %}
-          {% include "components/card.html" with label="Aguardando ação" value=team_resumo.aguardando_acao badge_status="pendente" badge_label="Prioridade" body="Precisam da sua avaliação ou aprovação." %}
-        {% else %}
-          {% include "components/card.html" with label="Aguardando ação" value=team_resumo.aguardando_acao badge_status="concluida" badge_label="Em dia" body="Ninguém espera sua ação no momento." %}
-        {% endif %}
-      {% else %}
-        {% include "components/card.html" with label="Aguardando ação" value="—" body="Abra um ciclo para ver quem precisa de você." %}
-      {% endif %}
-
-      {% if team_resumo.has_ciclo and team_resumo.sem_avaliacao is not None %}
-        {% include "components/card.html" with label="Sem avaliação" value=team_resumo.sem_avaliacao body="Ainda não iniciaram a avaliação neste ciclo." %}
-      {% else %}
-        {% include "components/card.html" with label="Sem avaliação" value="—" body="Disponível quando houver ciclo aberto." %}
-      {% endif %}
-    </div>
-
-    <div class="min-w-0" id="pipeline-heading">
-      {% if chart_escopo_status.has_data %}
-        {% include "dashboard/_chart_block.html" with chart=chart_escopo_status script_id="chart-escopo-status" insight=chart_escopo_status.insight kpi_label="Total" kpi_value=chart_escopo_status.total kpi_body="pessoas no escopo" %}
-      {% else %}
-        {% include "dashboard/_chart_block.html" with chart=chart_escopo_status script_id="chart-escopo-status" %}
-      {% endif %}
-    </div>
 
     {% if team_resumo.has_ciclo %}
-    <div class="min-w-0" aria-labelledby="team-destaque-heading">
-      <div class="mb-3">
-        <h3 id="team-destaque-heading" class="font-display text-lg font-medium text-slate-800">
-          Precisam de atenção
+    <p class="text-sm text-slate-500" aria-label="Indicadores do time">
+      <span class="font-semibold tabular-nums text-slate-800">{{ team_resumo.total_escopo }}</span> no escopo
+      {% if team_resumo.aguardando_acao is not None %}
+        <span class="mx-1.5 text-slate-300" aria-hidden="true">·</span>
+        <span class="font-semibold tabular-nums text-slate-800">{{ team_resumo.aguardando_acao }}</span> aguardando ação
+      {% endif %}
+      {% if team_resumo.sem_avaliacao is not None %}
+        <span class="mx-1.5 text-slate-300" aria-hidden="true">·</span>
+        <span class="font-semibold tabular-nums text-slate-800">{{ team_resumo.sem_avaliacao }}</span> sem avaliação
+      {% endif %}
+    </p>
+
+    {# Pendências no topo — altura pelo conteúdo; teto ~6 linhas com scroll #}
+    <div
+      class="rounded-xl border border-line bg-surface-card px-4 py-3"
+      aria-labelledby="team-destaque-heading"
+    >
+      <div class="flex flex-wrap items-center gap-2{% if destaque_atencao %} mb-2{% endif %}">
+        <h3 id="team-destaque-heading" class="font-display text-base font-medium text-slate-800">
+          Pendências do time
         </h3>
-        <p class="mt-0.5 text-sm text-slate-500">
-          Prioridade no escopo — atue antes de percorrer a lista completa.
-        </p>
+        {% if team_resumo.aguardando_acao is not None %}
+          {% if team_resumo.aguardando_acao > 0 %}
+            {% if team_resumo.aguardando_acao == 1 %}
+              {% include "components/badge_status.html" with status="pendente" label="1 pendência" extra_class="!rounded-full" %}
+            {% else %}
+              {% with pend_label=team_resumo.aguardando_acao|stringformat:"d"|add:" pendências" %}
+                {% include "components/badge_status.html" with status="pendente" label=pend_label extra_class="!rounded-full" %}
+              {% endwith %}
+            {% endif %}
+          {% else %}
+            {% include "components/badge_status.html" with status="concluida" label="Em dia" extra_class="!rounded-full" %}
+          {% endif %}
+        {% endif %}
       </div>
 
       {% if destaque_atencao %}
-      <div class="table-frame">
-        <table>
-          <thead>
-            <tr>
-              <th>Colaborador</th>
-              <th>Etapa</th>
-              <th>Área</th>
-              <th class="text-right">Ação</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for item in destaque_atencao %}
-            <tr class="border-l-4 border-l-amber-400 bg-amber-50/40 hover:bg-amber-50/70">
-              <td>
-                <p class="font-medium text-slate-800">{{ item.usuario.nome|default:item.usuario.email }}</p>
-                <p class="text-xs text-slate-500">{{ item.usuario.email }}</p>
-              </td>
-              <td>
-                {% if item.avaliacao.etapa == "avaliacao" %}
-                  {% include "components/badge_status.html" with status="pendente" label=item.avaliacao.get_etapa_display %}
-                {% else %}
-                  {% include "components/badge_status.html" with status="media" label=item.avaliacao.get_etapa_display %}
-                {% endif %}
-              </td>
-              <td class="text-slate-500">{{ item.usuario.area.nome|default:"—" }}</td>
-              <td class="text-right">
-                <div class="inline-flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
-                  {% if item.avaliacao.etapa == "avaliacao" %}
-                  <a
-                    href="{% url 'reviews:leader_assessment' item.avaliacao.pk %}"
-                    class="font-semibold text-emerald-700 hover:text-emerald-800"
-                  >Avaliar</a>
-                  {% endif %}
-                  <a
-                    href="{% url 'reviews:detail' item.avaliacao.pk %}"
-                    class="font-medium text-slate-600 hover:text-slate-800"
-                  >Ver</a>
-                  <a
-                    href="{% url 'reviews:feedback_list' item.avaliacao.pk %}"
-                    class="font-medium text-slate-600 hover:text-slate-800"
-                  >Feedbacks</a>
-                </div>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+      <ul class="max-h-[15.75rem] divide-y divide-line overflow-y-auto" role="list">
+        {% for item in destaque_atencao %}
+        <li class="flex items-center justify-between gap-3 py-2">
+          <div class="flex min-w-0 flex-1 items-center gap-2.5">
+            {% if item.avaliacao.etapa == "avaliacao" %}
+            <div
+              class="flex size-7 shrink-0 items-center justify-center rounded-full bg-amber-100 font-ui text-[11px] font-semibold text-amber-800"
+              aria-hidden="true"
+            >
+              {{ item.usuario.nome|default:item.usuario.email|slice:":1"|upper }}
+            </div>
+            {% else %}
+            <div
+              class="flex size-7 shrink-0 items-center justify-center rounded-full bg-amber-50 font-ui text-[11px] font-semibold text-amber-700"
+              aria-hidden="true"
+            >
+              {{ item.usuario.nome|default:item.usuario.email|slice:":1"|upper }}
+            </div>
+            {% endif %}
+            <p class="min-w-0 truncate font-ui text-sm font-medium text-slate-800">
+              {{ item.usuario.nome|default:item.usuario.email }}
+            </p>
+          </div>
+          <div class="shrink-0">
+            {% if item.avaliacao.etapa == "avaliacao" %}
+              {% include "components/badge_status.html" with status="pendente" label=item.avaliacao.get_etapa_display extra_class="!rounded-full" %}
+            {% else %}
+              {% include "components/badge_status.html" with status="media" label=item.avaliacao.get_etapa_display extra_class="!rounded-full" %}
+            {% endif %}
+          </div>
+          <div class="flex shrink-0 items-center gap-1.5">
+            {% if item.avaliacao.etapa == "avaliacao" %}
+            <a
+              href="{% url 'reviews:leader_assessment' item.avaliacao.pk %}"
+              class="inline-flex h-7 items-center justify-center rounded-md bg-emerald-700 px-2.5 font-ui text-[11px] font-semibold text-white transition-colors hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1"
+            >Avaliar</a>
+            {% else %}
+            <a
+              href="{% url 'reviews:detail' item.avaliacao.pk %}"
+              class="inline-flex h-7 items-center justify-center rounded-md bg-emerald-700 px-2.5 font-ui text-[11px] font-semibold text-white transition-colors hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1"
+            >Revisar</a>
+            {% endif %}
+            <a
+              href="{% url 'reviews:detail' item.avaliacao.pk %}"
+              class="inline-flex h-7 items-center justify-center rounded-md px-2 font-ui text-[11px] font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1"
+            >Ver</a>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% if team_resumo.aguardando_acao > destaque_atencao|length %}
+      <p class="mt-2 border-t border-line pt-2 text-center">
+        <a
+          href="#team-drilldown-heading"
+          class="font-ui text-xs font-medium text-emerald-700 hover:text-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1"
+        >Ver todas as pendências</a>
+      </p>
+      {% endif %}
       {% else %}
-        {% if team_resumo.total_escopo == 0 %}
-          {% include "components/empty_state.html" with title="Sem colaboradores no escopo" message="Quando houver subordinados ativos, pendências do líder aparecem neste destaque." %}
-        {% else %}
-          {% include "components/empty_state.html" with title="Ninguém aguardando ação" message="Ninguém no escopo está em avaliação ou aprovação de metas/resultados no momento." %}
-        {% endif %}
+        <p class="mt-1.5 py-1 text-center font-ui text-sm leading-snug text-slate-500" role="status">
+          {% if team_resumo.total_escopo == 0 %}
+            Sem colaboradores no escopo — pendências aparecem quando houver subordinados ativos.
+          {% else %}
+            Ninguém aguardando ação no momento.
+          {% endif %}
+        </p>
       {% endif %}
     </div>
+    {% else %}
+    <p class="text-sm text-slate-500" aria-label="Indicadores do time">
+      <span class="font-semibold tabular-nums text-slate-800">{{ team_resumo.total_escopo }}</span> no escopo
+      <span class="mx-1.5 text-slate-300" aria-hidden="true">·</span>
+      Sem ciclo aberto para pendências e estágios.
+    </p>
     {% endif %}
 
-    <div class="min-w-0" aria-labelledby="team-drilldown-heading">
-      <div class="mb-3">
-        <h3 id="team-drilldown-heading" class="font-display text-lg font-medium text-slate-800">
-          Todos no escopo
-        </h3>
-        <p class="mt-0.5 text-sm text-slate-500">
-          Lista completa — etapa, nota e ações por colaborador.
-        </p>
+    {# Embaixo: estágios | visão — bases alinhadas #}
+    <div class="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-stretch xl:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]">
+      <div class="min-w-0 flex flex-col" id="pipeline-heading">
+        {% if chart_escopo_status.has_data %}
+          {% include "dashboard/_chart_block.html" with chart=chart_escopo_status script_id="chart-escopo-status" title="Estágios do ciclo" canvas_class="dashboard-chart-canvas--compact" %}
+        {% else %}
+          {% include "dashboard/_chart_block.html" with chart=chart_escopo_status script_id="chart-escopo-status" title="Estágios do ciclo" canvas_class="dashboard-chart-canvas--compact" %}
+        {% endif %}
       </div>
-      {% include "dashboard/team_list_partial.html" %}
+
+      <div class="min-w-0 flex flex-col" aria-labelledby="team-drilldown-heading">
+        {% include "dashboard/team_list_partial.html" %}
+      </div>
     </div>
     {% endif %}
   </div>

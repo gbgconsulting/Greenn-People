@@ -47,11 +47,25 @@ class Ciclo(TimeStampedModel):
 
     def clean(self):
         super().clean()
+        self._validate_date_range()
         self._validate_single_open()
 
     def save(self, *args, **kwargs):
+        self._validate_date_range()
         self._validate_single_open()
         super().save(*args, **kwargs)
+
+    def _validate_date_range(self):
+        """``data_fim`` must be on or after ``data_inicio``."""
+        if self.data_inicio and self.data_fim and self.data_fim < self.data_inicio:
+            raise ValidationError(
+                {
+                    'data_fim': (
+                        'A data de fim deve ser igual ou posterior '
+                        'à data de início.'
+                    ),
+                },
+            )
 
     def _validate_single_open(self):
         """Application constraint: only one cycle with status ``aberto``."""

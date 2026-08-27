@@ -149,11 +149,21 @@ def resolve_history_ciclos(
     *,
     limit: int = HISTORY_DEFAULT_N,
 ) -> list[Ciclo]:
-    """Janela US3: ``?ciclos=`` explícito (cap N) ou default últimos N."""
+    """Janela US3: ``?ciclos=`` explícito (cap N), ``?ciclo=`` único ou default últimos N."""
     parsed = parse_history_ciclos(request.GET.get('ciclos'), limit=limit)
     if parsed is not None:
         return parsed
+    # Seletor agrupado na visão histórica envia ``?ciclo=`` (singular).
+    single = parse_history_ciclos(request.GET.get('ciclo'), limit=1)
+    if single:
+        return single
     return default_history_ciclos(limit=limit)
+
+
+def resolve_history_ciclo_selecionado(request: HttpRequest) -> Ciclo | None:
+    """Ciclo explicitamente escolhido via ``?ciclo=`` (reflete o seletor na URL)."""
+    single = parse_history_ciclos(request.GET.get('ciclo'), limit=1)
+    return single[0] if single else None
 
 
 def is_history_mode(request: HttpRequest) -> bool:

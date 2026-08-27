@@ -4,54 +4,65 @@
 {% block title %}Painel admin — Greenn People{% endblock %}
 
 {% block content %}
-<header class="mb-6">
-  <div class="flex flex-wrap items-start justify-between gap-3">
-    <div>
-      <h1 class="font-display text-2xl font-semibold text-slate-800">Painel administrativo</h1>
-      <p class="mt-1 text-sm text-slate-500">
+<div class="mx-auto max-w-[90rem]">
+<header class="mb-8">
+  <div class="flex flex-col justify-between gap-6 md:flex-row md:items-start">
+    <div class="max-w-2xl">
+      <h1 class="font-display text-3xl font-semibold tracking-tight text-slate-800">Painel administrativo</h1>
+      <p class="mt-2 text-base leading-relaxed text-slate-500">
         Acompanhe o ciclo em andamento: quem já iniciou, quem está parado e o que ainda falta.
       </p>
-      {% if ciclos_resumo.arquivo_total %}
-        <p class="mt-1 text-xs text-slate-500">
-          {{ ciclos_resumo.arquivo_total }} ciclo{{ ciclos_resumo.arquivo_total|pluralize }} encerrado{{ ciclos_resumo.arquivo_total|pluralize }} disponíveis no seletor
+      {% if visao == 'historico' and ciclos_resumo.arquivo_total %}
+        <p class="mt-2 flex items-center gap-1.5 text-sm text-slate-500">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z" clip-rule="evenodd" />
+          </svg>
+          {{ ciclos_resumo.arquivo_total }} ciclo{{ ciclos_resumo.arquivo_total|pluralize }} encerrado{{ ciclos_resumo.arquivo_total|pluralize }} disponíveis para comparar
         </p>
       {% endif %}
     </div>
-    <div class="flex flex-wrap items-center gap-2">
+    <div class="flex shrink-0 flex-col items-start gap-4 md:items-end">
       {% if ciclo_aberto %}
-        {% include "components/badge_status.html" with status="ativo" label=ciclo_aberto.nome extra_class="mt-1" %}
+        <span class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-700">
+          <span class="h-2 w-2 animate-pulse rounded-full bg-emerald-500" aria-hidden="true"></span>
+          Ativo · {{ ciclo_aberto.nome }}
+        </span>
       {% else %}
-        {% include "components/badge_status.html" with status="arquivado" label="Sem ciclo aberto" extra_class="mt-1" %}
+        {% include "components/badge_status.html" with status="arquivado" label="Sem ciclo aberto" %}
       {% endif %}
-      {% url 'cycles:ciclo_list' as ciclos_url %}
-      {% include "components/button.html" with label="Gerenciar ciclos" href=ciclos_url variant="primary" %}
-      {% url 'dashboard:adherence' as adherence_url %}
-      {% include "components/button.html" with label="Ver aderência" href=adherence_url variant="secondary" %}
+      <div class="flex flex-wrap gap-3">
+        {% url 'dashboard:adherence' as adherence_url %}
+        {% include "components/button.html" with label="Ver aderência" href=adherence_url variant="secondary" %}
+        {% url 'cycles:ciclo_list' as ciclos_url %}
+        {% include "components/button.html" with label="Gerenciar ciclos" href=ciclos_url variant="primary" %}
+      </div>
     </div>
   </div>
 </header>
 
-<section class="mb-6 min-w-0" aria-label="Selecionar ciclo">
-  {% include "dashboard/_ciclo_selector.html" %}
+{% if visao == 'historico' %}
+<section class="mb-8 min-w-0" aria-label="Selecionar ciclos para comparar">
+  {% include "dashboard/_ciclo_selector.html" with framed=True %}
 </section>
+{% endif %}
 
-<section class="mb-8 min-w-0" aria-labelledby="indicadores-heading">
-  <div class="mb-3 flex flex-wrap items-start justify-between gap-3">
+<section class="min-w-0" aria-labelledby="indicadores-heading">
+  <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
     <div class="min-w-0">
-      <h2 id="indicadores-heading" class="font-display text-lg font-medium text-slate-800">
+      <h2 id="indicadores-heading" class="font-display text-2xl font-medium tracking-tight text-slate-800">
         {% if visao == 'historico' %}
           Como as pessoas avançaram
         {% else %}
           Indicadores do ciclo
         {% endif %}
       </h2>
-      <p class="mt-0.5 text-sm text-slate-500">
+      <p class="mt-1 text-sm leading-relaxed text-slate-500">
         {% if visao == 'historico' %}
           Quem avançou, quem ficou no mesmo ponto e quem ainda não entrou.
-        {% elif ciclo_indicador %}
-          Números de {{ ciclo_indicador.nome }} — só deste ciclo, não dos ciclos antigos.
+        {% elif ciclo_aberto %}
+          Números de {{ ciclo_aberto.nome }} — só do ciclo em andamento.
         {% else %}
-          Números deste ciclo — só do ciclo escolhido, não dos ciclos antigos.
+          Números do ciclo em andamento — disponíveis quando houver um ciclo aberto.
         {% endif %}
       </p>
     </div>
@@ -60,50 +71,49 @@
 
   <div class="managerial-panel">
     {% if visao == 'historico' %}
-    <div class="flex flex-col gap-4">
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Resumo destes ciclos">
-      {% include "components/card.html" with label="Avançaram" value=history_kpis.evoluiu body="Pessoas que avançaram de etapa ou concluíram." %}
-      {% include "components/card.html" with label="No mesmo ponto" value=history_kpis.estavel body="Pessoas que não mudaram de etapa nesses ciclos." %}
-      {% include "components/card.html" with label="Sem registro" value=history_kpis.sem_dado body="Pessoas que não chegaram a entrar nesses ciclos." %}
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-3" aria-label="Resumo destes ciclos">
+      {% include "components/card.html" with label="Avançaram" value=history_kpis.evoluiu body="Pessoas que avançaram de etapa ou concluíram." accent="success" icon="trending_up" value_size="lg" %}
+      {% include "components/card.html" with label="No mesmo ponto" value=history_kpis.estavel body="Pessoas que não mudaram de etapa nesses ciclos." accent="warning" icon="stable" value_size="lg" %}
+      {% include "components/card.html" with label="Sem registro" value=history_kpis.sem_dado body="Pessoas que não chegaram a entrar nesses ciclos." accent="neutral" icon="hourglass" value_size="lg" %}
     </div>
 
-    {% include "dashboard/_chart_block.html" with chart=chart_stage_history script_id="chart-stage-history" %}
-
-    <div class="min-w-0" id="aderencia-heading">
-      {% if chart_aderencia_distribuicao.has_data %}
-        {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" insight="Alta, média e baixa — o número no centro é o total de líderes." %}
-      {% else %}
-        {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" %}
-      {% endif %}
-    </div>
+    <div class="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-4 lg:items-start">
+      <div class="min-w-0 lg:col-span-3">
+        {% include "dashboard/_chart_block.html" with chart=chart_stage_history script_id="chart-stage-history" canvas_class="dashboard-chart-canvas--stacked-history" %}
+      </div>
+      <div class="min-w-0 lg:col-span-1" id="aderencia-heading">
+        {% if chart_aderencia_distribuicao.has_data %}
+          {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" insight="Alta, média e baixa — o número no centro é o total de líderes." canvas_class="dashboard-chart-canvas--compact" %}
+        {% else %}
+          {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" canvas_class="dashboard-chart-canvas--compact" %}
+        {% endif %}
+      </div>
     </div>
     {% elif ciclo_kpis.has_ciclo %}
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores do ciclo">
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-3" aria-label="Indicadores do ciclo">
       {% if ciclo_kpis.gargalo_label %}
         {% with body="Mais gente parada em "|add:ciclo_kpis.gargalo_label|add:"." %}
-        {% include "components/card.html" with label="Em avaliação" value=ciclo_kpis.total body=body %}
+        {% include "components/card.html" with label="Em avaliação" value=ciclo_kpis.total body=body accent="primary" value_size="lg" %}
         {% endwith %}
       {% else %}
-        {% include "components/card.html" with label="Em avaliação" value=ciclo_kpis.total body="Pessoas com avaliação neste ciclo." %}
+        {% include "components/card.html" with label="Em avaliação" value=ciclo_kpis.total body="Pessoas com avaliação neste ciclo." accent="primary" value_size="lg" %}
       {% endif %}
 
       {% if ciclo_kpis.pendencias > 0 %}
-        {% include "components/card.html" with label="Pendências" value=ciclo_kpis.pendencias badge_status="pendente" badge_label="Em andamento" body="Ainda não terminaram todas as etapas." %}
+        {% include "components/card.html" with label="Pendências" value=ciclo_kpis.pendencias badge_status="pendente" badge_label="Em andamento" body="Ainda não terminaram todas as etapas." accent="warning" value_size="lg" %}
       {% else %}
-        {% include "components/card.html" with label="Pendências" value=ciclo_kpis.pendencias badge_status="concluida" badge_label="Em dia" body="Ninguém com etapa em aberto neste ciclo." %}
+        {% include "components/card.html" with label="Pendências" value=ciclo_kpis.pendencias badge_status="concluida" badge_label="Em dia" body="Ninguém com etapa em aberto neste ciclo." accent="warning" value_size="lg" %}
       {% endif %}
 
-      {% include "components/card.html" with label="Sem avaliação" value=ciclo_kpis.sem_avaliacao body="Pessoas ativas que ainda não entraram no ciclo." %}
+      {% include "components/card.html" with label="Sem avaliação" value=ciclo_kpis.sem_avaliacao body="Pessoas ativas que ainda não entraram no ciclo." accent="neutral" value_size="lg" %}
     </div>
 
-    <div class="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
+    <div class="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
       <div class="min-w-0" id="pipeline-heading">
         {% if chart_ciclo_progresso.has_data and ciclo_kpis.gargalo_label %}
           {% with insight_txt="Mais avaliações em "|add:ciclo_kpis.gargalo_label|add:" — concentre a atenção aí." %}
-          {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" insight=insight_txt kpi_label="Total" kpi_value=chart_ciclo_progresso.total kpi_body="avaliações no ciclo" %}
+          {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" insight=insight_txt %}
           {% endwith %}
-        {% elif chart_ciclo_progresso.has_data %}
-          {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" kpi_label="Total" kpi_value=chart_ciclo_progresso.total kpi_body="avaliações no ciclo" %}
         {% else %}
           {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" %}
         {% endif %}
@@ -118,17 +128,17 @@
     </div>
 
     <div class="min-w-0" aria-labelledby="baixa-aderencia-heading">
-      <div class="mb-3 flex flex-wrap items-start justify-between gap-2">
+      <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div class="min-w-0">
-          <h3 id="baixa-aderencia-heading" class="font-display text-lg font-medium text-slate-800">
+          <h3 id="baixa-aderencia-heading" class="font-display text-xl font-medium tracking-tight text-slate-800">
             Líderes com menor aderência
           </h3>
-          <p class="mt-0.5 text-sm text-slate-500">
+          <p class="mt-1 text-sm text-slate-500">
             Quem precisa de mais atenção neste ciclo.
           </p>
         </div>
         {% url 'dashboard:adherence' as adherence_todos_url %}
-        {% include "components/button.html" with label="Ver todos" href=adherence_todos_url variant="secondary" %}
+        {% include "components/button.html" with label="Ver todos" href=adherence_todos_url variant="secondary" extra_class="!h-10" %}
       </div>
 
       <div class="table-frame">
@@ -169,12 +179,12 @@
       </div>
     </div>
     {% else %}
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores do ciclo">
-      {% include "components/card.html" with label="Em avaliação" value="—" body="Abra ou escolha um ciclo para ver os números." %}
-      {% include "components/card.html" with label="Pendências" value="—" body="Disponível quando houver um ciclo selecionado." %}
-      {% include "components/card.html" with label="Sem avaliação" value="—" body="Disponível quando houver um ciclo selecionado." %}
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-3" aria-label="Indicadores do ciclo">
+      {% include "components/card.html" with label="Em avaliação" value="—" body="Abra ou escolha um ciclo para ver os números." accent="primary" value_size="lg" %}
+      {% include "components/card.html" with label="Pendências" value="—" body="Disponível quando houver um ciclo selecionado." accent="warning" value_size="lg" %}
+      {% include "components/card.html" with label="Sem avaliação" value="—" body="Disponível quando houver um ciclo selecionado." accent="neutral" value_size="lg" %}
     </div>
-    <div class="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
+    <div class="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
       <div class="min-w-0" id="pipeline-heading">
         {% include "dashboard/_chart_block.html" with chart=chart_ciclo_progresso script_id="chart-ciclo-progresso" %}
       </div>
@@ -185,6 +195,7 @@
     {% endif %}
   </div>
 </section>
+</div>
 {% endblock %}
 
 {% block extra_js %}

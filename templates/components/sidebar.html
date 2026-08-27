@@ -6,18 +6,34 @@
 {% endcomment %}
 {% with path=request.path %}
 <aside
-  class="hidden w-60 shrink-0 border-r border-line bg-surface-card md:flex md:flex-col"
+  id="desktop-sidebar"
+  class="hidden h-screen w-64 shrink-0 flex-col overflow-y-auto border-r border-line bg-surface-card transition-all duration-200 md:flex"
   aria-label="Navegação principal"
 >
-  <div class="flex items-center gap-2.5 border-b border-line px-3.5 py-3.5">
+  <div class="sidebar-brand-row flex shrink-0 items-center gap-2.5 border-b border-line px-3.5 py-3.5">
     <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-brand-gradient text-xs font-semibold text-white shadow-sm" aria-hidden="true">G</span>
-    <a href="{% url 'dashboard:personal' %}" class="shell-brand">
+    <a href="{% url 'dashboard:personal' %}" class="shell-brand" data-sidebar-label>
       Greenn People
     </a>
   </div>
-  <nav class="flex-1 space-y-4 overflow-y-auto px-2.5 py-3" aria-label="Menu">
+  <nav class="flex-1 space-y-2 px-2.5 py-3" aria-label="Menu">
     {% include "components/nav_menu.html" %}
   </nav>
+  <div class="shrink-0 border-t border-line p-2">
+    <button
+      type="button"
+      class="flex w-full items-center justify-center gap-2 rounded-lg px-2.5 py-2 text-sm text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+      aria-expanded="true"
+      aria-controls="desktop-sidebar"
+      data-sidebar-collapse
+      title="Recolher menu"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5 shrink-0" aria-hidden="true" data-sidebar-collapse-icon>
+        <path fill-rule="evenodd" d="M15.79 14.77a.75.75 0 0 1-1.06.02l-4.5-4.25a.75.75 0 0 1 0-1.08l4.5-4.25a.75.75 0 1 1 1.04 1.08L11.832 10l3.938 3.71a.75.75 0 0 1 .02 1.06Zm-6 0a.75.75 0 0 1-1.06.02l-4.5-4.25a.75.75 0 0 1 0-1.08l4.5-4.25a.75.75 0 1 1 1.04 1.08L5.832 10l3.938 3.71a.75.75 0 0 1 .02 1.06Z" clip-rule="evenodd" />
+      </svg>
+      <span data-sidebar-collapse-label data-sidebar-label>Recolher</span>
+    </button>
+  </div>
 </aside>
 
 {# Drawer mobile #}
@@ -51,7 +67,7 @@
       </svg>
     </button>
   </div>
-  <nav class="flex-1 space-y-4 overflow-y-auto px-2.5 py-3" aria-label="Menu mobile">
+  <nav class="flex-1 space-y-2 overflow-y-auto px-2.5 py-3" aria-label="Menu mobile">
     {% include "components/nav_menu.html" %}
   </nav>
 </aside>

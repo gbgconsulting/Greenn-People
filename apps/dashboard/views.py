@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import PermissionDenied
 from django.db.models import Avg, Count, Q
 from django.views.generic import ListView, TemplateView
 
@@ -14,9 +15,10 @@ from apps.core.mixins import (
 )
 from apps.cycles.models import Ciclo
 from apps.dashboard.chart_payloads import (
-    CHART_TYPE_BAR_GROUPED,
+    CHART_TYPE_BAR,
     CHART_TYPE_BAR_HORIZONTAL,
     CHART_TYPE_DOUGHNUT,
+    CHART_TYPE_RADAR,
     DENSITY_TOP_N,
     EMPTY_KIND_COPY,
     EMPTY_KIND_ESCOPO,
@@ -34,19 +36,24 @@ from apps.dashboard.chart_payloads import (
 from apps.dashboard.models import AderenciaSnapshot
 from apps.dashboard.services.ciclo_options import (
     grouped_ciclo_options,
+    grouped_ciclo_options_for_user,
     resolve_operational_ciclo,
+    resolve_personal_ciclo,
 )
 from apps.dashboard.services.history import (
     build_history_kpis,
     build_stage_history,
     is_history_mode,
+    resolve_history_ciclo_selecionado,
     resolve_history_ciclos,
 )
 from apps.dashboard.services.structure import (
     build_structure_coverage,
+    distinct_cargo_count,
     gaps_by_area,
     gaps_by_cargo,
     leaders_with_adherence,
+    partition_gap_rows,
 )
 from apps.goals.forms import get_open_ciclo
 from apps.organization.models import Area, Cargo
@@ -62,6 +69,7 @@ from apps.talent.services.classification import get_visible_classification_for_c
 # KPI liderança (PRD): ≥ 80% alta; faixa intermediária; abaixo = baixa.
 _ADERENCIA_ALTA = Decimal('80')
 _ADERENCIA_MEDIA = Decimal('50')
+_ADERENCIA_NIVEL_FILTERS = frozenset({'alta', 'media', 'baixa'})
 
 
 def aderencia_status(percentual: Decimal | None) -> str:
@@ -75,6 +83,17 @@ def aderencia_status(percentual: Decimal | None) -> str:
     return 'baixa'
 
 
+def parse_optional_int(request, key: str) -> int | None:
+    """Parse GET ``key`` as int; vazio/inválido → None (não quebra o filtro)."""
+    raw = request.GET.get(key)
+    if not raw:
+        return None
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return None
+
+
 class PersonalDashboardView(LoginRequiredMixin, TemplateView):
     """Painel pessoal com nivel esperado e nota atual (FR-005)."""
 
@@ -82,12 +101,31 @@ class PersonalDashboardView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context.update(build_fr005_context(self.request.user))
+        user = self.request.user
+        # Badge / “há aberto?” — nunca o ciclo só porque veio em ?ciclo=.
+        ciclo_aberto = get_open_ciclo()
+        # Dados: aberto (se participa), ou arquivo só com ?ciclo= explícito
+        # e participação (nunca lista/exibe ciclo alheio).
+        ciclo = resolve_personal_ciclo(self.request, user)
+        fr005 = build_fr005_context(user, ciclo=ciclo)
+        # Defesa em profundidade: avaliação no contexto só pode ser do request.user.
+        avaliacao = fr005.get('avaliacao')
+        if avaliacao is not None and avaliacao.usuario_id != user.pk:
+            raise PermissionDenied
+        # build_fr005 nomeia o ciclo resolvido como ciclo_aberto — corrigir badge.
+        fr005['ciclo_aberto'] = ciclo_aberto
+        context.update(fr005)
+        context['ciclo_selecionado'] = ciclo
+        context['ciclo_filtro'] = ciclo
+        context['grouped_ciclo_options'] = grouped_ciclo_options_for_user(
+            user,
+            q=self.request.GET.get('q'),
+        )
         context['classificacao'] = get_visible_classification_for_collaborator(
-            self.request.user,
+            user,
         )
         context['chart_gaps_competencia'] = self._chart_gaps_competencia(context)
-        context.update(self._guidance_presentation_context(context))
+        context.update(self._guidance_presentation_context(context, ciclo=ciclo))
         return context
 
     def _guidance_role(self) -> str:
@@ -99,14 +137,20 @@ class PersonalDashboardView(LoginRequiredMixin, TemplateView):
             return 'lider'
         return 'colaborador'
 
-    def _guidance_presentation_context(self, fr005: dict) -> dict:
-        """Injeta ``next_step`` + ``stage_stepper`` só via ``guidance.py`` (FR-013)."""
+    def _guidance_presentation_context(
+        self,
+        fr005: dict,
+        *,
+        ciclo: Ciclo | None,
+    ) -> dict:
+        """Injeta ``next_step`` + ``stage_stepper`` só via ``guidance.py`` (FR-013).
+
+        CTA de avanço só no ciclo **aberto** exibido. Arquivo = leitura
+        (``concluida``), sem inventar etapa no encerrado.
+        """
         avaliacao = fr005.get('avaliacao')
-        ciclo_aberto = fr005.get('ciclo_aberto')
-        has_open_ciclo = ciclo_aberto is not None
-        # Contrato: vínculo ou avaliação pendente → copy sem CTA de avanço inventado.
-        vinculo_pendente = bool(fr005.get('vinculo_pendente')) or (
-            has_open_ciclo and avaliacao is None
+        viewing_open = (
+            ciclo is not None and ciclo.status == Ciclo.Status.ABERTO
         )
 
         etapa = None
@@ -119,6 +163,22 @@ class PersonalDashboardView(LoginRequiredMixin, TemplateView):
             concluida = bool(avaliacao.concluida)
             # FR-009 / T028: painel do dono após reprovação (leitura).
             owner_correction_kind = detect_owner_correction_kind(avaliacao)
+
+        if viewing_open:
+            has_open_ciclo = True
+            # Contrato: vínculo ou avaliação pendente → copy sem CTA inventado.
+            vinculo_pendente = bool(fr005.get('vinculo_pendente')) or (
+                avaliacao is None
+            )
+        elif avaliacao is not None:
+            # Ciclo encerrado com participação: leitura (sem CTA de avanço).
+            has_open_ciclo = True
+            concluida = True
+            vinculo_pendente = False
+            owner_correction_kind = None
+        else:
+            has_open_ciclo = False
+            vinculo_pendente = bool(fr005.get('vinculo_pendente'))
 
         return {
             'next_step': resolve_next_step(
@@ -139,18 +199,18 @@ class PersonalDashboardView(LoginRequiredMixin, TemplateView):
         }
 
     def _chart_gaps_competencia(self, fr005: dict) -> dict:
-        """Barras esperado × nota a partir de ``competencias_resumo`` (US1).
+        """Radar esperado × nota a partir de ``competencias_resumo`` (US1).
 
-        Type canônico ``bar_grouped`` (chart-catalog) — só apresentação.
-        Empty honesto via kinds D (012) + ``_chart_block``:
-        vínculo pendente / lista vazia → ``sem_dado``; nenhuma nota
-        comparável → ``sem_nota``. Densidade: Top-N por |gap| só entre
-        competências **com nota**; resto omitido (sem média / sem rótulo
-        ``Outros``). ``null`` em ``nota_atual`` permanece null — não vira 0
-        (FR-006). MUST NOT ler ``visao=`` (FR-016 — pessoal sem tendência).
+        Type canônico ``radar`` (chart-catalog) — só apresentação; mesmo
+        shape multi-série de ``bar_grouped``. Empty honesto via kinds D (012)
+        + ``_chart_block``: vínculo pendente / lista vazia → ``sem_dado``;
+        nenhuma nota comparável → ``sem_nota``. Densidade: Top-N por |gap|
+        só entre competências **com nota**; resto omitido (sem média / sem
+        rótulo ``Outros``). ``null`` em ``nota_atual`` permanece null — não
+        vira 0 (FR-006). MUST NOT ler ``visao=`` (FR-016 — pessoal sem tendência).
         """
         title = 'Esperado × nota por competência'
-        chart_type = CHART_TYPE_BAR_GROUPED
+        chart_type = CHART_TYPE_RADAR
         chart_id = 'chart-gaps-competencia'
 
         if fr005.get('vinculo_pendente'):
@@ -237,6 +297,18 @@ _TEAM_ATTENTION_PRIORITY = {
 # Densidade do ranking de atenção (eixo longo) — mesmo teto Top-N (N=8).
 _TEAM_DESTAQUE_LIMIT = DENSITY_TOP_N
 
+# Chips / barras do gráfico "Estágios do ciclo" — rótulos curtos alinhados ao chart.
+_TEAM_ETAPA_CHIP_LABELS: dict[str, str] = {
+    Avaliacao.Etapa.INPUT_METAS: 'Metas',
+    Avaliacao.Etapa.APROVACAO_METAS: 'Aprov. metas',
+    Avaliacao.Etapa.RESULTADOS: 'Resultados',
+    Avaliacao.Etapa.APROVACAO_RESULTADOS: 'Aprov. result.',
+    Avaliacao.Etapa.AVALIACAO: 'Avaliação',
+    Avaliacao.Etapa.FEEDBACK: 'Feedback',
+    SEM_AVALIACAO_KEY: 'Sem aval.',
+}
+_TEAM_ETAPA_FILTER_KEYS: frozenset[str] = frozenset(_TEAM_ETAPA_CHIP_LABELS)
+
 
 class TeamDashboardView(
     LoginRequiredMixin,
@@ -249,8 +321,11 @@ class TeamDashboardView(
     template_name = 'dashboard/team.html'
     partial_template_name = 'dashboard/team_list_partial.html'
     context_object_name = 'membros'
+    # Drill compacto ao lado do chart — evita scroll longo; paginação HTMX.
+    paginate_by = DENSITY_TOP_N
 
-    def get_queryset(self):
+    def get_base_queryset(self):
+        """Escopo hierárquico completo — charts/KPIs MUST NOT usar filtros de lista."""
         # Escopo só do request.user — MUST NOT chamar get_visible_users de outro.
         return (
             get_visible_users(self.request.user)
@@ -259,6 +334,62 @@ class TeamDashboardView(
             .select_related('area', 'cargo')
             .order_by('nome', 'email')
         )
+
+    def get_queryset(self):
+        """Lista paginada: escopo + ``?busca=`` / ``?etapa=`` (só operacional)."""
+        qs = self.get_base_queryset()
+        busca = (self.request.GET.get('busca') or '').strip()
+        if busca:
+            qs = qs.filter(
+                Q(nome__icontains=busca) | Q(cargo__nome__icontains=busca),
+            )
+
+        etapa = self._resolved_etapa_filter()
+        if etapa:
+            ciclo = resolve_operational_ciclo(self.request)
+            if ciclo is None:
+                qs = qs if etapa == SEM_AVALIACAO_KEY else qs.none()
+            elif etapa == SEM_AVALIACAO_KEY:
+                qs = qs.exclude(
+                    pk__in=Avaliacao.objects.filter(ciclo=ciclo).values(
+                        'usuario_id',
+                    ),
+                )
+            else:
+                qs = qs.filter(
+                    pk__in=Avaliacao.objects.filter(
+                        ciclo=ciclo,
+                        etapa=etapa,
+                    ).values('usuario_id'),
+                )
+        return qs
+
+    def _resolved_etapa_filter(self) -> str:
+        """``?etapa=`` válido só fora do modo histórico; inválido → ignorado."""
+        if is_history_mode(self.request):
+            return ''
+        raw = (self.request.GET.get('etapa') or '').strip()
+        if raw in _TEAM_ETAPA_FILTER_KEYS:
+            return raw
+        return ''
+
+    def _resolved_busca_filter(self) -> str:
+        return (self.request.GET.get('busca') or '').strip()
+
+    def _inject_list_filters(self, context: dict) -> None:
+        """Estado de busca/chips/contador para o partial HTMX."""
+        busca = self._resolved_busca_filter()
+        etapa = self._resolved_etapa_filter()
+        context['filtro_busca'] = busca
+        context['filtro_etapa'] = etapa
+        context['filtro_ativo'] = bool(busca or etapa)
+        context['filtro_busca_e_etapa'] = bool(busca and etapa)
+        context['etapa_chips'] = [
+            {'key': key, 'label': label}
+            for key, label in _TEAM_ETAPA_CHIP_LABELS.items()
+        ]
+        # Total do escopo (sem filtros de lista) — "N de M colaboradores".
+        context['total_escopo_lista'] = self.get_base_queryset().count()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -275,6 +406,7 @@ class TeamDashboardView(
         context['visao'] = None
         context['chart_stage_history'] = None
         context['history_kpis'] = None
+        self._inject_list_filters(context)
 
         membros: list[CustomUser] = list(context['object_list'])
         avaliacoes_por_usuario: dict[int, Avaliacao] = {}
@@ -297,8 +429,13 @@ class TeamDashboardView(
 
         # US3 / T031: tendência etapa/conclusão só com intenção explícita (GET).
         if is_history_mode(self.request):
-            visible = self.get_queryset()
+            visible = self.get_base_queryset()
             janela = resolve_history_ciclos(self.request)
+            ciclo_hist = resolve_history_ciclo_selecionado(self.request)
+            if ciclo_hist is not None:
+                context['ciclo_selecionado'] = ciclo_hist
+            elif len(janela) == 1:
+                context['ciclo_selecionado'] = janela[0]
             context['visao'] = 'historico'
             context['chart_stage_history'] = build_stage_history(visible, janela)
             context['history_kpis'] = build_history_kpis(visible, janela)
@@ -306,8 +443,8 @@ class TeamDashboardView(
             context['chart_escopo_status'] = empty_kind_payload(
                 kind=EMPTY_KIND_SEM_NOTA,
                 chart_id='chart-escopo-status',
-                chart_type=CHART_TYPE_BAR_HORIZONTAL,
-                title='Status do escopo no ciclo',
+                chart_type=CHART_TYPE_BAR,
+                title='Estágios do ciclo',
             )
             context['team_resumo'] = {
                 'total_escopo': visible.count(),
@@ -354,7 +491,7 @@ class TeamDashboardView(
         if ciclo is None:
             return None, {}, []
 
-        membro_ids = list(self.get_queryset().values_list('pk', flat=True))
+        membro_ids = list(self.get_base_queryset().values_list('pk', flat=True))
         if not membro_ids:
             return None, {}, []
 
@@ -388,7 +525,9 @@ class TeamDashboardView(
 
         Só agrega o que já está no escopo; sem predicados AuthZ novos.
         """
-        total_escopo = len(membro_ids) if membro_ids else self.get_queryset().count()
+        total_escopo = (
+            len(membro_ids) if membro_ids else self.get_base_queryset().count()
+        )
         if ciclo is None:
             return {
                 'total_escopo': total_escopo,
@@ -439,7 +578,7 @@ class TeamDashboardView(
 
         usuarios = {
             u.pk: u
-            for u in self.get_queryset().filter(pk__in=attention_ids)
+            for u in self.get_base_queryset().filter(pk__in=attention_ids)
         }
         avaliacoes = {
             av.usuario_id: av
@@ -476,22 +615,20 @@ class TeamDashboardView(
     ) -> dict:
         """Conta etapas (+ sem_avaliacao) sobre todo get_visible_users do escopo.
 
-        Pipeline fechado (sem Top-N). ``bar_horizontal`` monocromática com
-        amber no gargalo — só apresentação (FR-001 / DS charts polish).
+        Pipeline fechado (sem Top-N). Barras verticais compactas (visão líder)
+        monocromáticas com amber no gargalo — só apresentação.
 
         Empty honesto (has_data false + empty_state via _chart_block):
         sem ciclo resolvido → ``operacional``; sem membros → ``escopo``;
         sem avaliações úteis → ``sem_dado`` — sem série fictícia.
         """
-        title = 'Status do escopo no ciclo'
-        chart_type = CHART_TYPE_BAR_HORIZONTAL
+        title = 'Estágios do ciclo'
+        chart_type = CHART_TYPE_BAR
         chart_id = 'chart-escopo-status'
         etapa_keys = [choice.value for choice in Avaliacao.Etapa]
         ordered_keys = [*etapa_keys, SEM_AVALIACAO_KEY]
-        labels_by_key = {
-            **dict(Avaliacao.Etapa.choices),
-            SEM_AVALIACAO_KEY: SEM_AVALIACAO_LABEL,
-        }
+        # Rótulos curtos no eixo X — evita sobreposição no canvas do painel.
+        labels_by_key = _TEAM_ETAPA_CHIP_LABELS
 
         if ciclo is None:
             return empty_kind_payload(
@@ -553,8 +690,9 @@ class AdherenceListView(
 ):
     """Lista snapshots de aderência (FR-018) — só leitura, sem recálculo síncrono.
 
-    US2 / T027: default ``resolve_operational_ciclo``; KPI + doughnut a partir
-    do mesmo QS filtrado (escopo/ciclo); doughnut só com snapshot real.
+    US2 / T027: default ``resolve_operational_ciclo``; KPI + distribuição a
+    partir do QS de escopo/ciclo/área (sem filtro de nível). Lista paginada
+    HTMX ordenada por % ASC; ``?nivel=`` e ``?area=`` filtram no servidor.
     MUST NOT chamar ``compute_adherence`` / tasks.
     """
 
@@ -564,20 +702,10 @@ class AdherenceListView(
     context_object_name = 'snapshots'
 
     def get_queryset(self):
-        qs = (
-            AderenciaSnapshot.objects.select_related('lider', 'lider__area', 'ciclo')
-            .order_by('-percentual', 'lider__nome', 'lider__email')
-        )
-
-        ciclo = self._resolve_ciclo()
-        if ciclo is not None:
-            qs = qs.filter(ciclo=ciclo)
-
-        user = self.request.user
-        if not getattr(user, 'is_admin', False):
-            visible = get_visible_users(user)
-            qs = qs.filter(lider__in=visible)
-
+        qs = self._scoped_queryset()
+        nivel = self._parse_nivel_filter()
+        if nivel is not None:
+            qs = self._apply_nivel_filter(qs, nivel)
         return qs
 
     def get_context_data(self, **kwargs):
@@ -587,12 +715,17 @@ class AdherenceListView(
         # Dados: aberto, ou arquivo só com ?ciclo= explícito (T008 / T027).
         # MUST NOT cair no último encerrado em silêncio (FR-001 / FR-002).
         ciclo = self._resolve_ciclo()
+        area_id = parse_optional_int(self.request, 'area')
         context['ciclo_filtro'] = ciclo
         context['ciclo_selecionado'] = ciclo
         context['ciclo_aberto'] = ciclo_aberto
         context['grouped_ciclo_options'] = grouped_ciclo_options(
             q=self.request.GET.get('q'),
         )
+        # Mesmo catálogo de áreas da Estrutura — AuthZ continua no QS de líderes.
+        context['areas'] = Area.objects.filter(is_active=True).order_by('nome')
+        context['filtro_area_id'] = area_id
+        context['filtro_nivel'] = self._parse_nivel_filter()
         context['snapshots_resumo'] = [
             {
                 'snapshot': snap,
@@ -600,20 +733,59 @@ class AdherenceListView(
             }
             for snap in context['object_list']
         ]
-        # QS completo (mesmo AuthZ/ciclo da lista) — não a página paginada.
-        qs_all = self.get_queryset()
-        context['aderencia_resumo'] = self._aderencia_resumo_from_qs(qs_all, ciclo)
-        context['chart_aderencia_distribuicao'] = (
-            self._chart_aderencia_from_qs(qs_all, ciclo)
-        )
+        # KPIs / pills: AuthZ + ciclo + área — não o filtro de nível nem a página.
+        qs_scope = self._scoped_queryset()
+        context['aderencia_resumo'] = self._aderencia_resumo_from_qs(qs_scope, ciclo)
         return context
 
+    def _scoped_queryset(self):
+        """Snapshots do ciclo/escopo AuthZ (+ área), % ASC — sem ``?nivel=``."""
+        qs = (
+            AderenciaSnapshot.objects.select_related('lider', 'lider__area', 'ciclo')
+            .order_by('percentual', 'lider__nome', 'lider__email')
+        )
+
+        ciclo = self._resolve_ciclo()
+        if ciclo is not None:
+            qs = qs.filter(ciclo=ciclo)
+
+        area_id = parse_optional_int(self.request, 'area')
+        if area_id is not None:
+            qs = qs.filter(lider__area_id=area_id)
+
+        user = self.request.user
+        if not getattr(user, 'is_admin', False):
+            visible = get_visible_users(user)
+            qs = qs.filter(lider__in=visible)
+
+        return qs
+
+    def _parse_nivel_filter(self) -> str | None:
+        raw = (self.request.GET.get('nivel') or '').strip().lower()
+        if raw in _ADERENCIA_NIVEL_FILTERS:
+            return raw
+        return None
+
+    def _apply_nivel_filter(self, qs, nivel: str):
+        if nivel == 'alta':
+            return qs.filter(percentual__gte=_ADERENCIA_ALTA)
+        if nivel == 'media':
+            return qs.filter(
+                percentual__gte=_ADERENCIA_MEDIA,
+                percentual__lt=_ADERENCIA_ALTA,
+            )
+        if nivel == 'baixa':
+            return qs.filter(percentual__lt=_ADERENCIA_MEDIA)
+        return qs
+
     def _aderencia_resumo_from_qs(self, qs, ciclo: Ciclo | None) -> dict:
-        """Agrega média/total/baixa só a partir de snapshots já filtrados."""
+        """Agrega média/total/faixas só a partir de snapshots já filtrados."""
         if ciclo is None:
             return {
                 'media': None,
                 'total_lideres': 0,
+                'alta': None,
+                'media_n': None,
                 'baixa': None,
                 'status': 'baixa',
                 'has_ciclo': False,
@@ -621,6 +793,14 @@ class AdherenceListView(
         agg = qs.aggregate(
             media=Avg('percentual'),
             total_lideres=Count('pk'),
+            alta=Count('pk', filter=Q(percentual__gte=_ADERENCIA_ALTA)),
+            media_n=Count(
+                'pk',
+                filter=Q(
+                    percentual__gte=_ADERENCIA_MEDIA,
+                    percentual__lt=_ADERENCIA_ALTA,
+                ),
+            ),
             baixa=Count('pk', filter=Q(percentual__lt=_ADERENCIA_MEDIA)),
         )
         media = agg['media']
@@ -629,42 +809,12 @@ class AdherenceListView(
         return {
             'media': media,
             'total_lideres': agg['total_lideres'] or 0,
+            'alta': agg['alta'] or 0,
+            'media_n': agg['media_n'] or 0,
             'baixa': agg['baixa'] or 0,
             'status': aderencia_status(media),
             'has_ciclo': True,
         }
-
-    def _chart_aderencia_from_qs(self, qs, ciclo: Ciclo | None) -> dict:
-        """Doughnut só com ``AderenciaSnapshot`` real (T027).
-
-        Sem ciclo resolvido → empty ``operacional``. Sem snapshot no escopo →
-        empty ``sem_dado`` (não inventa fatias). MUST NOT ``compute_adherence``.
-        """
-        chart_type = CHART_TYPE_DOUGHNUT
-        title = 'Distribuição de aderência'
-        if ciclo is None:
-            return empty_kind_payload(
-                kind=EMPTY_KIND_OPERACIONAL,
-                chart_id='chart-aderencia-distribuicao',
-                chart_type=chart_type,
-                title=title,
-            )
-        status_keys = [
-            aderencia_status(percentual)
-            for percentual in qs.values_list('percentual', flat=True)
-        ]
-        if not status_keys:
-            return empty_kind_payload(
-                kind=EMPTY_KIND_SEM_DADO,
-                chart_id='chart-aderencia-distribuicao',
-                chart_type=chart_type,
-                title=title,
-            )
-        return aderencia_distribution_payload(
-            status_keys,
-            chart_type=chart_type,
-            title=title,
-        )
 
     def _resolve_ciclo(self) -> Ciclo | None:
         """Default aberto; ``?ciclo=`` só intenção explícita (T008 / T027)."""
@@ -683,8 +833,8 @@ class StructureDashboardView(LoginRequiredMixin, RequiresManagerOrAdminMixin, Te
         # Dados: aberto, ou arquivo só com ?ciclo= explícito (T008 / T026).
         # MUST NOT cair no último encerrado em silêncio (FR-001 / FR-002).
         ciclo = resolve_operational_ciclo(self.request)
-        area_id = self._parse_optional_int('area')
-        cargo_id = self._parse_optional_int('cargo')
+        area_id = parse_optional_int(self.request, 'area')
+        cargo_id = parse_optional_int(self.request, 'cargo')
         # AuthZ inalterada — mesmo QS; builder só recebe visible já resolvido.
         visible = get_visible_users(self.request.user).filter(is_active=True)
 
@@ -708,34 +858,55 @@ class StructureDashboardView(LoginRequiredMixin, RequiresManagerOrAdminMixin, Te
         context['cobertura_resumo'] = cobertura['resumo']
         context['chart_cobertura_area'] = cobertura['chart_por_area']
         context['chart_cobertura_cargo'] = cobertura['chart_por_cargo']
-        context['lideres_resumo'] = leaders_with_adherence(
-            visible,
-            ciclo,
-            area_id=area_id,
-            cargo_id=cargo_id,
+        context['lideres_resumo'] = [
+            {
+                **item,
+                'status': (
+                    aderencia_status(item['snapshot'].percentual)
+                    if item.get('snapshot') is not None
+                    else None
+                ),
+            }
+            for item in leaders_with_adherence(
+                visible,
+                ciclo,
+                area_id=area_id,
+                cargo_id=cargo_id,
+            )
+        ]
+        lacunas_area_prio, lacunas_area_rest = partition_gap_rows(
+            gaps_by_area(
+                visible,
+                ciclo,
+                area_id=area_id,
+                cargo_id=cargo_id,
+            ),
         )
-        context['lacunas_por_area'] = gaps_by_area(
-            visible,
-            ciclo,
-            area_id=area_id,
-            cargo_id=cargo_id,
-        )
-        context['lacunas_por_cargo'] = gaps_by_cargo(
-            visible,
-            ciclo,
-            area_id=area_id,
-            cargo_id=cargo_id,
-        )
-        return context
+        # Uma lista só (exceção primeiro); o toggle da UI é só “Ver tabela”.
+        context['lacunas_por_area'] = lacunas_area_prio + lacunas_area_rest
 
-    def _parse_optional_int(self, key: str) -> int | None:
-        raw = self.request.GET.get(key)
-        if not raw:
-            return None
-        try:
-            return int(raw)
-        except (TypeError, ValueError):
-            return None
+        mostrar_lacunas_por_cargo = (
+            distinct_cargo_count(
+                visible,
+                area_id=area_id,
+                cargo_id=cargo_id,
+            )
+            > 1
+        )
+        context['mostrar_lacunas_por_cargo'] = mostrar_lacunas_por_cargo
+        if mostrar_lacunas_por_cargo:
+            lacunas_cargo_prio, lacunas_cargo_rest = partition_gap_rows(
+                gaps_by_cargo(
+                    visible,
+                    ciclo,
+                    area_id=area_id,
+                    cargo_id=cargo_id,
+                ),
+            )
+            context['lacunas_por_cargo'] = lacunas_cargo_prio + lacunas_cargo_rest
+        else:
+            context['lacunas_por_cargo'] = []
+        return context
 
 
 class AdminDashboardView(LoginRequiredMixin, RequiresAdminMixin, TemplateView):
@@ -747,9 +918,8 @@ class AdminDashboardView(LoginRequiredMixin, RequiresAdminMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         # Badge / “há aberto?” — nunca o ciclo só porque veio em ?ciclo=.
         ciclo_aberto = get_open_ciclo()
-        # Dados da home: aberto, ou arquivo só com ?ciclo= explícito (T008).
-        # MUST NOT cair no último encerrado em silêncio (FR-001 / FR-002).
-        ciclo = resolve_operational_ciclo(self.request)
+        # Visão operacional: só o ciclo aberto — arquivo fica no histórico.
+        ciclo = ciclo_aberto
         context['ciclo_aberto'] = ciclo_aberto
         context['ciclo_indicador'] = ciclo
         # Seletor agrupado (T017): ?ciclo= só na query; não persiste na home.
@@ -766,6 +936,11 @@ class AdminDashboardView(LoginRequiredMixin, RequiresAdminMixin, TemplateView):
         if is_history_mode(self.request):
             visible = get_visible_users(self.request.user).filter(is_active=True)
             janela = resolve_history_ciclos(self.request)
+            ciclo_hist = resolve_history_ciclo_selecionado(self.request)
+            if ciclo_hist is not None:
+                context['ciclo_selecionado'] = ciclo_hist
+            elif len(janela) == 1:
+                context['ciclo_selecionado'] = janela[0]
             context['visao'] = 'historico'
             context['chart_stage_history'] = build_stage_history(visible, janela)
             context['history_kpis'] = build_history_kpis(visible, janela)
@@ -789,12 +964,19 @@ class AdminDashboardView(LoginRequiredMixin, RequiresAdminMixin, TemplateView):
                 chart_type=CHART_TYPE_BAR_HORIZONTAL,
                 title='Progresso das avaliações no ciclo',
             )
-            context['chart_aderencia_distribuicao'] = empty_kind_payload(
-                kind=EMPTY_KIND_SEM_NOTA,
-                chart_id='chart-aderencia-distribuicao',
-                chart_type=CHART_TYPE_DOUGHNUT,
-                title='Distribuição de aderência',
-            )
+            # Aderência: empty na janela multi-ciclo; plotável se um ciclo só.
+            if len(janela) == 1:
+                context['chart_aderencia_distribuicao'] = (
+                    self._chart_aderencia_distribuicao(janela[0])
+                )
+                context['aderencia_resumo'] = self._aderencia_resumo(janela[0])
+            else:
+                context['chart_aderencia_distribuicao'] = empty_kind_payload(
+                    kind=EMPTY_KIND_SEM_NOTA,
+                    chart_id='chart-aderencia-distribuicao',
+                    chart_type=CHART_TYPE_DOUGHNUT,
+                    title='Distribuição de aderência',
+                )
             return context
 
         context['ciclo_kpis'] = self._ciclo_kpis(ciclo)

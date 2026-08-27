@@ -92,12 +92,26 @@ def leaders_with_adherence(
     area_id: int | None = None,
     cargo_id: int | None = None,
 ) -> list[dict]:
-    """Líderes da estrutura com snapshot de aderência do ciclo (se houver)."""
+    """Líderes da estrutura com snapshot de aderência do ciclo (se houver).
+
+    ``colaboradores`` = diretos no mesmo ``visible`` (escopo AuthZ já resolvido).
+    Ordena por % ASC (pior primeiro); sem snapshot vem antes de qualquer %.
+    """
     lideres = leaders_in_scope(visible)
     if area_id is not None:
         lideres = lideres.filter(area_id=area_id)
     if cargo_id is not None:
         lideres = lideres.filter(cargo_id=cargo_id)
+
+    lider_pks = list(lideres.values_list('pk', flat=True))
+    colaborador_counts: dict[int, int] = {
+        row['line_manager_id']: int(row['n'])
+        for row in (
+            visible.filter(line_manager_id__in=lider_pks)
+            .values('line_manager_id')
+            .annotate(n=Count('pk'))
+        )
+    }
 
     snapshots: dict[int, AderenciaSnapshot] = {}
     if ciclo is not None:
@@ -105,17 +119,43 @@ def leaders_with_adherence(
             snap.lider_id: snap
             for snap in AderenciaSnapshot.objects.filter(
                 ciclo=ciclo,
-                lider_id__in=lideres.values('pk'),
+                lider_id__in=lider_pks,
             ).select_related('lider')
         }
 
-    return [
+    rows = [
         {
             'lider': lider,
             'snapshot': snapshots.get(lider.pk),
+            'colaboradores': colaborador_counts.get(lider.pk, 0),
         }
         for lider in lideres
     ]
+    # Pior aderência primeiro; sem snapshot = exceção (antes de qualquer %).
+    rows.sort(
+        key=lambda item: (
+            item['snapshot'].percentual
+            if item.get('snapshot') is not None
+            else Decimal('-1'),
+            (item['lider'].nome or item['lider'].email or '').lower(),
+        ),
+    )
+    return rows
+
+
+def partition_gap_rows(
+    rows: list[dict],
+) -> tuple[list[dict], list[dict]]:
+    """Separa lacunas acionáveis (média > 0) das demais (ocultas no toggle)."""
+    prioritarias: list[dict] = []
+    restantes: list[dict] = []
+    for row in rows:
+        lacuna = row.get('media_lacuna')
+        if lacuna is not None and lacuna > 0:
+            prioritarias.append(row)
+        else:
+            restantes.append(row)
+    return prioritarias, restantes
 
 
 def _competency_lines_qs(
@@ -146,6 +186,21 @@ def _quantize_avg(value) -> Decimal | None:
     if value is None:
         return None
     return Decimal(value).quantize(_QUANT)
+
+
+def distinct_cargo_count(
+    visible: QuerySet[CustomUser],
+    *,
+    area_id: int | None = None,
+    cargo_id: int | None = None,
+) -> int:
+    """Quantidade de cargos distintos no escopo filtrado (inclui ``NULL`` como um)."""
+    qs = _apply_structure_filters(
+        visible,
+        area_id=area_id,
+        cargo_id=cargo_id,
+    )
+    return qs.values('cargo_id').distinct().count()
 
 
 def coverage_summary(

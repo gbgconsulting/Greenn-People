@@ -1,132 +1,254 @@
 {% load review_display %}
-<div id="list-container">
-<div class="table-frame">
-  <table>
-    <thead>
-      <tr>
-        <th>Colaborador</th>
-        <th>Etapa</th>
-        <th>Nota líder</th>
-        <th>Área</th>
-        <th>Cargo</th>
-        <th class="text-right">Ações</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for item in membros_resumo %}
-        {% if item.avaliacao %}
-          {% if item.avaliacao.etapa == "avaliacao" or item.avaliacao.etapa == "aprovacao_metas" or item.avaliacao.etapa == "aprovacao_resultados" %}
-        <tr class="border-l-4 border-l-amber-400 bg-amber-50/40 hover:bg-amber-50/70">
-          <td>
-            <p class="font-medium text-slate-800">{{ item.usuario.nome|default:item.usuario.email }}</p>
-            <p class="text-xs text-slate-500">{{ item.usuario.email }}</p>
-          </td>
-          <td>
-            {% if item.avaliacao.etapa == "avaliacao" %}
-              {% include "components/badge_status.html" with status="pendente" label=item.avaliacao.get_etapa_display %}
-            {% else %}
-              {% include "components/badge_status.html" with status="media" label=item.avaliacao.get_etapa_display %}
-            {% endif %}
-          </td>
-          <td>
-            {% if item.avaliacao.nota_final_lider is not None %}
-              <span class="font-semibold tabular-nums text-slate-800">{{ item.avaliacao.nota_final_lider|nota_percentual }}</span>
-            {% else %}
-              <span class="text-slate-400">—</span>
-            {% endif %}
-          </td>
-          <td class="text-slate-500">{{ item.usuario.area.nome|default:"—" }}</td>
-          <td class="text-slate-500">{{ item.usuario.cargo.nome|default:"—" }}</td>
-          <td class="text-right">
-            <div class="inline-flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
-              {% if item.avaliacao.etapa == "avaliacao" %}
-              <a
-                href="{% url 'reviews:leader_assessment' item.avaliacao.pk %}"
-                class="font-semibold text-emerald-700 hover:text-emerald-800"
-              >Avaliar</a>
-              {% endif %}
-              <a
-                href="{% url 'reviews:detail' item.avaliacao.pk %}"
-                class="font-medium text-slate-600 hover:text-slate-800"
-              >Ver</a>
-              <a
-                href="{% url 'reviews:feedback_list' item.avaliacao.pk %}"
-                class="font-medium text-slate-600 hover:text-slate-800"
-              >Feedbacks</a>
-            </div>
-          </td>
-        </tr>
-          {% endif %}
-        {% endif %}
-      {% endfor %}
+{% url 'dashboard:team' as team_url %}
+{# Card completo no partial — um swap HTMX atualiza busca, chips, contador e tabela. #}
+<div
+  id="list-container"
+  class="flex h-full min-h-0 flex-1 flex-col rounded-xl border border-line bg-surface-card"
+>
+  <div class="shrink-0 border-b border-line px-4 py-3">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <h3 id="team-drilldown-heading" class="font-display text-base font-medium text-slate-800">
+        Visão do time
+      </h3>
+      <div class="relative w-full max-w-[12.5rem] sm:w-48">
+        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400" aria-hidden="true">
+          <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35m1.85-5.15a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </span>
+        <input
+          id="team-busca-input"
+          type="search"
+          name="busca"
+          value="{{ filtro_busca }}"
+          placeholder="Buscar colaborador..."
+          autocomplete="off"
+          aria-label="Buscar colaborador por nome ou cargo"
+          hx-preserve="true"
+          hx-get="{{ team_url }}"
+          hx-trigger="keyup changed delay:300ms, search"
+          hx-target="#list-container"
+          hx-swap="outerHTML"
+          hx-push-url="true"
+          hx-include="[data-team-filter]"
+          class="form-control !h-9 !min-w-0 !w-full sm:!min-w-0 sm:!w-full !pl-9 text-sm"
+        />
+      </div>
+    </div>
 
-      {% for item in membros_resumo %}
-        {% if not item.avaliacao %}
-        <tr>
-          <td>
-            <p class="font-medium text-slate-800">{{ item.usuario.nome|default:item.usuario.email }}</p>
-            <p class="text-xs text-slate-500">{{ item.usuario.email }}</p>
-          </td>
-          <td>
-            {% include "components/badge_status.html" with status="arquivado" label="Sem avaliação" %}
-          </td>
-          <td><span class="text-slate-400">—</span></td>
-          <td class="text-slate-500">{{ item.usuario.area.nome|default:"—" }}</td>
-          <td class="text-slate-500">{{ item.usuario.cargo.nome|default:"—" }}</td>
-          <td class="text-right"><span class="text-slate-400">—</span></td>
-        </tr>
-        {% elif item.avaliacao.etapa != "avaliacao" and item.avaliacao.etapa != "aprovacao_metas" and item.avaliacao.etapa != "aprovacao_resultados" %}
-        <tr>
-          <td>
-            <p class="font-medium text-slate-800">{{ item.usuario.nome|default:item.usuario.email }}</p>
-            <p class="text-xs text-slate-500">{{ item.usuario.email }}</p>
-          </td>
-          <td>
-            {% if item.avaliacao.etapa == "feedback" %}
-              {% include "components/badge_status.html" with status="concluida" label=item.avaliacao.get_etapa_display %}
-            {% else %}
-              {% include "components/badge_status.html" with status="em_andamento" label=item.avaliacao.get_etapa_display %}
-            {% endif %}
-          </td>
-          <td>
-            {% if item.avaliacao.nota_final_lider is not None %}
-              <span class="font-semibold tabular-nums text-slate-800">{{ item.avaliacao.nota_final_lider|nota_percentual }}</span>
-            {% else %}
-              <span class="text-slate-400">—</span>
-            {% endif %}
-          </td>
-          <td class="text-slate-500">{{ item.usuario.area.nome|default:"—" }}</td>
-          <td class="text-slate-500">{{ item.usuario.cargo.nome|default:"—" }}</td>
-          <td class="text-right">
-            <div class="inline-flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
-              <a
-                href="{% url 'reviews:detail' item.avaliacao.pk %}"
-                class="font-medium text-slate-600 hover:text-slate-800"
-              >Ver</a>
-              <a
-                href="{% url 'reviews:feedback_list' item.avaliacao.pk %}"
-                class="font-medium text-slate-600 hover:text-slate-800"
-              >Feedbacks</a>
-            </div>
-          </td>
-        </tr>
-        {% endif %}
-      {% endfor %}
+    {# Params preservados na busca HTMX (ciclo / visão / etapa). #}
+    {% if ciclo_selecionado and request.GET.ciclo %}
+    <input type="hidden" name="ciclo" value="{{ request.GET.ciclo }}" data-team-filter />
+    {% endif %}
+    {% if visao == 'historico' %}
+    <input type="hidden" name="visao" value="historico" data-team-filter />
+    {% if request.GET.ciclos %}
+    <input type="hidden" name="ciclos" value="{{ request.GET.ciclos }}" data-team-filter />
+    {% endif %}
+    {% endif %}
+    {% if filtro_etapa %}
+    <input type="hidden" name="etapa" value="{{ filtro_etapa }}" data-team-filter id="team-filtro-etapa" />
+    {% endif %}
 
-      {% if not membros_resumo %}
-      <tr>
-        <td colspan="6" class="!py-8">
-          {% if not ciclo_aberto %}
-            {% include "components/empty_state.html" with title="Sem colaboradores no escopo" message="Não há ciclo aberto e nenhum colaborador no seu escopo hierárquico no momento." %}
+    {% if visao != 'historico' %}
+    <div
+      class="mt-2.5 flex flex-wrap items-center gap-1.5"
+      role="group"
+      aria-label="Filtrar por estágio do ciclo"
+    >
+      {% for chip in etapa_chips %}
+        {% if filtro_etapa == chip.key %}
+          {% if filtro_busca %}
+            {% querystring busca=filtro_busca etapa=None page=None as chip_url %}
           {% else %}
-            {% include "components/empty_state.html" with title="Sem colaboradores no escopo" message="Nenhum colaborador no seu escopo hierárquico no momento. Quando houver subordinados ativos, o status do ciclo aparece aqui." %}
+            {% querystring busca=None etapa=None page=None as chip_url %}
           {% endif %}
-        </td>
-      </tr>
+        {% else %}
+          {% if filtro_busca %}
+            {% querystring busca=filtro_busca etapa=chip.key page=None as chip_url %}
+          {% else %}
+            {% querystring busca=None etapa=chip.key page=None as chip_url %}
+          {% endif %}
+        {% endif %}
+        <a
+          href="{{ chip_url }}"
+          hx-get="{{ chip_url }}"
+          hx-target="#list-container"
+          hx-swap="outerHTML"
+          hx-push-url="true"
+          class="inline-flex h-7 items-center rounded-full border px-2.5 font-ui text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1 {% if filtro_etapa == chip.key %}border-emerald-600 bg-emerald-50 text-emerald-800{% else %}border-line bg-surface-card text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800{% endif %}"
+          {% if filtro_etapa == chip.key %}aria-pressed="true"{% else %}aria-pressed="false"{% endif %}
+        >{{ chip.label }}</a>
+      {% endfor %}
+      {% if filtro_busca_e_etapa %}
+        {% querystring busca=None etapa=None page=None as clear_url %}
+        <a
+          href="{{ clear_url }}"
+          hx-get="{{ clear_url }}"
+          hx-target="#list-container"
+          hx-swap="outerHTML"
+          hx-push-url="true"
+          class="ml-0.5 inline-flex h-7 items-center px-1.5 font-ui text-[11px] font-medium text-slate-500 underline-offset-2 hover:text-slate-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1"
+        >Limpar filtros</a>
       {% endif %}
-    </tbody>
-  </table>
-</div>
+    </div>
+    {% endif %}
 
-{% include "components/pagination.html" with page_obj=page_obj %}
+    {% if page_obj.paginator.count or filtro_ativo %}
+    <p class="mt-2 text-xs text-slate-500" aria-live="polite">
+      {% if filtro_ativo %}
+        {{ page_obj.paginator.count }} de {{ total_escopo_lista }} colaborador{{ total_escopo_lista|pluralize }}
+      {% else %}
+        {{ page_obj.paginator.count }} colaborador{{ page_obj.paginator.count|pluralize }}
+      {% endif %}
+      · {{ page_obj.paginator.per_page }} por página
+    </p>
+    {% endif %}
+  </div>
+
+  <div class="min-h-0 min-w-0 flex-1">
+    <div class="table-frame !rounded-none !border-0 !border-t-0">
+      <table class="w-full min-w-[40rem]">
+        <colgroup>
+          <col class="w-[30%]" />
+          <col class="w-[24%]" />
+          <col class="w-[22%]" />
+          <col class="w-[24%]" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Colaborador</th>
+            <th>Cargo</th>
+            <th>Status</th>
+            <th class="text-right">Ação</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in membros_resumo %}
+            {% if item.avaliacao %}
+              {% if item.avaliacao.etapa == "avaliacao" or item.avaliacao.etapa == "aprovacao_metas" or item.avaliacao.etapa == "aprovacao_resultados" %}
+            <tr class="border-l-4 border-l-amber-400 bg-amber-50/40 hover:bg-amber-50/70">
+              <td>
+                <div class="flex min-w-0 items-center gap-2.5">
+                  <div
+                    class="flex size-7 shrink-0 items-center justify-center rounded-full bg-amber-100 font-ui text-[11px] font-semibold text-amber-800"
+                    aria-hidden="true"
+                  >
+                    {{ item.usuario.nome|default:item.usuario.email|slice:":1"|upper }}
+                  </div>
+                  <p class="truncate font-medium text-slate-800">{{ item.usuario.nome|default:item.usuario.email }}</p>
+                </div>
+              </td>
+              <td class="truncate text-slate-500">{{ item.usuario.cargo.nome|default:"—" }}</td>
+              <td>
+                {% if item.avaliacao.etapa == "avaliacao" %}
+                  {% include "components/badge_status.html" with status="pendente" label=item.avaliacao.get_etapa_display extra_class="!rounded-full" %}
+                {% else %}
+                  {% include "components/badge_status.html" with status="media" label=item.avaliacao.get_etapa_display extra_class="!rounded-full" %}
+                {% endif %}
+              </td>
+              <td class="text-right">
+                <div class="inline-flex flex-col items-end gap-1 whitespace-nowrap sm:flex-row sm:flex-wrap sm:justify-end sm:gap-x-3 sm:gap-y-1">
+                  {% if item.avaliacao.etapa == "avaliacao" %}
+                  <a
+                    href="{% url 'reviews:leader_assessment' item.avaliacao.pk %}"
+                    class="inline-flex h-8 items-center rounded-lg bg-emerald-700 px-3 font-ui text-xs font-semibold text-white hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+                  >Avaliar</a>
+                  {% else %}
+                  <a
+                    href="{% url 'reviews:detail' item.avaliacao.pk %}"
+                    class="inline-flex h-8 items-center rounded-lg bg-emerald-700 px-3 font-ui text-xs font-semibold text-white hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+                  >Revisar</a>
+                  {% endif %}
+                  <a
+                    href="{% url 'reviews:detail' item.avaliacao.pk %}"
+                    class="inline-flex h-8 items-center font-ui text-xs font-medium text-slate-600 hover:text-slate-800"
+                  >Ver</a>
+                </div>
+              </td>
+            </tr>
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+
+          {% for item in membros_resumo %}
+            {% if not item.avaliacao %}
+            <tr>
+              <td>
+                <div class="flex min-w-0 items-center gap-2.5">
+                  <div
+                    class="flex size-7 shrink-0 items-center justify-center rounded-full bg-slate-100 font-ui text-[11px] font-semibold text-slate-600"
+                    aria-hidden="true"
+                  >
+                    {{ item.usuario.nome|default:item.usuario.email|slice:":1"|upper }}
+                  </div>
+                  <p class="truncate font-medium text-slate-800">{{ item.usuario.nome|default:item.usuario.email }}</p>
+                </div>
+              </td>
+              <td class="truncate text-slate-500">{{ item.usuario.cargo.nome|default:"—" }}</td>
+              <td>
+                {% include "components/badge_status.html" with status="arquivado" label="Sem avaliação" extra_class="!rounded-full" %}
+              </td>
+              <td class="text-right"><span class="text-slate-400">—</span></td>
+            </tr>
+            {% elif item.avaliacao.etapa != "avaliacao" and item.avaliacao.etapa != "aprovacao_metas" and item.avaliacao.etapa != "aprovacao_resultados" %}
+            <tr>
+              <td>
+                <div class="flex min-w-0 items-center gap-2.5">
+                  <div
+                    class="flex size-7 shrink-0 items-center justify-center rounded-full bg-emerald-50 font-ui text-[11px] font-semibold text-emerald-700"
+                    aria-hidden="true"
+                  >
+                    {{ item.usuario.nome|default:item.usuario.email|slice:":1"|upper }}
+                  </div>
+                  <p class="truncate font-medium text-slate-800">{{ item.usuario.nome|default:item.usuario.email }}</p>
+                </div>
+              </td>
+              <td class="truncate text-slate-500">{{ item.usuario.cargo.nome|default:"—" }}</td>
+              <td>
+                {% if item.avaliacao.etapa == "feedback" %}
+                  {% include "components/badge_status.html" with status="concluida" label=item.avaliacao.get_etapa_display extra_class="!rounded-full" %}
+                {% else %}
+                  {% include "components/badge_status.html" with status="em_andamento" label=item.avaliacao.get_etapa_display extra_class="!rounded-full" %}
+                {% endif %}
+              </td>
+              <td class="text-right">
+                <div class="inline-flex flex-col items-end gap-1 whitespace-nowrap sm:flex-row sm:flex-wrap sm:justify-end sm:gap-x-3 sm:gap-y-1">
+                  <a
+                    href="{% url 'reviews:detail' item.avaliacao.pk %}"
+                    class="inline-flex h-8 items-center font-ui text-xs font-medium text-slate-600 hover:text-slate-800"
+                  >Ver</a>
+                  <a
+                    href="{% url 'reviews:feedback_list' item.avaliacao.pk %}"
+                    class="inline-flex h-8 items-center font-ui text-xs font-medium text-slate-600 hover:text-slate-800"
+                  >Feedbacks</a>
+                </div>
+              </td>
+            </tr>
+            {% endif %}
+          {% endfor %}
+
+          {% if not membros_resumo %}
+          <tr>
+            <td colspan="4" class="!py-8">
+              {% if filtro_ativo %}
+                {% include "components/empty_state.html" with title="Nenhum colaborador encontrado" message="Tente outro termo de busca ou limpe o filtro de estágio." %}
+              {% elif not ciclo_selecionado %}
+                {% include "components/empty_state.html" with title="Sem colaboradores no escopo" message="Não há ciclo selecionado e nenhum colaborador no seu escopo hierárquico no momento." %}
+              {% else %}
+                {% include "components/empty_state.html" with title="Sem colaboradores no escopo" message="Nenhum colaborador no seu escopo hierárquico no momento. Quando houver subordinados ativos, o status do ciclo aparece aqui." %}
+              {% endif %}
+            </td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="border-t border-line px-4 pb-3">
+      {% include "components/pagination.html" with page_obj=page_obj %}
+    </div>
+    {% endif %}
+  </div>
 </div>

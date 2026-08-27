@@ -31,9 +31,9 @@
   >
     Ir para o conteúdo
   </a>
-  <div class="flex min-h-screen">
+  <div class="flex h-screen overflow-hidden">
     {% include "components/sidebar.html" %}
-    <div class="flex min-w-0 flex-1 flex-col">
+    <div class="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
       {% include "components/topbar.html" %}
       <main id="main-content" class="flex-1 p-4 md:p-6" tabindex="-1">
         {% if messages %}
@@ -140,6 +140,49 @@
         if (e.key !== 'Escape') return;
         if (typeof window.isAppModalOpen === 'function' && window.isAppModalOpen()) return;
         closeNav();
+      });
+    })();
+
+    (function initDesktopSidebarCollapse() {
+      const sidebar = document.getElementById('desktop-sidebar');
+      const btn = sidebar && sidebar.querySelector('[data-sidebar-collapse]');
+      if (!sidebar || !btn) return;
+
+      const KEY = 'gp-sidebar-collapsed';
+      const WIDTH_EXPANDED = 'w-64';
+      const WIDTH_COLLAPSED = 'w-16';
+      const label = btn.querySelector('[data-sidebar-collapse-label]');
+
+      const setCollapsed = (collapsed) => {
+        sidebar.classList.toggle('sidebar--collapsed', collapsed);
+        sidebar.classList.toggle(WIDTH_EXPANDED, !collapsed);
+        sidebar.classList.toggle(WIDTH_COLLAPSED, collapsed);
+        btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        btn.title = collapsed ? 'Expandir menu' : 'Recolher menu';
+        if (label) label.textContent = collapsed ? 'Expandir' : 'Recolher';
+
+        sidebar.querySelectorAll('details.nav-group').forEach((group) => {
+          if (collapsed) {
+            group.dataset.wasOpen = group.open ? '1' : '0';
+            group.open = true;
+          } else if (group.dataset.wasOpen === '0' && !group.hasAttribute('data-nav-primary')) {
+            group.open = false;
+          }
+        });
+
+        try {
+          localStorage.setItem(KEY, collapsed ? '1' : '0');
+        } catch (_) {}
+      };
+
+      let initial = false;
+      try {
+        initial = localStorage.getItem(KEY) === '1';
+      } catch (_) {}
+      setCollapsed(initial);
+
+      btn.addEventListener('click', () => {
+        setCollapsed(!sidebar.classList.contains('sidebar--collapsed'));
       });
     })();
   </script>

@@ -1,63 +1,172 @@
-<div id="list-container">
-<div class="table-frame">
-  <table>
-    <thead>
-      <tr>
-        <th>Líder</th>
-        <th>Área</th>
-        <th>Ciclo</th>
-        <th>Aderência</th>
-        <th>Status</th>
-        <th>Aprovações</th>
-        <th>Feedbacks</th>
-        <th>Ações PDI</th>
-        <th>Calculado em</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for item in snapshots_resumo %}
-      <tr class="{% if item.status == 'baixa' %}border-l-4 border-l-rose-400 bg-rose-50/30 hover:bg-rose-50/50{% else %}hover:bg-slate-50{% endif %}">
-        <td>
-          <p class="font-medium text-slate-800">{{ item.snapshot.lider.nome|default:item.snapshot.lider.email }}</p>
-          <p class="text-xs text-slate-500">{{ item.snapshot.lider.email }}</p>
-        </td>
-        <td class="text-slate-600">{{ item.snapshot.lider.area.nome|default:"—" }}</td>
-        <td class="text-slate-600">{{ item.snapshot.ciclo.nome }}</td>
-        <td class="font-semibold tabular-nums text-slate-800">{{ item.snapshot.percentual }}%</td>
-        <td>
-          {% include "components/badge_status.html" with status=item.status %}
-        </td>
-        <td class="tabular-nums text-slate-600">
-          {% with c=item.snapshot.componentes.aprovacoes %}
-            {% if c %}{{ c.no_prazo }}/{{ c.total }} ({{ c.percentual }}%){% else %}—{% endif %}
-          {% endwith %}
-        </td>
-        <td class="tabular-nums text-slate-600">
-          {% with c=item.snapshot.componentes.feedbacks %}
-            {% if c %}{{ c.no_prazo }}/{{ c.total }} ({{ c.percentual }}%){% else %}—{% endif %}
-          {% endwith %}
-        </td>
-        <td class="tabular-nums text-slate-600">
-          {% with c=item.snapshot.componentes.acoes_pdi %}
-            {% if c %}{{ c.no_prazo }}/{{ c.total }} ({{ c.percentual }}%){% else %}—{% endif %}
-          {% endwith %}
-        </td>
-        <td class="tabular-nums text-slate-600">{{ item.snapshot.calculado_em|date:"d/m/Y H:i" }}</td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="9" class="!py-8">
-          {% if ciclo_filtro %}
-            {% include "components/empty_state.html" with title="Sem dados de aderência" message="Ainda não há informações nesta seção." %}
-          {% else %}
-            {% include "components/empty_state.html" with title="Sem ciclo aberto" message="Não há ciclo aberto. Você pode escolher outro ciclo pelo seletor." %}
-          {% endif %}
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
+{# Pills + tabela no mesmo #list-container: filtro HTMX atualiza estado e páginas. #}
+<div id="list-container" class="min-w-0 space-y-6">
+  <div class="min-w-0" aria-labelledby="aderencia-distribuicao-heading">
+    <div class="mb-4">
+      <h3 id="aderencia-distribuicao-heading" class="font-display text-xl font-medium tracking-tight text-slate-800">
+        Distribuição de aderência
+      </h3>
+      <p class="mt-1 text-sm text-slate-500">
+        Alta, média e baixa no escopo — clique para filtrar a lista.
+      </p>
+    </div>
+    {% if aderencia_resumo.has_ciclo and aderencia_resumo.total_lideres %}
+      <div
+        class="flex flex-wrap items-center gap-2"
+        role="group"
+        aria-label="Filtrar líderes por nível de aderência"
+      >
+        {% if filtro_nivel == "alta" %}
+          {% querystring nivel=None page=None as pill_alta_url %}
+        {% else %}
+          {% querystring nivel="alta" page=None as pill_alta_url %}
+        {% endif %}
+        <a
+          href="{{ pill_alta_url }}"
+          hx-get="{{ pill_alta_url }}"
+          hx-target="#list-container"
+          hx-swap="outerHTML"
+          hx-push-url="true"
+          class="inline-flex h-8 items-center gap-2 rounded-full border px-3 font-ui text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1 {% if filtro_nivel == 'alta' %}border-emerald-600 bg-emerald-50 text-emerald-800{% else %}border-line bg-surface-card text-slate-700 hover:border-slate-300 hover:bg-slate-50{% endif %}"
+          {% if filtro_nivel == "alta" %}aria-pressed="true"{% else %}aria-pressed="false"{% endif %}
+        >
+          <span class="h-2 w-2 shrink-0 rounded-full bg-emerald-500" aria-hidden="true"></span>
+          Alta · {{ aderencia_resumo.alta }}
+        </a>
 
-{% include "components/pagination.html" with page_obj=page_obj %}
+        {% if filtro_nivel == "media" %}
+          {% querystring nivel=None page=None as pill_media_url %}
+        {% else %}
+          {% querystring nivel="media" page=None as pill_media_url %}
+        {% endif %}
+        <a
+          href="{{ pill_media_url }}"
+          hx-get="{{ pill_media_url }}"
+          hx-target="#list-container"
+          hx-swap="outerHTML"
+          hx-push-url="true"
+          class="inline-flex h-8 items-center gap-2 rounded-full border px-3 font-ui text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1 {% if filtro_nivel == 'media' %}border-amber-600 bg-amber-50 text-amber-800{% else %}border-line bg-surface-card text-slate-700 hover:border-slate-300 hover:bg-slate-50{% endif %}"
+          {% if filtro_nivel == "media" %}aria-pressed="true"{% else %}aria-pressed="false"{% endif %}
+        >
+          <span class="h-2 w-2 shrink-0 rounded-full bg-amber-500" aria-hidden="true"></span>
+          Média · {{ aderencia_resumo.media_n }}
+        </a>
+
+        {% if filtro_nivel == "baixa" %}
+          {% querystring nivel=None page=None as pill_baixa_url %}
+        {% else %}
+          {% querystring nivel="baixa" page=None as pill_baixa_url %}
+        {% endif %}
+        <a
+          href="{{ pill_baixa_url }}"
+          hx-get="{{ pill_baixa_url }}"
+          hx-target="#list-container"
+          hx-swap="outerHTML"
+          hx-push-url="true"
+          class="inline-flex h-8 items-center gap-2 rounded-full border px-3 font-ui text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1 {% if filtro_nivel == 'baixa' %}border-rose-600 bg-rose-50 text-rose-800{% else %}border-line bg-surface-card text-slate-700 hover:border-slate-300 hover:bg-slate-50{% endif %}"
+          {% if filtro_nivel == "baixa" %}aria-pressed="true"{% else %}aria-pressed="false"{% endif %}
+        >
+          <span class="h-2 w-2 shrink-0 rounded-full bg-rose-500" aria-hidden="true"></span>
+          Baixa · {{ aderencia_resumo.baixa }}
+        </a>
+      </div>
+    {% elif aderencia_resumo.has_ciclo %}
+      <div class="rounded-lg border border-line bg-slate-50 px-4 py-5 text-center">
+        {% include "components/empty_state.html" with message="Ainda não há informações nesta seção." only %}
+      </div>
+    {% else %}
+      <div class="rounded-lg border border-line bg-slate-50 px-4 py-5 text-center">
+        {% include "components/empty_state.html" with message="Não há ciclo aberto. Você pode escolher outro ciclo pelo seletor." only %}
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="min-w-0" aria-labelledby="aderencia-drilldown-heading">
+    <div class="mb-4">
+      <h3 id="aderencia-drilldown-heading" class="font-display text-xl font-medium tracking-tight text-slate-800">
+        Líderes no escopo
+      </h3>
+      <p class="mt-1 text-sm text-slate-500">
+        Detalhe por líder — componentes e data da última atualização.
+        {% if filtro_nivel == "alta" %}
+          Mostrando só aderência alta.
+        {% elif filtro_nivel == "media" %}
+          Mostrando só aderência média.
+        {% elif filtro_nivel == "baixa" %}
+          Mostrando só aderência baixa.
+        {% endif %}
+      </p>
+    </div>
+    <div class="table-frame">
+      <table>
+        <thead>
+          <tr>
+            <th>Líder</th>
+            <th>Área</th>
+            <th>Ciclo</th>
+            <th>Aderência</th>
+            <th>Status</th>
+            <th>Aprovações</th>
+            <th>Feedbacks</th>
+            <th>Ações PDI</th>
+            <th>Calculado em</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in snapshots_resumo %}
+          <tr class="group {% if item.status == 'baixa' %}border-l-4 border-l-rose-400 bg-rose-50/30 hover:bg-rose-50/50{% else %}hover:bg-slate-50{% endif %}">
+            <td>
+              <div class="flex items-center gap-3">
+                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-xs font-bold text-emerald-700" aria-hidden="true">
+                  {{ item.snapshot.lider.nome|default:item.snapshot.lider.email|make_list|first|upper }}
+                </div>
+                <div class="min-w-0">
+                  <p class="font-medium text-slate-800">{{ item.snapshot.lider.nome|default:item.snapshot.lider.email }}</p>
+                  <p class="text-xs text-slate-500">{{ item.snapshot.lider.email }}</p>
+                </div>
+              </div>
+            </td>
+            <td class="text-slate-600">{{ item.snapshot.lider.area.nome|default:"—" }}</td>
+            <td class="text-slate-600">{{ item.snapshot.ciclo.nome }}</td>
+            <td class="font-semibold tabular-nums text-slate-800">{{ item.snapshot.percentual }}%</td>
+            <td>
+              {% include "components/badge_status.html" with status=item.status %}
+            </td>
+            <td class="tabular-nums text-slate-600">
+              {% with c=item.snapshot.componentes.aprovacoes %}
+                {% if c and c.total %}{{ c.no_prazo }}/{{ c.total }} ({{ c.percentual }}%){% else %}—{% endif %}
+              {% endwith %}
+            </td>
+            <td class="tabular-nums text-slate-600">
+              {% with c=item.snapshot.componentes.feedbacks %}
+                {% if c and c.total %}{{ c.no_prazo }}/{{ c.total }} ({{ c.percentual }}%){% else %}—{% endif %}
+              {% endwith %}
+            </td>
+            <td class="tabular-nums text-slate-600">
+              {% with c=item.snapshot.componentes.acoes_pdi %}
+                {% if c and c.total %}{{ c.no_prazo }}/{{ c.total }} ({{ c.percentual }}%){% else %}—{% endif %}
+              {% endwith %}
+            </td>
+            <td class="tabular-nums text-slate-600">{{ item.snapshot.calculado_em|date:"d/m/Y H:i" }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="9" class="!py-8">
+              {% if ciclo_filtro %}
+                {% if filtro_nivel %}
+                  {% include "components/empty_state.html" with title="Nenhum líder neste nível" message="Não há líderes com esse nível de aderência no escopo. Clique de novo na pill para limpar o filtro." %}
+                {% else %}
+                  {% include "components/empty_state.html" with title="Sem dados de aderência" message="Ainda não há informações nesta seção." %}
+                {% endif %}
+              {% else %}
+                {% include "components/empty_state.html" with title="Sem ciclo aberto" message="Não há ciclo aberto. Você pode escolher outro ciclo pelo seletor." %}
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% include "components/pagination.html" with page_obj=page_obj %}
+  </div>
 </div>

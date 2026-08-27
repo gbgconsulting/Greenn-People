@@ -4,27 +4,29 @@
 {% block title %}Estrutura — Greenn People{% endblock %}
 
 {% block content %}
-<header class="mb-6">
-  <div class="flex flex-wrap items-start justify-between gap-3">
-    <div>
-      <h1 class="font-display text-2xl font-semibold text-slate-800">Estrutura</h1>
-      <p class="mt-1 text-sm text-slate-500">
-        Veja quantas pessoas da sua equipe já têm avaliação, por área e por cargo.
+<div class="mx-auto max-w-[90rem]">
+<header class="mb-8">
+  <div class="flex flex-col justify-between gap-6 md:flex-row md:items-start">
+    <div class="max-w-2xl">
+      <h1 class="font-display text-3xl font-semibold tracking-tight text-slate-800">Panorama da Estrutura</h1>
+      <p class="mt-2 text-base leading-relaxed text-slate-500">
+        Visão consolidada da cobertura e da estrutura dos líderes e suas áreas.
       </p>
       {% if grouped_ciclo_options.arquivo_total %}
-        <p class="mt-1 text-xs text-slate-500">
+        <p class="mt-2 flex items-center gap-1.5 text-sm text-slate-500">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z" clip-rule="evenodd" />
+          </svg>
           {{ grouped_ciclo_options.arquivo_total }} ciclo{{ grouped_ciclo_options.arquivo_total|pluralize }} encerrado{{ grouped_ciclo_options.arquivo_total|pluralize }} disponíveis no seletor
         </p>
       {% endif %}
     </div>
-    <div class="flex flex-wrap items-center gap-2">
-      {% if ciclo_aberto %}
-        {% include "components/badge_status.html" with status="ativo" label=ciclo_aberto.nome extra_class="mt-1" %}
-      {% else %}
-        {% include "components/badge_status.html" with status="arquivado" label="Sem ciclo aberto" extra_class="mt-1" %}
-      {% endif %}
-      {% url 'dashboard:adherence' as adherence_url %}
-      {% include "components/button.html" with label="Ver aderência" href=adherence_url variant="secondary" %}
+    <div class="flex shrink-0 flex-col items-start gap-4 md:items-end">
+      {% include "dashboard/_ciclo_header_badge.html" %}
+      <div class="flex flex-wrap gap-3">
+        {% url 'dashboard:adherence' as adherence_url %}
+        {% include "components/button.html" with label="Ver aderência" href=adherence_url variant="secondary" %}
+      </div>
     </div>
   </div>
 </header>
@@ -38,28 +40,15 @@
       Escolha o ciclo, a área e o cargo para ajustar a visão.
     </p>
   </div>
-  <form method="get" class="grid grid-cols-1 gap-3 sm:flex sm:flex-wrap sm:items-end" role="search" aria-label="Filtrar estrutura">
-    {% include "dashboard/_ciclo_selector.html" with ciclo_selector_embed=True %}
-    <div class="min-w-0 sm:min-w-[10rem]">
-      <label for="area" class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Área</label>
-      <select
-        id="area"
-        name="area"
-        class="form-control"
-        onchange="this.form.submit()"
-      >
-        <option value="">Todas</option>
-        {% for a in areas %}
-        <option value="{{ a.pk }}" {% if filtro_area_id == a.pk %}selected{% endif %}>{{ a.nome }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="min-w-0 sm:min-w-[10rem]">
+  <form method="get" class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end" role="search" aria-label="Filtrar estrutura">
+    {% include "dashboard/_ciclo_selector.html" with ciclo_selector_embed=True hide_q_filter=True hide_arquivo_hint=True compact=True %}
+    {% include "dashboard/_area_filter.html" %}
+    <div class="min-w-0 w-full sm:w-auto sm:min-w-[10rem] sm:max-w-[16rem]">
       <label for="cargo" class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Cargo</label>
       <select
         id="cargo"
         name="cargo"
-        class="form-control"
+        class="form-control w-full"
         onchange="this.form.submit()"
       >
         <option value="">Todos</option>
@@ -72,11 +61,11 @@
 </section>
 
 <section class="mb-8 min-w-0" aria-labelledby="cobertura-heading">
-  <div class="mb-3">
-    <h2 id="cobertura-heading" class="font-display text-lg font-medium text-slate-800">
+  <div class="mb-6">
+    <h2 id="cobertura-heading" class="font-display text-2xl font-medium tracking-tight text-slate-800">
       Cobertura da equipe
     </h2>
-    <p class="mt-0.5 text-sm text-slate-500">
+    <p class="mt-1 text-sm leading-relaxed text-slate-500">
       {% if ciclo_filtro %}
         Quem da equipe já tem avaliação em {{ ciclo_filtro.nome }}.
       {% else %}
@@ -85,57 +74,87 @@
     </p>
   </div>
 
-  <div class="managerial-panel">
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores de cobertura">
+  <div class="managerial-panel [overflow-anchor:none]">
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-3" aria-label="Indicadores de cobertura">
       {% if cobertura_resumo.has_ciclo and cobertura_resumo.percentual is not None %}
         {% with val=cobertura_resumo.percentual|stringformat:"d"|add:"%" %}
-        {% include "components/card.html" with label="Cobertura" value=val body="Percentual de pessoas com avaliação neste ciclo." %}
+        {% include "components/card.html" with label="Cobertura" value=val body="Percentual de pessoas com avaliação neste ciclo." accent="success" icon="trending_up" value_size="lg" %}
         {% endwith %}
       {% elif cobertura_resumo.has_ciclo %}
-        {% include "components/card.html" with label="Cobertura" value="—" body="Não há pessoas para calcular a cobertura com esses filtros." %}
+        {% include "components/card.html" with label="Cobertura" value="—" body="Não há pessoas para calcular a cobertura com esses filtros." accent="success" value_size="lg" %}
       {% else %}
-        {% include "components/card.html" with label="Cobertura" value="—" body="Abra ou escolha um ciclo nos filtros acima." %}
+        {% include "components/card.html" with label="Cobertura" value="—" body="Abra ou escolha um ciclo nos filtros acima." accent="success" value_size="lg" %}
       {% endif %}
 
       {% if cobertura_resumo.has_ciclo and cobertura_resumo.com_avaliacao is not None %}
-        {% include "components/card.html" with label="Com avaliação" value=cobertura_resumo.com_avaliacao body="Pessoas que já entraram no ciclo." %}
+        {% include "components/card.html" with label="Com avaliação" value=cobertura_resumo.com_avaliacao body="Pessoas que já entraram no ciclo." accent="primary" value_size="lg" %}
       {% else %}
-        {% include "components/card.html" with label="Com avaliação" value="—" body="Disponível quando houver um ciclo." %}
+        {% include "components/card.html" with label="Com avaliação" value="—" body="Disponível quando houver um ciclo." accent="primary" value_size="lg" %}
       {% endif %}
 
       {% if cobertura_resumo.has_ciclo and cobertura_resumo.sem_avaliacao is not None %}
         {% if cobertura_resumo.sem_avaliacao > 0 %}
-          {% include "components/card.html" with label="Sem avaliação" value=cobertura_resumo.sem_avaliacao badge_status="pendente" badge_label="Atenção" body="Ainda não iniciaram a avaliação neste ciclo." %}
+          {% include "components/card.html" with label="Sem avaliação" value=cobertura_resumo.sem_avaliacao badge_status="pendente" badge_label="Atenção" body="Ainda não iniciaram a avaliação neste ciclo." accent="warning" value_size="lg" %}
         {% else %}
-          {% include "components/card.html" with label="Sem avaliação" value=cobertura_resumo.sem_avaliacao badge_status="concluida" badge_label="Completo" body="Todos já têm avaliação neste ciclo." %}
+          {% include "components/card.html" with label="Sem avaliação" value=cobertura_resumo.sem_avaliacao badge_status="concluida" badge_label="Completo" body="Todos já têm avaliação neste ciclo." accent="success" value_size="lg" %}
         {% endif %}
       {% else %}
-        {% include "components/card.html" with label="Sem avaliação" value="—" body="Disponível quando houver um ciclo." %}
+        {% include "components/card.html" with label="Sem avaliação" value="—" body="Disponível quando houver um ciclo." accent="warning" value_size="lg" %}
       {% endif %}
     </div>
 
-    <div class="min-w-0 grid grid-cols-1 gap-4 lg:grid-cols-2" aria-label="Cobertura por área e cargo">
-      {% if chart_cobertura_area.has_data %}
-        {% include "dashboard/_chart_block.html" with chart=chart_cobertura_area script_id="chart-cobertura-area" insight="Quanto por cento das pessoas de cada área já têm avaliação. Áreas menores ficam em Outros." %}
-      {% else %}
-        {% include "dashboard/_chart_block.html" with chart=chart_cobertura_area script_id="chart-cobertura-area" %}
-      {% endif %}
+    <div class="grid min-w-0 grid-cols-1 gap-6 xl:grid-cols-12 xl:items-start">
+      <div
+        id="cobertura-charts"
+        class="min-w-0 grid grid-cols-1 gap-4 lg:grid-cols-2 xl:col-span-8 [overflow-anchor:none]"
+        aria-label="Cobertura por área e cargo"
+      >
+        {% if chart_cobertura_area.has_data %}
+          {% include "dashboard/_chart_block.html" with chart=chart_cobertura_area script_id="chart-cobertura-area" insight="Quanto por cento das pessoas de cada área já têm avaliação. Áreas menores ficam em Outros." %}
+        {% else %}
+          {% include "dashboard/_chart_block.html" with chart=chart_cobertura_area script_id="chart-cobertura-area" %}
+        {% endif %}
 
-      {% if chart_cobertura_cargo.has_data %}
-        {% include "dashboard/_chart_block.html" with chart=chart_cobertura_cargo script_id="chart-cobertura-cargo" insight="Quanto por cento das pessoas de cada cargo já têm avaliação. Cargos menores ficam em Outros." %}
-      {% else %}
-        {% include "dashboard/_chart_block.html" with chart=chart_cobertura_cargo script_id="chart-cobertura-cargo" %}
-      {% endif %}
+        {% if chart_cobertura_cargo.has_data %}
+          {% include "dashboard/_chart_block.html" with chart=chart_cobertura_cargo script_id="chart-cobertura-cargo" insight="Quanto por cento das pessoas de cada cargo já têm avaliação. Cargos menores ficam em Outros." %}
+        {% else %}
+          {% include "dashboard/_chart_block.html" with chart=chart_cobertura_cargo script_id="chart-cobertura-cargo" %}
+        {% endif %}
+      </div>
+
+      <aside class="min-w-0 xl:col-span-4" aria-labelledby="alertas-heading">
+        <div class="rounded-xl border border-dashed border-line bg-surface-card/60 p-4 sm:p-5 xl:sticky xl:top-6">
+          <h3 id="alertas-heading" class="font-display text-xl font-medium tracking-tight text-slate-800 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5 text-amber-500" aria-hidden="true">
+              <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.168 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd" />
+            </svg>
+            Alertas de Gestão
+          </h3>
+          <p class="mt-2 text-sm leading-relaxed text-slate-500">
+            Áreas que necessitam de atenção imediata neste ciclo.
+          </p>
+          <div class="mt-4 rounded-lg border border-line bg-slate-50 px-4 py-5 text-center">
+            <p class="text-sm font-semibold text-slate-700">Em breve</p>
+            <p class="mt-1 text-xs leading-relaxed text-slate-500">
+              Alertas acionáveis e notificação ao líder entram em uma entrega futura — ainda sem lógica nesta tela.
+            </p>
+          </div>
+        </div>
+      </aside>
     </div>
 
     <div class="min-w-0" aria-labelledby="lideres-heading">
-      <div class="mb-3">
-        <h3 id="lideres-heading" class="font-display text-lg font-medium text-slate-800">
-          Líderes da estrutura
-        </h3>
-        <p class="mt-0.5 text-sm text-slate-500">
-          Visão secundária por líder. Para o detalhe completo de aderência, use Ver aderência.
-        </p>
+      <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div class="min-w-0">
+          <h3 id="lideres-heading" class="font-display text-xl font-medium tracking-tight text-slate-800">
+            Líderes Diretos
+          </h3>
+          <p class="mt-1 text-sm text-slate-500">
+            Visão secundária por líder. Para o detalhe completo de aderência, use Ver aderência.
+          </p>
+        </div>
+        {% url 'dashboard:adherence' as adherence_todos_url %}
+        {% include "components/button.html" with label="Ver aderência" href=adherence_todos_url variant="secondary" extra_class="!h-10" %}
       </div>
       <div class="table-frame">
         <table>
@@ -143,30 +162,58 @@
             <tr>
               <th>Líder</th>
               <th>Área</th>
-              <th>Cargo</th>
+              <th>Colaboradores</th>
               <th>Aderência</th>
+              <th class="text-right">Ação</th>
             </tr>
           </thead>
           <tbody>
             {% for item in lideres_resumo %}
-            <tr>
+            <tr class="group">
               <td>
-                <p class="font-medium text-slate-800">{{ item.lider.nome|default:item.lider.email }}</p>
-                <p class="text-xs text-slate-500">{{ item.lider.email }}</p>
+                <div class="flex items-center gap-3">
+                  <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-xs font-bold text-emerald-700" aria-hidden="true">
+                    {{ item.lider.nome|default:item.lider.email|make_list|first|upper }}
+                  </div>
+                  <div class="min-w-0">
+                    <p class="font-medium text-slate-800">{{ item.lider.nome|default:item.lider.email }}</p>
+                    <p class="text-xs text-slate-500">{{ item.lider.email }}</p>
+                  </div>
+                </div>
               </td>
               <td class="text-slate-600">{{ item.lider.area.nome|default:"—" }}</td>
-              <td class="text-slate-600">{{ item.lider.cargo.nome|default:"—" }}</td>
-              <td class="font-semibold tabular-nums text-slate-800">
-                {% if item.snapshot %}
-                  {{ item.snapshot.percentual }}%
+              <td class="tabular-nums text-slate-600">{{ item.colaboradores }}</td>
+              <td>
+                {% if item.snapshot and item.status %}
+                  {% with pct=item.snapshot.percentual|floatformat:0 %}
+                    {% if item.status == "alta" %}
+                      {% with badge_label="Alto ("|add:pct|add:"%)" %}
+                      {% include "components/badge_status.html" with status="alta" label=badge_label %}
+                      {% endwith %}
+                    {% elif item.status == "media" %}
+                      {% with badge_label="Médio ("|add:pct|add:"%)" %}
+                      {% include "components/badge_status.html" with status="media" label=badge_label %}
+                      {% endwith %}
+                    {% else %}
+                      {% with badge_label="Baixo ("|add:pct|add:"%)" %}
+                      {% include "components/badge_status.html" with status="baixa" label=badge_label %}
+                      {% endwith %}
+                    {% endif %}
+                  {% endwith %}
                 {% else %}
-                  <span class="font-normal text-slate-400">—</span>
+                  {% include "components/badge_status.html" with status="arquivado" label="Sem avaliação registrada" %}
                 {% endif %}
+              </td>
+              <td class="text-right">
+                {% url 'dashboard:adherence' as adherence_row_url %}
+                <a href="{{ adherence_row_url }}" class="text-sm font-semibold text-emerald-700 opacity-100 hover:underline sm:opacity-0 sm:group-hover:opacity-100">
+                  Ver detalhes
+                </a>
               </td>
             </tr>
             {% empty %}
             <tr>
-              <td colspan="4" class="!py-8">
+              <td colspan="5" class="!py-8">
                 {% if cobertura_resumo.has_ciclo %}
                   {% include "components/empty_state.html" with title="Nenhum líder encontrado" message="Ainda não há informações nesta seção." %}
                 {% else %}
@@ -180,15 +227,25 @@
       </div>
     </div>
 
-    <div class="min-w-0" aria-labelledby="lacunas-area-heading">
-      <div class="mb-3">
-        <h3 id="lacunas-area-heading" class="font-display text-lg font-medium text-slate-800">
-          Diferenças por área
-        </h3>
-        <p class="mt-0.5 text-sm text-slate-500">
-          Onde a nota do líder ficou abaixo do esperado, agrupado por área.
-        </p>
-      </div>
+    <details class="group min-w-0" aria-labelledby="lacunas-area-heading">
+      <summary class="mb-3 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div class="min-w-0">
+            <h3 id="lacunas-area-heading" class="font-display text-lg font-medium text-slate-800">
+              Diferenças por área
+            </h3>
+            <p class="mt-0.5 text-sm text-slate-500">
+              Onde a nota do líder ficou abaixo do esperado, agrupado por área.
+            </p>
+          </div>
+          <span class="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-700">
+            Ver tabela
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4 transition-transform group-open:rotate-90" aria-hidden="true">
+              <path fill-rule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clip-rule="evenodd" />
+            </svg>
+          </span>
+        </div>
+      </summary>
       <div class="table-frame">
         <table>
           <thead>
@@ -227,17 +284,28 @@
           </tbody>
         </table>
       </div>
-    </div>
+    </details>
 
-    <div class="min-w-0" aria-labelledby="lacunas-cargo-heading">
-      <div class="mb-3">
-        <h3 id="lacunas-cargo-heading" class="font-display text-lg font-medium text-slate-800">
-          Diferenças por cargo
-        </h3>
-        <p class="mt-0.5 text-sm text-slate-500">
-          Onde a nota do líder ficou abaixo do esperado, agrupado por cargo.
-        </p>
-      </div>
+    {% if mostrar_lacunas_por_cargo %}
+    <details class="group min-w-0" aria-labelledby="lacunas-cargo-heading">
+      <summary class="mb-3 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div class="min-w-0">
+            <h3 id="lacunas-cargo-heading" class="font-display text-lg font-medium text-slate-800">
+              Diferenças por cargo
+            </h3>
+            <p class="mt-0.5 text-sm text-slate-500">
+              Onde a nota do líder ficou abaixo do esperado, agrupado por cargo.
+            </p>
+          </div>
+          <span class="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-700">
+            Ver tabela
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4 transition-transform group-open:rotate-90" aria-hidden="true">
+              <path fill-rule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clip-rule="evenodd" />
+            </svg>
+          </span>
+        </div>
+      </summary>
       <div class="table-frame">
         <table>
           <thead>
@@ -276,12 +344,58 @@
           </tbody>
         </table>
       </div>
-    </div>
+    </details>
+    {% endif %}
   </div>
 </section>
+</div>
 {% endblock %}
 
 {% block extra_js %}
+<script>
+  (function () {
+    var KEY = 'gp-structure-scroll-top';
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual';
+    }
+    var form = document.querySelector('form[aria-label="Filtrar estrutura"]');
+    if (form) {
+      form.querySelectorAll('select').forEach(function (sel) {
+        sel.addEventListener('change', function () {
+          try {
+            sessionStorage.setItem(KEY, '1');
+          } catch (e) {}
+          sel.blur();
+        });
+      });
+    }
+    function pinTop() {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      if (document.body) {
+        document.body.scrollTop = 0;
+      }
+    }
+    var shouldPin = false;
+    try {
+      shouldPin = sessionStorage.getItem(KEY) === '1';
+      if (shouldPin) {
+        sessionStorage.removeItem(KEY);
+      }
+    } catch (e) {}
+    if (!shouldPin) {
+      return;
+    }
+    pinTop();
+    window.addEventListener('load', function () {
+      pinTop();
+      requestAnimationFrame(pinTop);
+      setTimeout(pinTop, 50);
+      setTimeout(pinTop, 200);
+      setTimeout(pinTop, 500);
+    });
+  })();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" defer></script>
 <script src="{% static 'js/dashboard_charts.js' %}" defer></script>
 {% endblock %}

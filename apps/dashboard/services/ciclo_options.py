@@ -14,8 +14,10 @@ from typing import TYPE_CHECKING, TypedDict
 
 from apps.cycles.models import Ciclo
 from apps.goals.forms import get_open_ciclo
+from apps.reviews.models import Avaliacao
 
 if TYPE_CHECKING:
+    from django.contrib.auth.models import AbstractBaseUser
     from django.http import HttpRequest
 
 #: Arquivo com mais que este total expõe filtro GET ``q`` no nome (R4 / FR-006).
@@ -54,6 +56,57 @@ def resolve_operational_ciclo(request: HttpRequest) -> Ciclo | None:
     return found
 
 
+def _user_participates(user: AbstractBaseUser, ciclo: Ciclo) -> bool:
+    """True se existe ``Avaliacao`` do usuário naquele ciclo (escopo pessoal)."""
+    user_pk = getattr(user, 'pk', None)
+    if user_pk is None:
+        return False
+    return Avaliacao.objects.filter(ciclo=ciclo, usuario_id=user_pk).exists()
+
+
+def _default_personal_ciclo(user: AbstractBaseUser) -> Ciclo | None:
+    """Aberto só se o usuário participa; **nunca** fallback para encerrado."""
+    aberto = get_open_ciclo()
+    if aberto is not None and _user_participates(user, aberto):
+        return aberto
+    return None
+
+
+def resolve_personal_ciclo(
+    request: HttpRequest,
+    user: AbstractBaseUser,
+) -> Ciclo | None:
+    """Ciclo do Meu painel: participação obrigatória (só ciclos do usuário).
+
+    - Sem ``ciclo`` na query → aberto se o usuário tem avaliação; senão ``None``
+      (**nunca** o último encerrado).
+    - ``?ciclo=<pk>`` só resolve se existir ``Avaliacao(usuario=user)`` naquele
+      ciclo (join — não aceita pk alheio).
+    - pk inválido / sem participação → mesmo default (aberto se participa).
+    """
+    user_pk = getattr(user, 'pk', None)
+    if user_pk is None:
+        return None
+
+    raw = request.GET.get('ciclo')
+    if not raw:
+        return _default_personal_ciclo(user)
+    try:
+        pk = int(raw)
+    except (TypeError, ValueError):
+        return _default_personal_ciclo(user)
+
+    # Escopo no queryset: ciclo só entra se o próprio usuário participa.
+    found = (
+        Ciclo.objects.filter(pk=pk, avaliacoes__usuario_id=user_pk)
+        .distinct()
+        .first()
+    )
+    if found is None:
+        return _default_personal_ciclo(user)
+    return found
+
+
 def grouped_ciclo_options(*, q: str | None = None) -> GroupedCicloOptions:
     """Opções para ``<optgroup>`` Operacional / Arquivo.
 
@@ -67,6 +120,55 @@ def grouped_ciclo_options(*, q: str | None = None) -> GroupedCicloOptions:
     operacional: list[Ciclo] = [aberto] if aberto is not None else []
 
     arquivo_qs = Ciclo.objects.filter(status=Ciclo.Status.ENCERRADO).order_by(
+        '-data_inicio',
+        '-pk',
+    )
+    arquivo_total = arquivo_qs.count()
+    show_q_filter = arquivo_total > ARCHIVE_FILTER_THRESHOLD
+    q_clean = (q or '').strip()
+    if show_q_filter and q_clean:
+        arquivo_qs = arquivo_qs.filter(nome__icontains=q_clean)
+
+    return GroupedCicloOptions(
+        operacional=operacional,
+        arquivo=list(arquivo_qs),
+        arquivo_total=arquivo_total,
+        q=q_clean,
+        show_q_filter=show_q_filter,
+    )
+
+
+def grouped_ciclo_options_for_user(
+    user: AbstractBaseUser,
+    *,
+    q: str | None = None,
+) -> GroupedCicloOptions:
+    """Seletor do Meu painel: só ciclos em que o usuário tem ``Avaliacao``.
+
+    Mesmo shape de ``grouped_ciclo_options`` para reusar ``_ciclo_selector.html``.
+    Operacional só inclui o aberto se houver participação; arquivo só encerrados
+    com avaliação do usuário.
+    """
+    user_pk = getattr(user, 'pk', None)
+    participated_ids = (
+        Avaliacao.objects.filter(usuario_id=user_pk).values_list(
+            'ciclo_id',
+            flat=True,
+        )
+        if user_pk is not None
+        else []
+    )
+    participated = set(participated_ids)
+
+    aberto = get_open_ciclo()
+    operacional: list[Ciclo] = (
+        [aberto] if aberto is not None and aberto.pk in participated else []
+    )
+
+    arquivo_qs = Ciclo.objects.filter(
+        status=Ciclo.Status.ENCERRADO,
+        pk__in=participated,
+    ).order_by(
         '-data_inicio',
         '-pk',
     )

@@ -4,11 +4,12 @@
  * Chart.js UMD (cdn) deve estar disponível como `Chart` global antes deste arquivo.
  *
  * Catálogo (contratos/chart-catalog.md · Freeze A):
- *   bar | doughnut | doughnut_or_bar | bar_grouped | bar_horizontal | area
+ *   bar | doughnut | doughnut_or_bar | bar_grouped | bar_horizontal | area | radar
  * Histórico US3: type bar + stacked (100% categórico) + overlay line — sem lib nova.
  * Valor central no doughnut + datalabels em barras: plugins inline (afterDraw /
  * afterDatasetsDraw) — sem plugin npm / lib nova.
  * Barras limpas (DS): grid e ticks de valor off; leitura via datalabel / legend / KPI.
+ * Radar (gap pessoal): Chart.js nativo; mesmo shape multi-série de bar_grouped.
  *
  * Convenção DOM (com _chart_block.html):
  *   <canvas data-chart-payload="script-id"></canvas>
@@ -44,7 +45,10 @@
   var CANVAS_MIN_PX = 160;
   var CANVAS_MAX_PX = 304;
   var CANVAS_DOUGHNUT_PX = 208;
-  var CANVAS_STACKED_PX = 232;
+  var CANVAS_STACKED_PX = 300;
+  var CANVAS_STACKED_PX_NARROW = 280;
+  var CANVAS_RADAR_PX = 360;
+  var CANVAS_RADAR_PX_NARROW = 300;
   var DOUGHNUT_CUTOUT = '68%';
   var AREA_TENSION = 0.35;
   var AREA_FILL_ALPHA = 0.22;
@@ -75,7 +79,7 @@
 
   /**
    * Mapeia type do payload → tipo Chart.js nativo.
-   * bar_horizontal → bar (+ indexAxis y); area → line (+ fill).
+   * bar_horizontal → bar (+ indexAxis y); area → line (+ fill); radar → radar.
    */
   function resolveChartType(payloadType) {
     if (payloadType === 'doughnut' || payloadType === 'doughnut_or_bar') {
@@ -84,7 +88,40 @@
     if (payloadType === 'area') {
       return 'line';
     }
+    if (payloadType === 'radar') {
+      return 'radar';
+    }
     return 'bar';
+  }
+
+  /** Quebra rótulos do radar em até 2 linhas (evita corte no canvas). */
+  function wrapRadarLabel(label) {
+    var text = String(label || '').trim();
+    if (!text) {
+      return [''];
+    }
+    var maxChars = isNarrowViewport() ? 14 : 18;
+    if (text.length <= maxChars) {
+      return [text];
+    }
+    var words = text.split(/\s+/);
+    if (words.length === 1) {
+      return [text.slice(0, maxChars - 1) + '…'];
+    }
+    var line1 = words[0];
+    var i = 1;
+    while (i < words.length && (line1 + ' ' + words[i]).length <= maxChars) {
+      line1 += ' ' + words[i];
+      i += 1;
+    }
+    var rest = words.slice(i).join(' ');
+    if (!rest) {
+      return [line1];
+    }
+    if (rest.length > maxChars) {
+      rest = rest.slice(0, maxChars - 1) + '…';
+    }
+    return [line1, rest];
   }
 
   function hexToRgba(hex, alpha) {
@@ -300,8 +337,8 @@
       ticks: {
         display: false,
       },
-      // Folga para datalabels não colarem na borda do canvas.
-      grace: isArea ? '0%' : '8%',
+      // Folga para datalabels não colarem na borda do canvas (barras baixas vs pico).
+      grace: isArea ? '0%' : '18%',
     };
 
     if (horizontal) {
@@ -319,6 +356,8 @@
   /**
    * Plugin inline — valor na barra (sem chartjs-plugin-datalabels / npm).
    * Substitui ticks do eixo de valor (DS: priorizar rótulos de dados).
+   * Barras curtas (ex. 1 vs 138): mantém folga mínima do baseline para o
+   * número não colidir com o eixo de categoria — o valor não depende da altura.
    */
   function barValueLabelsPlugin(horizontal) {
     return {
@@ -331,6 +370,8 @@
         var narrow = isNarrowViewport();
         var fontSize = narrow ? 11 : 12;
         var unit = chartValueUnit(chart);
+        // Folga mínima do baseline (barras verticais) para rótulos legíveis.
+        var minClearanceFromBase = fontSize + 8;
         ctx.save();
         ctx.font = '600 ' + fontSize + 'px ' + FONT_UI;
         ctx.fillStyle = COLOR_INK;
@@ -353,7 +394,15 @@
             } else {
               ctx.textAlign = 'center';
               ctx.textBaseline = 'bottom';
-              ctx.fillText(text, pos.x, pos.y - 6);
+              // Acima da barra; se a barra for baixa demais, sobe o rótulo
+              // para não afundar no eixo — valor sempre legível.
+              var base = element.base;
+              var aboveBar = pos.y - 6;
+              var labelY =
+                typeof base === 'number'
+                  ? Math.min(aboveBar, base - minClearanceFromBase)
+                  : aboveBar;
+              ctx.fillText(text, pos.x, labelY);
             }
           });
         });
@@ -437,10 +486,75 @@
         layout: {
           padding: horizontal
             ? { top: 4, right: 28, bottom: 4, left: 4 }
-            : { top: 18, right: 8, bottom: 4, left: 4 },
+            : { top: 28, right: 8, bottom: 4, left: 4 },
         },
       },
       plugins: showValueLabels ? [barValueLabelsPlugin(horizontal)] : [],
+    };
+  }
+
+  /**
+   * Radar esperado × nota (gap pessoal) — Chart.js nativo; mesmo shape de
+   * bar_grouped. null permanece null (não vira 0). Paleta GROUPED_DEFAULTS.
+   */
+  function buildRadarConfig(payload) {
+    var labels = payload.labels || [];
+    var seriesList = payload.series || [];
+    var datasets = seriesList.map(function (serie, index) {
+      var color =
+        serie.color ||
+        GROUPED_DEFAULTS[serie.key] ||
+        STATUS_TRIAD[index % STATUS_TRIAD.length];
+      return {
+        label: serie.label || serie.key || 'Série ' + (index + 1),
+        data: (serie.values || []).map(asNullableNumber),
+        backgroundColor: hexToRgba(color, 0.18),
+        borderColor: color,
+        borderWidth: 2,
+        pointBackgroundColor: color,
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 1,
+        pointRadius: 3,
+        pointHoverRadius: 4,
+        fill: true,
+        spanGaps: false,
+      };
+    });
+
+    return {
+      type: 'radar',
+      data: { labels: labels, datasets: datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: basePlugins(true),
+        scales: {
+          r: {
+            beginAtZero: true,
+            ticks: {
+              display: false,
+              backdropColor: 'transparent',
+              showLabelBackdrop: false,
+            },
+            grid: {
+              color: 'rgba(148, 163, 184, 0.35)',
+            },
+            angleLines: {
+              color: 'rgba(148, 163, 184, 0.35)',
+            },
+            pointLabels: {
+              color: COLOR_INK,
+              font: chartFont({ size: isNarrowViewport() ? 10 : 11 }),
+              padding: isNarrowViewport() ? 6 : 10,
+              callback: function (label) {
+                return wrapRadarLabel(label);
+              },
+            },
+          },
+        },
+        // Padding generoso para pointLabels não serem clipados pelo canvas.
+        layout: { padding: { top: 28, right: 32, bottom: 24, left: 32 } },
+      },
     };
   }
 
@@ -501,11 +615,21 @@
         },
       };
     } else if (!isDoughnut) {
-      options.layout = { padding: { top: 18, right: 8, bottom: 4, left: 4 } };
+      options.layout = { padding: { top: 28, right: 8, bottom: 4, left: 4 } };
     }
     if (isDoughnut) {
       options.cutout = DOUGHNUT_CUTOUT;
       options.layout = { padding: 4 };
+    }
+
+    // Painel do time: barras do pipeline filtram a tabela (toggle ?etapa=).
+    if (
+      !isDoughnut &&
+      payload.id === 'chart-escopo-status' &&
+      payload.keys &&
+      payload.keys.length
+    ) {
+      attachTeamStageFilterHandlers(options, payload);
     }
 
     var config = {
@@ -600,6 +724,63 @@
     };
   }
 
+  /**
+   * Largura das barras empilhadas — alinhado ao mockup ciclo_historico (barThickness 40).
+   * Poucos ciclos: barras largas + eixo com offset preenchem o plot horizontalmente.
+   */
+  function stackedBarLayout(labelCount) {
+    if (labelCount <= 6) {
+      return {
+        barThickness: 40,
+        categoryPercentage: 0.82,
+        barPercentage: 0.9,
+      };
+    }
+    return {
+      maxBarThickness: 40,
+      categoryPercentage: BAR_CATEGORY_PERCENTAGE,
+      barPercentage: BAR_PERCENTAGE,
+    };
+  }
+
+  function stackedCanvasHeight(labelCount) {
+    var base = isNarrowViewport() ? CANVAS_STACKED_PX_NARROW : CANVAS_STACKED_PX;
+    if (labelCount > 5) {
+      return base + 28;
+    }
+    return base;
+  }
+
+  function stackedBorderRadius(datasetIndex, barDatasetCount) {
+    if (barDatasetCount <= 1) {
+      return BAR_RADIUS;
+    }
+    if (datasetIndex === 0) {
+      return { bottomLeft: BAR_RADIUS, bottomRight: BAR_RADIUS, topLeft: 0, topRight: 0 };
+    }
+    if (datasetIndex === barDatasetCount - 1) {
+      return { topLeft: BAR_RADIUS, topRight: BAR_RADIUS, bottomLeft: 0, bottomRight: 0 };
+    }
+    return 0;
+  }
+
+  function observeChartResize(canvas) {
+    var wrap = canvas.parentElement;
+    if (!wrap || typeof ResizeObserver === 'undefined') {
+      return;
+    }
+    if (wrap._greennChartRo) {
+      return;
+    }
+    var ro = new ResizeObserver(function () {
+      if (canvas.chartInstance) {
+        canvas.chartInstance.resize();
+      }
+    });
+    ro.observe(wrap);
+    wrap._greennChartRo = ro;
+  }
+
   function formatIsoDatePt(iso) {
     if (!iso) {
       return '';
@@ -628,6 +809,11 @@
     var xMeta = payload.x_meta || [];
     var points = payload.points || [];
     var detalheLabels = payload.detalhe_labels || {};
+    var barLayout = stackedBarLayout(labels.length);
+    var barSeriesCount = seriesList.filter(function (s) {
+      return s.kind !== 'line';
+    }).length;
+    var barDatasetIndex = 0;
     var datasets = seriesList.map(function (serie, index) {
       var color =
         serie.color ||
@@ -648,12 +834,13 @@
           pointRadius: isNarrowViewport() ? 2 : 3,
           pointHoverRadius: 5,
           pointBackgroundColor: color,
-          stack: 'trend',
-          order: 1,
+          order: 0,
           yAxisID: 'y',
           spanGaps: false,
         };
       }
+      var dsBarIndex = barDatasetIndex;
+      barDatasetIndex += 1;
       return {
         type: 'bar',
         label: serie.label || serie.key || 'Série ' + (index + 1),
@@ -661,17 +848,18 @@
         backgroundColor: color,
         borderColor: color,
         borderWidth: 0,
-        borderRadius: 4,
-        maxBarThickness: BAR_MAX_THICKNESS_DENSE,
-        categoryPercentage: BAR_CATEGORY_PERCENTAGE,
-        barPercentage: BAR_PERCENTAGE,
-        stack: 'status',
-        order: 2,
+        borderRadius: stackedBorderRadius(dsBarIndex, barSeriesCount),
+        barThickness: barLayout.barThickness,
+        maxBarThickness: barLayout.maxBarThickness,
+        categoryPercentage: barLayout.categoryPercentage,
+        barPercentage: barLayout.barPercentage,
+        stack: 'stack0',
+        order: 1,
         skipNull: true,
       };
     });
 
-    var plugins = basePlugins(false);
+    var plugins = basePlugins(true);
     plugins.tooltip.callbacks.title = function (items) {
       if (!items || !items.length) {
         return '';
@@ -719,6 +907,7 @@
         scales: {
           x: {
             stacked: true,
+            offset: true,
             grid: { display: false },
             border: axisBorderHidden(),
             ticks: {
@@ -757,6 +946,9 @@
     if (payload.type === 'bar_grouped') {
       return buildGroupedConfig(payload);
     }
+    if (payload.type === 'radar') {
+      return buildRadarConfig(payload);
+    }
     if (payload.type === 'area') {
       return buildAreaConfig(payload);
     }
@@ -764,6 +956,87 @@
       return buildStackedPercentConfig(payload);
     }
     return buildSingleSeriesConfig(payload);
+  }
+
+  /**
+   * Clique nas barras de "Estágios do ciclo" → filtra Visão do time (?etapa=).
+   * Valor 0: ignora. Mesma etapa ativa: limpa (toggle). Scroll suave à tabela.
+   */
+  function attachTeamStageFilterHandlers(options, payload) {
+    var keys = payload.keys || [];
+    var values = (payload.values || []).map(asNullableNumber);
+
+    options.onHover = function (evt, elements) {
+      var target =
+        (evt && evt.native && evt.native.target) ||
+        (evt && evt.chart && evt.chart.canvas) ||
+        null;
+      if (!target || !target.style) {
+        return;
+      }
+      var cursor = 'default';
+      if (elements && elements.length) {
+        var idx = elements[0].index;
+        var val = values[idx];
+        if (typeof val === 'number' && val > 0) {
+          cursor = 'pointer';
+        }
+      }
+      target.style.cursor = cursor;
+    };
+
+    options.onClick = function (_evt, elements) {
+      if (!elements || !elements.length) {
+        return;
+      }
+      var idx = elements[0].index;
+      var val = values[idx];
+      if (typeof val !== 'number' || val <= 0) {
+        return;
+      }
+      var key = keys[idx];
+      if (!key) {
+        return;
+      }
+      applyTeamStageFilter(key);
+    };
+  }
+
+  function applyTeamStageFilter(etapaKey) {
+    var url = new URL(window.location.href);
+    var current = url.searchParams.get('etapa') || '';
+    if (current === etapaKey) {
+      url.searchParams.delete('etapa');
+    } else {
+      url.searchParams.set('etapa', etapaKey);
+    }
+    url.searchParams.delete('page');
+    var path = url.pathname + url.search;
+    var list = document.getElementById('list-container');
+
+    function scrollToTeamList() {
+      var heading = document.getElementById('team-drilldown-heading');
+      if (heading && heading.scrollIntoView) {
+        heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
+    if (list && typeof htmx !== 'undefined' && htmx.ajax) {
+      htmx
+        .ajax('GET', path, {
+          target: '#list-container',
+          swap: 'outerHTML',
+        })
+        .then(function () {
+          if (window.history && window.history.pushState) {
+            window.history.pushState({}, '', path);
+          }
+          scrollToTeamList();
+        });
+      return;
+    }
+
+    window.location.assign(path);
   }
 
   /**
@@ -779,6 +1052,8 @@
     var type = payload.type;
     if (type === 'doughnut' || type === 'doughnut_or_bar') {
       heightPx = isNarrowViewport() ? 192 : CANVAS_DOUGHNUT_PX;
+    } else if (type === 'radar') {
+      heightPx = isNarrowViewport() ? CANVAS_RADAR_PX_NARROW : CANVAS_RADAR_PX;
     } else if (type === 'bar_horizontal') {
       var n = (payload.labels || []).length;
       heightPx = Math.min(
@@ -786,7 +1061,8 @@
         Math.max(CANVAS_MIN_PX, n * CANVAS_ROW_PX + CANVAS_PAD_PX),
       );
     } else if (payload.stacked === true) {
-      heightPx = isNarrowViewport() ? 208 : CANVAS_STACKED_PX;
+      var n = (payload.labels || []).length;
+      heightPx = stackedCanvasHeight(n);
     }
     if (heightPx) {
       wrap.style.height = heightPx + 'px';
@@ -815,11 +1091,19 @@
 
     fitCanvasFrame(canvas, payload);
     canvas.chartInstance = new Chart(canvas, buildConfig(payload));
+    observeChartResize(canvas);
     // Re-mede após o layout (grid/flex) assentar — evita canvas 0×N em branco.
     requestAnimationFrame(function () {
       if (canvas.chartInstance) {
         canvas.chartInstance.resize();
       }
+    });
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        if (canvas.chartInstance) {
+          canvas.chartInstance.resize();
+        }
+      });
     });
   }
 

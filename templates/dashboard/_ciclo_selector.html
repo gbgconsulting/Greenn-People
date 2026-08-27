@@ -6,6 +6,7 @@
 
   Uso:
     {% include "dashboard/_ciclo_selector.html" %}
+    {% include "dashboard/_ciclo_selector.html" with framed=True %}
 
   Em form GET já existente (ex. estrutura: ciclo + área + cargo):
     {% include "dashboard/_ciclo_selector.html" with ciclo_selector_embed=True %}
@@ -16,16 +17,21 @@
     request — preserva query (visao, ciclos, área, cargo…), exceto ciclo / q / page
 
   Parâmetros:
-    ciclo_selector_embed — só os campos, sem <form> (default: form GET próprio)
+    ciclo_selector_embed — só os campos, sem <form> (default: False)
+    hide_q_filter        — oculta o campo “Buscar ciclo encerrado” (default: False)
+    hide_arquivo_hint    — oculta o texto “N ciclos encerrados” sob o select (default: False)
+    compact              — label/largura alinhados a filtros vizinhos (área/cargo) (default: False)
+    framed               — envolve o form em card (default: False)
     extra_class          — classes extras no wrapper
 {% endcomment %}
 {% with opts=grouped_ciclo_options field_id=ciclo_field_id|default:"ciclo" %}
-{% with embed=ciclo_selector_embed|default:False %}
+{% with embed=ciclo_selector_embed|default:False hide_q=hide_q_filter|default:False framed=framed|default:False hide_hint=hide_arquivo_hint|default:False compact=compact|default:False %}
 {% firstof ciclo_selecionado.pk ciclo_filtro.pk request.GET.ciclo as selected_pk %}
 {% if not embed %}
+{% if framed %}<div class="rounded-xl border border-line bg-surface-card p-4 sm:p-6">{% endif %}
 <form
   method="get"
-  class="grid grid-cols-1 gap-3 sm:flex sm:flex-wrap sm:items-end{% if extra_class %} {{ extra_class }}{% endif %}"
+  class="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end{% if extra_class %} {{ extra_class }}{% endif %}"
   role="search"
   aria-label="Selecionar ciclo"
 >
@@ -34,14 +40,17 @@
   {% endif %}{% endfor %}{% endif %}
 {% endif %}
 
-  <div class="min-w-0 sm:min-w-[12rem]">
-    <label for="{{ field_id }}" class="mb-1 block font-ui text-xs font-medium uppercase tracking-wide text-ink-muted">Ciclo</label>
+  <div class="min-w-0 {% if compact %}w-full sm:w-auto sm:min-w-[10rem] sm:max-w-[16rem]{% else %}flex-1 sm:min-w-[12rem]{% endif %}">
+    <label
+      for="{{ field_id }}"
+      class="{% if compact %}mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500{% else %}mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-500{% endif %}"
+    >Ciclo</label>
     <select
       id="{{ field_id }}"
       name="ciclo"
-      class="form-control w-full"
+      class="form-control w-full{% if not compact %} bg-slate-50{% endif %}"
       onchange="this.form.submit()"
-      aria-describedby="{{ field_id }}-arquivo-hint"
+      {% if not framed and not hide_hint %}aria-describedby="{{ field_id }}-arquivo-hint"{% endif %}
     >
       <optgroup label="Em andamento">
         {% for c in opts.operacional %}
@@ -60,34 +69,42 @@
         {% endfor %}
       </optgroup>
     </select>
+    {% if not framed and not hide_hint %}
     <p id="{{ field_id }}-arquivo-hint" class="mt-1 font-ui text-xs text-ink-muted">
       {{ opts.arquivo_total|default:0 }} ciclo{{ opts.arquivo_total|default:0|pluralize }} encerrado{{ opts.arquivo_total|default:0|pluralize }}
     </p>
+    {% endif %}
   </div>
 
-  {% if opts.show_q_filter %}
-  <div class="min-w-0 sm:min-w-[12rem]">
-    <label for="{{ field_id }}-q" class="mb-1 block font-ui text-xs font-medium uppercase tracking-wide text-ink-muted">Buscar ciclo encerrado</label>
+  {% if opts.show_q_filter and not hide_q %}
+  <div class="relative min-w-0 flex-1 sm:min-w-[14rem]">
+    <label for="{{ field_id }}-q" class="sr-only">Buscar ciclo encerrado</label>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" aria-hidden="true">
+      <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clip-rule="evenodd" />
+    </svg>
     <input
       type="search"
       id="{{ field_id }}-q"
       name="q"
       value="{{ opts.q }}"
-      class="form-control w-full"
-      placeholder="Digite o nome do ciclo"
+      class="form-control w-full bg-slate-50 pl-10"
+      placeholder="Buscar ciclo encerrado"
       autocomplete="off"
     >
   </div>
   {% endif %}
 
+  {% if not hide_q %}
   {% if not embed or opts.show_q_filter %}
-  <div>
-    {% include "components/button.html" with label="Aplicar" type="submit" variant="secondary" %}
+  <div class="shrink-0">
+    {% include "components/button.html" with label="Aplicar" type="submit" variant="secondary" extra_class="!h-12 !min-w-[6rem]" %}
   </div>
+  {% endif %}
   {% endif %}
 
 {% if not embed %}
 </form>
+{% if framed %}</div>{% endif %}
 {% endif %}
 {% endwith %}
 {% endwith %}

@@ -1,14 +1,15 @@
 <div id="list-container">
   <div class="table-frame">
-    <table class="table-fixed w-full">
+    <table class="table-fixed w-full min-w-[64rem]">
       <colgroup>
-        <col class="w-[19%]" />
-        <col class="w-[19%]" />
+        <col class="w-[18%]" />
+        <col class="w-[18%]" />
         <col class="w-[12%]" />
         <col class="w-[12%]" />
+        <col class="w-[12%]" />
+        <col class="w-[9%]" />
+        <col class="w-[8%]" />
         <col class="w-[11%]" />
-        <col class="w-[12%]" />
-        <col class="w-[15%]" />
       </colgroup>
       <thead>
       <tr>
@@ -17,6 +18,7 @@
         <th>Área</th>
         <th>Cargo</th>
         <th>Gestor</th>
+        <th class="whitespace-nowrap">Entrada</th>
         <th>Status</th>
         <th class="text-right">Ações</th>
       </tr>
@@ -30,11 +32,12 @@
             {% include "components/badge_status.html" with status="admin" label="Admin" extra_class="ml-1" %}
           {% endif %}
         </td>
-        <td class="text-slate-600">{{ u.email }}</td>
-        <td class="text-slate-600">{{ u.area.nome|default:"—" }}</td>
-        <td class="text-slate-600">{{ u.cargo.nome|default:"—" }}</td>
-        <td class="text-slate-600">{{ u.line_manager.nome|default:"—" }}</td>
-        <td>
+        <td class="max-w-0 truncate text-slate-600" title="{{ u.email }}">{{ u.email }}</td>
+        <td class="max-w-0 truncate text-slate-600" title="{{ u.area.nome|default:'' }}">{{ u.area.nome|default:"—" }}</td>
+        <td class="max-w-0 truncate text-slate-600" title="{{ u.cargo.nome|default:'' }}">{{ u.cargo.nome|default:"—" }}</td>
+        <td class="max-w-0 truncate text-slate-600" title="{{ u.line_manager.nome|default:'' }}">{{ u.line_manager.nome|default:"—" }}</td>
+        <td class="whitespace-nowrap text-slate-600 tabular-nums">{{ u.data_entrada|date:"d/m/Y"|default:"—" }}</td>
+        <td class="whitespace-nowrap">
           {% if not u.area_id or not u.cargo_id %}
             {% include "components/badge_status.html" with status="pendente" %}
           {% elif u.is_active %}
@@ -43,7 +46,7 @@
             {% include "components/badge_status.html" with status="arquivado" label="Inativo" %}
           {% endif %}
         </td>
-        <td class="text-right">
+        <td class="whitespace-nowrap text-right">
           <a href="{% url 'talent:classify' u.pk %}" class="font-medium text-slate-600 hover:text-slate-800">Classificar</a>
           <span class="text-ink-muted"> · </span>
           <a href="{% url 'organization:user_update' u.pk %}" class="font-medium text-emerald-700 hover:text-emerald-800">Editar</a>
@@ -51,7 +54,7 @@
       </tr>
       {% empty %}
       <tr>
-        <td colspan="7" class="!py-8">
+        <td colspan="8" class="!py-8">
           {% include "components/empty_state.html" with title="Nenhum usuário cadastrado" message="Não há usuários neste escopo." %}
         </td>
       </tr>

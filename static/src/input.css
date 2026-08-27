@@ -162,31 +162,89 @@
 
   /*
    * Shell nav — densidade/tipografia v2 (T044); IA Governança/Cadastros/Sistema intacta.
-   * Alvos de clique confortáveis; ênfase P1 via marker.
+   * Estado ativo único: fundo + texto + barra lateral. Ênfase P1 = peso tipográfico (sem borda permanente).
    */
   .nav-section-label {
-    @apply mb-1 px-3 text-[0.6875rem] font-medium uppercase tracking-wider text-slate-400;
+    @apply flex flex-1 items-center gap-1 text-[0.6875rem] font-medium uppercase tracking-wider text-slate-400;
+  }
+
+  .nav-group {
+    @apply border-0;
+  }
+
+  .nav-group > summary {
+    @apply mb-1 flex cursor-pointer list-none items-center gap-1 rounded-md px-2 py-1.5 text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500;
+  }
+
+  .nav-group > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .nav-group__chevron {
+    @apply h-3.5 w-3.5 shrink-0 transition-transform duration-150;
+  }
+
+  .nav-group[open] > summary .nav-group__chevron {
+    @apply rotate-90;
   }
 
   .nav-link {
-    @apply block rounded-lg px-3 py-2 text-sm tracking-tight text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-800;
+    @apply flex items-center gap-2.5 rounded-lg border-l-[3px] border-transparent px-2.5 py-2 text-sm tracking-tight text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-800;
   }
 
   .nav-link[aria-current='page'] {
-    @apply bg-emerald-50 font-medium text-emerald-700;
+    @apply border-emerald-500 bg-emerald-50 font-medium text-emerald-700;
   }
 
   .nav-link--emphasis {
-    @apply border-l-2 border-emerald-500 font-semibold text-slate-800;
+    @apply font-semibold text-slate-800;
   }
 
-  .nav-link--emphasis[aria-current='page'] {
-    @apply bg-emerald-50 text-emerald-800;
+  .nav-link--emphasis:not([aria-current='page']) .nav-link__icon {
+    @apply text-emerald-600;
+  }
+
+  .nav-link__icon {
+    @apply h-5 w-5 shrink-0 text-slate-400;
+  }
+
+  .nav-link[aria-current='page'] .nav-link__icon {
+    @apply text-emerald-600;
+  }
+
+  .nav-link__label {
+    @apply min-w-0 flex-1 truncate;
+  }
+
+  .nav-link__text {
+    @apply flex min-w-0 flex-1 items-center justify-between gap-2;
   }
 
   /* Marca do chrome autenticado — display + tracking; só sob .app-shell (sidebar/topbar). */
   .shell-brand {
     @apply bg-brand-gradient bg-clip-text font-display text-base font-semibold tracking-tight text-transparent;
+  }
+
+  /*
+   * Sidebar desktop: modo ícone-only.
+   * Largura (w-64 ↔ w-16) é alternada em JS — utilities Tailwind vencem @layer components.
+   * Labels: equivalente a x-show="!collapsed" via .sidebar--collapsed.
+   */
+  #desktop-sidebar.sidebar--collapsed [data-sidebar-label],
+  #desktop-sidebar.sidebar--collapsed .shell-brand,
+  #desktop-sidebar.sidebar--collapsed .nav-link__label,
+  #desktop-sidebar.sidebar--collapsed .nav-link__text,
+  #desktop-sidebar.sidebar--collapsed .nav-link__badge,
+  #desktop-sidebar.sidebar--collapsed .nav-group > summary {
+    @apply hidden;
+  }
+
+  #desktop-sidebar.sidebar--collapsed .nav-link {
+    @apply justify-center gap-0 px-2;
+  }
+
+  #desktop-sidebar.sidebar--collapsed .sidebar-brand-row {
+    @apply justify-center px-2;
   }
 
   /*
@@ -226,6 +284,75 @@
     .dashboard-chart-canvas {
       height: 19rem;
       min-height: 19rem;
+    }
+  }
+
+  /*
+   * Canvas do painel do líder — altura suficiente para rótulos no eixo
+   * sem voltar ao canvas gerencial pleno (19rem).
+   */
+  .dashboard-chart-canvas.dashboard-chart-canvas--compact {
+    @apply mt-4;
+    height: 15.5rem;
+    min-height: 15.5rem;
+  }
+
+  @media (min-width: 640px) {
+    .dashboard-chart-canvas.dashboard-chart-canvas--compact {
+      height: 16.5rem;
+      min-height: 16.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .dashboard-chart-canvas.dashboard-chart-canvas--compact {
+      height: 17.5rem;
+      min-height: 17.5rem;
+    }
+  }
+
+  /*
+   * Radar (gap pessoal) — área extra para pointLabels sem clip no canvas.
+   */
+  .dashboard-chart-canvas.dashboard-chart-canvas--radar {
+    @apply mt-4;
+    height: 18.75rem; /* ~300px */
+    min-height: 18.75rem;
+  }
+
+  @media (min-width: 640px) {
+    .dashboard-chart-canvas.dashboard-chart-canvas--radar {
+      height: 21.25rem; /* ~340px */
+      min-height: 21.25rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .dashboard-chart-canvas.dashboard-chart-canvas--radar {
+      height: 22.5rem; /* ~360px */
+      min-height: 22.5rem;
+    }
+  }
+
+  /*
+   * Histórico empilhado (admin / ciclo_detail) — plot alto + largura total do card.
+   */
+  .dashboard-chart-canvas.dashboard-chart-canvas--stacked-history {
+    height: 18.75rem; /* ~300px — mockup ciclo_historico */
+    min-height: 18.75rem;
+  }
+
+  @media (min-width: 640px) {
+    .dashboard-chart-canvas.dashboard-chart-canvas--stacked-history {
+      height: 18.75rem;
+      min-height: 18.75rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .dashboard-chart-canvas.dashboard-chart-canvas--stacked-history {
+      height: 18.75rem;
+      min-height: 18.75rem;
     }
   }
 }

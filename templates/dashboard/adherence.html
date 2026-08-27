@@ -1,40 +1,60 @@
 {% extends "base.html" %}
-{% load static %}
 
 {% block title %}Aderência da liderança — Greenn People{% endblock %}
 
 {% block content %}
-<header class="mb-6">
-  <div class="flex flex-wrap items-start justify-between gap-3">
-    <div>
-      <h1 class="font-display text-2xl font-semibold text-slate-800">Aderência da liderança</h1>
-      <p class="mt-1 text-sm text-slate-500">
+<div class="mx-auto max-w-[90rem]">
+<header class="mb-8">
+  <div class="flex flex-col justify-between gap-6 md:flex-row md:items-start">
+    <div class="max-w-2xl">
+      <h1 class="font-display text-3xl font-semibold tracking-tight text-slate-800">Aderência da liderança</h1>
+      <p class="mt-2 text-base leading-relaxed text-slate-500">
         Veja como os líderes estão cumprindo prazos no ciclo escolhido.
       </p>
       {% if grouped_ciclo_options.arquivo_total %}
-        <p class="mt-1 text-xs text-slate-500">
+        <p class="mt-2 flex items-center gap-1.5 text-sm text-slate-500">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z" clip-rule="evenodd" />
+          </svg>
           {{ grouped_ciclo_options.arquivo_total }} ciclo{{ grouped_ciclo_options.arquivo_total|pluralize }} encerrado{{ grouped_ciclo_options.arquivo_total|pluralize }} disponíveis no seletor
         </p>
       {% endif %}
     </div>
-    {% if ciclo_aberto %}
-      {% include "components/badge_status.html" with status="ativo" label=ciclo_aberto.nome extra_class="mt-1" %}
-    {% else %}
-      {% include "components/badge_status.html" with status="arquivado" label="Sem ciclo aberto" extra_class="mt-1" %}
-    {% endif %}
+    <div class="flex shrink-0 flex-col items-start gap-4 md:items-end">
+      {% include "dashboard/_ciclo_header_badge.html" %}
+    </div>
   </div>
 </header>
 
-<section class="mb-6 min-w-0" aria-label="Selecionar ciclo">
-  {% include "dashboard/_ciclo_selector.html" %}
+<section class="mb-8" aria-labelledby="aderencia-filtros-heading">
+  <div class="mb-3">
+    <h2 id="aderencia-filtros-heading" class="font-display text-lg font-medium text-slate-800">
+      Filtros
+    </h2>
+    <p class="mt-0.5 text-sm text-slate-500">
+      Escolha o ciclo e a área para ajustar a visão.
+    </p>
+  </div>
+  <form
+    method="get"
+    class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end"
+    role="search"
+    aria-label="Filtrar aderência"
+  >
+    {% if request %}{% for key, value in request.GET.items %}{% if key != "ciclo" and key != "q" and key != "page" and key != "area" %}
+    <input type="hidden" name="{{ key }}" value="{{ value }}">
+    {% endif %}{% endfor %}{% endif %}
+    {% include "dashboard/_ciclo_selector.html" with ciclo_selector_embed=True hide_q_filter=True hide_arquivo_hint=True compact=True %}
+    {% include "dashboard/_area_filter.html" %}
+  </form>
 </section>
 
 <section class="mb-8 min-w-0" aria-labelledby="aderencia-heading">
-  <div class="mb-3">
-    <h2 id="aderencia-heading" class="font-display text-lg font-medium text-slate-800">
+  <div class="mb-6">
+    <h2 id="aderencia-heading" class="font-display text-2xl font-medium tracking-tight text-slate-800">
       Onde estamos
     </h2>
-    <p class="mt-0.5 text-sm text-slate-500">
+    <p class="mt-1 text-sm leading-relaxed text-slate-500">
       {% if ciclo_selecionado %}
         Média e distribuição em {{ ciclo_selecionado.nome }} — a lista abaixo detalha cada líder.
       {% else %}
@@ -43,59 +63,37 @@
     </p>
   </div>
 
-  <div class="managerial-panel">
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores de aderência">
+  <div class="managerial-panel [overflow-anchor:none]">
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-3" aria-label="Indicadores de aderência">
       {% if aderencia_resumo.has_ciclo and aderencia_resumo.media is not None %}
         {% with val=aderencia_resumo.media|stringformat:"d"|add:"%" %}
-        {% include "components/card.html" with label="Aderência média" value=val badge_status=aderencia_resumo.status body="Média dos líderes no escopo filtrado." %}
+        {% include "components/card.html" with label="Aderência média" value=val badge_status=aderencia_resumo.status body="Média dos líderes no escopo filtrado." accent="success" icon="trending_up" value_size="lg" %}
         {% endwith %}
       {% elif aderencia_resumo.has_ciclo %}
-        {% include "components/card.html" with label="Aderência média" value="—" body="Ainda não há dados de aderência neste escopo." %}
+        {% include "components/card.html" with label="Aderência média" value="—" body="Ainda não há dados de aderência neste escopo." accent="success" value_size="lg" %}
       {% else %}
-        {% include "components/card.html" with label="Aderência média" value="—" body="Abra ou escolha um ciclo no seletor." %}
+        {% include "components/card.html" with label="Aderência média" value="—" body="Abra ou escolha um ciclo nos filtros acima." accent="success" value_size="lg" %}
       {% endif %}
 
       {% if aderencia_resumo.has_ciclo %}
-        {% include "components/card.html" with label="Líderes com aderência" value=aderencia_resumo.total_lideres body="Com índice registrado no mesmo escopo da lista." %}
+        {% include "components/card.html" with label="Líderes com aderência" value=aderencia_resumo.total_lideres body="Com índice registrado no mesmo escopo da lista." accent="primary" value_size="lg" %}
       {% else %}
-        {% include "components/card.html" with label="Líderes com aderência" value="—" body="Disponível quando houver ciclo." %}
+        {% include "components/card.html" with label="Líderes com aderência" value="—" body="Disponível quando houver um ciclo." accent="primary" value_size="lg" %}
       {% endif %}
 
       {% if aderencia_resumo.has_ciclo and aderencia_resumo.baixa is not None %}
         {% if aderencia_resumo.baixa > 0 %}
-          {% include "components/card.html" with label="Baixa aderência" value=aderencia_resumo.baixa badge_status="baixa" badge_label="Atenção" body="Abaixo de 50% — priorize na lista." %}
+          {% include "components/card.html" with label="Baixa aderência" value=aderencia_resumo.baixa badge_status="baixa" badge_label="Atenção" body="Abaixo de 50% — priorize na lista." accent="warning" value_size="lg" %}
         {% else %}
-          {% include "components/card.html" with label="Baixa aderência" value=aderencia_resumo.baixa badge_status="alta" badge_label="Em dia" body="Ninguém abaixo de 50% no escopo." %}
+          {% include "components/card.html" with label="Baixa aderência" value=aderencia_resumo.baixa badge_status="alta" badge_label="Em dia" body="Ninguém abaixo de 50% no escopo." accent="success" value_size="lg" %}
         {% endif %}
       {% else %}
-        {% include "components/card.html" with label="Baixa aderência" value="—" body="Disponível quando houver ciclo." %}
+        {% include "components/card.html" with label="Baixa aderência" value="—" body="Disponível quando houver um ciclo." accent="warning" value_size="lg" %}
       {% endif %}
     </div>
 
-    <div class="min-w-0" id="aderencia-chart-heading">
-      {% if chart_aderencia_distribuicao.has_data %}
-        {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" kpi_label="Líderes" kpi_value=chart_aderencia_distribuicao.total kpi_body="com aderência no escopo" insight="Alta, média e baixa — o número no centro é o total de líderes." %}
-      {% else %}
-        {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" %}
-      {% endif %}
-    </div>
-
-    <div class="min-w-0" aria-labelledby="aderencia-drilldown-heading">
-      <div class="mb-3">
-        <h3 id="aderencia-drilldown-heading" class="font-display text-lg font-medium text-slate-800">
-          Líderes no escopo
-        </h3>
-        <p class="mt-0.5 text-sm text-slate-500">
-          Detalhe por líder — componentes e data da última atualização.
-        </p>
-      </div>
-      {% include "dashboard/adherence_list_partial.html" %}
-    </div>
+    {% include "dashboard/adherence_list_partial.html" %}
   </div>
 </section>
-{% endblock %}
-
-{% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" defer></script>
-<script src="{% static 'js/dashboard_charts.js' %}" defer></script>
+</div>
 {% endblock %}

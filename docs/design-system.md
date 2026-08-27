@@ -97,7 +97,7 @@ Feature `005-dashboard-charts` (consumo) + `009-persona-visual-redesign` (catál
 | Versão | **4.5.1** (UMD minificado) |
 | CDN | jsDelivr — `https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js` |
 | Init local | `static/js/dashboard_charts.js` |
-| Tipos canônicos | `bar` · `bar_grouped` · `bar_horizontal` · `doughnut` (+ valor central) · `area` · `doughnut_or_bar` |
+| Tipos canônicos | `bar` · `bar_grouped` · `bar_horizontal` · `doughnut` (+ valor central) · `area` · `doughnut_or_bar` · `radar` |
 | Cores semânticas | Status Triad — alta `#059669` / média `#d97706` / baixa `#e11d48` + labels textuais (**só** aderência/status) |
 | Cores de acabamento | Teal/cyan/slate mono em contagens e rankings; highlight amber só no gargalo/insight |
 | Acessibilidade (FR-007) | Legenda Chart.js com texto; `figcaption`/`legend_items` com rótulo + valor (não só cor) |
@@ -611,7 +611,7 @@ Form da mesma entidade: `mx-auto max-w-lg` (não reutilizar o cap da lista). Lis
 
 | Caso | Superfície | Tipo escolhido | Paleta | Storytelling |
 |---|---|---|---|---|
-| Gap de competência | `personal.html` | `bar_horizontal` **grouped** (esperado × nota) | Esperado = slate/neutral · Nota = teal/emerald · highlight amber se abaixo | Insight 1 linha (“quais competências com gap”) → barras → figcaption |
+| Gap de competência | `personal.html` | `radar` (esperado × nota; mesmo shape multi-série de `bar_grouped`) | Esperado = slate/neutral · Nota = teal/emerald | Radar + tabela irmã (sem figcaption duplicado) |
 | Distribuição de etapas | `team.html` (+ progresso em ciclo RH) | `bar_horizontal` **monocromática** | Teal/cyan único; **amber só no gargalo** (maior volume) | Callout/insight do gargalo → barras com datalabels → tabela drill |
 | Cobertura área/cargo | `structure.html` (**Freeze B**) | `bar_horizontal` mono de **cobertura** | Teal/cyan; lacunas só no secundário | KPI cobertura → chart → lacunas/pendências (não misturar aderência) |
 | Aderência + progresso | `admin.html` / ciclo RH | `doughnut` Status Triad + **valor central** + mini-KPI/Usage de progresso | Triad intacta na rosca; progresso em teal/verde de acabamento (separado) | %/total no centro; progresso **não** misturado na Triad |
@@ -804,7 +804,7 @@ MUST NOT renderizar dezenas de rótulos crus. Viewport ~375px: sem scroll horizo
 | Chart | Corte |
 |---|---|
 | Cobertura área/cargo, rankings, eixos longos | Top-N + `"Outros"` (soma, ou cobertura ponderada `sum(com)/sum(total)` — **não** média de percentuais) |
-| Gap pessoal `bar_grouped` | Top-N por \|gap\| **com nota**; resto **omitido** (sem média inventada, sem `"Outros"`) |
+| Gap pessoal `radar` | Top-N por \|gap\| **com nota**; resto **omitido** (sem média inventada, sem `"Outros"`) |
 | Pipeline de etapas | Conjunto fechado — **sem** Top-N |
 | Doughnut de aderência | 3 fatias Status Triad — **sem** Top-N |
 
