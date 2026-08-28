@@ -10,7 +10,9 @@ from apps.cycles.models import Ciclo
 from apps.reviews.models import Avaliacao, AvaliacaoCompetencia, Feedback
 from apps.reviews.services.evaluation import (
     MSG_AUTOAVALIACAO_INCOMPLETA,
-    self_assessment_complete,
+    MSG_AUTOAVALIACAO_JA_ENVIADA,
+    self_assessment_submitted,
+    self_assessment_viewable,
 )
 from apps.reviews.widgets import ScaleRatingWidget
 
@@ -31,11 +33,9 @@ _TEXTAREA = (
 
 def self_assessment_editable(avaliacao: Avaliacao | None) -> bool:
     """True se o colaborador pode registrar notas de autoavaliação."""
-    if avaliacao is None:
+    if not self_assessment_viewable(avaliacao):
         return False
-    if avaliacao.ciclo.status != Ciclo.Status.ABERTO:
-        return False
-    return avaliacao.etapa == Avaliacao.Etapa.AVALIACAO
+    return not self_assessment_submitted(avaliacao)
 
 
 class SelfAssessmentForm(forms.ModelForm):
@@ -48,8 +48,9 @@ class SelfAssessmentForm(forms.ModelForm):
             'nota_autoavaliacao': 'Sua nota',
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, editable: bool = True, **kwargs):
         super().__init__(*args, **kwargs)
+        self._editable = editable
         escala = None
         if self.instance.pk and self.instance.competencia_id:
             competencia = getattr(self.instance, 'competencia', None)
@@ -84,6 +85,9 @@ class SelfAssessmentForm(forms.ModelForm):
                 },
             )
 
+        if not self._editable:
+            field.disabled = True
+
     def clean_nota_autoavaliacao(self):
         nota = self.cleaned_data.get('nota_autoavaliacao')
         if nota is None:
@@ -104,6 +108,8 @@ class SelfAssessmentForm(forms.ModelForm):
         cleaned = super().clean()
         avaliacao = self.instance.avaliacao if self.instance.pk else None
         if not self_assessment_editable(avaliacao):
+            if self_assessment_submitted(avaliacao):
+                raise forms.ValidationError(MSG_AUTOAVALIACAO_JA_ENVIADA)
             raise forms.ValidationError(
                 'A autoavaliação só pode ser registrada na etapa de avaliação '
                 'de um ciclo aberto.',
@@ -150,8 +156,8 @@ def leader_assessment_editable(avaliacao: Avaliacao | None) -> bool:
 
 
 def leader_assessment_permitted(avaliacao: Avaliacao | None) -> bool:
-    """True se o líder pode registrar notas (etapa correta + autoavaliação concluída)."""
-    return leader_assessment_editable(avaliacao) and self_assessment_complete(
+    """True se o líder pode registrar notas (etapa correta + autoavaliação enviada)."""
+    return leader_assessment_editable(avaliacao) and self_assessment_submitted(
         avaliacao,
     )
 
@@ -237,7 +243,7 @@ class LeaderAssessmentForm(forms.ModelForm):
                 'A avaliação do líder só pode ser registrada na etapa de '
                 'avaliação de um ciclo aberto.',
             )
-        if not self_assessment_complete(avaliacao):
+        if not self_assessment_submitted(avaliacao):
             raise forms.ValidationError(MSG_AUTOAVALIACAO_INCOMPLETA)
         return cleaned
 
@@ -260,7 +266,7 @@ class BaseLeaderAssessmentFormSet(BaseModelFormSet):
                     'A avaliação do líder só pode ser registrada na etapa de '
                     'avaliação de um ciclo aberto.',
                 )
-            if not self_assessment_complete(avaliacao):
+            if not self_assessment_submitted(avaliacao):
                 raise forms.ValidationError(MSG_AUTOAVALIACAO_INCOMPLETA)
 
 

@@ -6,56 +6,16 @@ from celery import shared_task
 from django.utils import timezone
 
 from apps.accounts.models import CustomUser
-from apps.audit.models import AuditLog
 from apps.cycles.models import Ciclo
 from apps.dashboard.models import AderenciaSnapshot
 from apps.dashboard.services.adherence import compute_adherence
-from apps.pdi.models import AcaoPDI
-from apps.reviews.models import Avaliacao, Feedback
+from apps.dashboard.services.eligible_leaders import eligible_leader_ids
 
 
 def _leader_ids_for_ciclo(ciclo: Ciclo) -> set[int]:
-    """Leaders who need a snapshot: current people-managers + real action authors."""
-    leader_ids = {
-        pk
-        for pk in CustomUser.objects.exclude(line_manager_id=None)
-        .values_list('line_manager_id', flat=True)
-        .distinct()
-        if pk is not None
-    }
-
-    avaliacao_ids = list(
-        Avaliacao.objects.filter(ciclo_id=ciclo.pk).values_list('pk', flat=True),
-    )
-    if avaliacao_ids:
-        leader_ids.update(
-            AuditLog.objects.filter(
-                entity_type='reviews.Avaliacao',
-                entity_id__in=avaliacao_ids,
-                campo='etapa',
-                usuario_id__isnull=False,
-            )
-            .values_list('usuario_id', flat=True)
-            .distinct(),
-        )
-        leader_ids.update(
-            Feedback.objects.filter(
-                tipo=Feedback.Tipo.LIDER,
-                avaliacao_id__in=avaliacao_ids,
-            )
-            .values_list('autor_id', flat=True)
-            .distinct(),
-        )
-
-    leader_ids.update(
-        AcaoPDI.objects.filter(
-            prazo__gte=ciclo.data_inicio,
-            prazo__lte=ciclo.data_fim,
-        )
-        .values_list('responsavel_id', flat=True)
-        .distinct(),
-    )
-    return {pk for pk in leader_ids if pk is not None}
+    """Gestores ativos com time ativo que recebem snapshot neste ciclo."""
+    del ciclo
+    return eligible_leader_ids()
 
 
 @shared_task(name='apps.dashboard.tasks.calculate_adherence_snapshot')

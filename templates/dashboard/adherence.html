@@ -9,7 +9,7 @@
     <div class="max-w-2xl">
       <h1 class="font-display text-3xl font-semibold tracking-tight text-slate-800">Aderência da liderança</h1>
       <p class="mt-2 text-base leading-relaxed text-slate-500">
-        Veja como os líderes estão cumprindo prazos no ciclo escolhido.
+        Veja como os gestores estão cumprindo prazos no ciclo escolhido.
       </p>
       {% if grouped_ciclo_options.arquivo_total %}
         <p class="mt-2 flex items-center gap-1.5 text-sm text-slate-500">
@@ -56,9 +56,9 @@
     </h2>
     <p class="mt-1 text-sm leading-relaxed text-slate-500">
       {% if ciclo_selecionado %}
-        Média e distribuição em {{ ciclo_selecionado.nome }} — a lista abaixo detalha cada líder.
+        Média e distribuição em {{ ciclo_selecionado.nome }} — a lista abaixo detalha cada gestor.
       {% else %}
-        Média e distribuição no escopo — a lista abaixo detalha cada líder.
+        Média e distribuição no escopo — a lista abaixo detalha cada gestor.
       {% endif %}
     </p>
   </div>
@@ -67,7 +67,7 @@
     <div class="grid grid-cols-1 gap-6 md:grid-cols-3" aria-label="Indicadores de aderência">
       {% if aderencia_resumo.has_ciclo and aderencia_resumo.media is not None %}
         {% with val=aderencia_resumo.media|stringformat:"d"|add:"%" %}
-        {% include "components/card.html" with label="Aderência média" value=val badge_status=aderencia_resumo.status body="Média dos líderes no escopo filtrado." accent="success" icon="trending_up" value_size="lg" %}
+        {% include "components/card.html" with label="Aderência média" value=val badge_status=aderencia_resumo.status body="Média dos gestores no escopo filtrado." accent="success" icon="trending_up" value_size="lg" %}
         {% endwith %}
       {% elif aderencia_resumo.has_ciclo %}
         {% include "components/card.html" with label="Aderência média" value="—" body="Ainda não há dados de aderência neste escopo." accent="success" value_size="lg" %}
@@ -76,9 +76,9 @@
       {% endif %}
 
       {% if aderencia_resumo.has_ciclo %}
-        {% include "components/card.html" with label="Líderes com aderência" value=aderencia_resumo.total_lideres body="Com índice registrado no mesmo escopo da lista." accent="primary" value_size="lg" %}
+        {% include "components/card.html" with label="Gestores no ciclo" value=aderencia_resumo.total_lideres body="Gestores ativos com time no mesmo escopo da lista." accent="primary" value_size="lg" %}
       {% else %}
-        {% include "components/card.html" with label="Líderes com aderência" value="—" body="Disponível quando houver um ciclo." accent="primary" value_size="lg" %}
+        {% include "components/card.html" with label="Gestores no ciclo" value="—" body="Disponível quando houver um ciclo." accent="primary" value_size="lg" %}
       {% endif %}
 
       {% if aderencia_resumo.has_ciclo and aderencia_resumo.baixa is not None %}

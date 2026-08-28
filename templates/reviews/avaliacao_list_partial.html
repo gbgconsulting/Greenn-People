@@ -57,6 +57,11 @@
               href="{% url 'reviews:self_assessment' row.avaliacao.pk %}"
               class="font-semibold text-emerald-700 hover:text-emerald-800"
             >Autoavaliar</a>
+            {% elif row.pode_ver_autoavaliacao %}
+            <a
+              href="{% url 'reviews:self_assessment' row.avaliacao.pk %}"
+              class="font-medium text-emerald-700 hover:text-emerald-800"
+            >Ver autoavaliação</a>
             {% endif %}
             {% if row.pode_avaliar_lider %}
             <a

@@ -22,6 +22,7 @@ AVALIACAO_TRACKED_FIELDS = (
     'etapa',
     'nota_final_lider',
     'nota_final_autoavaliacao',
+    'autoavaliacao_enviada',
 )
 
 CLASSIFICACAO_TRACKED_FIELDS = (

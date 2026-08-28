@@ -38,7 +38,7 @@ from apps.goals.services.approval import (
     reject_resultado,
 )
 from apps.reviews.models import Avaliacao
-from apps.reviews.services.evaluation import build_fr005_context
+from apps.reviews.services.evaluation import build_fr005_context, self_assessment_submitted
 from apps.reviews.services.guidance import (
     detect_owner_correction_kind,
     resolve_next_step,
@@ -319,6 +319,10 @@ class ExpectationsView(LoginRequiredMixin, TemplateView):
             concluida = bool(avaliacao.concluida)
             owner_correction_kind = detect_owner_correction_kind(avaliacao)
 
+        auto_submitted = None
+        if avaliacao is not None and etapa == Avaliacao.Etapa.AVALIACAO:
+            auto_submitted = self_assessment_submitted(avaliacao)
+
         next_step = resolve_next_step(
             role='colaborador',
             etapa=etapa,
@@ -327,6 +331,7 @@ class ExpectationsView(LoginRequiredMixin, TemplateView):
             vinculo_pendente=False,
             concluida=concluida,
             owner_correction_kind=owner_correction_kind,
+            self_assessment_submitted=auto_submitted,
         )
         if (
             not next_step.cta_label

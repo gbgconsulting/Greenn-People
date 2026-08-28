@@ -1216,6 +1216,7 @@ def test_adherence_lista_ordena_percentual_asc_e_filtra_nivel(
     lider,
     area,
     cargo_lider,
+    cargo_colab,
 ):
     """Lista: % ASC (pior primeiro); ``?nivel=`` filtra no servidor (paginação HTMX)."""
     lider_alto = CustomUser.objects.create_user(
@@ -1236,6 +1237,16 @@ def test_adherence_lista_ordena_percentual_asc_e_filtra_nivel(
         line_manager=admin,
         email_confirmado_em=timezone.now(),
     )
+    for gestor in (lider_alto, lider_medio):
+        CustomUser.objects.create_user(
+            email=f'colab.{gestor.email}',
+            password=DEFAULT_PASSWORD,
+            nome=f'Colab {gestor.nome}',
+            cargo=cargo_colab,
+            area=area,
+            line_manager=gestor,
+            email_confirmado_em=timezone.now(),
+        )
     _seed_snapshot(lider=lider, ciclo=ciclo_aberto, percentual='15.00')
     _seed_snapshot(lider=lider_medio, ciclo=ciclo_aberto, percentual='60.00')
     _seed_snapshot(lider=lider_alto, ciclo=ciclo_aberto, percentual='90.00')
@@ -1308,6 +1319,7 @@ def test_adherence_filtro_area_reduz_lista_e_kpis(
     lider,
     area,
     cargo_lider,
+    cargo_colab,
 ):
     """``?area=`` reduz lista + KPIs/pills (AuthZ intacta); compõe com ``?nivel=``."""
     from apps.organization.models import Area
@@ -1320,6 +1332,15 @@ def test_adherence_filtro_area_reduz_lista_e_kpis(
         cargo=cargo_lider,
         area=outra,
         line_manager=admin,
+        email_confirmado_em=timezone.now(),
+    )
+    CustomUser.objects.create_user(
+        email='colab.outra.area@test.greenn.com.br',
+        password=DEFAULT_PASSWORD,
+        nome='Colab Outra Área',
+        cargo=cargo_colab,
+        area=outra,
+        line_manager=lider_outra,
         email_confirmado_em=timezone.now(),
     )
     _seed_snapshot(lider=lider, ciclo=ciclo_aberto, percentual='20.00')

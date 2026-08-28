@@ -50,6 +50,19 @@ class Avaliacao(TimeStampedModel):
         null=True,
         blank=True,
     )
+    autoavaliacao_enviada = models.BooleanField(
+        'autoavaliação enviada',
+        default=False,
+        help_text=(
+            'True quando o colaborador enviou a autoavaliação; '
+            'bloqueia novas edições na etapa de avaliação.'
+        ),
+    )
+    autoavaliacao_enviada_em = models.DateTimeField(
+        'autoavaliação enviada em',
+        null=True,
+        blank=True,
+    )
     concluida = models.BooleanField(
         'concluída',
         default=False,

@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import ValidationError
 from django.http import Http404, HttpResponseRedirect
 from django.urls import reverse
 from django.utils import timezone
@@ -29,9 +30,14 @@ from apps.reviews.forms import (
 )
 from apps.reviews.models import Avaliacao, AvaliacaoCompetencia, Feedback
 from apps.reviews.services.evaluation import (
+    MSG_AUTOAVALIACAO_ENVIO_INCOMPLETO,
     MSG_AUTOAVALIACAO_INCOMPLETA,
+    MSG_AUTOAVALIACAO_JA_ENVIADA,
     calcular_nota_final_lider,
     self_assessment_complete,
+    self_assessment_submitted,
+    self_assessment_viewable,
+    submit_self_assessment,
 )
 from apps.reviews.services.guidance import (
     build_stage_stepper,
@@ -132,6 +138,11 @@ class AvaliacaoListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedList
                     'pode_autoavaliar': (
                         is_self and self_assessment_editable(avaliacao)
                     ),
+                    'pode_ver_autoavaliacao': (
+                        is_self
+                        and self_assessment_viewable(avaliacao)
+                        and self_assessment_submitted(avaliacao)
+                    ),
                     'pode_avaliar_lider': (
                         not is_self
                         and can_leader_assess(user, avaliacao)
@@ -181,6 +192,11 @@ class AvaliacaoDetailView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
                 'pode_autoavaliar': (
                     is_self and self_assessment_editable(avaliacao)
                 ),
+                'pode_ver_autoavaliacao': (
+                    is_self
+                    and self_assessment_viewable(avaliacao)
+                    and self_assessment_submitted(avaliacao)
+                ),
                 'pode_avaliar_lider': (
                     not is_self
                     and can_leader_assess(user, avaliacao)
@@ -224,9 +240,9 @@ class AvaliacaoDetailView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
             detect_owner_correction_kind(avaliacao) if is_self else None
         )
         role = self._guidance_role(is_self=is_self)
-        auto_complete = None
-        if role == 'lider' and avaliacao.etapa == Avaliacao.Etapa.AVALIACAO:
-            auto_complete = self_assessment_complete(avaliacao)
+        auto_submitted = None
+        if avaliacao.etapa == Avaliacao.Etapa.AVALIACAO:
+            auto_submitted = self_assessment_submitted(avaliacao)
         return {
             'next_step': resolve_next_step(
                 role=role,
@@ -236,7 +252,7 @@ class AvaliacaoDetailView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
                 vinculo_pendente=False,
                 concluida=bool(avaliacao.concluida),
                 owner_correction_kind=owner_correction_kind,
-                self_assessment_complete=auto_complete,
+                self_assessment_submitted=auto_submitted,
             ),
             'stage_stepper': build_stage_stepper(
                 etapa=avaliacao.etapa,
@@ -374,7 +390,18 @@ class SelfAssessmentView(LoginRequiredMixin, DetailView):
         if not request.user.is_authenticated:
             return self.handle_no_permission()
         self.object = self.get_object()
-        if not self_assessment_editable(self.object):
+        if request.method == 'POST':
+            if not self_assessment_editable(self.object):
+                if self_assessment_submitted(self.object):
+                    messages.error(request, MSG_AUTOAVALIACAO_JA_ENVIADA)
+                else:
+                    messages.error(
+                        request,
+                        'A autoavaliação só está disponível na etapa de avaliação '
+                        'de um ciclo aberto.',
+                    )
+                return HttpResponseRedirect(reverse('dashboard:personal'))
+        elif not self_assessment_viewable(self.object):
             messages.error(
                 request,
                 'A autoavaliação só está disponível na etapa de avaliação '
@@ -385,10 +412,18 @@ class SelfAssessmentView(LoginRequiredMixin, DetailView):
 
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
+        action = request.POST.get('action', 'save')
+        pode_editar = self_assessment_editable(self.object)
         formset = SelfAssessmentFormSet(
             request.POST,
             queryset=self._linhas_queryset(),
+            form_kwargs={'editable': pode_editar},
         )
+        if action == 'submit':
+            return self._post_submit(request, formset)
+        return self._post_save(request, formset)
+
+    def _post_save(self, request, formset):
         if formset.is_valid():
             formset.save()
             messages.success(request, 'Autoavaliação salva com sucesso.')
@@ -399,16 +434,49 @@ class SelfAssessmentView(LoginRequiredMixin, DetailView):
         context = self.get_context_data(object=self.object, formset=formset)
         return self.render_to_response(context)
 
+    def _post_submit(self, request, formset):
+        if not formset.is_valid():
+            context = self.get_context_data(object=self.object, formset=formset)
+            return self.render_to_response(context)
+
+        formset.save()
+        if not self_assessment_complete(self.object):
+            messages.error(request, MSG_AUTOAVALIACAO_ENVIO_INCOMPLETO)
+            return HttpResponseRedirect(
+                reverse('reviews:self_assessment', kwargs={'pk': self.object.pk}),
+            )
+
+        try:
+            submit_self_assessment(self.object)
+        except ValidationError as exc:
+            messages.error(request, exc.messages[0])
+            return HttpResponseRedirect(
+                reverse('reviews:self_assessment', kwargs={'pk': self.object.pk}),
+            )
+
+        messages.success(
+            request,
+            'Autoavaliação enviada com sucesso. Não é mais possível alterá-la.',
+        )
+        return HttpResponseRedirect(
+            reverse('reviews:self_assessment', kwargs={'pk': self.object.pk}),
+        )
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        pode_editar = self_assessment_editable(self.object)
         formset = kwargs.get('formset')
         if formset is None:
-            formset = SelfAssessmentFormSet(queryset=self._linhas_queryset())
+            formset = SelfAssessmentFormSet(
+                queryset=self._linhas_queryset(),
+                form_kwargs={'editable': pode_editar},
+            )
 
         context.update(
             {
                 'formset': formset,
-                'pode_editar': True,
+                'pode_editar': pode_editar,
+                'autoavaliacao_enviada': self_assessment_submitted(self.object),
                 'linhas_vazias': len(formset.forms) == 0,
                 'colaborador': self.object.usuario,
                 'metas_ciclo': self._metas_ciclo(),

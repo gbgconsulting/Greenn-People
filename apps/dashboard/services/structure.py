@@ -15,6 +15,7 @@ from django.db.models import Avg, Count, DecimalField, ExpressionWrapper, F, Q, 
 from apps.accounts.models import CustomUser
 from apps.cycles.models import Ciclo
 from apps.dashboard.models import AderenciaSnapshot
+from apps.dashboard.services.eligible_leaders import eligible_leader_queryset
 from apps.reviews.models import AvaliacaoCompetencia
 
 _QUANT = Decimal('0.01')
@@ -68,18 +69,21 @@ def _coverage_row(
 
 
 def leaders_in_scope(visible: QuerySet[CustomUser]) -> QuerySet[CustomUser]:
-    """Usuários visíveis que são gestores diretos de alguém no mesmo escopo."""
+    """Gestores elegíveis visíveis com pelo menos um liderado ativo no escopo."""
     visible_ids = visible.values('pk')
     lider_ids = (
         CustomUser.objects.filter(
             line_manager_id__isnull=False,
             pk__in=visible_ids,
+            is_active=True,
         )
         .values_list('line_manager_id', flat=True)
         .distinct()
     )
     return (
-        visible.filter(pk__in=lider_ids)
+        eligible_leader_queryset()
+        .filter(pk__in=lider_ids)
+        .filter(pk__in=visible.values('pk'))
         .select_related('area', 'cargo')
         .order_by('nome', 'email')
     )

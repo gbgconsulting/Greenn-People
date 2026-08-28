@@ -83,7 +83,7 @@
       </div>
       <div class="min-w-0 lg:col-span-1" id="aderencia-heading">
         {% if chart_aderencia_distribuicao.has_data %}
-          {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" insight="Alta, média e baixa — o número no centro é o total de líderes." canvas_class="dashboard-chart-canvas--compact" %}
+          {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" insight="Alta, média e baixa — o número no centro é o total de gestores." canvas_class="dashboard-chart-canvas--compact" %}
         {% else %}
           {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" canvas_class="dashboard-chart-canvas--compact" %}
         {% endif %}
@@ -120,7 +120,7 @@
       </div>
       <div class="min-w-0" id="aderencia-heading">
         {% if chart_aderencia_distribuicao.has_data %}
-          {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" insight="Alta, média e baixa — o número no centro é o total de líderes." %}
+          {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" insight="Alta, média e baixa — o número no centro é o total de gestores." %}
         {% else %}
           {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" %}
         {% endif %}
@@ -131,7 +131,7 @@
       <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div class="min-w-0">
           <h3 id="baixa-aderencia-heading" class="font-display text-xl font-medium tracking-tight text-slate-800">
-            Líderes com menor aderência
+            Gestores com menor aderência
           </h3>
           <p class="mt-1 text-sm text-slate-500">
             Quem precisa de mais atenção neste ciclo.
@@ -145,7 +145,7 @@
         <table>
           <thead>
             <tr>
-              <th>Líder</th>
+              <th>Gestor</th>
               <th>Área</th>
               <th>Percentual</th>
               <th>Status</th>

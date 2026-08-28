@@ -13,7 +13,7 @@
       <div
         class="flex flex-wrap items-center gap-2"
         role="group"
-        aria-label="Filtrar líderes por nível de aderência"
+        aria-label="Filtrar gestores por nível de aderência"
       >
         {% if filtro_nivel == "alta" %}
           {% querystring nivel=None page=None as pill_alta_url %}
@@ -83,10 +83,10 @@
   <div class="min-w-0" aria-labelledby="aderencia-drilldown-heading">
     <div class="mb-4">
       <h3 id="aderencia-drilldown-heading" class="font-display text-xl font-medium tracking-tight text-slate-800">
-        Líderes no escopo
+        Gestores no escopo
       </h3>
       <p class="mt-1 text-sm text-slate-500">
-        Detalhe por líder — componentes e data da última atualização.
+        Detalhe por gestor — componentes e data da última atualização.
         {% if filtro_nivel == "alta" %}
           Mostrando só aderência alta.
         {% elif filtro_nivel == "media" %}
@@ -100,7 +100,7 @@
       <table>
         <thead>
           <tr>
-            <th>Líder</th>
+            <th>Gestor</th>
             <th>Área</th>
             <th>Ciclo</th>
             <th>Aderência</th>
@@ -153,7 +153,7 @@
             <td colspan="9" class="!py-8">
               {% if ciclo_filtro %}
                 {% if filtro_nivel %}
-                  {% include "components/empty_state.html" with title="Nenhum líder neste nível" message="Não há líderes com esse nível de aderência no escopo. Clique de novo na pill para limpar o filtro." %}
+                  {% include "components/empty_state.html" with title="Nenhum gestor neste nível" message="Não há gestores com esse nível de aderência no escopo. Clique de novo na pill para limpar o filtro." %}
                 {% else %}
                   {% include "components/empty_state.html" with title="Sem dados de aderência" message="Ainda não há informações nesta seção." %}
                 {% endif %}

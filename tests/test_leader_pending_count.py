@@ -73,6 +73,8 @@ def _linha_auto_completa(avaliacao: Avaliacao, cargo) -> None:
         nivel_esperado_utilizado=cc.nivel_esperado,
         nota_autoavaliacao=Decimal('3.00'),
     )
+    avaliacao.autoavaliacao_enviada = True
+    avaliacao.save(update_fields=['autoavaliacao_enviada', 'updated_at'])
 
 
 # --- DTO (sem DB) ---

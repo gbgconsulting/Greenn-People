@@ -34,6 +34,7 @@ from apps.dashboard.chart_payloads import (
     top_n_with_others,
 )
 from apps.dashboard.models import AderenciaSnapshot
+from apps.dashboard.services.eligible_leaders import filter_adherence_snapshots
 from apps.dashboard.services.ciclo_options import (
     grouped_ciclo_options,
     grouped_ciclo_options_for_user,
@@ -58,7 +59,7 @@ from apps.dashboard.services.structure import (
 from apps.goals.forms import get_open_ciclo
 from apps.organization.models import Area, Cargo
 from apps.reviews.models import Avaliacao
-from apps.reviews.services.evaluation import build_fr005_context
+from apps.reviews.services.evaluation import build_fr005_context, self_assessment_submitted
 from apps.reviews.services.guidance import (
     build_stage_stepper,
     detect_owner_correction_kind,
@@ -180,6 +181,10 @@ class PersonalDashboardView(LoginRequiredMixin, TemplateView):
             has_open_ciclo = False
             vinculo_pendente = bool(fr005.get('vinculo_pendente'))
 
+        auto_submitted = None
+        if avaliacao is not None and etapa == Avaliacao.Etapa.AVALIACAO:
+            auto_submitted = self_assessment_submitted(avaliacao)
+
         return {
             'next_step': resolve_next_step(
                 role=self._guidance_role(),
@@ -189,6 +194,7 @@ class PersonalDashboardView(LoginRequiredMixin, TemplateView):
                 vinculo_pendente=vinculo_pendente,
                 concluida=concluida,
                 owner_correction_kind=owner_correction_kind,
+                self_assessment_submitted=auto_submitted,
             ),
             'stage_stepper': build_stage_stepper(
                 etapa=etapa,
@@ -273,7 +279,7 @@ class PersonalDashboardView(LoginRequiredMixin, TemplateView):
                 },
                 {
                     'key': 'nota_atual',
-                    'label': 'Nota atual',
+                    'label': 'Nota do líder',
                     'values': nota_values,
                 },
             ],
@@ -753,6 +759,8 @@ class AdherenceListView(
         if area_id is not None:
             qs = qs.filter(lider__area_id=area_id)
 
+        qs = filter_adherence_snapshots(qs)
+
         user = self.request.user
         if not getattr(user, 'is_admin', False):
             visible = get_visible_users(user)
@@ -1093,7 +1101,9 @@ class AdminDashboardView(LoginRequiredMixin, RequiresAdminMixin, TemplateView):
                 'total_lideres': 0,
                 'status': 'baixa',
             }
-        agg = AderenciaSnapshot.objects.filter(ciclo=ciclo).aggregate(
+        agg = filter_adherence_snapshots(
+            AderenciaSnapshot.objects.filter(ciclo=ciclo),
+        ).aggregate(
             media=Avg('percentual'),
             total_lideres=Count('pk'),
         )
@@ -1110,7 +1120,7 @@ class AdminDashboardView(LoginRequiredMixin, RequiresAdminMixin, TemplateView):
         if ciclo is None:
             return []
         qs = (
-            AderenciaSnapshot.objects.filter(ciclo=ciclo)
+            filter_adherence_snapshots(AderenciaSnapshot.objects.filter(ciclo=ciclo))
             .select_related('lider', 'lider__area')
             .order_by('percentual', 'lider__nome')[:10]
         )
@@ -1140,7 +1150,8 @@ class AdminDashboardView(LoginRequiredMixin, RequiresAdminMixin, TemplateView):
                 title=title,
             )
         percentuais = list(
-            AderenciaSnapshot.objects.filter(ciclo=ciclo).values_list(
+            filter_adherence_snapshots(AderenciaSnapshot.objects.filter(ciclo=ciclo))
+            .values_list(
                 'percentual',
                 flat=True,
             )

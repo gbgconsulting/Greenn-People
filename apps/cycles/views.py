@@ -36,6 +36,7 @@ from apps.dashboard.chart_payloads import (
     grouped_series_payload,
 )
 from apps.dashboard.models import AderenciaSnapshot
+from apps.dashboard.services.eligible_leaders import filter_adherence_snapshots
 from apps.dashboard.services.structure import build_structure_coverage
 from apps.dashboard.views import aderencia_status
 from apps.goals.forms import ObjetivoEstrategicoForm, get_open_ciclo
@@ -296,7 +297,9 @@ class CicloDetailView(AdminCyclesMixin, DetailView):
         }
 
     def _aderencia_resumo(self, ciclo: Ciclo) -> dict:
-        agg = AderenciaSnapshot.objects.filter(ciclo=ciclo).aggregate(
+        agg = filter_adherence_snapshots(
+            AderenciaSnapshot.objects.filter(ciclo=ciclo),
+        ).aggregate(
             media=Avg('percentual'),
             total_lideres=Count('pk'),
         )
@@ -378,7 +381,8 @@ class CicloDetailView(AdminCyclesMixin, DetailView):
         chart_type = CHART_TYPE_DOUGHNUT
         title = 'Distribuição de aderência'
         percentuais = list(
-            AderenciaSnapshot.objects.filter(ciclo=ciclo).values_list(
+            filter_adherence_snapshots(AderenciaSnapshot.objects.filter(ciclo=ciclo))
+            .values_list(
                 'percentual',
                 flat=True,
             )

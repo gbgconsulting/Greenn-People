@@ -15,7 +15,7 @@
       </p>
       <h1 class="font-display text-3xl font-semibold tracking-tight text-slate-800">{{ ciclo.nome }}</h1>
       <p class="mt-2 text-base leading-relaxed text-slate-500">
-        Visão deste ciclo: andamento das avaliações, cobertura e aderência dos líderes.
+        Visão deste ciclo: andamento das avaliações, cobertura e aderência dos gestores.
       </p>
       <p class="mt-2 text-sm text-slate-500">
         {{ ciclo.data_inicio|date:"d/m/Y" }} — {{ ciclo.data_fim|date:"d/m/Y" }}
@@ -103,7 +103,7 @@
       </div>
       <div class="flex min-w-0 h-full flex-col" id="aderencia-heading">
         {% if chart_aderencia_distribuicao.has_data %}
-          {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" insight="Alta, média e baixa — o número no centro é o total de líderes." extra_class="h-full" %}
+          {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" insight="Alta, média e baixa — o número no centro é o total de gestores." extra_class="h-full" %}
         {% else %}
           {% include "dashboard/_chart_block.html" with chart=chart_aderencia_distribuicao script_id="chart-aderencia-distribuicao" extra_class="h-full" %}
         {% endif %}

@@ -48,10 +48,16 @@
   <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
     <div class="max-w-3xl">
       <h1 class="font-display text-2xl font-semibold text-slate-800">Autoavaliação</h1>
+      {% if autoavaliacao_enviada %}
+      <p class="mt-2 font-ui text-base leading-relaxed text-emerald-700">
+        Sua autoavaliação foi enviada e não pode mais ser alterada.
+      </p>
+      {% else %}
       <p class="mt-2 font-ui text-base leading-relaxed text-slate-500">
         Reflita sobre o seu desempenho neste ciclo. Avalie cada competência com sinceridade,
         com base na escala de cada uma.
       </p>
+      {% endif %}
     </div>
 
     {% if not linhas_vazias and notas_total %}
@@ -238,13 +244,28 @@
       data-component="self-assessment-actions"
     >
       <p class="font-ui text-xs text-slate-500" data-field="save-hint" role="note">
+        {% if avaliacao_progresso_completo %}
+        Revise suas notas e clique em “Enviar autoavaliação” para concluir.
+        {% else %}
         Suas notas são gravadas ao clicar em “Salvar autoavaliação”.
+        {% endif %}
       </p>
       <div class="flex items-center gap-3">
       {% url 'dashboard:personal' as cancel_url %}
       {% include "components/button.html" with label="Voltar" href=cancel_url variant="secondary" %}
-      {% include "components/button.html" with label="Salvar autoavaliação" type="submit" variant="primary" extra_class="gap-2" %}
+      {% include "components/button.html" with label="Salvar autoavaliação" type="submit" variant="secondary" extra_class="gap-2" attrs='name="action" value="save"' %}
+      {% if avaliacao_progresso_completo %}
+      {% include "components/button.html" with label="Enviar autoavaliação" type="submit" variant="primary" extra_class="gap-2" attrs='name="action" value="submit"' %}
+      {% endif %}
       </div>
+    </div>
+    {% elif autoavaliacao_enviada %}
+    <div
+      class="fixed bottom-0 right-0 z-20 flex w-full items-center justify-end gap-3 border-t border-line bg-surface-card px-4 py-4 shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.05)] md:w-[calc(100%-16rem)] md:px-6"
+      data-component="self-assessment-actions"
+    >
+      {% url 'dashboard:personal' as cancel_url %}
+      {% include "components/button.html" with label="Voltar" href=cancel_url variant="secondary" %}
     </div>
     {% endif %}
   </form>

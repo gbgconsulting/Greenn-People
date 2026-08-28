@@ -6,8 +6,10 @@ from decimal import ROUND_HALF_UP, Decimal
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.utils import timezone
 
 from apps.competencies.models import CargoCompetencia, Escala
+from apps.cycles.models import Ciclo
 from apps.reviews.exceptions import CalculationError
 from apps.reviews.models import Avaliacao, AvaliacaoCompetencia
 
@@ -18,8 +20,31 @@ NOTA_ORIGEM_AUTOAVALIACAO = 'autoavaliacao'
 _NOTA_FINAL_QUANT = Decimal('0.0001')
 
 MSG_AUTOAVALIACAO_INCOMPLETA = (
-    'O colaborador deve concluir a autoavaliação antes da avaliação do líder.'
+    'O colaborador deve concluir e enviar a autoavaliação antes da '
+    'avaliação do líder.'
 )
+
+MSG_AUTOAVALIACAO_JA_ENVIADA = (
+    'A autoavaliação já foi enviada e não pode ser alterada.'
+)
+
+MSG_AUTOAVALIACAO_ENVIO_INCOMPLETO = (
+    'Preencha a nota de todas as competências antes de enviar.'
+)
+
+
+def self_assessment_submitted(avaliacao: Avaliacao | None) -> bool:
+    """True se o colaborador enviou (travou) a autoavaliação."""
+    return bool(avaliacao and avaliacao.autoavaliacao_enviada)
+
+
+def self_assessment_viewable(avaliacao: Avaliacao | None) -> bool:
+    """True se o colaborador pode abrir a tela de autoavaliação (leitura ou edição)."""
+    if avaliacao is None:
+        return False
+    if avaliacao.ciclo.status != Ciclo.Status.ABERTO:
+        return False
+    return avaliacao.etapa == Avaliacao.Etapa.AVALIACAO
 
 
 def self_assessment_complete(avaliacao: Avaliacao | None) -> bool:
@@ -30,6 +55,26 @@ def self_assessment_complete(avaliacao: Avaliacao | None) -> bool:
     if not linhas.exists():
         return False
     return not linhas.filter(nota_autoavaliacao__isnull=True).exists()
+
+
+def submit_self_assessment(avaliacao: Avaliacao) -> None:
+    """Persiste envio da autoavaliação e calcula ``nota_final_autoavaliacao``."""
+    with transaction.atomic():
+        locked = Avaliacao.objects.select_for_update().get(pk=avaliacao.pk)
+        if self_assessment_submitted(locked):
+            raise ValidationError(MSG_AUTOAVALIACAO_JA_ENVIADA)
+        if not self_assessment_complete(locked):
+            raise ValidationError(MSG_AUTOAVALIACAO_ENVIO_INCOMPLETO)
+        locked.autoavaliacao_enviada = True
+        locked.autoavaliacao_enviada_em = timezone.now()
+        locked.save(
+            update_fields=[
+                'autoavaliacao_enviada',
+                'autoavaliacao_enviada_em',
+                'updated_at',
+            ],
+        )
+        calcular_nota_final_autoavaliacao(locked)
 
 
 def normalize_score(nota: Decimal, escala: Escala) -> Decimal:
@@ -127,26 +172,32 @@ def calcular_nota_final_autoavaliacao(avaliacao: Avaliacao) -> Decimal | None:
 def resolve_nota_atual(
     avaliacao: Avaliacao | None,
 ) -> tuple[Decimal | None, str]:
-    """Nota vigente para exibicao ao colaborador (FR-005).
+    """Nota oficial para exibicao ao colaborador (FR-005).
 
-    Prefere ``nota_final_lider`` (oficial); senao ``nota_final_autoavaliacao``.
-    Retorna ``(valor, origem)`` onde origem e ``lider``, ``autoavaliacao`` ou ``''``.
+    Somente ``nota_final_lider``. Autoavaliacao nunca entra como nota atual —
+    fica em campo/visualizacao separados (``nota_autoavaliacao``).
+    Retorna ``(valor, origem)`` onde origem e ``lider`` ou ``''``.
     """
     if avaliacao is None:
         return None, ''
     if avaliacao.nota_final_lider is not None:
         return avaliacao.nota_final_lider, NOTA_ORIGEM_LIDER
-    if avaliacao.nota_final_autoavaliacao is not None:
-        return avaliacao.nota_final_autoavaliacao, NOTA_ORIGEM_AUTOAVALIACAO
     return None, ''
 
 
 def nota_atual_competencia(linha: AvaliacaoCompetencia | None) -> Decimal | None:
-    """Nota por competencia: lider se existir, senao autoavaliacao."""
+    """Nota por competencia para comparativo oficial: somente ``nota_lider``."""
     if linha is None:
         return None
-    if linha.nota_lider is not None:
-        return linha.nota_lider
+    return linha.nota_lider
+
+
+def nota_autoavaliacao_competencia(
+    linha: AvaliacaoCompetencia | None,
+) -> Decimal | None:
+    """Nota de autoavaliacao por competencia (visualizacao separada)."""
+    if linha is None:
+        return None
     return linha.nota_autoavaliacao
 
 
@@ -169,6 +220,12 @@ def build_fr005_context(user, *, ciclo=None, avaliacao=None) -> dict:
     if avaliacao is None:
         avaliacao = get_avaliacao_for_user(user, ciclo_aberto)
     nota_atual, nota_atual_origem = resolve_nota_atual(avaliacao)
+    auto_enviada = self_assessment_submitted(avaliacao)
+    nota_autoavaliacao = (
+        avaliacao.nota_final_autoavaliacao
+        if avaliacao is not None and auto_enviada
+        else None
+    )
 
     linhas_por_competencia: dict[int, AvaliacaoCompetencia] = {}
     if avaliacao is not None:
@@ -187,6 +244,9 @@ def build_fr005_context(user, *, ciclo=None, avaliacao=None) -> dict:
             'nota_atual': nota_atual_competencia(
                 linhas_por_competencia.get(item.competencia_id),
             ),
+            'nota_autoavaliacao': nota_autoavaliacao_competencia(
+                linhas_por_competencia.get(item.competencia_id),
+            ),
         }
         for item in competencias_cargo
     ]
@@ -200,6 +260,8 @@ def build_fr005_context(user, *, ciclo=None, avaliacao=None) -> dict:
         'avaliacao': avaliacao,
         'nota_atual': nota_atual,
         'nota_atual_origem': nota_atual_origem,
+        'nota_autoavaliacao': nota_autoavaliacao,
+        'autoavaliacao_enviada': auto_enviada,
     }
 
 

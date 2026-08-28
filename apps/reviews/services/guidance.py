@@ -411,6 +411,7 @@ def _resolve_etapa_colaborador(
     *,
     avaliacao_pk: int | None,
     feedback_pk: int | None,
+    self_assessment_submitted: bool | None = None,
 ) -> NextStepGuidance | None:
     if etapa == ETAPA_INPUT_METAS:
         return _guidance(
@@ -458,6 +459,17 @@ def _resolve_etapa_colaborador(
                 'Faça a autoavaliação',
                 'Preencha as notas das competências na sua avaliação.',
                 blocked_reason='Avaliação ainda sem identificador para o CTA.',
+            )
+        if self_assessment_submitted is True:
+            return _guidance(
+                'Autoavaliação enviada',
+                (
+                    'Sua autoavaliação foi registrada e não pode mais '
+                    'ser alterada.'
+                ),
+                cta_label='Ver autoavaliação',
+                cta_url_name='reviews:self_assessment',
+                cta_kwargs=kwargs,
             )
         return _guidance(
             'Faça a autoavaliação',
@@ -509,7 +521,7 @@ def _resolve_etapa_lider(
     etapa: str,
     *,
     avaliacao_pk: int | None,
-    self_assessment_complete: bool | None = None,
+    self_assessment_submitted: bool | None = None,
 ) -> NextStepGuidance | None:
     if etapa == ETAPA_INPUT_METAS:
         return _guidance(
@@ -547,19 +559,19 @@ def _resolve_etapa_lider(
     if etapa == ETAPA_AVALIACAO:
         kwargs = _pk_kwargs(avaliacao_pk)
         if (
-            self_assessment_complete is False
+            self_assessment_submitted is False
             and avaliacao_pk is not None
         ):
             return _guidance(
                 'Aguardando autoavaliação',
                 (
-                    'O colaborador precisa concluir a autoavaliação '
+                    'O colaborador precisa enviar a autoavaliação '
                     'antes da sua avaliação.'
                 ),
                 cta_label='Ver avaliação',
                 cta_url_name='reviews:detail',
                 cta_kwargs=kwargs,
-                blocked_reason='Autoavaliação do colaborador ainda não concluída.',
+                blocked_reason='Autoavaliação do colaborador ainda não enviada.',
             )
         if avaliacao_pk is None:
             return _guidance(
@@ -632,7 +644,7 @@ def resolve_next_step(
     vinculo_pendente: bool = False,
     concluida: bool = False,
     owner_correction_kind: OwnerCorrectionKind | str | None = None,
-    self_assessment_complete: bool | None = None,
+    self_assessment_submitted: bool | None = None,
 ) -> NextStepGuidance:
     """Deriva ``NextStepGuidance`` do estado já existente (somente leitura).
 
@@ -685,12 +697,13 @@ def resolve_next_step(
             etapa,
             avaliacao_pk=avaliacao_pk,
             feedback_pk=feedback_pk,
+            self_assessment_submitted=self_assessment_submitted,
         )
     elif role_norm == 'lider':
         resolved = _resolve_etapa_lider(
             etapa,
             avaliacao_pk=avaliacao_pk,
-            self_assessment_complete=self_assessment_complete,
+            self_assessment_submitted=self_assessment_submitted,
         )
     else:
         resolved = _resolve_etapa_rh(etapa, avaliacao_pk=avaliacao_pk)

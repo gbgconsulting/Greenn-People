@@ -52,21 +52,25 @@
 
   <div class="managerial-panel">
     {% url 'goals:expectations' as expectations_url %}
-    <div class="grid grid-cols-1 items-stretch gap-6 sm:grid-cols-2" aria-label="Indicadores pessoais">
+    <div class="grid grid-cols-1 items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-3" aria-label="Indicadores pessoais">
       {% if nota_atual is not None %}
-        {% if nota_atual_origem == "lider" %}
-          {% include "components/card.html" with label="Nota atual" value=nota_atual|nota_percentual badge_status="concluida" badge_label="Nota do líder" body="Nota dada pelo seu líder neste ciclo." accent="success" value_size="lg" %}
-        {% elif nota_atual_origem == "autoavaliacao" %}
-          {% include "components/card.html" with label="Nota atual" value=nota_atual|nota_percentual badge_status="em_andamento" badge_label="Autoavaliação" body="Nota da sua autoavaliação neste ciclo." accent="warning" value_size="lg" %}
-        {% else %}
-          {% include "components/card.html" with label="Nota atual" value=nota_atual|nota_percentual badge_status="arquivado" badge_label="Sem nota" body="Ainda não há nota neste ciclo." value_size="lg" %}
-        {% endif %}
-      {% elif nota_atual_origem == "lider" %}
-        {% include "components/card.html" with label="Nota atual" value="—" badge_status="concluida" badge_label="Nota do líder" body="Nota dada pelo seu líder neste ciclo." accent="success" value_size="lg" %}
-      {% elif nota_atual_origem == "autoavaliacao" %}
-        {% include "components/card.html" with label="Nota atual" value="—" badge_status="em_andamento" badge_label="Autoavaliação" body="Nota da sua autoavaliação neste ciclo." accent="warning" value_size="lg" %}
+        {% include "components/card.html" with label="Nota atual" value=nota_atual|nota_percentual badge_status="concluida" badge_label="Nota do líder" body="Nota dada pelo seu líder neste ciclo." accent="success" value_size="lg" %}
       {% else %}
-        {% include "components/card.html" with label="Nota atual" value="—" badge_status="arquivado" badge_label="Sem nota" body="Ainda não há nota neste ciclo." value_size="lg" %}
+        {% include "components/card.html" with label="Nota atual" value="—" badge_status="arquivado" badge_label="Aguardando líder" body="Sua nota oficial aparecerá após a avaliação do líder." value_size="lg" %}
+      {% endif %}
+
+      {% if autoavaliacao_enviada and nota_autoavaliacao is not None %}
+        {% if avaliacao %}
+          {% url 'reviews:self_assessment' avaliacao.pk as self_assessment_url %}
+          {% include "components/card.html" with label="Autoavaliação" value=nota_autoavaliacao|nota_percentual badge_status="concluida" badge_label="Enviada" body="Referência da sua autoavaliação — separada da nota oficial." accent="primary" value_size="lg" footer_label="Ver autoavaliação" footer_href=self_assessment_url %}
+        {% else %}
+          {% include "components/card.html" with label="Autoavaliação" value=nota_autoavaliacao|nota_percentual badge_status="concluida" badge_label="Enviada" body="Referência da sua autoavaliação — separada da nota oficial." accent="primary" value_size="lg" %}
+        {% endif %}
+      {% elif avaliacao and avaliacao.etapa == "avaliacao" %}
+        {% url 'reviews:self_assessment' avaliacao.pk as self_assessment_url %}
+        {% include "components/card.html" with label="Autoavaliação" value="—" badge_status="em_andamento" badge_label="Pendente" body="Preencha e envie sua autoavaliação nesta etapa." accent="warning" value_size="lg" footer_label="Ir para autoavaliação" footer_href=self_assessment_url %}
+      {% else %}
+        {% include "components/card.html" with label="Autoavaliação" value="—" badge_status="arquivado" badge_label="Indisponível" body="A autoavaliação fica disponível na etapa de avaliação do ciclo." value_size="lg" %}
       {% endif %}
 
       {% if vinculo_pendente %}
@@ -104,7 +108,7 @@
                 <tr class="border-b border-line text-xs uppercase tracking-wide text-ink-muted">
                   <th class="py-3 pr-4 font-semibold">Competência</th>
                   <th class="w-32 py-3 px-4 font-semibold">Nível esperado</th>
-                  <th class="w-32 py-3 pl-4 text-right font-semibold">Nota atual</th>
+                  <th class="w-32 py-3 pl-4 text-right font-semibold">Nota do líder</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-line">

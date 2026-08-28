@@ -64,7 +64,7 @@
 
     <section class="min-w-0" aria-labelledby="resumo-desempenho-heading">
       <h2 id="resumo-desempenho-heading" class="sr-only">Resumo de desempenho</h2>
-      <div class="grid gap-4 sm:grid-cols-2">
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div class="rounded-xl border border-line bg-surface-card p-5 shadow-[0_2px_4px_rgba(0,0,0,0.04)]">
           <p class="text-xs uppercase tracking-wide text-slate-500">Nota atual</p>
           <p class="mt-2 font-display text-3xl font-semibold tabular-nums tracking-tight text-slate-800">
@@ -73,10 +73,31 @@
           <p class="mt-1.5 text-sm leading-snug text-slate-500">
             {% if nota_atual_origem == "lider" %}
               Nota consolidada do líder{% if ciclo_aberto %} · {{ ciclo_aberto.nome }}{% endif %}
-            {% elif nota_atual_origem == "autoavaliacao" %}
-              Referência da autoavaliação{% if ciclo_aberto %} · {{ ciclo_aberto.nome }}{% endif %}
             {% else %}
-              Ainda não há nota consolidada neste ciclo.
+              Aguardando avaliação do líder{% if ciclo_aberto %} · {{ ciclo_aberto.nome }}{% endif %}.
+            {% endif %}
+          </p>
+        </div>
+        <div class="rounded-xl border border-line bg-surface-card p-5 shadow-[0_2px_4px_rgba(0,0,0,0.04)]">
+          <p class="text-xs uppercase tracking-wide text-slate-500">Autoavaliação</p>
+          <p class="mt-2 font-display text-3xl font-semibold tabular-nums tracking-tight text-slate-800">
+            {% if autoavaliacao_enviada and nota_autoavaliacao is not None %}
+              {{ nota_autoavaliacao|nota_percentual }}
+            {% else %}
+              —
+            {% endif %}
+          </p>
+          <p class="mt-1.5 text-sm leading-snug text-slate-500">
+            {% if autoavaliacao_enviada %}
+              Referência enviada por você — separada da nota oficial.
+              {% if avaliacao %}
+                <a href="{% url 'reviews:self_assessment' avaliacao.pk %}" class="font-medium text-emerald-700 hover:underline">Ver autoavaliação</a>
+              {% endif %}
+            {% elif avaliacao and avaliacao.etapa == "avaliacao" %}
+              Preencha na etapa de avaliação.
+              <a href="{% url 'reviews:self_assessment' avaliacao.pk %}" class="font-medium text-emerald-700 hover:underline">Ir para autoavaliação</a>
+            {% else %}
+              Disponível na etapa de avaliação do ciclo.
             {% endif %}
           </p>
         </div>
@@ -184,7 +205,7 @@
               </span>
               {% if item.nota_atual is not None %}
               <span class="mt-0.5 font-ui text-xs tabular-nums text-slate-500">
-                Nota atual: {{ item.nota_atual }}
+                Nota do líder: {{ item.nota_atual }}
               </span>
               {% endif %}
             </div>
