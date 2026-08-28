@@ -5,7 +5,7 @@
   Status PDI/ação: pendente, em_andamento, concluida, atrasada
   Status PDI plano: ativo, concluido, arquivado
   Status meta: aprovada, reprovada, aprovado, reprovado
-  Aderência: alta, media, baixa
+  Aderência: alta, media, baixa, neutro
 
   Forma: font-ui + text-xs compacto; cores Status Triad (emerald/amber/rose)
   + neutro slate — sem alterar hex/semântica.
@@ -18,6 +18,10 @@
 {% elif s == "em_andamento" or s == "pendente" or s == "media" %}
 <span class="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 font-ui text-xs font-medium leading-none tracking-tight text-amber-700 {{ extra_class }}">
   {% if label %}{{ label }}{% elif s == "em_andamento" %}Em andamento{% elif s == "media" %}Média{% else %}Pendente{% endif %}
+</span>
+{% elif s == "neutro" %}
+<span class="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 font-ui text-xs font-medium leading-none tracking-tight text-slate-600 {{ extra_class }}">
+  {% if label %}{{ label }}{% else %}Neutro{% endif %}
 </span>
 {% elif s == "atrasada" or s == "reprovada" or s == "reprovado" or s == "baixa" %}
 <span class="inline-flex items-center rounded-md bg-rose-50 px-2 py-0.5 font-ui text-xs font-medium leading-none tracking-tight text-rose-700 {{ extra_class }}">

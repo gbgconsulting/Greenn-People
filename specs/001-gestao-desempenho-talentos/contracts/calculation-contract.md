@@ -69,12 +69,19 @@ def upsert_classification(usuario, ciclo, potencial: int, admin: CustomUser) -> 
 ## Aderência de liderança (assíncrono)
 
 ```python
-# apps/dashboard/tasks.py
+# apps/dashboard/services/adherence.py
 
-@shared_task
-def calculate_adherence_snapshot(lider_id: int, ciclo_id: int) -> None:
+def compute_adherence(
+    lider_id: int,
+    ciclo_id: int,
+    *,
+    today: date | None = None,
+) -> tuple[Decimal | None, dict]:
     """
-    Calcula percentual de ações no prazo do líder.
+    Compliance: obrigações cumpridas no prazo / total devido.
+    NULL quando sem obrigações (estado neutro).
+    Pendências acionáveis só entram após ciclo.data_fim (leniente).
+    População: gestor com ≥1 liderado matriculado no ciclo.
     Atribui cada ação ao autor real (AuditLog/autor_id), NÃO ao line_manager atual.
     Persiste em AderenciaSnapshot.
     """

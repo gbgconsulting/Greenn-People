@@ -40,7 +40,7 @@ from apps.dashboard.chart_payloads import (
 )
 from apps.dashboard.models import AderenciaSnapshot
 from apps.reviews.models import Avaliacao
-from tests.conftest import DEFAULT_PASSWORD
+from tests.conftest import DEFAULT_PASSWORD, FIXTURE_DATA_ENTRADA
 
 ARCHIVE_PREFIX = 'ARQ-LEGADO-'
 N_ARQUIVO = 12
@@ -1238,15 +1238,19 @@ def test_adherence_lista_ordena_percentual_asc_e_filtra_nivel(
         email_confirmado_em=timezone.now(),
     )
     for gestor in (lider_alto, lider_medio):
-        CustomUser.objects.create_user(
+        colab = CustomUser.objects.create_user(
             email=f'colab.{gestor.email}',
             password=DEFAULT_PASSWORD,
             nome=f'Colab {gestor.nome}',
             cargo=cargo_colab,
             area=area,
             line_manager=gestor,
+            data_entrada=FIXTURE_DATA_ENTRADA,
             email_confirmado_em=timezone.now(),
         )
+        from apps.reviews.services.enrollment import ensure_avaliacao_for_user
+
+        ensure_avaliacao_for_user(colab, ciclo=ciclo_aberto)
     _seed_snapshot(lider=lider, ciclo=ciclo_aberto, percentual='15.00')
     _seed_snapshot(lider=lider_medio, ciclo=ciclo_aberto, percentual='60.00')
     _seed_snapshot(lider=lider_alto, ciclo=ciclo_aberto, percentual='90.00')
@@ -1334,15 +1338,19 @@ def test_adherence_filtro_area_reduz_lista_e_kpis(
         line_manager=admin,
         email_confirmado_em=timezone.now(),
     )
-    CustomUser.objects.create_user(
+    colab_outra = CustomUser.objects.create_user(
         email='colab.outra.area@test.greenn.com.br',
         password=DEFAULT_PASSWORD,
         nome='Colab Outra Área',
         cargo=cargo_colab,
         area=outra,
         line_manager=lider_outra,
+        data_entrada=FIXTURE_DATA_ENTRADA,
         email_confirmado_em=timezone.now(),
     )
+    from apps.reviews.services.enrollment import ensure_avaliacao_for_user
+
+    ensure_avaliacao_for_user(colab_outra, ciclo=ciclo_aberto)
     _seed_snapshot(lider=lider, ciclo=ciclo_aberto, percentual='20.00')
     _seed_snapshot(lider=lider_outra, ciclo=ciclo_aberto, percentual='90.00')
 

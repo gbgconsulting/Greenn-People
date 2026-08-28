@@ -299,6 +299,7 @@ class CicloDetailView(AdminCyclesMixin, DetailView):
     def _aderencia_resumo(self, ciclo: Ciclo) -> dict:
         agg = filter_adherence_snapshots(
             AderenciaSnapshot.objects.filter(ciclo=ciclo),
+            ciclo=ciclo,
         ).aggregate(
             media=Avg('percentual'),
             total_lideres=Count('pk'),
@@ -381,7 +382,11 @@ class CicloDetailView(AdminCyclesMixin, DetailView):
         chart_type = CHART_TYPE_DOUGHNUT
         title = 'Distribuição de aderência'
         percentuais = list(
-            filter_adherence_snapshots(AderenciaSnapshot.objects.filter(ciclo=ciclo))
+            filter_adherence_snapshots(
+                AderenciaSnapshot.objects.filter(ciclo=ciclo),
+                ciclo=ciclo,
+            )
+            .exclude(percentual__isnull=True)
             .values_list(
                 'percentual',
                 flat=True,

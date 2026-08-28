@@ -127,7 +127,9 @@
             </td>
             <td class="text-slate-600">{{ item.snapshot.lider.area.nome|default:"—" }}</td>
             <td class="text-slate-600">{{ item.snapshot.ciclo.nome }}</td>
-            <td class="font-semibold tabular-nums text-slate-800">{{ item.snapshot.percentual }}%</td>
+            <td class="font-semibold tabular-nums text-slate-800">
+              {% if item.snapshot.percentual is not None %}{{ item.snapshot.percentual }}%{% else %}—{% endif %}
+            </td>
             <td>
               {% include "components/badge_status.html" with status=item.status %}
             </td>

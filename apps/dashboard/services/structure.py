@@ -135,15 +135,21 @@ def leaders_with_adherence(
         }
         for lider in lideres
     ]
-    # Pior aderência primeiro; sem snapshot = exceção (antes de qualquer %).
-    rows.sort(
-        key=lambda item: (
-            item['snapshot'].percentual
-            if item.get('snapshot') is not None
-            else Decimal('-1'),
-            (item['lider'].nome or item['lider'].email or '').lower(),
-        ),
-    )
+    def _snapshot_sort_key(item: dict) -> tuple:
+        snap = item.get('snapshot')
+        if snap is None:
+            percentual_sort = Decimal('-1')
+        elif snap.percentual is None:
+            percentual_sort = Decimal('101')
+        else:
+            percentual_sort = snap.percentual
+        lider = item['lider']
+        return (
+            percentual_sort,
+            (lider.nome or lider.email or '').lower(),
+        )
+
+    rows.sort(key=_snapshot_sort_key)
     return rows
 
 

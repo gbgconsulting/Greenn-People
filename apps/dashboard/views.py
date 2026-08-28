@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
-from django.db.models import Avg, Count, Q
+from django.db.models import Avg, Count, F, Q
 from django.views.generic import ListView, TemplateView
 
 from apps.accounts.models import CustomUser
@@ -74,9 +74,9 @@ _ADERENCIA_NIVEL_FILTERS = frozenset({'alta', 'media', 'baixa'})
 
 
 def aderencia_status(percentual: Decimal | None) -> str:
-    """Map adherence % to badge_status keys: alta | media | baixa."""
+    """Map adherence % to badge_status keys: alta | media | baixa | neutro."""
     if percentual is None:
-        return 'baixa'
+        return 'neutro'
     if percentual >= _ADERENCIA_ALTA:
         return 'alta'
     if percentual >= _ADERENCIA_MEDIA:
@@ -748,7 +748,11 @@ class AdherenceListView(
         """Snapshots do ciclo/escopo AuthZ (+ área), % ASC — sem ``?nivel=``."""
         qs = (
             AderenciaSnapshot.objects.select_related('lider', 'lider__area', 'ciclo')
-            .order_by('percentual', 'lider__nome', 'lider__email')
+            .order_by(
+                F('percentual').asc(nulls_last=True),
+                'lider__nome',
+                'lider__email',
+            )
         )
 
         ciclo = self._resolve_ciclo()
@@ -759,7 +763,7 @@ class AdherenceListView(
         if area_id is not None:
             qs = qs.filter(lider__area_id=area_id)
 
-        qs = filter_adherence_snapshots(qs)
+        qs = filter_adherence_snapshots(qs, ciclo=ciclo)
 
         user = self.request.user
         if not getattr(user, 'is_admin', False):
@@ -1103,6 +1107,7 @@ class AdminDashboardView(LoginRequiredMixin, RequiresAdminMixin, TemplateView):
             }
         agg = filter_adherence_snapshots(
             AderenciaSnapshot.objects.filter(ciclo=ciclo),
+            ciclo=ciclo,
         ).aggregate(
             media=Avg('percentual'),
             total_lideres=Count('pk'),
@@ -1120,9 +1125,12 @@ class AdminDashboardView(LoginRequiredMixin, RequiresAdminMixin, TemplateView):
         if ciclo is None:
             return []
         qs = (
-            filter_adherence_snapshots(AderenciaSnapshot.objects.filter(ciclo=ciclo))
+            filter_adherence_snapshots(
+                AderenciaSnapshot.objects.filter(ciclo=ciclo),
+                ciclo=ciclo,
+            )
             .select_related('lider', 'lider__area')
-            .order_by('percentual', 'lider__nome')[:10]
+            .order_by(F('percentual').asc(nulls_last=True), 'lider__nome')[:10]
         )
         return [
             {
@@ -1150,7 +1158,11 @@ class AdminDashboardView(LoginRequiredMixin, RequiresAdminMixin, TemplateView):
                 title=title,
             )
         percentuais = list(
-            filter_adherence_snapshots(AderenciaSnapshot.objects.filter(ciclo=ciclo))
+            filter_adherence_snapshots(
+                AderenciaSnapshot.objects.filter(ciclo=ciclo),
+                ciclo=ciclo,
+            )
+            .exclude(percentual__isnull=True)
             .values_list(
                 'percentual',
                 flat=True,

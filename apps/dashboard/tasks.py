@@ -9,13 +9,12 @@ from apps.accounts.models import CustomUser
 from apps.cycles.models import Ciclo
 from apps.dashboard.models import AderenciaSnapshot
 from apps.dashboard.services.adherence import compute_adherence
-from apps.dashboard.services.eligible_leaders import eligible_leader_ids
+from apps.dashboard.services.eligible_leaders import leader_ids_with_team_in_ciclo
 
 
 def _leader_ids_for_ciclo(ciclo: Ciclo) -> set[int]:
-    """Gestores ativos com time ativo que recebem snapshot neste ciclo."""
-    del ciclo
-    return eligible_leader_ids()
+    """Gestores elegíveis com liderados matriculados neste ciclo."""
+    return leader_ids_with_team_in_ciclo(ciclo)
 
 
 @shared_task(name='apps.dashboard.tasks.calculate_adherence_snapshot')
@@ -23,11 +22,22 @@ def calculate_adherence_snapshot(lider_id: int, ciclo_id: int) -> str:
     """Compute adherence % for one leader/cycle and upsert ``AderenciaSnapshot``.
 
     Attribution uses AuditLog / autor / responsavel — never current line_manager.
+    Gestores sem time no ciclo têm snapshot removido.
     """
     if not CustomUser.objects.filter(pk=lider_id).exists():
         return f'skip: lider {lider_id} not found'
-    if not Ciclo.objects.filter(pk=ciclo_id).exists():
+    ciclo = Ciclo.objects.filter(pk=ciclo_id).first()
+    if ciclo is None:
         return f'skip: ciclo {ciclo_id} not found'
+
+    if lider_id not in _leader_ids_for_ciclo(ciclo):
+        deleted, _ = AderenciaSnapshot.objects.filter(
+            lider_id=lider_id,
+            ciclo_id=ciclo_id,
+        ).delete()
+        if deleted:
+            return f'skip: lider {lider_id} sem time no ciclo (snapshot removido)'
+        return f'skip: lider {lider_id} sem time no ciclo'
 
     percentual, componentes = compute_adherence(lider_id, ciclo_id)
     now = timezone.now()
@@ -40,7 +50,8 @@ def calculate_adherence_snapshot(lider_id: int, ciclo_id: int) -> str:
             'calculado_em': now,
         },
     )
-    return f'ok: lider={lider_id} ciclo={ciclo_id} percentual={percentual}'
+    label = 'neutro' if percentual is None else f'percentual={percentual}'
+    return f'ok: lider={lider_id} ciclo={ciclo_id} {label}'
 
 
 @shared_task(name='apps.dashboard.tasks.calculate_adherence_snapshots_daily')

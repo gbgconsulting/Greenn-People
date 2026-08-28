@@ -11,9 +11,9 @@ from apps.accounts.models import CustomUser
 from apps.cycles.models import Ciclo
 from apps.dashboard.models import AderenciaSnapshot
 from apps.dashboard.services.eligible_leaders import (
-    eligible_leader_ids,
     eligible_leader_queryset,
     filter_adherence_snapshots,
+    leader_ids_with_team_in_ciclo,
 )
 from apps.dashboard.tasks import _leader_ids_for_ciclo
 
@@ -132,6 +132,7 @@ def test_filter_adherence_snapshots_excludes_ineligible(
 
     qs = filter_adherence_snapshots(
         AderenciaSnapshot.objects.filter(ciclo=ciclo_aberto),
+        ciclo=ciclo_aberto,
     )
     emails = set(qs.values_list('lider__email', flat=True))
 
@@ -139,7 +140,9 @@ def test_filter_adherence_snapshots_excludes_ineligible(
 
 
 @pytest.mark.django_db
-def test_leader_ids_for_ciclo_matches_eligible_leaders(lider, colaborador, ciclo_aberto):
+def test_leader_ids_for_ciclo_matches_team_in_ciclo(lider, colaborador, ciclo_aberto):
     del colaborador
-    assert _leader_ids_for_ciclo(ciclo_aberto) == eligible_leader_ids()
-    assert lider.pk in eligible_leader_ids()
+    assert _leader_ids_for_ciclo(ciclo_aberto) == leader_ids_with_team_in_ciclo(
+        ciclo_aberto,
+    )
+    assert lider.pk in leader_ids_with_team_in_ciclo(ciclo_aberto)

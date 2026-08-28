@@ -1,3 +1,9 @@
+"""Cached leadership adherence percentage for a leader within a cycle.
+
+Written asynchronously by Celery; dashboards read this table only
+(no synchronous recalculation on request).
+"""
+
 from decimal import Decimal
 
 from django.conf import settings
@@ -6,12 +12,6 @@ from django.db import models
 
 
 class AderenciaSnapshot(models.Model):
-    """Cached leadership adherence percentage for a leader within a cycle.
-
-    Written asynchronously by Celery; dashboards read this table only
-    (no synchronous recalculation on request).
-    """
-
     lider = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
@@ -28,11 +28,15 @@ class AderenciaSnapshot(models.Model):
         'percentual',
         max_digits=5,
         decimal_places=2,
+        null=True,
+        blank=True,
         validators=[
             MinValueValidator(Decimal('0')),
             MaxValueValidator(Decimal('100')),
         ],
-        help_text='Percentual de aderência 0–100.',
+        help_text=(
+            'Percentual de aderência 0–100; NULL = neutro (sem obrigações no escopo).'
+        ),
     )
     componentes = models.JSONField(
         'componentes',
@@ -53,12 +57,21 @@ class AderenciaSnapshot(models.Model):
             ),
             models.CheckConstraint(
                 condition=(
-                    models.Q(percentual__gte=Decimal('0'))
-                    & models.Q(percentual__lte=Decimal('100'))
+                    models.Q(percentual__isnull=True)
+                    | (
+                        models.Q(percentual__gte=Decimal('0'))
+                        & models.Q(percentual__lte=Decimal('100'))
+                    )
                 ),
-                name='aderencia_percentual_0_100',
+                name='aderencia_percentual_0_100_or_null',
             ),
         ]
 
     def __str__(self) -> str:
+        if self.percentual is None:
+            return f'{self.lider} — {self.ciclo}: neutro'
         return f'{self.lider} — {self.ciclo}: {self.percentual}%'
+
+    @property
+    def is_neutro(self) -> bool:
+        return self.percentual is None
