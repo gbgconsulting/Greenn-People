@@ -372,4 +372,24 @@
       min-height: 18.75rem;
     }
   }
+
+  /*
+   * Hub PDI — grade de cartões com barras de progresso alinhadas na mesma linha.
+   * A linha 1fr absorve títulos de alturas diferentes; progresso/rodapé ficam fixos.
+   */
+  .pdi-hub-card {
+    @apply flex h-full flex-col;
+  }
+
+  .pdi-hub-card__body {
+    display: grid;
+    flex: 1 1 0%;
+    grid-template-rows: minmax(0, 1fr) auto auto;
+    min-height: 0;
+    @apply p-6;
+  }
+
+  .pdi-hub-card__head {
+    @apply mb-6 flex min-h-0 flex-col;
+  }
 }
