@@ -374,22 +374,27 @@
   }
 
   /*
-   * Hub PDI — grade de cartões com barras de progresso alinhadas na mesma linha.
-   * A linha 1fr absorve títulos de alturas diferentes; progresso/rodapé ficam fixos.
+   * Hub PDI — cartões com barra de progresso alinhada entre colunas da grade.
+   * Cabeçalho flex-1 absorve títulos de alturas diferentes; progresso e rodapé
+   * têm altura fixa (inclui espaço reservado para "Arquivar plano").
    */
   .pdi-hub-card {
-    @apply flex h-full flex-col;
+    @apply flex h-full min-h-0 flex-col self-stretch;
   }
 
   .pdi-hub-card__body {
-    display: grid;
-    flex: 1 1 0%;
-    grid-template-rows: minmax(0, 1fr) auto auto;
-    min-height: 0;
-    @apply p-6;
+    @apply flex min-h-0 flex-1 flex-col gap-6 p-6;
   }
 
   .pdi-hub-card__head {
-    @apply mb-6 flex min-h-0 flex-col;
+    @apply flex min-h-0 flex-1 flex-col;
+  }
+
+  .pdi-hub-card__progress {
+    @apply shrink-0;
+  }
+
+  .pdi-hub-card__footer {
+    @apply shrink-0 border-t border-line pt-4;
   }
 }
