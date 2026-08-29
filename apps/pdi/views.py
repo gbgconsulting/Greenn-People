@@ -59,12 +59,12 @@ def _progress_from_counts(concluidas: int, total: int) -> Decimal:
     )
 
 
-def _hub_card_variant(pdi: PDI, progress: Decimal, total_acoes: int) -> str:
+def _hub_card_variant(pdi: PDI, total_acoes: int) -> str:
     if pdi.status == PDI.Status.CONCLUIDO:
         return 'concluido'
     if pdi.status == PDI.Status.ARQUIVADO:
         return 'arquivado'
-    if total_acoes == 0 or progress == 0:
+    if total_acoes == 0:
         return 'aguardando'
     return 'em_andamento'
 
@@ -109,7 +109,7 @@ def _pdi_list_row(pdi: PDI, *, viewer_id: int) -> dict:
     concluidas = int(getattr(pdi, 'acoes_concluidas', 0) or 0)
     progresso = _progress_from_counts(concluidas, total_acoes)
     is_self = pdi.usuario_id == viewer_id
-    variant = _hub_card_variant(pdi, progresso, total_acoes)
+    variant = _hub_card_variant(pdi, total_acoes)
     prazo_min = getattr(pdi, 'prazo_min', None)
     prazo_max = getattr(pdi, 'prazo_max', None)
     return {
@@ -187,42 +187,56 @@ def _acoes_for_pdi(pdi: PDI):
     )
 
 
+def _acao_progress_pct(acao: AcaoPDI) -> int:
+    """Progresso exibido por ação — derivado do status no backend, não na UI."""
+    return {
+        AcaoPDI.Status.PENDENTE: 0,
+        AcaoPDI.Status.EM_ANDAMENTO: 50,
+        AcaoPDI.Status.ATRASADA: 40,
+        AcaoPDI.Status.CONCLUIDA: 100,
+    }.get(acao.status, 0)
+
+
+def _acao_card_row(acao: AcaoPDI) -> dict:
+    return {
+        'acao': acao,
+        'progresso_pct': _acao_progress_pct(acao),
+        'responsavel_nome': _user_display_name(acao.responsavel),
+    }
+
+
+def _group_acoes(acoes) -> dict:
+    """Agrupa ações por coluna do board — regra de negócio no backend."""
+    em_andamento: list[dict] = []
+    proximas: list[dict] = []
+    concluidas: list[dict] = []
+    for acao in acoes:
+        row = _acao_card_row(acao)
+        if acao.status == AcaoPDI.Status.CONCLUIDA:
+            concluidas.append(row)
+        elif acao.status == AcaoPDI.Status.PENDENTE:
+            proximas.append(row)
+        else:
+            em_andamento.append(row)
+    return {
+        'acoes_em_andamento': em_andamento,
+        'acoes_proximas': proximas,
+        'acoes_concluidas': concluidas,
+        'total_em_andamento': len(em_andamento),
+        'total_acoes': len(em_andamento) + len(proximas) + len(concluidas),
+    }
+
+
 def _acao_list_context(pdi: PDI) -> dict:
+    acoes = list(_acoes_for_pdi(pdi))
     return {
         'pdi': pdi,
-        'acoes': _acoes_for_pdi(pdi),
+        'acoes': acoes,
         'progresso': calculate_pdi_progress(pdi),
         'status_choices': AcaoPDI.Status.choices,
         'pode_editar_acoes': pdi_allows_action_mutations(pdi),
+        **_group_acoes(acoes),
     }
-
-
-def _acao_row_context(acao: AcaoPDI) -> dict:
-    return {
-        'acao': acao,
-        'status_choices': AcaoPDI.Status.choices,
-        'pode_editar_acoes': pdi_allows_action_mutations(acao.pdi),
-    }
-
-
-def _htmx_acao_row_response(
-    request,
-    acao: AcaoPDI,
-    *,
-    message: str | None = None,
-    level: str = 'success',
-) -> HttpResponse:
-    html = render_to_string(
-        'pdi/partials/acao_row.html',
-        _acao_row_context(acao),
-        request=request,
-    )
-    response = HttpResponse(html)
-    if message:
-        response['HX-Trigger'] = json.dumps(
-            {'showMessage': {'message': message, 'level': level}},
-        )
-    return response
 
 
 def _htmx_acao_list_response(
@@ -296,6 +310,8 @@ class PDIListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin,
         status = self.request.GET.get('status', '').strip()
         if status in {c.value for c in PDI.Status}:
             qs = qs.filter(status=status)
+            if status == PDI.Status.ATIVO:
+                qs = qs.filter(total_acoes__gt=0)
         busca = self.request.GET.get('q', '').strip()
         if busca:
             qs = qs.filter(
@@ -442,15 +458,15 @@ class PDIDetailView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         pdi = self.object
+        acoes = list(_acoes_for_pdi(pdi))
         context.update(
             {
                 'colaborador': pdi.usuario,
                 'is_self': pdi.usuario_id == self.request.user.pk,
                 'progresso': calculate_pdi_progress(pdi),
-                'acoes': _acoes_for_pdi(pdi),
                 'status_choices': AcaoPDI.Status.choices,
                 'pode_editar_acoes': pdi_allows_action_mutations(pdi),
-                'pode_arquivar': pdi.status == PDI.Status.ATIVO,
+                **_group_acoes(acoes),
             },
         )
         return context
@@ -643,9 +659,9 @@ class AcaoPDIStatusUpdateView(LoginRequiredMixin, ScopedObjectMixin, SingleObjec
         acao = self.get_object()
         if not pdi_allows_action_mutations(acao.pdi):
             if is_htmx(request):
-                return _htmx_acao_row_response(
+                return _htmx_acao_list_response(
                     request,
-                    acao,
+                    acao.pdi,
                     message=_ARCHIVED_MUTATION_MSG,
                     level='error',
                 )
@@ -658,9 +674,9 @@ class AcaoPDIStatusUpdateView(LoginRequiredMixin, ScopedObjectMixin, SingleObjec
 
         if new_status not in valid:
             if is_htmx(request):
-                return _htmx_acao_row_response(
+                return _htmx_acao_list_response(
                     request,
-                    acao,
+                    acao.pdi,
                     message='Status inválido.',
                     level='error',
                 )
@@ -675,9 +691,9 @@ class AcaoPDIStatusUpdateView(LoginRequiredMixin, ScopedObjectMixin, SingleObjec
             acao.save(update_fields=['status', 'updated_at'])
 
         if is_htmx(request):
-            return _htmx_acao_row_response(
+            return _htmx_acao_list_response(
                 request,
-                acao,
+                acao.pdi,
                 message='Status da ação atualizado.',
             )
         messages.success(request, 'Status da ação atualizado.')

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Iniciar Novo Ciclo de PDI — Greenn People{% endblock %}
 
@@ -45,7 +46,7 @@
         <p class="mb-3 font-ui text-sm text-slate-500">
           Para quem este plano de desenvolvimento será criado?
         </p>
-        <div class="relative">
+        <div class="relative" data-custom-select>
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 20 20"
@@ -98,4 +99,8 @@
     </form>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/custom_select.js' %}" defer></script>
 {% endblock %}

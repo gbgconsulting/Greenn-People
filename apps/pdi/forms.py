@@ -31,6 +31,13 @@ _TEXTAREA = (
     'focus:outline-none focus:ring-2 focus:ring-emerald-500 '
     'focus:border-transparent min-h-[5rem]'
 )
+_ACAO_FIELD = (
+    'w-full rounded-lg border border-transparent bg-slate-50 px-4 py-3 '
+    'font-ui text-base text-slate-800 transition-colors duration-200 '
+    'placeholder:text-slate-400 focus:border-2 focus:border-emerald-800 '
+    'focus:bg-white focus:outline-none focus:ring-0'
+)
+_ACAO_TEXTAREA = f'{_ACAO_FIELD} resize-none min-h-[6rem]'
 
 
 class PDIForm(forms.ModelForm):
@@ -91,15 +98,35 @@ class PDIForm(forms.ModelForm):
 class AcaoPDIForm(forms.ModelForm):
     """Criação/edição de ação de PDI; ``prazo`` >= hoje apenas na criação."""
 
+    titulo_acao = forms.CharField(
+        label='Título da Ação',
+        max_length=200,
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                'placeholder': 'Ex: Curso de Liderança Avançada',
+            },
+        ),
+    )
+
     class Meta:
         model = AcaoPDI
         fields = ('descricao', 'responsavel', 'prazo')
         labels = {
-            'descricao': 'Descrição',
+            'descricao': 'Descrição e Objetivos',
             'responsavel': 'Responsável',
-            'prazo': 'Prazo',
+            'prazo': 'Prazo Estimado',
         }
         widgets = {
+            'descricao': forms.Textarea(
+                attrs={
+                    'rows': 4,
+                    'placeholder': (
+                        'Descreva os objetivos que você espera alcançar '
+                        'com esta ação...'
+                    ),
+                },
+            ),
             'prazo': forms.DateInput(
                 format='%Y-%m-%d',
                 attrs={'type': 'date'},
@@ -111,23 +138,56 @@ class AcaoPDIForm(forms.ModelForm):
         self.pdi = pdi
         super().__init__(*args, **kwargs)
 
-        self.fields['descricao'].widget.attrs.update({'class': _TEXTAREA})
+        is_create = not self.instance.pk
+
+        if is_create:
+            self.fields['titulo_acao'].required = True
+            self.fields['descricao'].required = False
+            self.fields['titulo_acao'].widget.attrs.update({'class': _ACAO_FIELD})
+            self.fields['descricao'].widget.attrs.update({'class': _ACAO_TEXTAREA})
+            self.fields['prazo'].widget.attrs.update({'class': _ACAO_FIELD})
+            self.fields['responsavel'].widget = forms.HiddenInput()
+        else:
+            del self.fields['titulo_acao']
+            self.fields['descricao'].widget.attrs.update({'class': _TEXTAREA})
+            self.fields['prazo'].widget.attrs.update({'class': _INPUT})
+
         self.fields['prazo'].input_formats = ['%Y-%m-%d']
-        self.fields['prazo'].widget.attrs.update({'class': _INPUT})
 
         visible = get_visible_users(user) if user is not None else None
         if visible is not None:
             self.fields['responsavel'].queryset = visible.order_by('nome', 'email')
-            self.fields['responsavel'].widget.attrs.update({'class': _SELECT})
+            if not is_create:
+                self.fields['responsavel'].widget.attrs.update({'class': _SELECT})
             self.fields['responsavel'].label_from_instance = (
                 lambda u: u.nome or u.email
             )
-            if not self.instance.pk and pdi is not None:
+            if is_create and pdi is not None:
                 self.fields['responsavel'].initial = pdi.usuario_id
         else:
             from apps.accounts.models import CustomUser
 
             self.fields['responsavel'].queryset = CustomUser.objects.none()
+
+    def clean(self):
+        cleaned = super().clean()
+        if self.instance.pk:
+            return cleaned
+
+        titulo = cleaned.get('titulo_acao', '').strip()
+        objetivos = cleaned.get('descricao', '').strip()
+
+        if not titulo:
+            self.add_error(
+                'titulo_acao',
+                'Informe o título da ação.',
+            )
+            return cleaned
+
+        cleaned['descricao'] = (
+            f'{titulo}\n\n{objetivos}' if objetivos else titulo
+        )
+        return cleaned
 
     def clean_prazo(self):
         prazo = self.cleaned_data['prazo']

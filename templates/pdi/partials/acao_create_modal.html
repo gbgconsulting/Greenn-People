@@ -1,58 +1,106 @@
-{% extends "components/modal.html" %}
-
-{% block modal_title %}Nova ação{% endblock %}
-
-{% block modal_body %}
-<form
-  method="post"
-  hx-post="{% url 'pdi:action_create' pdi.pk %}"
-  hx-target="#acao-list"
-  hx-swap="innerHTML"
-  hx-indicator="#htmx-indicator"
-  novalidate
-  class="space-y-4"
+{% comment %}
+  Modal de criação de ação — visual alinhado a telas/CRIAR_PDI.html.
+  Campos competência/tipo do mock não existem no modelo; não são exibidos.
+{% endcomment %}
+<div
+  class="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="acao-create-title"
+  tabindex="-1"
 >
-  {% csrf_token %}
+  <div
+    class="absolute inset-0 bg-slate-900/50"
+    onclick="closeModal()"
+    aria-hidden="true"
+  ></div>
 
-  {% if form.non_field_errors %}
-  <div class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700" role="alert">
-    {% for error in form.non_field_errors %}{{ error }}{% endfor %}
-  </div>
-  {% endif %}
+  <div class="relative z-10 flex max-h-[min(92vh,48rem)] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-line bg-white shadow-[0_2px_4px_rgba(0,0,0,0.04)]">
+    <div class="shrink-0 border-b border-line px-6 pb-6 pt-8 md:px-8">
+      <div class="mb-2 flex items-center gap-3">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          class="size-6 shrink-0 text-emerald-800"
+          aria-hidden="true"
+        >
+          <path d="M11.7 2.805a.75.75 0 0 1 .6 0A7.5 7.5 0 0 0 18.75 9V11.25a3 3 0 0 0 3 3v3.75a8.25 8.25 0 0 1-16.5 0V14.25a3 3 0 0 0 3-3V9a7.5 7.5 0 0 0 6.05-6.195ZM9.75 9a2.25 2.25 0 1 1 4.5 0 2.25 2.25 0 0 1-4.5 0Z" />
+        </svg>
+        <h2 id="acao-create-title" class="font-display text-2xl font-medium text-emerald-800">
+          Nova Ação de PDI
+        </h2>
+      </div>
+      <p class="font-ui text-base text-slate-600">
+        Defina os detalhes da sua próxima meta de desenvolvimento individual.
+      </p>
+    </div>
 
-  <div>
-    <label for="{{ form.descricao.id_for_label }}" class="mb-1 block text-sm font-medium text-slate-700">
-      {{ form.descricao.label }}
-    </label>
-    {{ form.descricao }}
-    {% if form.descricao.errors %}
-      <p class="mt-1 text-xs text-rose-600" role="alert">{{ form.descricao.errors.0 }}</p>
-    {% endif %}
-  </div>
+    <form
+      method="post"
+      hx-post="{% url 'pdi:action_create' pdi.pk %}"
+      hx-target="#acao-list"
+      hx-swap="innerHTML"
+      hx-indicator="#htmx-indicator"
+      novalidate
+      class="flex min-h-0 flex-1 flex-col"
+    >
+      {% csrf_token %}
+      {{ form.responsavel }}
 
-  <div>
-    <label for="{{ form.responsavel.id_for_label }}" class="mb-1 block text-sm font-medium text-slate-700">
-      {{ form.responsavel.label }}
-    </label>
-    {{ form.responsavel }}
-    {% if form.responsavel.errors %}
-      <p class="mt-1 text-xs text-rose-600" role="alert">{{ form.responsavel.errors.0 }}</p>
-    {% endif %}
-  </div>
+      <div class="min-h-0 flex-1 space-y-6 overflow-y-auto px-6 py-6 md:px-8">
+        {% if form.non_field_errors %}
+        <div class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 font-ui text-sm text-rose-700" role="alert">
+          {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+        </div>
+        {% endif %}
 
-  <div>
-    <label for="{{ form.prazo.id_for_label }}" class="mb-1 block text-sm font-medium text-slate-700">
-      {{ form.prazo.label }}
-    </label>
-    {{ form.prazo }}
-    {% if form.prazo.errors %}
-      <p class="mt-1 text-xs text-rose-600" role="alert">{{ form.prazo.errors.0 }}</p>
-    {% endif %}
-  </div>
+        <div class="space-y-2">
+          <label for="{{ form.titulo_acao.id_for_label }}" class="block font-ui text-sm font-semibold tracking-wide text-slate-500">
+            {{ form.titulo_acao.label }}
+          </label>
+          {{ form.titulo_acao }}
+          {% if form.titulo_acao.errors %}
+            <p class="font-ui text-xs text-rose-600" role="alert">{{ form.titulo_acao.errors.0 }}</p>
+          {% endif %}
+        </div>
 
-  <div class="flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4">
-    {% include "components/button.html" with label="Cancelar" type="button" variant="secondary" attrs='onclick="closeModal()"' %}
-    {% include "components/button.html" with label="Criar ação" type="submit" variant="primary" %}
+        <div class="space-y-2">
+          <label for="{{ form.descricao.id_for_label }}" class="block font-ui text-sm font-semibold tracking-wide text-slate-500">
+            {{ form.descricao.label }}
+          </label>
+          {{ form.descricao }}
+          {% if form.descricao.errors %}
+            <p class="font-ui text-xs text-rose-600" role="alert">{{ form.descricao.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <div class="w-full space-y-2 md:w-1/2">
+          <label for="{{ form.prazo.id_for_label }}" class="block font-ui text-sm font-semibold tracking-wide text-slate-500">
+            {{ form.prazo.label }}
+          </label>
+          {{ form.prazo }}
+          {% if form.prazo.errors %}
+            <p class="font-ui text-xs text-rose-600" role="alert">{{ form.prazo.errors.0 }}</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="flex shrink-0 flex-col-reverse items-center justify-end gap-4 border-t border-line bg-surface px-6 py-5 md:flex-row md:px-8">
+        <button
+          type="button"
+          class="inline-flex w-full items-center justify-center rounded-lg border border-line bg-white px-6 py-2.5 font-ui text-sm font-semibold tracking-wide text-slate-600 transition-colors duration-200 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface md:w-auto"
+          onclick="closeModal()"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          class="inline-flex w-full items-center justify-center rounded-lg bg-brand-gradient px-6 py-2.5 font-ui text-sm font-semibold tracking-wide text-white shadow-sm transition-transform duration-200 hover:-translate-y-px hover:bg-brand-gradient-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface md:w-auto"
+        >
+          Salvar Ação
+        </button>
+      </div>
+    </form>
   </div>
-</form>
-{% endblock %}
+</div>
