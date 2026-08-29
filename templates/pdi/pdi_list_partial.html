@@ -1,58 +1,76 @@
-<div id="list-container">
-<div class="table-frame">
-  <table>
-    <thead>
-      <tr>
-        <th>Título</th>
-        <th>Colaborador</th>
-        <th>Status</th>
-        <th>Progresso</th>
-        <th class="text-right">Ações</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for row in pdi_rows %}
-      <tr class="{% if row.is_self %}border-l-4 border-l-emerald-500 bg-emerald-50/30 hover:bg-emerald-50/50{% endif %}">
-        <td>
-          <p class="font-semibold text-slate-800">{{ row.pdi.titulo }}</p>
-        </td>
-        <td>
-          <p class="font-medium text-slate-800">
-            {{ row.pdi.usuario.nome|default:row.pdi.usuario.email }}
-            {% if row.is_self %}
-              <span class="ml-1 text-xs font-normal text-slate-400">(você)</span>
-            {% endif %}
-          </p>
-          <p class="text-xs text-slate-500">{{ row.pdi.usuario.email }}</p>
-        </td>
-        <td>
-          {% include "components/badge_status.html" with status=row.pdi.status label=row.pdi.get_status_display %}
-        </td>
-        <td class="tabular-nums text-slate-800">{{ row.progresso }}%</td>
-        <td class="text-right">
-          <a
-            href="{% url 'pdi:detail' row.pdi.pk %}"
-            class="font-medium text-emerald-700 hover:text-emerald-800"
-          >Ver</a>
-        </td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="5" class="!py-8">
-          {% if status_filtro %}
-            {% include "components/empty_state.html" with title="Nenhum PDI neste filtro" message="Nenhum PDI com este status no seu escopo. Tente remover o filtro ou escolha outro status." %}
-          {% elif pode_criar %}
-            {% url 'pdi:create' as pdi_create_url %}
-            {% include "components/empty_state.html" with title="Nenhum PDI cadastrado" message="Nenhum PDI cadastrado no seu escopo." cta_label="Novo PDI" cta_href=pdi_create_url %}
-          {% else %}
-            {% include "components/empty_state.html" with title="Nenhum PDI cadastrado" message="Nenhum PDI cadastrado no seu escopo." %}
-          {% endif %}
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
+{% url 'pdi:list' as pdi_list_url %}
+<div id="list-container" class="space-y-6">
+  <div class="rounded-xl border border-line bg-surface-card p-4 shadow-[0_2px_4px_rgba(0,0,0,0.04)]">
+    <div class="flex flex-col items-center justify-between gap-4 md:flex-row">
+      <div class="relative w-full md:max-w-md">
+        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400" aria-hidden="true">
+          <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35m1.85-5.15a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </span>
+        <input
+          id="pdi-busca-input"
+          type="search"
+          name="q"
+          value="{{ busca }}"
+          placeholder="Buscar planos por nome ou colaborador..."
+          autocomplete="off"
+          aria-label="Buscar planos de desenvolvimento"
+          class="form-control !w-full !pl-10"
+          hx-get="{{ pdi_list_url }}"
+          hx-trigger="keyup changed delay:300ms, search"
+          hx-target="#list-container"
+          hx-swap="outerHTML"
+          hx-push-url="true"
+          hx-include="[name='status']"
+        >
+      </div>
 
-{% include "components/pagination.html" with page_obj=page_obj %}
+      <nav
+        class="flex w-full gap-2 overflow-x-auto pb-1 md:w-auto md:pb-0"
+        role="navigation"
+        aria-label="Filtro por status"
+      >
+        {% for value, label in hub_filter_choices %}
+          {% if value %}
+            {% querystring status=value page=None as filter_url %}
+          {% else %}
+            {% querystring status=None page=None as filter_url %}
+          {% endif %}
+          <a
+            href="{{ filter_url }}"
+            hx-get="{{ filter_url }}"
+            hx-target="#list-container"
+            hx-swap="outerHTML"
+            hx-push-url="true"
+            class="inline-flex shrink-0 items-center rounded-lg border px-4 py-2 font-ui text-sm font-semibold transition-colors {% if status_filtro == value %}border-emerald-200 bg-emerald-50 text-emerald-700{% else %}border-line bg-surface text-slate-600 hover:bg-slate-50{% endif %}"
+          >{{ label }}</a>
+        {% endfor %}
+      </nav>
+    </div>
+    {% if status_filtro %}
+      <input type="hidden" name="status" value="{{ status_filtro }}">
+    {% endif %}
+  </div>
+
+  {% if pdi_rows %}
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
+    {% for row in pdi_rows %}
+      {% include "pdi/partials/pdi_hub_card.html" with row=row %}
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="rounded-xl border border-line bg-surface-card p-8 shadow-[0_2px_4px_rgba(0,0,0,0.04)]">
+    {% if busca or status_filtro %}
+      {% include "components/empty_state.html" with title="Nenhum PDI neste filtro" message="Nenhum plano corresponde à busca ou ao status selecionado. Tente ajustar os filtros." %}
+    {% elif pode_criar %}
+      {% url 'pdi:create' as pdi_create_url %}
+      {% include "components/empty_state.html" with title="Nenhum PDI cadastrado" message="Nenhum PDI cadastrado no seu escopo." cta_label="Iniciar meu primeiro PDI" cta_href=pdi_create_url %}
+    {% else %}
+      {% include "components/empty_state.html" with title="Nenhum PDI cadastrado" message="Nenhum PDI cadastrado no seu escopo." %}
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% include "components/pagination.html" with page_obj=page_obj %}
 </div>

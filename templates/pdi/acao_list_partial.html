@@ -6,17 +6,23 @@
       <th class="px-4 py-3 font-medium">Prazo</th>
       <th class="px-4 py-3 font-medium">Status</th>
       <th class="px-4 py-3 font-medium">Atualizado em</th>
+      {% if pode_editar_acoes %}
       <th class="px-4 py-3 font-medium text-right"><span class="sr-only">Ações</span></th>
+      {% endif %}
     </tr>
   </thead>
   <tbody class="divide-y divide-slate-100">
     {% for acao in acoes %}
-    {% include "pdi/partials/acao_row.html" with acao=acao status_choices=status_choices %}
+    {% include "pdi/partials/acao_row.html" with acao=acao status_choices=status_choices pode_editar_acoes=pode_editar_acoes %}
     {% empty %}
     <tr>
-      <td colspan="6" class="px-4 py-8">
-        {% url 'pdi:action_create_modal' pdi.pk as acao_create_modal_url %}
-        {% include "components/empty_state.html" with title="Nenhuma ação cadastrada" message="Crie a primeira ação de desenvolvimento para acompanhar progresso neste PDI." cta_label="Nova ação" cta_hx_get=acao_create_modal_url cta_hx_target="#modal-container" %}
+      <td colspan="{% if pode_editar_acoes %}6{% else %}5{% endif %}" class="px-4 py-8">
+        {% if pode_editar_acoes %}
+          {% url 'pdi:action_create_modal' pdi.pk as acao_create_modal_url %}
+          {% include "components/empty_state.html" with title="Nenhuma ação cadastrada" message="Crie a primeira ação de desenvolvimento para acompanhar progresso neste PDI." cta_label="Nova ação" cta_hx_get=acao_create_modal_url cta_hx_target="#modal-container" %}
+        {% else %}
+          {% include "components/empty_state.html" with title="Nenhuma ação cadastrada" message="Este plano arquivado não possui ações." %}
+        {% endif %}
       </td>
     </tr>
     {% endfor %}

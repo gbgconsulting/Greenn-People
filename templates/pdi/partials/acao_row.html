@@ -9,6 +9,7 @@
   <td class="px-4 py-3">
     <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
       {% include "components/badge_status.html" with status=acao.status label=acao.get_status_display %}
+      {% if pode_editar_acoes %}
       <select
         name="status"
         class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -23,9 +24,11 @@
         <option value="{{ value }}" {% if acao.status == value %}selected{% endif %}>{{ label }}</option>
         {% endfor %}
       </select>
+      {% endif %}
     </div>
   </td>
   <td class="px-4 py-3 tabular-nums text-slate-500">{{ acao.updated_at|date:"d/m/Y H:i" }}</td>
+  {% if pode_editar_acoes %}
   <td class="px-4 py-3 text-right">
     <div class="inline-flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
       <button
@@ -51,4 +54,5 @@
       </button>
     </div>
   </td>
+  {% endif %}
 </tr>

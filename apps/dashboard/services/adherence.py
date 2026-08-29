@@ -21,7 +21,7 @@ from apps.audit.models import AuditLog
 from apps.cycles.models import Ciclo
 from apps.goals.forms import is_meta_approver
 from apps.goals.models import Meta
-from apps.pdi.models import AcaoPDI
+from apps.pdi.models import AcaoPDI, PDI
 from apps.reviews.forms import can_leader_assess
 from apps.reviews.models import Avaliacao, Feedback
 from apps.reviews.services.evaluation import self_assessment_submitted
@@ -279,11 +279,16 @@ def _acao_pdi_completion_date(acao: AcaoPDI) -> date | None:
 
 
 def _acoes_pdi_component(lider_id: int, ciclo: Ciclo, ref_day: date) -> dict:
-    """PDI actions owned by the leader whose prazo falls in the cycle window."""
+    """PDI actions owned by the leader whose prazo falls in the cycle window.
+
+    Planos arquivados ficam fora do índice (não penalizam nem inflacionam).
+    """
     acoes = AcaoPDI.objects.filter(
         responsavel_id=lider_id,
         prazo__gte=ciclo.data_inicio,
         prazo__lte=ciclo.data_fim,
+    ).exclude(
+        pdi__status=PDI.Status.ARQUIVADO,
     ).only('status', 'prazo', 'updated_at')
 
     total = 0

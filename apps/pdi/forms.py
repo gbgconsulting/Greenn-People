@@ -11,6 +11,16 @@ _INPUT = (
     'focus:outline-none focus:ring-2 focus:ring-emerald-500 '
     'focus:border-transparent'
 )
+_PDI_INPUT = (
+    'w-full rounded-lg border-none bg-slate-50 p-4 font-ui text-base '
+    'text-slate-800 transition-colors placeholder:text-slate-400 '
+    'focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500'
+)
+_PDI_SELECT = (
+    'w-full appearance-none rounded-lg border-none bg-slate-50 py-3 pl-10 '
+    'pr-10 font-ui text-base text-slate-800 transition-colors '
+    'focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500'
+)
 _SELECT = (
     'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm '
     'focus:outline-none focus:ring-2 focus:ring-emerald-500 '
@@ -28,24 +38,29 @@ class PDIForm(forms.ModelForm):
 
     class Meta:
         model = PDI
-        fields = ('usuario', 'titulo', 'status')
+        fields = ('usuario', 'titulo')
         labels = {
             'usuario': 'Colaborador',
-            'titulo': 'Título',
-            'status': 'Status',
+            'titulo': 'Título do PDI',
         }
 
     def __init__(self, *args, user=None, **kwargs):
         self.user = user
         super().__init__(*args, **kwargs)
 
-        self.fields['titulo'].widget.attrs.update({'class': _INPUT})
-        self.fields['status'].widget.attrs.update({'class': _SELECT})
+        self.fields['titulo'].widget.attrs.update(
+            {
+                'class': _PDI_INPUT,
+                'placeholder': (
+                    'Ex: Ciclo de Liderança 2024 ou Especialização Técnica Q3'
+                ),
+            },
+        )
 
         visible = get_visible_users(user) if user is not None else None
         if visible is not None:
             self.fields['usuario'].queryset = visible.order_by('nome', 'email')
-            self.fields['usuario'].widget.attrs.update({'class': _SELECT})
+            self.fields['usuario'].widget.attrs.update({'class': _PDI_SELECT})
             self.fields['usuario'].label_from_instance = (
                 lambda u: u.nome or u.email
             )
@@ -56,6 +71,9 @@ class PDIForm(forms.ModelForm):
                 self.fields['usuario'].widget = forms.HiddenInput()
             else:
                 self.fields['usuario'].initial = user.pk
+                self.fields['usuario'].empty_label = (
+                    'Selecione o colaborador...'
+                )
         else:
             from apps.accounts.models import CustomUser
 

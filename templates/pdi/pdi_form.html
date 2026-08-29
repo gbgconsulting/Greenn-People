@@ -1,65 +1,101 @@
 {% extends "base.html" %}
 
-{% block title %}Novo PDI — Greenn People{% endblock %}
+{% block title %}Iniciar Novo Ciclo de PDI — Greenn People{% endblock %}
 
 {% block content %}
-<div class="mx-auto max-w-lg">
-  <header class="mb-6">
-    <h1 class="font-display text-2xl font-semibold text-slate-800">Novo PDI</h1>
-    <p class="mt-1 font-ui text-sm text-slate-500">
-      Crie um plano de desenvolvimento individual. As ações de aprendizado e
-      crescimento podem ser adicionadas depois no detalhe do PDI.
+<div class="mx-auto w-full max-w-3xl">
+  <header class="mb-10">
+    <h1 class="font-display text-3xl font-semibold tracking-tight text-slate-800 sm:text-4xl">
+      Iniciar Novo Ciclo de PDI
+    </h1>
+    <p class="mt-2 font-ui text-lg leading-relaxed text-slate-500">
+      Defina o foco central do seu desenvolvimento antes de estruturar as ações específicas.
+      Este ciclo guiará todo o seu plano — prazos e ações são definidos na etapa seguinte.
     </p>
   </header>
 
-  <form method="post" novalidate class="rounded-xl border border-line bg-surface-card p-6">
-    {% csrf_token %}
+  <div class="rounded-xl border border-line bg-surface-card p-6 shadow-[0_2px_4px_rgba(0,0,0,0.04)] md:p-8">
+    <form method="post" novalidate class="space-y-8">
+      {% csrf_token %}
 
-    {% if form.non_field_errors %}
-      <div class="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 font-ui text-sm text-rose-700" role="alert">
-        {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+      {% if form.non_field_errors %}
+        <div class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 font-ui text-sm text-rose-700" role="alert">
+          {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="space-y-2">
+        <label for="{{ form.titulo.id_for_label }}" class="block font-ui text-sm font-semibold text-slate-800">
+          {{ form.titulo.label }}
+        </label>
+        <p class="mb-3 font-ui text-sm text-slate-500">
+          Dê um nome curto e claro para identificar este ciclo de desenvolvimento.
+        </p>
+        {{ form.titulo }}
+        {% if form.titulo.errors %}
+          <p class="mt-1 font-ui text-xs text-rose-600" role="alert">{{ form.titulo.errors.0 }}</p>
+        {% endif %}
       </div>
-    {% endif %}
 
-    {% if mostrar_usuario %}
-    <div class="mb-4">
-      <label for="{{ form.usuario.id_for_label }}" class="mb-1 block font-ui text-sm font-medium text-slate-700">
-        {{ form.usuario.label }}
-      </label>
-      {{ form.usuario }}
-      {% if form.usuario.errors %}
-        <p class="mt-1 font-ui text-xs text-rose-600" role="alert">{{ form.usuario.errors.0 }}</p>
+      {% if mostrar_usuario %}
+      <div class="space-y-2">
+        <label for="{{ form.usuario.id_for_label }}" class="block font-ui text-sm font-semibold text-slate-800">
+          {{ form.usuario.label }}
+        </label>
+        <p class="mb-3 font-ui text-sm text-slate-500">
+          Para quem este plano de desenvolvimento será criado?
+        </p>
+        <div class="relative">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            width="20"
+            height="20"
+            class="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 shrink-0 text-slate-500"
+            aria-hidden="true"
+          >
+            <path d="M10 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM3.465 14.493a1.23 1.23 0 0 0 .41 1.412A9.957 9.957 0 0 0 10 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 0 0-13.074.003Z" />
+          </svg>
+          {{ form.usuario }}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            width="20"
+            height="20"
+            class="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 shrink-0 text-slate-500"
+            aria-hidden="true"
+          >
+            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        {% if form.usuario.errors %}
+          <p class="mt-1 font-ui text-xs text-rose-600" role="alert">{{ form.usuario.errors.0 }}</p>
+        {% endif %}
+      </div>
+      {% else %}
+        {{ form.usuario }}
       {% endif %}
-    </div>
-    {% else %}
-      {{ form.usuario }}
-    {% endif %}
 
-    <div class="mb-4">
-      <label for="{{ form.titulo.id_for_label }}" class="mb-1 block font-ui text-sm font-medium text-slate-700">
-        {{ form.titulo.label }}
-      </label>
-      {{ form.titulo }}
-      {% if form.titulo.errors %}
-        <p class="mt-1 font-ui text-xs text-rose-600" role="alert">{{ form.titulo.errors.0 }}</p>
-      {% endif %}
-    </div>
+      <div class="h-px w-full bg-line" aria-hidden="true"></div>
 
-    <div class="mb-6">
-      <label for="{{ form.status.id_for_label }}" class="mb-1 block font-ui text-sm font-medium text-slate-700">
-        {{ form.status.label }}
-      </label>
-      {{ form.status }}
-      {% if form.status.errors %}
-        <p class="mt-1 font-ui text-xs text-rose-600" role="alert">{{ form.status.errors.0 }}</p>
-      {% endif %}
-    </div>
-
-    <div class="flex flex-wrap gap-3">
-      {% url 'pdi:list' as cancel_url %}
-      {% include "components/button.html" with label="Salvar" type="submit" variant="primary" %}
-      {% include "components/button.html" with label="Cancelar" href=cancel_url variant="secondary" %}
-    </div>
-  </form>
+      <div class="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-end">
+        {% url 'pdi:list' as cancel_url %}
+        <a
+          href="{{ cancel_url }}"
+          class="inline-flex items-center justify-center rounded-lg px-6 py-3 font-ui text-sm font-semibold text-emerald-700 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface sm:w-auto"
+        >
+          Cancelar
+        </a>
+        <button
+          type="submit"
+          class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-gradient px-8 py-3 font-ui text-sm font-semibold text-white shadow-md transition-all hover:-translate-y-0.5 hover:bg-brand-gradient-hover hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface sm:w-auto"
+        >
+          Salvar
+        </button>
+      </div>
+    </form>
+  </div>
 </div>
 {% endblock %}

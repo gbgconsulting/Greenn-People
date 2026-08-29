@@ -5,7 +5,7 @@ from __future__ import annotations
 from celery import shared_task
 from django.utils import timezone
 
-from apps.pdi.models import AcaoPDI
+from apps.pdi.models import AcaoPDI, PDI
 
 
 @shared_task(name='apps.pdi.tasks.mark_overdue_pdi_actions')
@@ -14,6 +14,7 @@ def mark_overdue_pdi_actions() -> int:
 
     Skips ``concluida`` and already-``atrasada`` rows. Uses per-row ``save`` so
     ``updated_at`` and audit signals stay consistent with HTMX status updates.
+    Planos arquivados ficam fora do recálculo de atraso.
     """
     today = timezone.localdate()
     queryset = (
@@ -24,6 +25,7 @@ def mark_overdue_pdi_actions() -> int:
                 AcaoPDI.Status.ATRASADA,
             ]
         )
+        .exclude(pdi__status=PDI.Status.ARQUIVADO)
         .order_by('pk')
     )
 

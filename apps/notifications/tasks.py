@@ -16,7 +16,7 @@ from apps.notifications.emails import (
     send_lembrete_pdi_email,
 )
 from apps.notifications.models import NotificacaoLog, already_sent
-from apps.pdi.models import AcaoPDI
+from apps.pdi.models import AcaoPDI, PDI
 from apps.reviews.models import Avaliacao
 
 
@@ -50,6 +50,7 @@ def _is_pdi_eligible(acao: AcaoPDI, target: date) -> bool:
         and acao.prazo == target
         and acao.pdi.usuario_id is not None
         and acao.pdi.usuario.is_active
+        and acao.pdi.status != PDI.Status.ARQUIVADO
     )
 
 
@@ -152,6 +153,7 @@ def enviar_lembrete_acao_pdi_vencendo() -> dict:
     queryset = (
         AcaoPDI.objects.filter(prazo=target)
         .exclude(status=AcaoPDI.Status.CONCLUIDA)
+        .exclude(pdi__status=PDI.Status.ARQUIVADO)
         .filter(pdi__usuario__is_active=True)
         .select_related('pdi', 'pdi__usuario')
         .order_by('pk')

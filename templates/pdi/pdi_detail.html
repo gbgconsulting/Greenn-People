@@ -12,11 +12,29 @@
       {% if is_self %}
         <span class="text-slate-400">(você)</span>
       {% endif %}.
-      Acompanhe status, progresso e ações de desenvolvimento.
+      {% if not pode_editar_acoes %}
+        Este plano está arquivado — somente leitura.
+      {% else %}
+        Acompanhe status, progresso e ações de desenvolvimento.
+      {% endif %}
     </p>
   </div>
-  {% url 'pdi:list' as list_url %}
-  {% include "components/button.html" with label="Voltar à lista" href=list_url variant="secondary" %}
+  <div class="flex flex-wrap items-center gap-2">
+    {% if pode_arquivar %}
+      <button
+        type="button"
+        class="inline-flex h-12 items-center justify-center rounded-lg border border-slate-200 bg-white px-5 font-ui text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+        hx-get="{% url 'pdi:archive_modal' pdi.pk %}"
+        hx-target="#modal-container"
+        hx-swap="innerHTML"
+        hx-indicator="#htmx-indicator"
+      >
+        Arquivar
+      </button>
+    {% endif %}
+    {% url 'pdi:list' as list_url %}
+    {% include "components/button.html" with label="Voltar à lista" href=list_url variant="secondary" %}
+  </div>
 </header>
 
 <section class="mb-8" aria-labelledby="pdi-resumo-heading">
@@ -49,10 +67,18 @@
   <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
     <div>
       <h2 id="acoes-heading" class="font-display text-lg font-medium text-slate-800">Ações de desenvolvimento</h2>
-      <p class="mt-0.5 font-ui text-sm text-slate-500">Atualize status, prazos e responsáveis sem sair desta tela.</p>
+      <p class="mt-0.5 font-ui text-sm text-slate-500">
+        {% if pode_editar_acoes %}
+          Atualize status, prazos e responsáveis sem sair desta tela.
+        {% else %}
+          Visualização das ações deste plano arquivado.
+        {% endif %}
+      </p>
     </div>
-    {% url 'pdi:action_create_modal' pdi.pk as acao_create_modal_url %}
-    {% include "components/button.html" with label="Nova ação" type="button" variant="primary" hx_get=acao_create_modal_url %}
+    {% if pode_editar_acoes %}
+      {% url 'pdi:action_create_modal' pdi.pk as acao_create_modal_url %}
+      {% include "components/button.html" with label="Nova ação" type="button" variant="primary" hx_get=acao_create_modal_url %}
+    {% endif %}
   </div>
 
   <div id="acao-list" class="table-frame">
