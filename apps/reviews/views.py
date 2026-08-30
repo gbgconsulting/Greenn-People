@@ -1,3 +1,5 @@
+import json
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ValidationError
@@ -546,7 +548,12 @@ class LeaderAssessmentView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
     """Avaliação do líder por competências (etapa ``avaliacao``; escopo Leader)."""
 
     model = Avaliacao
-    queryset = Avaliacao.objects.select_related('ciclo', 'usuario')
+    queryset = Avaliacao.objects.select_related(
+        'ciclo',
+        'usuario',
+        'usuario__area',
+        'usuario__cargo',
+    )
     template_name = 'reviews/leader_assessment.html'
     context_object_name = 'avaliacao'
     scope_user_field = 'usuario'
@@ -633,6 +640,9 @@ class LeaderAssessmentView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
                 'linhas_vazias': len(formset.forms) == 0,
                 'colaborador': self.object.usuario,
                 'nota_final_lider': self.object.nota_final_lider,
+                'autoavaliacao_enviada_em': self.object.autoavaliacao_enviada_em,
+                'metas_ciclo': self._metas_ciclo(),
+                'rotulos_por_form': self._rotulos_por_form_json(formset),
                 'pode_avancar': pode_avancar,
                 'avanco_desabilitado': not pode_avancar,
                 'motivo_bloqueio_avanco': motivo_bloqueio_avanco,
@@ -640,6 +650,29 @@ class LeaderAssessmentView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
             },
         )
         return context
+
+    @staticmethod
+    def _rotulos_por_form_json(formset) -> str:
+        """Mapa field_name → rótulos da escala (só UI; validação permanece no backend)."""
+        payload = {}
+        for form in formset.forms:
+            competencia = getattr(form.instance, 'competencia', None)
+            escala = getattr(competencia, 'escala', None) if competencia else None
+            rotulos = getattr(escala, 'rotulos_por_nivel', None) or {}
+            payload[form.add_prefix('nota_lider')] = {
+                str(chave): str(valor) for chave, valor in rotulos.items()
+            }
+        return json.dumps(payload)
+
+    def _metas_ciclo(self):
+        return (
+            Meta.objects.filter(
+                usuario_id=self.object.usuario_id,
+                objetivo_estrategico__ciclo_id=self.object.ciclo_id,
+            )
+            .select_related('objetivo_estrategico')
+            .order_by('id')
+        )
 
     @staticmethod
     def _nota_lider_presente(form) -> bool:

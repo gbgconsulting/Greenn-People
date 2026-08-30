@@ -193,16 +193,35 @@ class LeaderAssessmentForm(forms.ModelForm):
             if competencia is not None:
                 escala = getattr(competencia, 'escala', None)
 
-        attrs = {
-            'class': _INPUT,
-            'step': '0.01',
-            'inputmode': 'decimal',
-        }
+        field = self.fields['nota_lider']
+        field.required = False
+
         if escala is not None:
-            attrs['min'] = str(escala.valor_minimo)
-            attrs['max'] = str(escala.valor_maximo)
-        self.fields['nota_lider'].widget.attrs.update(attrs)
-        self.fields['nota_lider'].required = False
+            span = escala.valor_maximo - escala.valor_minimo
+            if span < _DISCRETE_SCALE_MAX_OPTIONS:
+                field.widget = ScaleRatingWidget(
+                    min_value=escala.valor_minimo,
+                    max_value=escala.valor_maximo,
+                    compact=True,
+                    aria_label='Nota do líder',
+                )
+            else:
+                attrs = {
+                    'class': _INPUT,
+                    'step': '0.01',
+                    'inputmode': 'decimal',
+                    'min': str(escala.valor_minimo),
+                    'max': str(escala.valor_maximo),
+                }
+                field.widget.attrs.update(attrs)
+        else:
+            field.widget.attrs.update(
+                {
+                    'class': _INPUT,
+                    'step': '0.01',
+                    'inputmode': 'decimal',
+                },
+            )
 
     @property
     def comparacao_nivel(self) -> str:

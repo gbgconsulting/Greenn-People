@@ -171,6 +171,18 @@
     @apply cursor-not-allowed opacity-60;
   }
 
+  .rating-radio-label--compact {
+    @apply h-8 w-8 text-sm shadow-sm;
+  }
+
+  .rating-radio:checked + .rating-radio-label--compact {
+    @apply border-transparent bg-brand-gradient text-white shadow-sm;
+  }
+
+  .rating-radio:not(:checked) + .rating-radio-label--compact:hover {
+    @apply border-emerald-600 bg-slate-50;
+  }
+
   /* Filtros/selects — docs → Inputs e formulários (.form-control)
    * Experimento Figma Input: altura ~48px (h-12) + hover de borda. */
   .form-control {

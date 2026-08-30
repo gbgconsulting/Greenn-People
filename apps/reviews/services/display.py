@@ -9,6 +9,20 @@ _PERCENT_QUANT = Decimal('1')
 _MISSING = '—'
 
 
+def escala_rotulo(escala, nota: Any) -> str:
+    """Rótulo da escala para ``nota`` (ex.: ``4`` → ``Excede o Esperado``)."""
+    if escala is None or nota is None or nota == '':
+        return ''
+    rotulos = getattr(escala, 'rotulos_por_nivel', None) or {}
+    if not rotulos:
+        return ''
+    try:
+        chave = str(int(nota))
+    except (TypeError, ValueError):
+        chave = str(nota)
+    return str(rotulos.get(chave, '') or '')
+
+
 def format_nota_percentual(value: Any) -> str:
     """Converte nota final normalizada (0–1) em percentual inteiro, como os gráficos.
 
