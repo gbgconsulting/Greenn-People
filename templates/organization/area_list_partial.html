@@ -28,11 +28,7 @@
             {% endif %}
           </td>
           <td class="text-right">
-            <a href="{% url 'organization:area_update' area.pk %}" class="font-medium text-emerald-700 hover:text-emerald-800">Editar</a>
-            {% if area.is_active %}
-            <span class="text-ink-muted"> · </span>
-            <a href="{% url 'organization:area_delete' area.pk %}" class="font-medium text-rose-600 hover:text-rose-700">Desativar</a>
-            {% endif %}
+            {% include "components/row_actions_menu.html" with menu_label=area.nome items_partial="organization/partials/area_row_actions_items.html" area=area %}
           </td>
         </tr>
         {% empty %}

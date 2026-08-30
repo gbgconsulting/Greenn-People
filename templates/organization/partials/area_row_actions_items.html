@@ -1,0 +1,6 @@
+{% url 'organization:area_update' area.pk as edit_href %}
+{% url 'organization:area_delete' area.pk as delete_href %}
+{% include "components/row_actions_menu_item.html" with href=edit_href label="Editar" %}
+{% if area.is_active %}
+{% include "components/row_actions_menu_item.html" with href=delete_href label="Desativar" danger=True %}
+{% endif %}

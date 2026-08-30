@@ -1,0 +1,4 @@
+{% url 'competencies:escala_update' escala.pk as edit_href %}
+{% url 'competencies:escala_delete' escala.pk as delete_href %}
+{% include "components/row_actions_menu_item.html" with href=edit_href label="Editar" %}
+{% include "components/row_actions_menu_item.html" with href=delete_href label="Desativar" danger=True %}

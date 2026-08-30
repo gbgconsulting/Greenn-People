@@ -51,8 +51,8 @@
                 {% include "components/badge_status.html" with status="arquivado" label="Inativo" %}
               {% endif %}
             </td>
-            <td class="col-acao whitespace-nowrap text-right font-ui text-sm font-semibold">
-              <a href="{% url 'talent:classify' u.pk %}?next={{ request.get_full_path|urlencode }}" class="text-emerald-700 transition-colors hover:text-emerald-800 hover:underline hover:decoration-emerald-700/30">Classificar</a><span class="mx-2 font-normal text-slate-300" aria-hidden="true">·</span><a href="{% url 'organization:user_update' u.pk %}?next={{ request.get_full_path|urlencode }}" class="text-emerald-700 transition-colors hover:text-emerald-800 hover:underline hover:decoration-emerald-700/30">Editar</a>
+            <td class="col-acao text-right">
+              {% include "components/row_actions_menu.html" with menu_label=u.nome items_partial="organization/partials/user_row_actions_items.html" u=u %}
             </td>
           </tr>
           {% empty %}

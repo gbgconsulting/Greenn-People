@@ -1,0 +1,9 @@
+{% comment %}
+  Item do menu ⋮ de ações por linha.
+  Requer: href, label — opcional: danger, next_qs (já urlencoded)
+{% endcomment %}
+<a
+  href="{{ href }}{% if next_qs %}?next={{ next_qs }}{% endif %}"
+  class="block px-3 py-2 font-ui text-sm font-medium transition-colors {% if danger %}text-rose-600 hover:bg-rose-50 hover:text-rose-700{% else %}text-slate-700 hover:bg-slate-50 hover:text-emerald-700{% endif %}"
+  role="menuitem"
+>{{ label }}</a>

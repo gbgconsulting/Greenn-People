@@ -1,0 +1,12 @@
+{% url 'reviews:detail' row.avaliacao.pk as detail_href %}
+{% url 'reviews:self_assessment' row.avaliacao.pk as auto_href %}
+{% url 'reviews:leader_assessment' row.avaliacao.pk as leader_href %}
+{% include "components/row_actions_menu_item.html" with href=detail_href label="Ver" %}
+{% if row.pode_autoavaliar %}
+{% include "components/row_actions_menu_item.html" with href=auto_href label="Autoavaliar" %}
+{% elif row.pode_ver_autoavaliacao %}
+{% include "components/row_actions_menu_item.html" with href=auto_href label="Ver autoavaliação" %}
+{% endif %}
+{% if row.pode_avaliar_lider %}
+{% include "components/row_actions_menu_item.html" with href=leader_href label="Avaliar" %}
+{% endif %}

@@ -23,6 +23,15 @@ from apps.organization.forms import (
     UserUpdateForm,
 )
 from apps.organization.models import Area, Cargo
+from apps.organization.services.cargo_list import (
+    apply_cargo_list_filters,
+    get_allowed_nivel_values,
+    get_base_cargo_list_queryset,
+    get_nivel_filter_options_for_queryset,
+    parse_nivel_filter,
+    resolve_nivel_filter,
+)
+from apps.organization.services.navigation import resolve_admin_list_return_url
 from apps.organization.services.user_list import (
     apply_pending_user_list_filters,
     apply_user_list_filters,
@@ -108,8 +117,42 @@ class CargoListView(AdminOrganizationMixin, HtmxPaginatedListMixin, ListView):
     partial_template_name = 'organization/cargo_list_partial.html'
     context_object_name = 'cargos'
 
+    def _parsed_filters(self):
+        base_qs = get_base_cargo_list_queryset()
+        status = parse_status_filter(self.request.GET.get('status'))
+        busca = parse_search_filter(self.request.GET.get('busca'))
+        nivel = resolve_nivel_filter(
+            parse_nivel_filter(self.request.GET.get('nivel')),
+            get_allowed_nivel_values(base_qs),
+        )
+        return base_qs, status, busca, nivel
+
     def get_queryset(self):
-        return Cargo.objects.order_by('nivel', 'nome')
+        base_qs, status, busca, nivel = self._parsed_filters()
+        return apply_cargo_list_filters(
+            base_qs,
+            status=status,
+            busca=busca,
+            nivel=nivel,
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        base_qs, status, busca, nivel = self._parsed_filters()
+        context.update(
+            {
+                'list_url': reverse('organization:cargo_list'),
+                'status_segment_options': STATUS_SEGMENT_OPTIONS,
+                'filtro_status': status,
+                'filtro_busca': busca,
+                'filtro_nivel': nivel,
+                'filtro_ativo': bool(busca or status or nivel),
+                'filtro_avancado_ativo': bool(nivel),
+                'filtro_avancado_count': 1 if nivel else 0,
+                'nivel_options': get_nivel_filter_options_for_queryset(base_qs),
+            },
+        )
+        return context
 
 
 class CargoCreateView(AdminOrganizationMixin, CreateView):
@@ -133,6 +176,12 @@ class CargoUpdateView(AdminOrganizationMixin, UpdateView):
         messages.success(self.request, 'Cargo atualizado com sucesso.')
         return super().form_valid(form)
 
+    def get_success_url(self):
+        return resolve_admin_list_return_url(
+            self.request,
+            default=str(self.success_url),
+        )
+
 
 class CargoDeleteView(AdminOrganizationMixin, DeleteView):
     """Soft-delete: sets ``is_active=False`` (no hard delete)."""
@@ -147,6 +196,12 @@ class CargoDeleteView(AdminOrganizationMixin, DeleteView):
         self.object.save(update_fields=['is_active', 'updated_at'])
         messages.success(self.request, 'Cargo desativado com sucesso.')
         return HttpResponseRedirect(self.get_success_url())
+
+    def get_success_url(self):
+        return resolve_admin_list_return_url(
+            self.request,
+            default=str(self.success_url),
+        )
 
 
 class UserListView(AdminOrganizationMixin, HtmxPaginatedListMixin, ListView):

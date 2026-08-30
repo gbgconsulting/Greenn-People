@@ -25,9 +25,7 @@
             <span class="text-slate-400">({{ competencia.escala.valor_minimo }}–{{ competencia.escala.valor_maximo }})</span>
           </td>
           <td class="text-right">
-            <a href="{% url 'competencies:competencia_update' competencia.pk %}" class="font-medium text-emerald-700 hover:text-emerald-800">Editar</a>
-            <span class="text-ink-muted"> · </span>
-            <a href="{% url 'competencies:competencia_delete' competencia.pk %}" class="font-medium text-rose-600 hover:text-rose-700">Desativar</a>
+            {% include "components/row_actions_menu.html" with menu_label=competencia.nome items_partial="competencies/partials/competencia_row_actions_items.html" competencia=competencia %}
           </td>
         </tr>
         {% empty %}

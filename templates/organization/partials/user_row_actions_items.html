@@ -1,0 +1,6 @@
+{% url 'talent:classify' u.pk as classify_href %}
+{% url 'organization:user_update' u.pk as edit_href %}
+{% with next_qs=request.get_full_path|urlencode %}
+{% include "components/row_actions_menu_item.html" with href=classify_href next_qs=next_qs label="Classificar" %}
+{% include "components/row_actions_menu_item.html" with href=edit_href next_qs=next_qs label="Editar" %}
+{% endwith %}

@@ -1,0 +1,4 @@
+{% url 'competencies:competencia_update' competencia.pk as edit_href %}
+{% url 'competencies:competencia_delete' competencia.pk as delete_href %}
+{% include "components/row_actions_menu_item.html" with href=edit_href label="Editar" %}
+{% include "components/row_actions_menu_item.html" with href=delete_href label="Desativar" danger=True %}

@@ -1,0 +1,2 @@
+{% url 'reviews:detail' row.avaliacao.pk as detail_href %}
+{% include "components/row_actions_menu_item.html" with href=detail_href label="Ver detalhes" %}

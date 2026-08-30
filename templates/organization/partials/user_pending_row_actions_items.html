@@ -1,0 +1,2 @@
+{% url 'organization:user_update' u.pk as edit_href %}
+{% include "components/row_actions_menu_item.html" with href=edit_href next_qs=request.get_full_path|urlencode label="Vincular área/cargo" %}

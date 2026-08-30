@@ -14,17 +14,7 @@
         <td class="px-4 py-3 text-slate-800">{{ objetivo.descricao|truncatechars:160 }}</td>
         <td class="px-4 py-3 text-slate-600">{{ objetivo.metas_count }}</td>
         <td class="px-4 py-3 text-right">
-          <div class="flex flex-wrap items-center justify-end gap-2">
-            <a
-              href="{% url 'cycles:objetivo_update' ciclo.pk objetivo.pk %}"
-              class="text-emerald-700 hover:text-emerald-800"
-            >Editar</a>
-            <span class="text-slate-300">|</span>
-            <a
-              href="{% url 'cycles:objetivo_delete' ciclo.pk objetivo.pk %}"
-              class="text-rose-600 hover:text-rose-700"
-            >Excluir</a>
-          </div>
+          {% include "components/row_actions_menu.html" with menu_label=objetivo.descricao|truncatechars:40 items_partial="cycles/partials/objetivo_row_actions_items.html" objetivo=objetivo ciclo=ciclo %}
         </td>
       </tr>
       {% empty %}

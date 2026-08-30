@@ -1,0 +1,21 @@
+{% comment %}
+  Menu ⋮ de ações por linha (ícone sempre visível).
+  Requer: menu_label, items_partial
+  Passe variáveis extras no include pai — ficam disponíveis no items_partial.
+{% endcomment %}
+<details class="row-actions-menu relative inline-block text-left">
+  <summary
+    class="row-actions-trigger inline-flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded text-slate-500 transition-all hover:bg-emerald-50 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 [&::-webkit-details-marker]:hidden"
+    aria-label="Ações para {{ menu_label }}"
+  >
+    <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm0 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm0 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z" />
+    </svg>
+  </summary>
+  <div
+    class="absolute right-0 z-20 mt-1 min-w-[10.5rem] rounded-lg border border-line bg-surface-card py-1 shadow-lg"
+    role="menu"
+  >
+    {% include items_partial %}
+  </div>
+</details>

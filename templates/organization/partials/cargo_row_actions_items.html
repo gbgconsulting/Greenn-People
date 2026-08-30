@@ -1,0 +1,10 @@
+{% url 'competencies:cargo_competencia_update' cargo.pk as perfil_href %}
+{% url 'organization:cargo_update' cargo.pk as edit_href %}
+{% url 'organization:cargo_delete' cargo.pk as delete_href %}
+{% with next_qs=request.get_full_path|urlencode %}
+{% include "components/row_actions_menu_item.html" with href=perfil_href next_qs=next_qs label="Perfil" %}
+{% include "components/row_actions_menu_item.html" with href=edit_href next_qs=next_qs label="Editar" %}
+{% if cargo.is_active %}
+{% include "components/row_actions_menu_item.html" with href=delete_href next_qs=next_qs label="Desativar" danger=True %}
+{% endif %}
+{% endwith %}

@@ -57,34 +57,7 @@
               {% endif %}
             </td>
             <td class="col-acao text-right">
-              <div class="inline-flex flex-col items-end gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-x-3">
-                <a
-                  href="{% url 'reviews:detail' row.avaliacao.pk %}"
-                  class="inline-flex items-center gap-0.5 font-ui text-sm font-semibold text-emerald-700 transition-colors hover:text-emerald-800 hover:underline hover:decoration-emerald-700/30"
-                >
-                  Ver
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true">
-                    <path fill-rule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clip-rule="evenodd" />
-                  </svg>
-                </a>
-                {% if row.pode_autoavaliar %}
-                <a
-                  href="{% url 'reviews:self_assessment' row.avaliacao.pk %}"
-                  class="font-ui text-xs font-semibold text-emerald-700 hover:text-emerald-800"
-                >Autoavaliar</a>
-                {% elif row.pode_ver_autoavaliacao %}
-                <a
-                  href="{% url 'reviews:self_assessment' row.avaliacao.pk %}"
-                  class="font-ui text-xs font-medium text-slate-600 hover:text-slate-800"
-                >Ver autoavaliação</a>
-                {% endif %}
-                {% if row.pode_avaliar_lider %}
-                <a
-                  href="{% url 'reviews:leader_assessment' row.avaliacao.pk %}"
-                  class="font-ui text-xs font-semibold text-emerald-700 hover:text-emerald-800"
-                >Avaliar</a>
-                {% endif %}
-              </div>
+              {% include "components/row_actions_menu.html" with menu_label=row.avaliacao.usuario.nome|default:row.avaliacao.usuario.email items_partial="reviews/partials/avaliacao_row_actions_items.html" row=row %}
             </td>
           </tr>
           {% empty %}

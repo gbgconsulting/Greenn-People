@@ -195,7 +195,7 @@
   }
 
   .collaborator-history-table .col-acao {
-    width: 18%;
+    width: 8%;
   }
 
   /*
@@ -246,7 +246,7 @@
   }
 
   .leader-team-table .col-acao {
-    width: 14%;
+    width: 8%;
   }
 
   /*
@@ -305,7 +305,54 @@
   }
 
   .user-registry-table .col-acao {
+    width: 8%;
+  }
+
+  /*
+   * Cadastro de cargos (admin) — grid alinhado ao mock CADASTRO_CARGOS.
+   */
+  .cargo-registry-table {
+    @apply min-w-[760px] w-full table-fixed border-collapse text-left text-sm text-ink;
+  }
+
+  .cargo-registry-table thead {
+    @apply bg-slate-50/80 text-xs font-semibold uppercase tracking-wider text-slate-500;
+  }
+
+  .cargo-registry-table th {
+    @apply border-b border-line px-6 py-4 font-semibold;
+  }
+
+  .cargo-registry-table td {
+    @apply border-b border-line px-6 py-4 align-middle;
+  }
+
+  .cargo-registry-table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
+  .cargo-registry-table tbody tr:hover {
+    @apply bg-slate-50/60;
+  }
+
+  .cargo-registry-table .col-nome {
+    width: 34%;
+  }
+
+  .cargo-registry-table .col-nivel {
     width: 14%;
+  }
+
+  .cargo-registry-table .col-competencias {
+    width: 20%;
+  }
+
+  .cargo-registry-table .col-status {
+    width: 14%;
+  }
+
+  .cargo-registry-table .col-acao {
+    width: 8%;
   }
 
   /* Barra segmentada — filtros de status (lista avaliações líder). */
