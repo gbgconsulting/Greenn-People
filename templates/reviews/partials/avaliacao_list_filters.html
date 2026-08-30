@@ -1,0 +1,161 @@
+{% comment %}
+  Toolbar de filtros — lista operacional de avaliações (líder/gestor/RH).
+  Requer: list_url, status_segment_options, filtro_status, filtro_etapa,
+  filtro_area_id, filtro_busca, area_options, etapa_chips, filtro_avancado_ativo
+{% endcomment %}
+<div class="mb-4 flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
+  <div class="min-w-0 flex-1">
+    <p class="mb-1.5 font-ui text-xs font-medium text-slate-500">Filtrar por Etapa</p>
+    <div
+      class="filter-segment-bar"
+      role="group"
+      aria-label="Filtrar por etapa da avaliação"
+    >
+      {% for key, label in status_segment_options %}
+        {% if key %}
+          {% if filtro_status == key %}
+            {% querystring status=None page=None as segment_url %}
+          {% else %}
+            {% querystring status=key etapa=None page=None as segment_url %}
+          {% endif %}
+        {% else %}
+          {% querystring status=None page=None as segment_url %}
+        {% endif %}
+        <a
+          href="{{ segment_url }}"
+          hx-get="{{ segment_url }}"
+          hx-target="#list-container"
+          hx-swap="outerHTML"
+          hx-push-url="true"
+          class="filter-segment-item{% if key %}{% if filtro_status == key %} is-active{% endif %}{% else %}{% if not filtro_status %} is-active{% endif %}{% endif %}"
+          {% if key %}
+            {% if filtro_status == key %}aria-current="true"{% endif %}
+          {% else %}
+            {% if not filtro_status %}aria-current="true"{% endif %}
+          {% endif %}
+        >{{ label }}</a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+    <div class="relative w-full sm:w-56">
+      <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400" aria-hidden="true">
+        <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35m1.85-5.15a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </span>
+      <input
+        id="avaliacao-busca-input"
+        type="search"
+        name="busca"
+        value="{{ filtro_busca }}"
+        placeholder="Buscar colaborador..."
+        autocomplete="off"
+        aria-label="Buscar colaborador por nome ou e-mail"
+        data-avaliacao-filter
+        hx-preserve="true"
+        hx-get="{{ list_url }}"
+        hx-trigger="keyup changed delay:300ms, search"
+        hx-target="#list-container"
+        hx-swap="outerHTML"
+        hx-push-url="true"
+        hx-include="[data-avaliacao-filter]"
+        class="form-control !h-10 !min-w-0 !w-full !pl-9 text-sm"
+      />
+    </div>
+
+    <details
+      class="group relative w-full sm:w-auto"
+      {% if filtro_avancado_ativo %}open{% endif %}
+    >
+      <summary
+        class="flex h-10 cursor-pointer list-none items-center justify-center gap-2 rounded-lg border border-line bg-surface-card px-4 font-ui text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1 [&::-webkit-details-marker]:hidden"
+      >
+        <svg class="size-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+        </svg>
+        Filtros
+        {% if filtro_avancado_ativo %}
+          <span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-emerald-100 px-1.5 font-ui text-[10px] font-semibold text-emerald-700" aria-label="Filtros avançados ativos">
+            {% if filtro_etapa and filtro_area_id %}2{% else %}1{% endif %}
+          </span>
+        {% endif %}
+      </summary>
+
+      <div class="absolute right-0 z-20 mt-2 w-full min-w-[16rem] rounded-xl border border-line bg-surface-card p-4 shadow-lg sm:w-72">
+        <p class="mb-3 font-ui text-xs font-semibold uppercase tracking-wide text-slate-500">
+          Filtros avançados
+        </p>
+
+        <div class="space-y-3">
+          <div>
+            <label for="avaliacao-etapa-select" class="mb-1 block font-ui text-xs font-medium text-slate-600">
+              Etapa do ciclo
+            </label>
+            <select
+              id="avaliacao-etapa-select"
+              name="etapa"
+              data-avaliacao-filter
+              hx-get="{{ list_url }}"
+              hx-trigger="change"
+              hx-target="#list-container"
+              hx-swap="outerHTML"
+              hx-push-url="true"
+              hx-include="[data-avaliacao-filter]"
+              class="form-control !h-9 !min-w-0 !w-full text-sm"
+            >
+              <option value="">Qualquer etapa</option>
+              {% for key, label in etapa_chips %}
+                <option value="{{ key }}" {% if filtro_etapa == key %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          {% if area_options|length > 1 %}
+          <div>
+            <label for="avaliacao-area-select" class="mb-1 block font-ui text-xs font-medium text-slate-600">
+              Área
+            </label>
+            <select
+              id="avaliacao-area-select"
+              name="area"
+              data-avaliacao-filter
+              hx-get="{{ list_url }}"
+              hx-trigger="change"
+              hx-target="#list-container"
+              hx-swap="outerHTML"
+              hx-push-url="true"
+              hx-include="[data-avaliacao-filter]"
+              class="form-control !h-9 !min-w-0 !w-full text-sm"
+            >
+              <option value="">Todas as áreas</option>
+              {% for area in area_options %}
+                <option value="{{ area.pk }}" {% if filtro_area_id == area.pk %}selected{% endif %}>{{ area.nome }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endif %}
+        </div>
+
+        {% if filtro_avancado_ativo %}
+        <div class="mt-4 border-t border-line pt-3">
+          {% querystring etapa=None area=None page=None as clear_advanced_url %}
+          <a
+            href="{{ clear_advanced_url }}"
+            hx-get="{{ clear_advanced_url }}"
+            hx-target="#list-container"
+            hx-swap="outerHTML"
+            hx-push-url="true"
+            class="font-ui text-xs font-medium text-slate-500 underline-offset-2 hover:text-slate-700 hover:underline"
+          >Limpar filtros avançados</a>
+        </div>
+        {% endif %}
+      </div>
+    </details>
+
+    {% if filtro_status %}
+    <input type="hidden" name="status" value="{{ filtro_status }}" data-avaliacao-filter />
+    {% endif %}
+  </div>
+</div>

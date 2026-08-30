@@ -198,6 +198,74 @@
     width: 18%;
   }
 
+  /*
+   * Listagem operacional de avaliações (líder/gestor/RH).
+   */
+  .leader-team-table {
+    @apply min-w-[880px] w-full table-fixed border-collapse text-left text-sm text-ink;
+  }
+
+  .leader-team-table thead {
+    @apply bg-slate-50/80 text-xs font-semibold uppercase tracking-wider text-slate-500;
+  }
+
+  .leader-team-table th {
+    @apply border-b border-line px-6 py-4 font-semibold;
+  }
+
+  .leader-team-table td {
+    @apply border-b border-line px-6 py-4 align-middle;
+  }
+
+  .leader-team-table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
+  .leader-team-table tbody tr:hover {
+    @apply bg-slate-50/60;
+  }
+
+  .leader-team-table .col-colaborador {
+    width: 26%;
+  }
+
+  .leader-team-table .col-area {
+    width: 14%;
+  }
+
+  .leader-team-table .col-cargo {
+    width: 22%;
+  }
+
+  .leader-team-table .col-etapa {
+    width: 14%;
+  }
+
+  .leader-team-table .col-nota {
+    width: 10%;
+  }
+
+  .leader-team-table .col-acao {
+    width: 14%;
+  }
+
+  /* Barra segmentada — filtros de status (lista avaliações líder). */
+  .filter-segment-bar {
+    @apply inline-flex max-w-full overflow-x-auto rounded-lg bg-slate-100/90 p-1;
+  }
+
+  .filter-segment-item {
+    @apply shrink-0 rounded-md px-3 py-1.5 font-ui text-xs font-medium text-slate-600 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1;
+  }
+
+  .filter-segment-item:hover:not(.is-active) {
+    @apply text-slate-800;
+  }
+
+  .filter-segment-item.is-active {
+    @apply bg-white text-slate-800 shadow-sm;
+  }
+
   /* Autoavaliação — botões de escala discretos */
   .rating-radio-label {
     @apply flex h-16 w-16 cursor-pointer items-center justify-center rounded-lg border border-line bg-surface-card text-lg font-medium text-slate-600 shadow-sm transition-all hover:bg-slate-50;

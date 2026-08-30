@@ -1,0 +1,21 @@
+{% comment %}
+  Badge de etapa na listagem operacional (líder/gestor/RH).
+  Parâmetros: status_variant (concluido|em_andamento|pendente), status_label
+{% endcomment %}
+{% if status_variant == "concluido" %}
+<span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 font-ui text-xs font-semibold text-emerald-600">
+  {{ status_label }}
+</span>
+{% elif status_variant == "em_andamento" %}
+<span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 font-ui text-xs font-semibold text-amber-700">
+  {{ status_label }}
+</span>
+{% elif status_variant == "pendente" %}
+<span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 font-ui text-xs font-semibold text-slate-600">
+  {{ status_label }}
+</span>
+{% else %}
+<span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 font-ui text-xs font-semibold text-slate-600">
+  {{ status_label }}
+</span>
+{% endif %}

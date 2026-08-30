@@ -7,6 +7,7 @@ from django.http import Http404, HttpResponseRedirect
 from django.urls import reverse
 from django.utils import timezone
 from django.views import View
+from django.db.models import Q
 from django.views.generic import CreateView, DetailView, ListView
 
 from apps.accounts.services.scope import user_in_scope
@@ -46,6 +47,20 @@ from apps.reviews.services.evaluation import (
 from apps.reviews.services.collaborator_history import (
     build_collaborator_history_rows,
     is_collaborator_history_view,
+)
+from apps.reviews.services.team_avaliacao_list import (
+    apply_team_list_filters,
+    build_team_avaliacao_rows,
+    get_allowed_area_ids,
+    get_area_filter_options,
+    is_team_avaliacao_list_view,
+    parse_area_filter,
+    parse_etapa_filter,
+    parse_status_filter,
+    resolve_area_filter,
+    STATUS_FILTER_CHIPS,
+    STATUS_SEGMENT_OPTIONS,
+    ETAPA_FILTER_CHIPS,
 )
 from apps.reviews.services.feedback_display import build_feedback_resumo
 from apps.reviews.services.guidance import (
@@ -134,6 +149,23 @@ class AvaliacaoListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedList
             return 10
         return self.paginate_by
 
+    def _get_scoped_team_base_queryset(self):
+        """Escopo hierárquico + ciclo aberto — base para filtros e opções de área."""
+        qs = (
+            super()
+            .get_queryset()
+            .select_related(
+                'ciclo',
+                'usuario',
+                'usuario__area',
+                'usuario__cargo',
+            )
+        )
+        ciclo = get_open_ciclo()
+        if ciclo is not None:
+            qs = qs.filter(ciclo=ciclo)
+        return qs.order_by('usuario__nome', 'usuario__email', 'id')
+
     def get_queryset(self):
         qs = (
             super()
@@ -153,10 +185,28 @@ class AvaliacaoListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedList
                 '-id',
             )
 
-        qs = qs.order_by('usuario__nome', 'usuario__email', 'id')
-        ciclo = get_open_ciclo()
-        if ciclo is not None:
-            qs = qs.filter(ciclo=ciclo)
+        base_qs = self._get_scoped_team_base_queryset()
+        allowed_area_ids = get_allowed_area_ids(base_qs)
+        status = parse_status_filter(self.request.GET.get('status'))
+        etapa = parse_etapa_filter(self.request.GET.get('etapa'))
+        area_id = resolve_area_filter(
+            parse_area_filter(self.request.GET.get('area')),
+            allowed_area_ids,
+        )
+
+        qs = apply_team_list_filters(
+            base_qs,
+            status=status,
+            etapa=etapa,
+            area_id=area_id,
+        )
+
+        busca = (self.request.GET.get('busca') or '').strip()
+        if busca:
+            qs = qs.filter(
+                Q(usuario__nome__icontains=busca)
+                | Q(usuario__email__icontains=busca),
+            )
         return qs
 
     def get_context_data(self, **kwargs):
@@ -174,33 +224,35 @@ class AvaliacaoListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedList
             )
             return context
 
-        rows = []
-        for avaliacao in context['avaliacoes']:
-            is_self = avaliacao.usuario_id == user.pk
-            rows.append(
-                {
-                    'avaliacao': avaliacao,
-                    'is_self': is_self,
-                    'pode_autoavaliar': (
-                        is_self and self_assessment_editable(avaliacao)
-                    ),
-                    'pode_ver_autoavaliacao': (
-                        is_self
-                        and self_assessment_viewable(avaliacao)
-                        and self_assessment_submitted(avaliacao)
-                    ),
-                    'pode_avaliar_lider': (
-                        not is_self
-                        and can_leader_assess(user, avaliacao)
-                        and leader_assessment_permitted(avaliacao)
-                    ),
-                },
-            )
+        busca = (self.request.GET.get('busca') or '').strip()
+        base_qs = self._get_scoped_team_base_queryset()
+        allowed_area_ids = get_allowed_area_ids(base_qs)
+        status = parse_status_filter(self.request.GET.get('status'))
+        etapa = parse_etapa_filter(self.request.GET.get('etapa'))
+        area_id = resolve_area_filter(
+            parse_area_filter(self.request.GET.get('area')),
+            allowed_area_ids,
+        )
         context.update(
             {
                 'lista_colaborador': False,
+                'lista_time': is_team_avaliacao_list_view(user),
                 'ciclo_aberto': get_open_ciclo(),
-                'avaliacao_rows': rows,
+                'filtro_busca': busca,
+                'filtro_status': status,
+                'filtro_etapa': etapa,
+                'filtro_area_id': area_id,
+                'filtro_ativo': bool(busca or status or etapa or area_id),
+                'filtro_avancado_ativo': bool(etapa or area_id),
+                'status_segment_options': STATUS_SEGMENT_OPTIONS,
+                'status_chips': STATUS_FILTER_CHIPS,
+                'etapa_chips': ETAPA_FILTER_CHIPS,
+                'area_options': get_area_filter_options(base_qs),
+                'total_escopo_lista': base_qs.count(),
+                'avaliacao_rows': build_team_avaliacao_rows(
+                    context['avaliacoes'],
+                    user,
+                ),
             },
         )
         return context

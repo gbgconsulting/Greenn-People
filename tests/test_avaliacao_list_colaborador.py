@@ -17,6 +17,12 @@ from apps.reviews.services.collaborator_history import (
     resolve_cycle_status,
 )
 from apps.reviews.services.display import format_nota_escala_cinco
+from apps.reviews.services.team_avaliacao_list import (
+    build_team_avaliacao_rows,
+    is_team_avaliacao_list_view,
+    resolve_team_avaliacao_status,
+    user_initials,
+)
 from tests.conftest import DEFAULT_PASSWORD, FIXTURE_DATA_ENTRADA
 
 
@@ -28,9 +34,33 @@ def test_is_collaborator_history_view(colaborador, lider, admin):
 
 
 @pytest.mark.django_db
+def test_is_team_avaliacao_list_view(colaborador, lider, admin):
+    assert is_team_avaliacao_list_view(colaborador) is False
+    assert is_team_avaliacao_list_view(lider) is True
+    assert is_team_avaliacao_list_view(admin) is True
+
+
+@pytest.mark.django_db
 def test_format_nota_escala_cinco():
     assert format_nota_escala_cinco(Decimal('0.84')) == '4.2'
     assert format_nota_escala_cinco(None) == '—'
+
+
+@pytest.mark.django_db
+def test_user_initials():
+    colaborador = type('U', (), {'nome': 'João Silva', 'email': 'j@test.com'})()
+    assert user_initials(colaborador) == 'JS'
+    solo = type('U', (), {'nome': 'Ana', 'email': 'a@test.com'})()
+    assert user_initials(solo) == 'AN'
+
+
+@pytest.mark.django_db
+def test_resolve_team_avaliacao_status_concluida(avaliacao):
+    avaliacao.concluida = True
+    avaliacao.save(update_fields=['concluida', 'updated_at'])
+    label, variant = resolve_team_avaliacao_status(avaliacao)
+    assert label == 'Concluída'
+    assert variant == 'concluido'
 
 
 @pytest.mark.django_db
@@ -113,8 +143,34 @@ def test_lider_mantem_lista_operacional(client, lider, colaborador, ciclo_aberto
     html = response.content.decode()
     assert 'Minhas Avaliações' not in html
     assert 'Avaliações' in html
+    assert 'Acompanhe o desempenho e progresso da sua equipe.' in html
+    assert 'Buscar colaborador...' in html
+    assert 'Filtrar por Etapa' in html
+    assert 'filter-segment-bar' in html
+    assert '<table class="leader-team-table">' in html
     assert 'Colaborador</th>' in html
+    assert 'Nota Líder</th>' in html
     assert colaborador.nome in html
+
+
+@pytest.mark.django_db
+def test_lider_busca_filtra_por_nome(client, lider, colaborador, ciclo_aberto):
+    client.force_login(lider)
+    response = client.get(reverse('reviews:list'), {'busca': 'inexistente xyz'})
+
+    assert response.status_code == 200
+    html = response.content.decode()
+    assert 'Nenhum resultado' in html
+    assert colaborador.nome not in html
+
+
+@pytest.mark.django_db
+def test_build_team_avaliacao_rows_monta_status(lider, avaliacao):
+    rows = build_team_avaliacao_rows([avaliacao], lider)
+    assert len(rows) == 1
+    assert rows[0]['avaliacao'].pk == avaliacao.pk
+    assert rows[0]['status_label']
+    assert rows[0]['iniciais']
 
 
 @pytest.mark.django_db

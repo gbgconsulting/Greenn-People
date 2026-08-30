@@ -1070,6 +1070,12 @@
   .min-w-0 {
     min-width: 0px;
   }
+  .min-w-5 {
+    min-width: calc(var(--spacing) * 5);
+  }
+  .min-w-8 {
+    min-width: calc(var(--spacing) * 8);
+  }
   .min-w-\[7rem\] {
     min-width: 7rem;
   }
@@ -1538,6 +1544,12 @@
   .border-line {
     border-color: var(--color-line);
   }
+  .border-line\/60 {
+    border-color: color-mix(in srgb, #e2e8f0 60%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in oklab, var(--color-line) 60%, transparent);
+    }
+  }
   .border-purple-100 {
     border-color: var(--color-purple-100);
   }
@@ -1634,10 +1646,10 @@
   .bg-emerald-50 {
     background-color: var(--color-emerald-50);
   }
-  .bg-emerald-50\/30 {
-    background-color: color-mix(in srgb, oklch(97.9% 0.021 166.113) 30%, transparent);
+  .bg-emerald-50\/20 {
+    background-color: color-mix(in srgb, oklch(97.9% 0.021 166.113) 20%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
-      background-color: color-mix(in oklab, var(--color-emerald-50) 30%, transparent);
+      background-color: color-mix(in oklab, var(--color-emerald-50) 20%, transparent);
     }
   }
   .bg-emerald-50\/40 {
@@ -1961,6 +1973,9 @@
   }
   .\!py-8 {
     padding-block: calc(var(--spacing) * 8) !important;
+  }
+  .\!py-10 {
+    padding-block: calc(var(--spacing) * 10) !important;
   }
   .py-0\.5 {
     padding-block: calc(var(--spacing) * 0.5);
@@ -2832,14 +2847,6 @@
     .hover\:bg-emerald-50:hover {
       background-color: var(--color-emerald-50);
     }
-    .hover\:bg-emerald-50\/50:hover {
-      background-color: color-mix(in srgb, oklch(97.9% 0.021 166.113) 50%, transparent);
-    }
-    @supports (color: color-mix(in lab, red, red)) {
-      .hover\:bg-emerald-50\/50:hover {
-        background-color: color-mix(in oklab, var(--color-emerald-50) 50%, transparent);
-      }
-    }
     .hover\:bg-emerald-700:hover {
       background-color: var(--color-emerald-700);
     }
@@ -3220,8 +3227,14 @@
     .sm\:w-48 {
       width: calc(var(--spacing) * 48);
     }
+    .sm\:w-56 {
+      width: calc(var(--spacing) * 56);
+    }
     .sm\:w-64 {
       width: calc(var(--spacing) * 64);
+    }
+    .sm\:w-72 {
+      width: calc(var(--spacing) * 72);
     }
     .sm\:w-auto {
       width: auto;
@@ -3664,8 +3677,14 @@
     .xl\:flex-row {
       flex-direction: row;
     }
+    .xl\:items-end {
+      align-items: flex-end;
+    }
     .xl\:items-start {
       align-items: flex-start;
+    }
+    .xl\:justify-between {
+      justify-content: space-between;
     }
     .xl\:self-start {
       align-self: flex-start;
@@ -3881,6 +3900,127 @@
   }
   .collaborator-history-table .col-acao {
     width: 18%;
+  }
+  .leader-team-table {
+    width: 100%;
+    min-width: 880px;
+    table-layout: fixed;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: var(--text-sm);
+    line-height: var(--tw-leading, var(--text-sm--line-height));
+    color: var(--color-ink);
+  }
+  .leader-team-table thead {
+    background-color: color-mix(in srgb, oklch(98.4% 0.003 247.858) 80%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--color-slate-50) 80%, transparent);
+    }
+    font-size: var(--text-xs);
+    line-height: var(--tw-leading, var(--text-xs--line-height));
+    --tw-font-weight: var(--font-weight-semibold);
+    font-weight: var(--font-weight-semibold);
+    --tw-tracking: var(--tracking-wider);
+    letter-spacing: var(--tracking-wider);
+    color: var(--color-slate-500);
+    text-transform: uppercase;
+  }
+  .leader-team-table th {
+    border-bottom-style: var(--tw-border-style);
+    border-bottom-width: 1px;
+    border-color: var(--color-line);
+    padding-inline: calc(var(--spacing) * 6);
+    padding-block: calc(var(--spacing) * 4);
+    --tw-font-weight: var(--font-weight-semibold);
+    font-weight: var(--font-weight-semibold);
+  }
+  .leader-team-table td {
+    border-bottom-style: var(--tw-border-style);
+    border-bottom-width: 1px;
+    border-color: var(--color-line);
+    padding-inline: calc(var(--spacing) * 6);
+    padding-block: calc(var(--spacing) * 4);
+    vertical-align: middle;
+  }
+  .leader-team-table tbody tr:last-child td {
+    border-bottom-style: var(--tw-border-style);
+    border-bottom-width: 0px;
+  }
+  .leader-team-table tbody tr:hover {
+    background-color: color-mix(in srgb, oklch(98.4% 0.003 247.858) 60%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--color-slate-50) 60%, transparent);
+    }
+  }
+  .leader-team-table .col-colaborador {
+    width: 26%;
+  }
+  .leader-team-table .col-area {
+    width: 14%;
+  }
+  .leader-team-table .col-cargo {
+    width: 22%;
+  }
+  .leader-team-table .col-etapa {
+    width: 14%;
+  }
+  .leader-team-table .col-nota {
+    width: 10%;
+  }
+  .leader-team-table .col-acao {
+    width: 14%;
+  }
+  .filter-segment-bar {
+    display: inline-flex;
+    max-width: 100%;
+    overflow-x: auto;
+    border-radius: var(--radius-lg);
+    background-color: color-mix(in srgb, oklch(96.8% 0.007 247.896) 90%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--color-slate-100) 90%, transparent);
+    }
+    padding: var(--spacing);
+  }
+  .filter-segment-item {
+    flex-shrink: 0;
+    border-radius: var(--radius-md);
+    padding-inline: calc(var(--spacing) * 3);
+    padding-block: calc(var(--spacing) * 1.5);
+    font-family: var(--font-ui);
+    font-size: var(--text-xs);
+    line-height: var(--tw-leading, var(--text-xs--line-height));
+    --tw-font-weight: var(--font-weight-medium);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-slate-600);
+    transition-property: all;
+    transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
+    transition-duration: var(--tw-duration, var(--default-transition-duration));
+    --tw-duration: 150ms;
+    transition-duration: 150ms;
+    &:focus-visible {
+      --tw-ring-shadow: var(--tw-ring-inset,) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color, currentcolor);
+      box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+    }
+    &:focus-visible {
+      --tw-ring-color: var(--color-emerald-500);
+    }
+    &:focus-visible {
+      --tw-ring-offset-width: 1px;
+      --tw-ring-offset-shadow: var(--tw-ring-inset,) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+    }
+    &:focus-visible {
+      --tw-outline-style: none;
+      outline-style: none;
+    }
+  }
+  .filter-segment-item:hover:not(.is-active) {
+    color: var(--color-slate-800);
+  }
+  .filter-segment-item.is-active {
+    background-color: var(--color-white);
+    color: var(--color-slate-800);
+    --tw-shadow: 0 1px 3px 0 var(--tw-shadow-color, rgb(0 0 0 / 0.1)), 0 1px 2px -1px var(--tw-shadow-color, rgb(0 0 0 / 0.1));
+    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
   }
   .rating-radio-label {
     display: flex;
