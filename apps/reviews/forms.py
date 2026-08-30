@@ -323,6 +323,28 @@ def can_acknowledge_feedback(user, feedback: Feedback) -> bool:
     return feedback.avaliacao.usuario_id == getattr(user, 'pk', None)
 
 
+_FEEDBACK_TEXTAREA = (
+    'w-full min-h-[160px] resize-y rounded-lg border border-slate-200 bg-slate-50 '
+    'px-4 py-4 text-sm text-ink focus:border-transparent focus:bg-white '
+    'focus:outline-none focus:ring-2 focus:ring-emerald-500'
+)
+
+
+def feedback_destinatario(avaliacao: Avaliacao, autor) -> tuple:
+    """Pessoa exibida no cartão contextual e rótulo do campo.
+
+    Líder registra feedback *para* o liderado; colaborador registra *para* o gestor
+    (contraparte da conversa de feedback). Sem gestor definido, cai no colaborador.
+    """
+    colaborador = avaliacao.usuario
+    if getattr(autor, 'pk', None) == colaborador.pk:
+        gestor = getattr(colaborador, 'line_manager', None)
+        if gestor is not None:
+            return gestor, 'Para'
+        return colaborador, 'Colaborador'
+    return colaborador, 'Para'
+
+
 class FeedbackForm(forms.ModelForm):
     """Conteúdo estruturado do feedback (tipo/autor definidos na view)."""
 
@@ -330,14 +352,14 @@ class FeedbackForm(forms.ModelForm):
         model = Feedback
         fields = ('conteudo',)
         labels = {
-            'conteudo': 'Conteúdo',
+            'conteudo': 'Conteúdo do Feedback',
         }
         widgets = {
             'conteudo': forms.Textarea(
                 attrs={
-                    'class': _TEXTAREA,
-                    'rows': 5,
-                    'placeholder': 'Descreva o feedback de forma clara e objetiva.',
+                    'class': _FEEDBACK_TEXTAREA,
+                    'rows': 8,
+                    'placeholder': 'Descreva o feedback de forma clara e objetiva...',
                 },
             ),
         }

@@ -22,6 +22,7 @@
 {% if href %}
 <a
   href="{{ href }}"
+  draggable="false"
   class="{% if v == 'secondary' %}border border-slate-200 bg-white font-medium text-slate-700 hover:border-slate-300 hover:bg-slate-100{% elif v == 'outlined' %}border border-emerald-600 bg-transparent font-medium text-emerald-700 hover:border-emerald-700 hover:bg-emerald-50 hover:text-emerald-800{% else %}bg-brand-gradient font-semibold text-white shadow-sm hover:bg-brand-gradient-hover hover:shadow{% endif %} inline-flex h-12 items-center justify-center gap-2 rounded-lg px-5 font-ui text-sm tracking-tight transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface {% if disabled or v == 'loading' %}pointer-events-none opacity-50{% endif %} {{ extra_class }}"
   {% if disabled or v == 'loading' %}aria-disabled="true" tabindex="-1"{% endif %}
   {% if v == 'loading' %}aria-busy="true"{% endif %}

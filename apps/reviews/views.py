@@ -25,6 +25,7 @@ from apps.reviews.forms import (
     can_acknowledge_feedback,
     can_leader_assess,
     feedback_create_allowed,
+    feedback_destinatario,
     leader_assessment_editable,
     leader_assessment_permitted,
     resolve_feedback_tipo,
@@ -756,7 +757,11 @@ def _get_avaliacao_in_scope(request, pk: int) -> Avaliacao:
     """Carrega avaliação no escopo; IDOR → 404 + auditoria."""
     try:
         avaliacao = (
-            Avaliacao.objects.select_related('ciclo', 'usuario').get(pk=pk)
+            Avaliacao.objects.select_related(
+                'ciclo',
+                'usuario',
+                'usuario__line_manager',
+            ).get(pk=pk)
         )
     except Avaliacao.DoesNotExist as exc:
         raise Http404() from exc
@@ -851,10 +856,16 @@ class FeedbackCreateView(LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        destinatario, destinatario_rotulo = feedback_destinatario(
+            self.avaliacao,
+            self.request.user,
+        )
         context.update(
             {
                 'avaliacao': self.avaliacao,
                 'colaborador': self.avaliacao.usuario,
+                'destinatario': destinatario,
+                'destinatario_rotulo': destinatario_rotulo,
             },
         )
         return context
