@@ -355,6 +355,71 @@
     width: 8%;
   }
 
+  /*
+   * Cadastro de áreas (admin) — grid alinhado ao mock CADASTRO_ÁREAS.
+   */
+  .area-registry-table {
+    @apply min-w-[800px] w-full table-fixed border-collapse text-left text-sm text-ink;
+  }
+
+  .area-registry-table thead {
+    @apply bg-slate-50/80 text-xs font-semibold uppercase tracking-wider text-slate-500;
+  }
+
+  .area-registry-table th {
+    @apply border-b border-line px-6 py-4 font-semibold;
+  }
+
+  .area-registry-table td {
+    @apply border-b border-line px-6 py-4 align-middle;
+  }
+
+  .area-registry-table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
+  .area-registry-table tbody tr:hover {
+    @apply bg-slate-50/60;
+  }
+
+  .area-registry-table .col-nome {
+    width: 48%;
+  }
+
+  .area-registry-table .col-colaboradores {
+    width: 18%;
+  }
+
+  .area-registry-table .col-status {
+    width: 18%;
+  }
+
+  .area-registry-table .col-acao {
+    width: 8%;
+  }
+
+  .area-tree-child {
+    @apply relative;
+  }
+
+  .area-tree-connector {
+    @apply pointer-events-none absolute top-1/2 -translate-y-1/2 border-line;
+    left: 0.75rem;
+    width: 1rem;
+    height: 0;
+    border-top: 1px solid var(--color-line);
+  }
+
+  .area-tree-connector::before {
+    content: '';
+    @apply absolute border-line;
+    left: 0;
+    bottom: 50%;
+    width: 0;
+    height: 1.75rem;
+    border-left: 1px solid var(--color-line);
+  }
+
   /* Barra segmentada — filtros de status (lista avaliações líder). */
   .filter-segment-bar {
     @apply inline-flex max-w-full overflow-x-auto rounded-lg bg-slate-100/90 p-1;

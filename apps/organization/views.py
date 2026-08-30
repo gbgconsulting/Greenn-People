@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ValidationError
 from django.http import HttpResponseRedirect
@@ -23,6 +24,17 @@ from apps.organization.forms import (
     UserUpdateForm,
 )
 from apps.organization.models import Area, Cargo
+from apps.organization.services.area_list import (
+    STATUS_SEGMENT_OPTIONS as AREA_STATUS_SEGMENT_OPTIONS,
+    apply_area_list_filters,
+    build_hierarchical_area_rows,
+    get_allowed_parent_area_ids,
+    get_base_area_list_queryset,
+    get_parent_filter_options,
+    parse_search_filter as parse_area_search_filter,
+    parse_status_filter as parse_area_status_filter,
+    resolve_parent_filter,
+)
 from apps.organization.services.cargo_list import (
     apply_cargo_list_filters,
     get_allowed_nivel_values,
@@ -65,13 +77,57 @@ class AreaListView(AdminOrganizationMixin, HtmxPaginatedListMixin, ListView):
     model = Area
     template_name = 'organization/area_list.html'
     partial_template_name = 'organization/area_list_partial.html'
-    context_object_name = 'areas'
+    context_object_name = 'area_rows'
+
+    def _parsed_filters(self):
+        base_qs = get_base_area_list_queryset()
+        status = parse_area_status_filter(self.request.GET.get('status'))
+        busca = parse_area_search_filter(self.request.GET.get('busca'))
+        parent_id = resolve_parent_filter(
+            parse_int_filter(self.request.GET.get('parent')),
+            get_allowed_parent_area_ids(base_qs),
+        )
+        return base_qs, status, busca, parent_id
 
     def get_queryset(self):
-        return (
-            Area.objects.select_related('parent')
-            .order_by('nome')
+        base_qs, status, busca, parent_id = self._parsed_filters()
+        return apply_area_list_filters(
+            base_qs,
+            status=status,
+            busca=busca,
+            parent_id=parent_id,
         )
+
+    def paginate_queryset(self, queryset, page_size):
+        rows = build_hierarchical_area_rows(queryset)
+        paginator = Paginator(rows, page_size)
+        page_kwarg = self.page_kwarg
+        page = self.request.GET.get(page_kwarg) or 1
+        try:
+            page_obj = paginator.page(page)
+        except PageNotAnInteger:
+            page_obj = paginator.page(1)
+        except EmptyPage:
+            page_obj = paginator.page(paginator.num_pages)
+        return (paginator, page_obj, page_obj.object_list, page_obj.has_other_pages())
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        base_qs, status, busca, parent_id = self._parsed_filters()
+        context.update(
+            {
+                'list_url': reverse('organization:area_list'),
+                'status_segment_options': AREA_STATUS_SEGMENT_OPTIONS,
+                'filtro_status': status,
+                'filtro_busca': busca,
+                'filtro_parent_id': parent_id,
+                'filtro_ativo': bool(busca or status or parent_id),
+                'filtro_avancado_ativo': bool(parent_id),
+                'filtro_avancado_count': 1 if parent_id else 0,
+                'parent_options': get_parent_filter_options(base_qs),
+            },
+        )
+        return context
 
 
 class AreaCreateView(AdminOrganizationMixin, CreateView):
@@ -95,6 +151,12 @@ class AreaUpdateView(AdminOrganizationMixin, UpdateView):
         messages.success(self.request, 'Área atualizada com sucesso.')
         return super().form_valid(form)
 
+    def get_success_url(self):
+        return resolve_admin_list_return_url(
+            self.request,
+            default=str(self.success_url),
+        )
+
 
 class AreaDeleteView(AdminOrganizationMixin, DeleteView):
     """Soft-delete: sets ``is_active=False`` (no hard delete)."""
@@ -109,6 +171,12 @@ class AreaDeleteView(AdminOrganizationMixin, DeleteView):
         self.object.save(update_fields=['is_active', 'updated_at'])
         messages.success(self.request, 'Área desativada com sucesso.')
         return HttpResponseRedirect(self.get_success_url())
+
+    def get_success_url(self):
+        return resolve_admin_list_return_url(
+            self.request,
+            default=str(self.success_url),
+        )
 
 
 class CargoListView(AdminOrganizationMixin, HtmxPaginatedListMixin, ListView):
