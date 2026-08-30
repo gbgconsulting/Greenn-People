@@ -11,6 +11,7 @@ from django.views.generic import CreateView, DetailView, ListView
 
 from apps.accounts.services.scope import user_in_scope
 from apps.audit.services import log_scope_denied
+from apps.core.htmx import is_htmx
 from apps.core.mixins import HtmxPaginatedListMixin, ScopedObjectMixin
 from apps.cycles.exceptions import CycleClosedError, StageTransitionError
 from apps.cycles.models import Ciclo
@@ -41,6 +42,10 @@ from apps.reviews.services.evaluation import (
     self_assessment_submitted,
     self_assessment_viewable,
     submit_self_assessment,
+)
+from apps.reviews.services.collaborator_history import (
+    build_collaborator_history_rows,
+    is_collaborator_history_view,
 )
 from apps.reviews.services.feedback_display import build_feedback_resumo
 from apps.reviews.services.guidance import (
@@ -104,13 +109,30 @@ def _advance_context(user, avaliacao: Avaliacao) -> dict:
 
 
 class AvaliacaoListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin, ListView):
-    """Listagem de avaliações no escopo (ciclo aberto quando houver)."""
+    """Listagem de avaliações no escopo (ciclo aberto quando houver).
+
+    Colaboradores sem time veem histórico pessoal de ciclos («Minhas Avaliações»).
+    """
 
     model = Avaliacao
     template_name = 'reviews/avaliacao_list.html'
     partial_template_name = 'reviews/avaliacao_list_partial.html'
+    collaborator_template_name = 'reviews/avaliacao_list_colaborador.html'
+    collaborator_partial_template_name = 'reviews/avaliacao_list_colaborador_partial.html'
     context_object_name = 'avaliacoes'
     scope_user_field = 'usuario'
+
+    def get_template_names(self) -> list[str]:
+        if is_collaborator_history_view(self.request.user):
+            if is_htmx(self.request):
+                return [self.collaborator_partial_template_name]
+            return [self.collaborator_template_name]
+        return super().get_template_names()
+
+    def get_paginate_by(self, queryset=None):
+        if is_collaborator_history_view(self.request.user):
+            return 10
+        return self.paginate_by
 
     def get_queryset(self):
         qs = (
@@ -122,8 +144,16 @@ class AvaliacaoListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedList
                 'usuario__area',
                 'usuario__cargo',
             )
-            .order_by('usuario__nome', 'usuario__email', 'id')
         )
+        user = self.request.user
+        if is_collaborator_history_view(user):
+            return qs.filter(usuario_id=user.pk).order_by(
+                '-ciclo__data_inicio',
+                '-ciclo__pk',
+                '-id',
+            )
+
+        qs = qs.order_by('usuario__nome', 'usuario__email', 'id')
         ciclo = get_open_ciclo()
         if ciclo is not None:
             qs = qs.filter(ciclo=ciclo)
@@ -132,6 +162,18 @@ class AvaliacaoListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedList
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
+
+        if is_collaborator_history_view(user):
+            context.update(
+                {
+                    'lista_colaborador': True,
+                    'historico_rows': build_collaborator_history_rows(
+                        context['avaliacoes'],
+                    ),
+                },
+            )
+            return context
+
         rows = []
         for avaliacao in context['avaliacoes']:
             is_self = avaliacao.usuario_id == user.pk
@@ -156,6 +198,7 @@ class AvaliacaoListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedList
             )
         context.update(
             {
+                'lista_colaborador': False,
                 'ciclo_aberto': get_open_ciclo(),
                 'avaliacao_rows': rows,
             },

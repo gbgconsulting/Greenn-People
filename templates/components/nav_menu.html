@@ -39,7 +39,13 @@
     </li>
     <li>
       {% url 'reviews:list' as u %}
-      {% if '/reviews' in path %}
+      {% if not user.is_leader and not user.is_manager and not user.is_admin %}
+        {% if '/reviews' in path %}
+          {% include "components/nav_link.html" with href=u label="Minhas avaliações" icon="clipboard" is_active="1" only %}
+        {% else %}
+          {% include "components/nav_link.html" with href=u label="Minhas avaliações" icon="clipboard" only %}
+        {% endif %}
+      {% elif '/reviews' in path %}
         {% include "components/nav_link.html" with href=u label="Avaliações" icon="clipboard" is_active="1" only %}
       {% else %}
         {% include "components/nav_link.html" with href=u label="Avaliações" icon="clipboard" only %}

@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from django import template
 
-from apps.reviews.services.display import escala_rotulo, format_nota_percentual
+from apps.reviews.services.display import (
+    escala_rotulo,
+    format_nota_escala_cinco,
+    format_nota_percentual,
+)
 
 register = template.Library()
 
@@ -13,6 +17,12 @@ register = template.Library()
 def nota_percentual(value) -> str:
     """Nota final [0, 1] → ``75%`` (half-up). Vazio → ``—``."""
     return format_nota_percentual(value)
+
+
+@register.filter(name='nota_escala_cinco')
+def nota_escala_cinco(value) -> str:
+    """Nota final [0, 1] → ``4.2`` na escala 1–5. Vazio → ``—``."""
+    return format_nota_escala_cinco(value)
 
 
 @register.filter(name='escala_rotulo')

@@ -154,6 +154,50 @@
     @apply bg-slate-50;
   }
 
+  /*
+   * Histórico pessoal de avaliações (colaborador) — grid 12 colunas do mock
+   * sem depender de grid-cols-12 (não gerado no build Tailwind deste repo).
+   */
+  .collaborator-history-table {
+    @apply min-w-[640px] w-full table-fixed border-collapse text-left text-sm text-ink;
+  }
+
+  .collaborator-history-table thead {
+    @apply bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500;
+  }
+
+  .collaborator-history-table th {
+    @apply border-b border-line px-4 py-2 font-semibold;
+  }
+
+  .collaborator-history-table td {
+    @apply border-b border-line px-4 py-2.5 align-middle;
+  }
+
+  .collaborator-history-table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
+  .collaborator-history-table tbody tr:hover {
+    @apply bg-slate-50/60;
+  }
+
+  .collaborator-history-table .col-ciclo {
+    width: 26%;
+  }
+
+  .collaborator-history-table .col-status {
+    width: 34%;
+  }
+
+  .collaborator-history-table .col-nota {
+    width: 22%;
+  }
+
+  .collaborator-history-table .col-acao {
+    width: 18%;
+  }
+
   /* Autoavaliação — botões de escala discretos */
   .rating-radio-label {
     @apply flex h-16 w-16 cursor-pointer items-center justify-center rounded-lg border border-line bg-surface-card text-lg font-medium text-slate-600 shadow-sm transition-all hover:bg-slate-50;

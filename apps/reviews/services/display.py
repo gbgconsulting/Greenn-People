@@ -35,3 +35,25 @@ def format_nota_percentual(value: Any) -> str:
         rounding=ROUND_HALF_UP,
     )
     return f'{int(percent)}%'
+
+
+_SCALE_CINCO = Decimal('5')
+_SCALE_ONE_DECIMAL = Decimal('0.1')
+
+
+def format_nota_escala_cinco(value: Any) -> str:
+    """Nota normalizada (0–1) → valor na escala 1–5 com uma casa decimal.
+
+    ``0.8400`` → ``4.2``. Ausência → ``—``.
+    """
+    if value is None or value == '':
+        return _MISSING
+    escala = (Decimal(str(value)) * _SCALE_CINCO).quantize(
+        _SCALE_ONE_DECIMAL,
+        rounding=ROUND_HALF_UP,
+    )
+    normalized = escala.normalize()
+    text = format(normalized, 'f')
+    if '.' in text:
+        text = text.rstrip('0').rstrip('.')
+    return text
