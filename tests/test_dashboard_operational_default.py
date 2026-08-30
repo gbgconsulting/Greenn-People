@@ -1065,6 +1065,151 @@ def test_structure_lider_sem_snapshot_mostra_sem_avaliacao_registrada(
 
 
 @pytest.mark.django_db
+def test_structure_lider_snapshot_neutro_mostra_badge_neutro(
+    admin,
+    lider,
+    colaborador,
+    ciclo_aberto,
+):
+    """Snapshot com percentual NULL → badge Neutro (igual à tela de aderência)."""
+    AderenciaSnapshot.objects.create(
+        lider=lider,
+        ciclo=ciclo_aberto,
+        percentual=None,
+        componentes={'estado': 'neutro'},
+        calculado_em=timezone.now(),
+    )
+
+    client = _login_admin(admin)
+    resp = client.get(_structure_url())
+    assert resp.status_code == 200
+
+    lider_row = next(
+        item for item in resp.context['lideres_resumo'] if item['lider'].pk == lider.pk
+    )
+    assert lider_row['status'] == 'neutro'
+
+    html = resp.content.decode()
+    assert 'Neutro' in html
+    assert 'Baixo (' not in html
+
+
+@pytest.mark.django_db
+def test_structure_lideres_paginate_by_20(
+    admin,
+    lider,
+    area,
+    cargo_lider,
+    cargo_colab,
+    ciclo_aberto,
+):
+    """Líderes no escopo paginam em 20; HTMX troca só o #list-container."""
+    per_page = HtmxPaginatedListMixin.paginate_by
+    for i in range(per_page):
+        gestor = CustomUser.objects.create_user(
+            email=f'struct.pag.{i}@test.greenn.com.br',
+            password=DEFAULT_PASSWORD,
+            nome=f'Gestor Pag {i}',
+            cargo=cargo_lider,
+            area=area,
+            line_manager=admin,
+            email_confirmado_em=timezone.now(),
+        )
+        CustomUser.objects.create_user(
+            email=f'struct.pag.colab.{i}@test.greenn.com.br',
+            password=DEFAULT_PASSWORD,
+            nome=f'Colab Pag {i}',
+            cargo=cargo_colab,
+            area=area,
+            line_manager=gestor,
+            data_entrada=FIXTURE_DATA_ENTRADA,
+            email_confirmado_em=timezone.now(),
+        )
+
+    client = _login_admin(admin)
+    resp = client.get(_structure_url())
+    assert resp.status_code == 200
+    page_obj = resp.context['page_obj']
+    assert page_obj.paginator.per_page == per_page
+    assert page_obj.paginator.count > per_page
+    assert len(resp.context['lideres_resumo']) == per_page
+    assert page_obj.has_next()
+
+    html = resp.content.decode()
+    assert 'Mostrando' in html
+    assert 'líder' in html
+
+    resp2 = client.get(_structure_url(), {'page': 2})
+    assert resp2.status_code == 200
+    assert len(resp2.context['lideres_resumo']) == page_obj.paginator.count - per_page
+
+    resp_htmx = client.get(
+        _structure_url(),
+        {'page': 2},
+        HTTP_HX_REQUEST='true',
+        HTTP_HX_TARGET='#list-container',
+    )
+    assert resp_htmx.status_code == 200
+    partial = resp_htmx.content.decode()
+    assert 'id="list-container"' in partial
+    assert 'Líderes Diretos' not in partial
+
+
+@pytest.mark.django_db
+def test_adherence_lista_paginate_by_20(
+    admin,
+    area,
+    cargo_lider,
+    cargo_colab,
+    ciclo_aberto,
+):
+    """Gestores na aderência paginam em 20 com resumo «Mostrando X a Y»."""
+    from apps.reviews.services.enrollment import ensure_avaliacao_for_user
+
+    per_page = HtmxPaginatedListMixin.paginate_by
+    for i in range(per_page + 1):
+        gestor = CustomUser.objects.create_user(
+            email=f'ader.pag.{i}@test.greenn.com.br',
+            password=DEFAULT_PASSWORD,
+            nome=f'Ader Pag {i}',
+            cargo=cargo_lider,
+            area=area,
+            line_manager=admin,
+            email_confirmado_em=timezone.now(),
+        )
+        colab = CustomUser.objects.create_user(
+            email=f'ader.pag.colab.{i}@test.greenn.com.br',
+            password=DEFAULT_PASSWORD,
+            nome=f'Colab Ader {i}',
+            cargo=cargo_colab,
+            area=area,
+            line_manager=gestor,
+            data_entrada=FIXTURE_DATA_ENTRADA,
+            email_confirmado_em=timezone.now(),
+        )
+        ensure_avaliacao_for_user(colab, ciclo=ciclo_aberto)
+        _seed_snapshot(
+            lider=gestor,
+            ciclo=ciclo_aberto,
+            percentual=f'{10 + i}.00',
+        )
+
+    client = _login_admin(admin)
+    resp = client.get(_adherence_url())
+    assert resp.status_code == 200
+    page_obj = resp.context['page_obj']
+    assert page_obj.paginator.per_page == per_page
+    assert page_obj.paginator.count == per_page + 1
+    assert len(resp.context['snapshots_resumo']) == per_page
+    assert page_obj.has_next()
+    assert 'Mostrando' in resp.content.decode()
+    assert 'gestor' in resp.content.decode()
+
+    resp2 = client.get(_adherence_url(), {'page': 2})
+    assert len(resp2.context['snapshots_resumo']) == 1
+
+
+@pytest.mark.django_db
 def test_structure_remove_visao_por_area_mantem_charts_e_alertas(
     admin,
     colaborador,

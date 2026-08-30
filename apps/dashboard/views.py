@@ -2,11 +2,14 @@ from decimal import Decimal
 
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Avg, Count, F, Q
+from django.shortcuts import render
 from django.views.generic import ListView, TemplateView
 
 from apps.accounts.models import CustomUser
 from apps.accounts.services.scope import get_visible_users
+from apps.core.htmx import is_htmx
 from apps.core.mixins import (
     HtmxPaginatedListMixin,
     RequiresAdminMixin,
@@ -71,6 +74,19 @@ from apps.talent.services.classification import get_visible_classification_for_c
 _ADERENCIA_ALTA = Decimal('80')
 _ADERENCIA_MEDIA = Decimal('50')
 _ADERENCIA_NIVEL_FILTERS = frozenset({'alta', 'media', 'baixa'})
+_LIST_PAGINATE_BY = 20
+
+
+def paginate_list(request, items, *, per_page: int = _LIST_PAGINATE_BY):
+    """Pagina sequências in-memory com o mesmo contrato do ``HtmxPaginatedListMixin``."""
+    paginator = Paginator(items, per_page)
+    page_number = request.GET.get('page')
+    try:
+        return paginator.page(page_number)
+    except PageNotAnInteger:
+        return paginator.page(1)
+    except EmptyPage:
+        return paginator.page(paginator.num_pages or 1)
 
 
 def aderencia_status(percentual: Decimal | None) -> str:
@@ -837,6 +853,16 @@ class StructureDashboardView(LoginRequiredMixin, RequiresManagerOrAdminMixin, Te
     """Painel de estrutura: cobertura (Freeze B) + lacunas secundárias (FR-019 / FR-006)."""
 
     template_name = 'dashboard/structure.html'
+    leaders_partial_template_name = 'dashboard/structure_leaders_partial.html'
+
+    def get(self, request, *args, **kwargs):
+        context = self.get_context_data(**kwargs)
+        if (
+            is_htmx(request)
+            and request.headers.get('HX-Target') == '#list-container'
+        ):
+            return render(request, self.leaders_partial_template_name, context)
+        return self.render_to_response(context)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -870,7 +896,7 @@ class StructureDashboardView(LoginRequiredMixin, RequiresManagerOrAdminMixin, Te
         context['cobertura_resumo'] = cobertura['resumo']
         context['chart_cobertura_area'] = cobertura['chart_por_area']
         context['chart_cobertura_cargo'] = cobertura['chart_por_cargo']
-        context['lideres_resumo'] = [
+        lideres_all = [
             {
                 **item,
                 'status': (
@@ -886,6 +912,9 @@ class StructureDashboardView(LoginRequiredMixin, RequiresManagerOrAdminMixin, Te
                 cargo_id=cargo_id,
             )
         ]
+        page_obj = paginate_list(self.request, lideres_all)
+        context['page_obj'] = page_obj
+        context['lideres_resumo'] = list(page_obj.object_list)
         lacunas_area_prio, lacunas_area_rest = partition_gap_rows(
             gaps_by_area(
                 visible,

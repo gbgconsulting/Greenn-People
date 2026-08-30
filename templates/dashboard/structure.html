@@ -156,75 +156,7 @@
         {% url 'dashboard:adherence' as adherence_todos_url %}
         {% include "components/button.html" with label="Ver aderência" href=adherence_todos_url variant="secondary" extra_class="!h-10" %}
       </div>
-      <div class="table-frame">
-        <table>
-          <thead>
-            <tr>
-              <th>Líder</th>
-              <th>Área</th>
-              <th>Colaboradores</th>
-              <th>Aderência</th>
-              <th class="text-right">Ação</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for item in lideres_resumo %}
-            <tr class="group">
-              <td>
-                <div class="flex items-center gap-3">
-                  <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-xs font-bold text-emerald-700" aria-hidden="true">
-                    {{ item.lider.nome|default:item.lider.email|make_list|first|upper }}
-                  </div>
-                  <div class="min-w-0">
-                    <p class="font-medium text-slate-800">{{ item.lider.nome|default:item.lider.email }}</p>
-                    <p class="text-xs text-slate-500">{{ item.lider.email }}</p>
-                  </div>
-                </div>
-              </td>
-              <td class="text-slate-600">{{ item.lider.area.nome|default:"—" }}</td>
-              <td class="tabular-nums text-slate-600">{{ item.colaboradores }}</td>
-              <td>
-                {% if item.snapshot and item.status %}
-                  {% with pct=item.snapshot.percentual|floatformat:0 %}
-                    {% if item.status == "alta" %}
-                      {% with badge_label="Alto ("|add:pct|add:"%)" %}
-                      {% include "components/badge_status.html" with status="alta" label=badge_label %}
-                      {% endwith %}
-                    {% elif item.status == "media" %}
-                      {% with badge_label="Médio ("|add:pct|add:"%)" %}
-                      {% include "components/badge_status.html" with status="media" label=badge_label %}
-                      {% endwith %}
-                    {% else %}
-                      {% with badge_label="Baixo ("|add:pct|add:"%)" %}
-                      {% include "components/badge_status.html" with status="baixa" label=badge_label %}
-                      {% endwith %}
-                    {% endif %}
-                  {% endwith %}
-                {% else %}
-                  {% include "components/badge_status.html" with status="arquivado" label="Sem avaliação registrada" %}
-                {% endif %}
-              </td>
-              <td class="text-right">
-                {% url 'dashboard:adherence' as adherence_row_url %}
-                <a href="{{ adherence_row_url }}" class="text-sm font-semibold text-emerald-700 opacity-100 hover:underline sm:opacity-0 sm:group-hover:opacity-100">
-                  Ver detalhes
-                </a>
-              </td>
-            </tr>
-            {% empty %}
-            <tr>
-              <td colspan="5" class="!py-8">
-                {% if cobertura_resumo.has_ciclo %}
-                  {% include "components/empty_state.html" with title="Nenhum líder encontrado" message="Ainda não há informações nesta seção." %}
-                {% else %}
-                  {% include "components/empty_state.html" with title="Sem ciclo aberto" message="Não há ciclo aberto. Você pode escolher outro ciclo pelo seletor." %}
-                {% endif %}
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+      {% include "dashboard/structure_leaders_partial.html" %}
     </div>
 
     <details class="group min-w-0" aria-labelledby="lacunas-area-heading">
