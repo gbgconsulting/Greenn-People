@@ -249,6 +249,65 @@
     width: 14%;
   }
 
+  /*
+   * Cadastro de usuários (admin) — grid alinhado ao mock CADASTRO_USUÁRIOS.
+   */
+  .user-registry-table {
+    @apply min-w-[880px] w-full table-fixed border-collapse text-left text-sm text-ink;
+  }
+
+  .user-registry-table thead {
+    @apply bg-slate-50/80 text-xs font-semibold uppercase tracking-wider text-slate-500;
+  }
+
+  .user-registry-table th {
+    @apply border-b border-line px-6 py-4 font-semibold;
+  }
+
+  .user-registry-table td {
+    @apply border-b border-line px-6 py-4 align-middle;
+  }
+
+  .user-registry-table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
+  .user-registry-table tbody tr:hover {
+    @apply bg-slate-50/60;
+  }
+
+  .user-registry-table .col-nome {
+    width: 14%;
+  }
+
+  .user-registry-table .col-email {
+    width: 16%;
+  }
+
+  .user-registry-table .col-area {
+    width: 12%;
+  }
+
+  .user-registry-table .col-cargo {
+    width: 12%;
+  }
+
+  .user-registry-table .col-gestor {
+    width: 14%;
+  }
+
+  .user-registry-table .col-entrada {
+    width: 10%;
+  }
+
+  .user-registry-table .col-status {
+    width: 10%;
+  }
+
+  .user-registry-table .col-acao {
+    width: 14%;
+  }
+
   /* Barra segmentada — filtros de status (lista avaliações líder). */
   .filter-segment-bar {
     @apply inline-flex max-w-full overflow-x-auto rounded-lg bg-slate-100/90 p-1;

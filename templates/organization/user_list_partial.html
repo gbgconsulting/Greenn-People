@@ -1,67 +1,75 @@
 <div id="list-container">
-  <div class="table-frame">
-    <table class="table-fixed w-full min-w-[64rem]">
-      <colgroup>
-        <col class="w-[18%]" />
-        <col class="w-[18%]" />
-        <col class="w-[12%]" />
-        <col class="w-[12%]" />
-        <col class="w-[12%]" />
-        <col class="w-[9%]" />
-        <col class="w-[8%]" />
-        <col class="w-[11%]" />
-      </colgroup>
-      <thead>
-      <tr>
-        <th>Nome</th>
-        <th>E-mail</th>
-        <th>Área</th>
-        <th>Cargo</th>
-        <th>Gestor</th>
-        <th class="whitespace-nowrap">Entrada</th>
-        <th>Status</th>
-        <th class="text-right">Ações</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for u in users %}
-      <tr>
-        <td class="font-medium text-slate-800">
-          {{ u.nome }}
-          {% if u.is_admin %}
-            {% include "components/badge_status.html" with status="admin" label="Admin" extra_class="ml-1" %}
-          {% endif %}
-        </td>
-        <td class="max-w-0 truncate text-slate-600" title="{{ u.email }}">{{ u.email }}</td>
-        <td class="max-w-0 truncate text-slate-600" title="{{ u.area.nome|default:'' }}">{{ u.area.nome|default:"—" }}</td>
-        <td class="max-w-0 truncate text-slate-600" title="{{ u.cargo.nome|default:'' }}">{{ u.cargo.nome|default:"—" }}</td>
-        <td class="max-w-0 truncate text-slate-600" title="{{ u.line_manager.nome|default:'' }}">{{ u.line_manager.nome|default:"—" }}</td>
-        <td class="whitespace-nowrap text-slate-600 tabular-nums">{{ u.data_entrada|date:"d/m/Y"|default:"—" }}</td>
-        <td class="whitespace-nowrap">
-          {% if not u.area_id or not u.cargo_id %}
-            {% include "components/badge_status.html" with status="pendente" %}
-          {% elif u.is_active %}
-            {% include "components/badge_status.html" with status="ativo" %}
-          {% else %}
-            {% include "components/badge_status.html" with status="arquivado" label="Inativo" %}
-          {% endif %}
-        </td>
-        <td class="whitespace-nowrap text-right">
-          <a href="{% url 'talent:classify' u.pk %}" class="font-medium text-slate-600 hover:text-slate-800">Classificar</a>
-          <span class="text-ink-muted"> · </span>
-          <a href="{% url 'organization:user_update' u.pk %}" class="font-medium text-emerald-700 hover:text-emerald-800">Editar</a>
-        </td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="8" class="!py-8">
-          {% include "components/empty_state.html" with title="Nenhum usuário cadastrado" message="Não há usuários neste escopo." %}
-        </td>
-      </tr>
-      {% endfor %}
-      </tbody>
-    </table>
-  </div>
+  {% include "organization/partials/user_list_filters.html" %}
 
-  {% include "components/pagination.html" with page_obj=page_obj %}
+  <div class="overflow-hidden rounded-xl border border-line bg-surface-card shadow-sm">
+    <div class="min-w-0 overflow-x-auto">
+      <table class="user-registry-table">
+        <thead>
+          <tr>
+            <th scope="col" class="col-nome">Nome</th>
+            <th scope="col" class="col-email">E-mail</th>
+            <th scope="col" class="col-area">Área</th>
+            <th scope="col" class="col-cargo">Cargo</th>
+            <th scope="col" class="col-gestor">Gestor</th>
+            <th scope="col" class="col-entrada">Entrada</th>
+            <th scope="col" class="col-status">Status</th>
+            <th scope="col" class="col-acao text-right">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          <tr class="group">
+            <td class="col-nome">
+              <span class="font-ui text-sm font-semibold text-slate-800">
+                {{ u.nome }}
+              </span>
+              {% if u.is_admin %}
+                {% include "components/badge_status.html" with status="admin" label="Admin" extra_class="ml-1" %}
+              {% endif %}
+            </td>
+            <td class="col-email">
+              <span class="block truncate font-ui text-sm text-slate-500" title="{{ u.email }}">{{ u.email }}</span>
+            </td>
+            <td class="col-area font-ui text-sm text-slate-600">
+              <span class="block truncate" title="{{ u.area.nome|default:'' }}">{{ u.area.nome|default:"—" }}</span>
+            </td>
+            <td class="col-cargo font-ui text-sm text-slate-600">
+              <span class="block truncate" title="{{ u.cargo.nome|default:'' }}">{{ u.cargo.nome|default:"—" }}</span>
+            </td>
+            <td class="col-gestor font-ui text-sm text-slate-600">
+              <span class="block truncate" title="{{ u.line_manager.nome|default:'' }}">{{ u.line_manager.nome|default:"—" }}</span>
+            </td>
+            <td class="col-entrada whitespace-nowrap font-ui text-sm tabular-nums text-slate-600">
+              {{ u.data_entrada|date:"d/m/Y"|default:"—" }}
+            </td>
+            <td class="col-status whitespace-nowrap">
+              {% if not u.area_id or not u.cargo_id %}
+                {% include "components/badge_status.html" with status="pendente" %}
+              {% elif u.is_active %}
+                {% include "components/badge_status.html" with status="ativo" %}
+              {% else %}
+                {% include "components/badge_status.html" with status="arquivado" label="Inativo" %}
+              {% endif %}
+            </td>
+            <td class="col-acao whitespace-nowrap text-right font-ui text-sm font-semibold">
+              <a href="{% url 'talent:classify' u.pk %}?next={{ request.get_full_path|urlencode }}" class="text-emerald-700 transition-colors hover:text-emerald-800 hover:underline hover:decoration-emerald-700/30">Classificar</a><span class="mx-2 font-normal text-slate-300" aria-hidden="true">·</span><a href="{% url 'organization:user_update' u.pk %}?next={{ request.get_full_path|urlencode }}" class="text-emerald-700 transition-colors hover:text-emerald-800 hover:underline hover:decoration-emerald-700/30">Editar</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="!py-10">
+              {% if filtro_ativo %}
+                {% include "components/empty_state.html" with title="Nenhum resultado" message="Nenhum usuário encontrado com os filtros aplicados." %}
+              {% else %}
+                {% include "components/empty_state.html" with title="Nenhum usuário cadastrado" message="Ainda não há colaboradores cadastrados." %}
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% include "components/pagination_range.html" with page_obj=page_obj simple_nav=True %}
+  </div>
 </div>
