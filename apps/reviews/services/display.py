@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
-from typing import Any
+from typing import Any, Literal
 
 _PERCENT_QUANT = Decimal('1')
 _MISSING = '—'
+
+NotaLiderTone = Literal['success', 'warning', 'neutral']
+NotaLiderTrend = Literal['up', 'equal', 'down'] | None
 
 
 def escala_rotulo(escala, nota: Any) -> str:
@@ -53,6 +57,65 @@ def format_nivel_display(value: Any) -> str:
     if '.' in text:
         text = text.rstrip('0').rstrip('.')
     return text
+
+
+def nota_lider_tone(nota_lider: Any, nivel_esperado: Any) -> NotaLiderTone:
+    """Tom visual da nota do líder vs. nível esperado (UI só consome)."""
+    if nota_lider is None or nota_lider == '' or nivel_esperado is None or nivel_esperado == '':
+        return 'neutral'
+    try:
+        nota = Decimal(str(nota_lider))
+        esperado = Decimal(str(nivel_esperado))
+    except (TypeError, ValueError, ArithmeticError):
+        return 'neutral'
+    if nota >= esperado:
+        return 'success'
+    return 'warning'
+
+
+def nota_lider_trend(nota_lider: Any, nota_autoavaliacao: Any) -> NotaLiderTrend:
+    """Tendência líder vs. autoavaliação (UI só consome)."""
+    if (
+        nota_lider is None
+        or nota_lider == ''
+        or nota_autoavaliacao is None
+        or nota_autoavaliacao == ''
+    ):
+        return None
+    try:
+        lider = Decimal(str(nota_lider))
+        auto = Decimal(str(nota_autoavaliacao))
+    except (TypeError, ValueError, ArithmeticError):
+        return None
+    if lider > auto:
+        return 'up'
+    if lider < auto:
+        return 'down'
+    return 'equal'
+
+
+@dataclass(frozen=True)
+class CompetenciaLinhaDisplay:
+    """DTO de apresentação para uma linha de competência no detalhe operacional."""
+
+    linha: Any
+    nota_lider_tone: NotaLiderTone
+    nota_lider_trend: NotaLiderTrend
+
+
+def build_competencia_linha_display(linha: Any) -> CompetenciaLinhaDisplay:
+    """Monta DTO de apresentação — sem regra de negócio nova."""
+    return CompetenciaLinhaDisplay(
+        linha=linha,
+        nota_lider_tone=nota_lider_tone(
+            linha.nota_lider,
+            linha.nivel_esperado_utilizado,
+        ),
+        nota_lider_trend=nota_lider_trend(
+            linha.nota_lider,
+            linha.nota_autoavaliacao,
+        ),
+    )
 
 
 def format_nota_escala_cinco(value: Any) -> str:

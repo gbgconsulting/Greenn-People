@@ -264,6 +264,7 @@ class AvaliacaoDetailView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
     model = Avaliacao
     template_name = 'reviews/avaliacao_detail.html'
     collaborator_template_name = 'reviews/avaliacao_detail_colaborador.html'
+    operational_template_name = 'reviews/avaliacao_detail_lider.html'
     context_object_name = 'avaliacao'
     scope_user_field = 'usuario'
     queryset = Avaliacao.objects.select_related(
@@ -278,7 +279,7 @@ class AvaliacaoDetailView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
         avaliacao = self.object
         if avaliacao.usuario_id == self.request.user.pk:
             return [self.collaborator_template_name]
-        return [self.template_name]
+        return [self.operational_template_name]
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

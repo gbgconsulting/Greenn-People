@@ -81,13 +81,30 @@ def test_colaborador_detail_usa_template_dedicado(client, colaborador, avaliacao
 
 
 @pytest.mark.django_db
-def test_lider_detail_mantem_template_operacional(client, lider, avaliacao):
+def test_lider_detail_usa_template_operacional(client, lider, avaliacao):
+    avaliacao.nota_final_lider = Decimal('0.8300')
+    avaliacao.nota_final_autoavaliacao = Decimal('0.7100')
+    avaliacao.autoavaliacao_enviada = True
+    avaliacao.save(
+        update_fields=[
+            'nota_final_lider',
+            'nota_final_autoavaliacao',
+            'autoavaliacao_enviada',
+        ],
+    )
     client.force_login(lider)
     resp = client.get(reverse('reviews:detail', kwargs={'pk': avaliacao.pk}))
     assert resp.status_code == 200
+    body = resp.content.decode()
+    assert 'Avaliação Detalhada' in body
+    assert 'Linha do Tempo do Ciclo' in body
+    assert '83%' in body
+    assert '71%' in body
     template_names = [t.name for t in resp.templates if t.name]
-    assert 'reviews/avaliacao_detail.html' in template_names
+    assert 'reviews/avaliacao_detail_lider.html' in template_names
     assert 'reviews/avaliacao_detail_colaborador.html' not in template_names
+    assert 'components/stage_stepper.html' in template_names
+    assert 'components/card.html' in template_names
 
 
 @pytest.mark.django_db
