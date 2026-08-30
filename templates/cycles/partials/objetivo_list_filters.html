@@ -1,0 +1,33 @@
+{% comment %}
+  Toolbar de filtros — objetivos estratégicos (admin, por ciclo).
+  Requer: list_url, filtro_busca
+{% endcomment %}
+<div class="border-b border-line bg-slate-50/50 px-6 py-4">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div class="relative w-full sm:w-80">
+      <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400" aria-hidden="true">
+        <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35m1.85-5.15a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </span>
+      <input
+        id="objetivo-busca-input"
+        type="search"
+        name="busca"
+        value="{{ filtro_busca }}"
+        placeholder="Buscar objetivos..."
+        autocomplete="off"
+        aria-label="Buscar objetivo por descrição"
+        data-objetivo-filter
+        hx-preserve="true"
+        hx-get="{{ list_url }}"
+        hx-trigger="keyup changed delay:300ms, search"
+        hx-target="#list-container"
+        hx-swap="outerHTML"
+        hx-push-url="true"
+        hx-include="[data-objetivo-filter]"
+        class="form-control !h-10 !min-w-0 !w-full !pl-9 text-sm"
+      />
+    </div>
+  </div>
+</div>

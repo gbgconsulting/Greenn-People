@@ -399,6 +399,45 @@
   }
 
   /*
+   * Objetivos estratégicos (admin, por ciclo) — grid alinhado ao mock TELA_OBJETIVOS.
+   */
+  .objetivo-registry-table {
+    @apply min-w-[640px] w-full table-fixed border-collapse text-left text-sm text-ink;
+  }
+
+  .objetivo-registry-table thead {
+    @apply bg-slate-50/80 text-xs font-semibold uppercase tracking-wider text-slate-500;
+  }
+
+  .objetivo-registry-table th {
+    @apply border-b border-line px-6 py-4 font-semibold;
+  }
+
+  .objetivo-registry-table td {
+    @apply border-b border-line px-6 py-4 align-middle;
+  }
+
+  .objetivo-registry-table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
+  .objetivo-registry-table tbody tr:hover {
+    @apply bg-slate-50/60;
+  }
+
+  .objetivo-registry-table .col-descricao {
+    width: 62%;
+  }
+
+  .objetivo-registry-table .col-metas {
+    width: 18%;
+  }
+
+  .objetivo-registry-table .col-acao {
+    width: 8%;
+  }
+
+  /*
    * Cadastro de competências (admin) — grid alinhado ao mock CADASTRO_COMPETENCIAS.
    */
   .competencia-registry-table {

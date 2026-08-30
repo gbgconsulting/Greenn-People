@@ -1,4 +1,0 @@
-{% url 'cycles:objetivo_update' ciclo.pk objetivo.pk as edit_href %}
-{% url 'cycles:objetivo_delete' ciclo.pk objetivo.pk as delete_href %}
-{% include "components/row_actions_menu_item.html" with href=edit_href label="Editar" %}
-{% include "components/row_actions_menu_item.html" with href=delete_href label="Excluir" danger=True %}

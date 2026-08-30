@@ -23,6 +23,11 @@ from apps.cycles.forms import CicloForm
 from apps.cycles.models import Ciclo
 from apps.cycles.services.cycle import close_cycle, open_cycle
 from apps.cycles.services.eligibility import preview_admission_counts
+from apps.cycles.services.objetivo_list import (
+    apply_objetivo_list_filters,
+    get_base_objetivo_list_queryset,
+    parse_search_filter,
+)
 from apps.dashboard.chart_payloads import (
     CHART_TYPE_BAR_GROUPED,
     CHART_TYPE_BAR_HORIZONTAL,
@@ -529,12 +534,29 @@ class ObjetivoEstrategicoListView(CicloNestedMixin, HtmxPaginatedListMixin, List
     partial_template_name = 'cycles/objetivo_list_partial.html'
     context_object_name = 'objetivos'
 
+    def _parsed_filters(self):
+        base_qs = get_base_objetivo_list_queryset(self.ciclo)
+        busca = parse_search_filter(self.request.GET.get('busca'))
+        return base_qs, busca
+
     def get_queryset(self):
-        return (
-            ObjetivoEstrategico.objects.filter(ciclo=self.ciclo)
-            .annotate(metas_count=Count('metas'))
-            .order_by('id')
+        base_qs, busca = self._parsed_filters()
+        return apply_objetivo_list_filters(base_qs, busca=busca)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        _, busca = self._parsed_filters()
+        context.update(
+            {
+                'list_url': reverse(
+                    'cycles:objetivo_list',
+                    kwargs={self.ciclo_url_kwarg: self.ciclo.pk},
+                ),
+                'filtro_busca': busca,
+                'filtro_ativo': bool(busca),
+            },
         )
+        return context
 
 
 class ObjetivoEstrategicoCreateView(CicloNestedMixin, CreateView):
