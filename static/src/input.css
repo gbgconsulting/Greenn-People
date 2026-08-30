@@ -398,6 +398,53 @@
     width: 8%;
   }
 
+  /*
+   * Cadastro de competências (admin) — grid alinhado ao mock CADASTRO_COMPETENCIAS.
+   */
+  .competencia-registry-table {
+    @apply min-w-[880px] w-full table-fixed border-collapse text-left text-sm text-ink;
+  }
+
+  .competencia-registry-table thead {
+    @apply bg-slate-50/80 text-xs font-semibold uppercase tracking-wider text-slate-500;
+  }
+
+  .competencia-registry-table th {
+    @apply border-b border-line px-6 py-4 font-semibold;
+  }
+
+  .competencia-registry-table td {
+    @apply border-b border-line px-6 py-4 align-middle;
+  }
+
+  .competencia-registry-table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
+  .competencia-registry-table tbody tr:hover {
+    @apply bg-slate-50/60;
+  }
+
+  .competencia-registry-table .col-nome {
+    width: 34%;
+  }
+
+  .competencia-registry-table .col-tipo {
+    width: 16%;
+  }
+
+  .competencia-registry-table .col-escala {
+    width: 22%;
+  }
+
+  .competencia-registry-table .col-status {
+    width: 14%;
+  }
+
+  .competencia-registry-table .col-acao {
+    width: 8%;
+  }
+
   .area-tree-child {
     @apply relative;
   }
