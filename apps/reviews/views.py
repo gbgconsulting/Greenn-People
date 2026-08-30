@@ -42,6 +42,7 @@ from apps.reviews.services.evaluation import (
     self_assessment_viewable,
     submit_self_assessment,
 )
+from apps.reviews.services.feedback_display import build_feedback_resumo
 from apps.reviews.services.guidance import (
     build_stage_stepper,
     detect_owner_correction_kind,
@@ -812,11 +813,33 @@ class FeedbackListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListM
                     'pode_dar_ciencia': can_acknowledge_feedback(user, feedback),
                 },
             )
+
+        feedback_pendente_ciencia = None
+        feedback_lider = None
+        if user.pk == self.avaliacao.usuario_id:
+            lider_feedbacks = (
+                Feedback.objects.filter(
+                    avaliacao_id=self.avaliacao.pk,
+                    tipo=Feedback.Tipo.LIDER,
+                )
+                .select_related('autor')
+                .order_by('-created_at', 'id')
+            )
+            feedback_lider = lider_feedbacks.first()
+            for feedback in lider_feedbacks:
+                if can_acknowledge_feedback(user, feedback):
+                    feedback_pendente_ciencia = feedback
+                    break
+
         context.update(
             {
                 'avaliacao': self.avaliacao,
                 'colaborador': self.avaliacao.usuario,
                 'feedback_rows': rows,
+                'feedback_lider': feedback_lider,
+                'feedback_pendente_ciencia': feedback_pendente_ciencia,
+                'feedback_resumo': build_feedback_resumo(self.avaliacao),
+                'is_colaborador_view': user.pk == self.avaliacao.usuario_id,
                 'pode_criar': feedback_create_allowed(user, self.avaliacao),
             },
         )
@@ -921,6 +944,13 @@ class FeedbackAcknowledgeView(LoginRequiredMixin, View):
 
         if feedback.ciente_em is not None:
             messages.info(request, 'Você já deu ciência a este feedback.')
+            return HttpResponseRedirect(list_url)
+
+        if request.POST.get('declaro_ciencia') != 'on':
+            messages.error(
+                request,
+                'Confirme que leu o feedback antes de dar ciência.',
+            )
             return HttpResponseRedirect(list_url)
 
         feedback.ciente_em = timezone.now()

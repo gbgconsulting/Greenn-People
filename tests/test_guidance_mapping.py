@@ -96,7 +96,7 @@ _MAPA_ETAPA_PAPEL: list[tuple[str, str, str, str | None, bool]] = [
         'colaborador',
         ETAPA_FEEDBACK,
         'Confirme ciência do feedback',
-        'reviews:feedback_acknowledge',
+        'reviews:feedback_list',
         False,
     ),
     (
@@ -143,10 +143,7 @@ def test_mapa_etapa_papel_dto(
     assert g.title == title
     assert g.cta_url_name == cta_url_name
     if cta_url_name and cta_url_name.startswith('reviews:'):
-        if cta_url_name == 'reviews:feedback_acknowledge':
-            assert g.cta_kwargs == {'pk': 7}
-        else:
-            assert g.cta_kwargs.get('pk') == 42
+        assert g.cta_kwargs.get('pk') == 42
     if expects_blocked:
         assert g.blocked_reason
     else:

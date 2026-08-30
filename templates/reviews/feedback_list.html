@@ -1,36 +1,67 @@
 {% extends "base.html" %}
+{% load review_display %}
 
-{% block title %}Feedbacks — Greenn People{% endblock %}
+{% block title %}
+  {% if is_colaborador_view %}Leitura e Assinatura de Feedbacks{% else %}Feedbacks{% endif %} — Greenn People
+{% endblock %}
 
 {% block content %}
-<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
-  <div>
-    <h1 class="font-display text-2xl font-semibold text-slate-800">Feedbacks</h1>
-    <p class="mt-1 font-ui text-slate-500">
-      Histórico de feedbacks de
-      <span class="font-medium text-slate-700">{{ colaborador.nome|default:colaborador.email }}</span>
-      {% if avaliacao.ciclo %}
-        · ciclo {{ avaliacao.ciclo.nome }}
+<div class="mx-auto w-full max-w-5xl">
+  <header class="mb-8">
+    {% url 'reviews:detail' avaliacao.pk as detail_url %}
+    <a
+      href="{{ detail_url }}"
+      class="mb-4 inline-flex items-center gap-2 font-ui text-sm font-semibold tracking-wide text-slate-500 transition-colors hover:text-emerald-700"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true">
+        <path fill-rule="evenodd" d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd" />
+      </svg>
+      Voltar à avaliação
+    </a>
+
+    <div class="flex flex-wrap items-start justify-between gap-4">
+      <div class="min-w-0">
+        <h1 class="font-display text-3xl font-semibold tracking-tight text-slate-800">
+          {% if is_colaborador_view %}
+            Leitura e Assinatura de Feedbacks
+          {% else %}
+            Feedbacks
+          {% endif %}
+        </h1>
+        <p class="mt-2 max-w-2xl font-ui text-lg leading-relaxed text-slate-500">
+          {% if is_colaborador_view %}
+            Revise as considerações do seu gestor referentes ao
+            {% if avaliacao.ciclo %}Ciclo de Performance {{ avaliacao.ciclo.nome }}{% else %}ciclo atual{% endif %}.
+            Ao final, registre ciência e realize a assinatura digital.
+          {% else %}
+            Histórico de feedbacks de
+            <span class="font-medium text-slate-700">{{ colaborador.nome|default:colaborador.email }}</span>
+            {% if avaliacao.ciclo %}· ciclo {{ avaliacao.ciclo.nome }}{% endif %}
+            · etapa {{ avaliacao.get_etapa_display }}.
+          {% endif %}
+        </p>
+      </div>
+      {% if pode_criar %}
+      <div class="flex shrink-0 flex-wrap items-center gap-2">
+        {% url 'reviews:feedback_create' avaliacao.pk as create_url %}
+        {% include "components/button.html" with label="Novo feedback" href=create_url variant="primary" extra_class="!h-10" %}
+      </div>
       {% endif %}
-      · etapa {{ avaliacao.get_etapa_display }}.
-    </p>
-    {% if request.user.pk == colaborador.pk %}
-    <p class="mt-2 font-ui text-sm text-slate-600">
-      Se houver feedback do líder aguardando ciência, use
-      <span class="font-medium text-slate-800">Dar ciência</span>
-      no cabeçalho do card — sem precisar abrir outra tela.
-    </p>
-    {% endif %}
-  </div>
-  <div class="flex flex-wrap items-center gap-2">
-    {% url 'reviews:detail' avaliacao.pk as hub_url %}
-    {% include "components/button.html" with label="Voltar à avaliação" href=hub_url variant="secondary" %}
-    {% if pode_criar %}
-      {% url 'reviews:feedback_create' avaliacao.pk as create_url %}
-      {% include "components/button.html" with label="Novo feedback" href=create_url variant="primary" %}
-    {% endif %}
+    </div>
+  </header>
+
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-8">
+    <div class="flex min-w-0 flex-col gap-6 lg:col-span-8">
+      {% if feedback_resumo.tem_dados %}
+      {% include "reviews/partials/feedback_resumo_card.html" %}
+      {% endif %}
+
+      {% include "reviews/feedback_list_partial.html" %}
+    </div>
+
+    <aside class="flex min-w-0 flex-col gap-6 lg:col-span-4">
+      {% include "reviews/partials/feedback_ciencia_sidebar.html" %}
+    </aside>
   </div>
 </div>
-
-{% include "reviews/feedback_list_partial.html" %}
 {% endblock %}

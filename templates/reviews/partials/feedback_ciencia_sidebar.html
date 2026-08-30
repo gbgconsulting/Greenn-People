@@ -1,0 +1,82 @@
+{% comment %}
+  Painel lateral para dar ciência ao feedback — ação via POST no backend.
+{% endcomment %}
+<section
+  id="ciencia-assinatura"
+  class="rounded-xl border border-line bg-surface-card p-6 shadow-[0_2px_4px_rgba(0,0,0,0.04)] lg:sticky lg:top-6"
+  aria-labelledby="ciencia-assinatura-heading"
+>
+  <h2 id="ciencia-assinatura-heading" class="mb-4 font-display text-xl font-medium text-slate-800">
+    Dar ciência
+  </h2>
+
+  {% if feedback_pendente_ciencia %}
+  <p class="mb-4 font-ui text-sm leading-relaxed text-slate-500">
+    Depois de ler o feedback do seu gestor, confirme o recebimento abaixo.
+  </p>
+  <form
+    method="post"
+    action="{% url 'reviews:feedback_acknowledge' feedback_pendente_ciencia.pk %}"
+    id="feedback-ack-form"
+    class="flex flex-col"
+  >
+    {% csrf_token %}
+    <div class="mb-4 flex items-start gap-3">
+      <input
+        type="checkbox"
+        name="declaro_ciencia"
+        id="declaro-ciencia"
+        value="on"
+        class="mt-0.5 h-4 w-4 rounded border-slate-300 text-emerald-700 focus:ring-emerald-500"
+        required
+      />
+      <label for="declaro-ciencia" class="cursor-pointer font-ui text-sm text-slate-600">
+        Li o feedback do meu gestor
+      </label>
+    </div>
+    <button
+      type="submit"
+      id="feedback-sign-btn"
+      disabled
+      class="inline-flex w-full items-center justify-center rounded-lg bg-brand-gradient px-6 py-3 font-ui text-sm font-semibold text-white shadow-sm transition-all hover:bg-brand-gradient-hover disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      Dar ciência
+    </button>
+  </form>
+  <script>
+    (function initFeedbackAckForm() {
+      const checkbox = document.getElementById('declaro-ciencia');
+      const button = document.getElementById('feedback-sign-btn');
+      if (!checkbox || !button) return;
+      const sync = () => { button.disabled = !checkbox.checked; };
+      checkbox.addEventListener('change', sync);
+      sync();
+    })();
+  </script>
+
+  {% elif is_colaborador_view %}
+    {% if feedback_lider %}
+      {% if feedback_lider.ciente_em %}
+      <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-4" role="status">
+        <p class="font-ui text-sm font-semibold text-emerald-900">Ciência registrada</p>
+        <p class="mt-1 font-ui text-sm text-emerald-800">
+          Em {{ feedback_lider.ciente_em|date:"j \d\e F \d\e Y \à\s H:i" }}.
+        </p>
+      </div>
+      {% else %}
+      <p class="font-ui text-sm text-slate-500" role="status">
+        Aguardando feedback do líder para registrar ciência.
+      </p>
+      {% endif %}
+    {% else %}
+    <p class="font-ui text-sm text-slate-500" role="status">
+      Nenhum feedback do líder registrado nesta avaliação.
+    </p>
+    {% endif %}
+
+  {% else %}
+  <p class="font-ui text-sm text-slate-500" role="status">
+    Somente o colaborador avaliado pode dar ciência ao feedback do líder.
+  </p>
+  {% endif %}
+</section>

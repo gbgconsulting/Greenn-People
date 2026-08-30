@@ -1,0 +1,60 @@
+{% comment %}
+  Cartão "Resultado Final Calibrado" — dados derivados de notas/metas já persistidas.
+{% endcomment %}
+<section
+  class="relative overflow-hidden rounded-xl border border-line bg-surface-card shadow-[0_2px_4px_rgba(0,0,0,0.04)]"
+  aria-labelledby="feedback-resumo-heading"
+>
+  <div class="absolute left-0 top-0 h-1 w-full bg-emerald-700" aria-hidden="true"></div>
+  <div class="p-6">
+    <h2 id="feedback-resumo-heading" class="mb-6 flex items-center gap-2 font-display text-xl font-medium text-slate-800">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5 shrink-0 text-emerald-700" aria-hidden="true">
+        <path d="M15.5 2A1.5 1.5 0 0 0 14 3.5v13a1.5 1.5 0 0 0 1.5 1.5h1a1.5 1.5 0 0 0 1.5-1.5v-13A1.5 1.5 0 0 0 16.5 2h-1ZM9.5 6A1.5 1.5 0 0 0 8 7.5v9A1.5 1.5 0 0 0 9.5 18h1a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 10.5 6h-1ZM3.5 10A1.5 1.5 0 0 0 2 11.5v5A1.5 1.5 0 0 0 3.5 18h1A1.5 1.5 0 0 0 6 16.5v-5A1.5 1.5 0 0 0 4.5 10h-1Z" />
+      </svg>
+      Resultado Final Calibrado
+    </h2>
+
+    <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div class="rounded-lg border border-line bg-white p-4">
+        <p class="font-ui text-xs font-semibold uppercase tracking-wider text-slate-500">Nota de Competências</p>
+        <p class="mt-1 font-display text-2xl font-semibold tabular-nums text-emerald-800">
+          {% if feedback_resumo.competencia_valor is not None and feedback_resumo.competencia_escala_max is not None %}
+            {{ feedback_resumo.competencia_valor }}
+            <span class="font-ui text-sm font-normal text-slate-500">/ {{ feedback_resumo.competencia_escala_max }}</span>
+          {% elif feedback_resumo.competencia_percentual %}
+            {{ feedback_resumo.competencia_percentual }}
+          {% else %}
+            —
+          {% endif %}
+        </p>
+      </div>
+      <div class="rounded-lg border border-line bg-white p-4">
+        <p class="font-ui text-xs font-semibold uppercase tracking-wider text-slate-500">Nota de Metas</p>
+        <p class="mt-1 font-display text-2xl font-semibold tabular-nums text-emerald-800">
+          {% if feedback_resumo.metas_atingimento is not None %}
+            {{ feedback_resumo.metas_atingimento }}%
+            <span class="font-ui text-sm font-normal text-slate-500">Atingimento</span>
+          {% else %}
+            —
+          {% endif %}
+        </p>
+      </div>
+    </div>
+
+    {% if feedback_resumo.classificacao %}
+    <div class="flex items-start gap-3 rounded-lg border border-line bg-slate-50 p-4">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" aria-hidden="true">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd" />
+      </svg>
+      <div>
+        <p class="font-ui text-sm font-semibold text-slate-800">
+          Classificação Final: {{ feedback_resumo.classificacao }}
+        </p>
+        <p class="mt-1 font-ui text-sm text-slate-500">
+          Resultado consolidado das competências avaliadas neste ciclo.
+        </p>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</section>

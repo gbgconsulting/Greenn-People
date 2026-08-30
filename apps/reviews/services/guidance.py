@@ -479,19 +479,14 @@ def _resolve_etapa_colaborador(
             cta_kwargs=kwargs,
         )
     if etapa == ETAPA_FEEDBACK:
-        if feedback_pk is not None:
-            return _guidance(
-                'Confirme ciência do feedback',
-                (
-                    'Leia o feedback e registre ciência quando a regra '
-                    'atual permitir.'
-                ),
-                cta_label='Dar ciência',
-                cta_url_name='reviews:feedback_acknowledge',
-                cta_kwargs={'pk': feedback_pk},
-            )
         kwargs = _pk_kwargs(avaliacao_pk)
         if avaliacao_pk is not None:
+            blocked = None
+            if feedback_pk is None:
+                blocked = (
+                    'Feedback específico ainda não informado; '
+                    'abra a lista da avaliação.'
+                )
             return _guidance(
                 'Confirme ciência do feedback',
                 (
@@ -501,10 +496,7 @@ def _resolve_etapa_colaborador(
                 cta_label='Dar ciência',
                 cta_url_name='reviews:feedback_list',
                 cta_kwargs=kwargs,
-                blocked_reason=(
-                    'Feedback específico ainda não informado; '
-                    'abra a lista da avaliação.'
-                ),
+                blocked_reason=blocked,
             )
         return _guidance(
             'Confirme ciência do feedback',
