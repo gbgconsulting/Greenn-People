@@ -41,6 +41,20 @@ _SCALE_CINCO = Decimal('5')
 _SCALE_ONE_DECIMAL = Decimal('0.1')
 
 
+def format_nivel_display(value: Any) -> str:
+    """Nível discreto (ex.: 3.00) → ``3``. Ausência → ``—``."""
+    if value is None or value == '':
+        return _MISSING
+    try:
+        normalized = Decimal(str(value)).normalize()
+    except (TypeError, ValueError, ArithmeticError):
+        return str(value)
+    text = format(normalized, 'f')
+    if '.' in text:
+        text = text.rstrip('0').rstrip('.')
+    return text
+
+
 def format_nota_escala_cinco(value: Any) -> str:
     """Nota normalizada (0–1) → valor na escala 1–5 com uma casa decimal.
 

@@ -6,11 +6,18 @@ from django import template
 
 from apps.reviews.services.display import (
     escala_rotulo,
+    format_nivel_display,
     format_nota_escala_cinco,
     format_nota_percentual,
 )
 
 register = template.Library()
+
+
+@register.filter(name='nivel_display')
+def nivel_display(value) -> str:
+    """Nível discreto → texto compacto (ex.: ``3``)."""
+    return format_nivel_display(value)
 
 
 @register.filter(name='nota_percentual')

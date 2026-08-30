@@ -263,6 +263,7 @@ class AvaliacaoDetailView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
 
     model = Avaliacao
     template_name = 'reviews/avaliacao_detail.html'
+    collaborator_template_name = 'reviews/avaliacao_detail_colaborador.html'
     context_object_name = 'avaliacao'
     scope_user_field = 'usuario'
     queryset = Avaliacao.objects.select_related(
@@ -272,6 +273,12 @@ class AvaliacaoDetailView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
         'usuario__cargo',
         'usuario__line_manager',
     )
+
+    def get_template_names(self):
+        avaliacao = self.object
+        if avaliacao.usuario_id == self.request.user.pk:
+            return [self.collaborator_template_name]
+        return [self.template_name]
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -283,32 +290,31 @@ class AvaliacaoDetailView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
             .select_related('competencia', 'competencia__escala')
             .order_by('competencia__nome')
         )
-        context.update(
-            {
-                'colaborador': avaliacao.usuario,
-                'is_self': is_self,
-                'linhas': linhas,
-                'pode_autoavaliar': (
-                    is_self and self_assessment_editable(avaliacao)
-                ),
-                'pode_ver_autoavaliacao': (
-                    is_self
-                    and self_assessment_viewable(avaliacao)
-                    and self_assessment_submitted(avaliacao)
-                ),
-                'pode_avaliar_lider': (
-                    not is_self
-                    and can_leader_assess(user, avaliacao)
-                    and leader_assessment_permitted(avaliacao)
-                ),
-                'pode_criar_feedback': feedback_create_allowed(user, avaliacao),
-                **_advance_context(user, avaliacao),
-                **self._guidance_presentation_context(
-                    avaliacao,
-                    is_self=is_self,
-                ),
-            },
-        )
+        context_payload = {
+            'colaborador': avaliacao.usuario,
+            'is_self': is_self,
+            'linhas': linhas,
+            'pode_autoavaliar': (
+                is_self and self_assessment_editable(avaliacao)
+            ),
+            'pode_ver_autoavaliacao': (
+                is_self
+                and self_assessment_viewable(avaliacao)
+                and self_assessment_submitted(avaliacao)
+            ),
+            'pode_avaliar_lider': (
+                not is_self
+                and can_leader_assess(user, avaliacao)
+                and leader_assessment_permitted(avaliacao)
+            ),
+            'pode_criar_feedback': feedback_create_allowed(user, avaliacao),
+            **_advance_context(user, avaliacao),
+            **self._guidance_presentation_context(
+                avaliacao,
+                is_self=is_self,
+            ),
+        }
+        context.update(context_payload)
         return context
 
     def _guidance_role(self, *, is_self: bool) -> str:
@@ -332,12 +338,21 @@ class AvaliacaoDetailView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
         is_self: bool,
     ) -> dict:
         """Injeta ``next_step`` + ``stage_stepper`` só via ``guidance.py`` (FR-013)."""
-        # Já estamos no detalhe de uma avaliação: vínculo existe.
-        has_open_ciclo = avaliacao.ciclo.status == Ciclo.Status.ABERTO
-        # FR-009 / T028: hub do dono — correção pós-reprovação (só is_self).
-        owner_correction_kind = (
-            detect_owner_correction_kind(avaliacao) if is_self else None
-        )
+        ciclo_aberto = avaliacao.ciclo.status == Ciclo.Status.ABERTO
+        if ciclo_aberto:
+            has_open_ciclo = True
+            concluida = bool(avaliacao.concluida)
+            vinculo_pendente = False
+            owner_correction_kind = (
+                detect_owner_correction_kind(avaliacao) if is_self else None
+            )
+        else:
+            # Ciclo encerrado com participação: leitura (paridade com Meu Painel).
+            has_open_ciclo = True
+            concluida = True
+            vinculo_pendente = False
+            owner_correction_kind = None
+
         role = self._guidance_role(is_self=is_self)
         auto_submitted = None
         if avaliacao.etapa == Avaliacao.Etapa.AVALIACAO:
@@ -348,16 +363,16 @@ class AvaliacaoDetailView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
                 etapa=avaliacao.etapa,
                 avaliacao_pk=avaliacao.pk,
                 has_open_ciclo=has_open_ciclo,
-                vinculo_pendente=False,
-                concluida=bool(avaliacao.concluida),
+                vinculo_pendente=vinculo_pendente,
+                concluida=concluida,
                 owner_correction_kind=owner_correction_kind,
                 self_assessment_submitted=auto_submitted,
             ),
             'stage_stepper': build_stage_stepper(
                 etapa=avaliacao.etapa,
                 has_open_ciclo=has_open_ciclo,
-                vinculo_pendente=False,
-                concluida=bool(avaliacao.concluida),
+                vinculo_pendente=vinculo_pendente,
+                concluida=concluida,
             ),
         }
 

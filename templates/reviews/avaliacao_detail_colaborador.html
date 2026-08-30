@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% load review_display %}
+
+{% block title %}Minha Avaliação — Greenn People{% endblock %}
+
+{% block content %}
+<div class="mx-auto w-full max-w-[1440px]">
+  <header class="mb-8">
+    <h1 class="font-display text-2xl font-semibold text-slate-800">
+      Minha Avaliação
+    </h1>
+    <p class="mt-1 font-ui text-sm text-slate-500">
+      {% if avaliacao.ciclo %}
+        Ciclo {{ avaliacao.ciclo.nome }} · etapa {{ avaliacao.get_etapa_display }}.
+      {% else %}
+        Acompanhe seu progresso e resultados nesta avaliação.
+      {% endif %}
+    </p>
+  </header>
+
+  <section class="mb-8 min-w-0" aria-labelledby="orientacao-heading">
+    <h2 id="orientacao-heading" class="sr-only">Orientação do ciclo</h2>
+
+    <div class="rounded-xl border border-line bg-surface-card p-4 sm:p-6" aria-labelledby="timeline-heading">
+      <h3 id="timeline-heading" class="mb-6 font-display text-lg font-medium tracking-tight text-slate-800">
+        Linha do Tempo do Ciclo
+      </h3>
+      {% include "components/stage_stepper.html" with stage_stepper=stage_stepper %}
+    </div>
+  </section>
+
+  <section class="mb-8 min-w-0" aria-labelledby="desempenho-heading">
+    <h2 id="desempenho-heading" class="sr-only">Meu desempenho</h2>
+    <div class="grid grid-cols-1 items-stretch gap-6 sm:grid-cols-2">
+      {% if avaliacao.nota_final_lider is not None %}
+        {% include "components/card.html" with label="Nota atual" value=avaliacao.nota_final_lider|nota_percentual badge_status="concluida" badge_label="Nota do líder" body="Nota dada pelo seu líder neste ciclo." accent="success" value_size="lg" %}
+      {% else %}
+        {% include "components/card.html" with label="Nota atual" value="—" badge_status="arquivado" badge_label="Aguardando líder" body="Sua nota oficial aparecerá após a avaliação do líder." value_size="lg" %}
+      {% endif %}
+
+      {% if avaliacao.autoavaliacao_enviada and avaliacao.nota_final_autoavaliacao is not None %}
+        {% if pode_ver_autoavaliacao or pode_autoavaliar %}
+          {% url 'reviews:self_assessment' avaliacao.pk as self_assessment_url %}
+          {% include "components/card.html" with label="Autoavaliação" value=avaliacao.nota_final_autoavaliacao|nota_percentual badge_status="concluida" badge_label="Enviada" body="Referência da sua autoavaliação — separada da nota oficial." accent="primary" value_size="lg" footer_label="Ver autoavaliação" footer_href=self_assessment_url %}
+        {% else %}
+          {% include "components/card.html" with label="Autoavaliação" value=avaliacao.nota_final_autoavaliacao|nota_percentual badge_status="concluida" badge_label="Enviada" body="Referência da sua autoavaliação — separada da nota oficial." accent="primary" value_size="lg" %}
+        {% endif %}
+      {% elif pode_autoavaliar %}
+        {% url 'reviews:self_assessment' avaliacao.pk as self_assessment_url %}
+        {% include "components/card.html" with label="Autoavaliação" value="—" badge_status="em_andamento" badge_label="Pendente" body="Preencha e envie sua autoavaliação nesta etapa." accent="warning" value_size="lg" footer_label="Ir para autoavaliação" footer_href=self_assessment_url %}
+      {% else %}
+        {% include "components/card.html" with label="Autoavaliação" value="—" badge_status="arquivado" badge_label="Indisponível" body="A autoavaliação fica disponível na etapa de avaliação do ciclo." value_size="lg" %}
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="mb-8 min-w-0" aria-labelledby="hub-acoes-heading">
+    <h2 id="hub-acoes-heading" class="sr-only">Ações desta avaliação</h2>
+    <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap" data-hub-actions>
+      {% if pode_autoavaliar %}
+        {% url 'reviews:self_assessment' avaliacao.pk as self_url %}
+        {% include "components/button.html" with label="Autoavaliar" href=self_url variant="secondary" extra_class="w-full sm:w-auto" %}
+      {% elif pode_ver_autoavaliacao %}
+        {% url 'reviews:self_assessment' avaliacao.pk as self_url %}
+        {% include "components/button.html" with label="Ver autoavaliação" href=self_url variant="secondary" extra_class="w-full sm:w-auto" %}
+      {% endif %}
+      {% url 'reviews:feedback_list' avaliacao.pk as feedback_url %}
+      {% include "components/button.html" with label="Feedbacks" href=feedback_url variant="secondary" extra_class="w-full sm:w-auto" %}
+      {% if pode_criar_feedback %}
+        {% url 'reviews:feedback_create' avaliacao.pk as feedback_create_url %}
+        {% include "components/button.html" with label="Ir ao feedback" href=feedback_create_url variant="secondary" extra_class="w-full sm:w-auto" %}
+      {% endif %}
+      {% if rotulo_avanco %}
+      <form method="post" action="{% url 'reviews:advance' avaliacao.pk %}" class="w-full sm:w-auto sm:inline">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{% url 'reviews:detail' avaliacao.pk %}">
+        {% include "components/button.html" with label=rotulo_avanco type="submit" variant="primary" disabled=avanco_desabilitado extra_class="w-full sm:w-auto" %}
+      </form>
+      {% endif %}
+    </div>
+    {% if rotulo_avanco and not pode_avancar and motivo_bloqueio_avanco %}
+    <p class="mt-3 font-ui text-sm text-amber-700" role="status">{{ motivo_bloqueio_avanco }}</p>
+    {% endif %}
+  </section>
+
+  {% include "reviews/partials/avaliacao_detail_competencias_table.html" %}
+</div>
+{% endblock %}
