@@ -40,10 +40,10 @@
   {% endif %}{% endfor %}{% endif %}
 {% endif %}
 
-  <div class="min-w-0 {% if compact %}w-full sm:w-auto sm:min-w-[10rem] sm:max-w-[16rem]{% else %}flex-1 sm:min-w-[12rem]{% endif %}">
+  <div class="min-w-0 {% if compact %}w-full sm:w-auto sm:min-w-[10rem] sm:max-w-[16rem]{% else %}flex-1 sm:min-w-[12rem]{% endif %}{% if embed and extra_class %} {{ extra_class }}{% endif %}">
     <label
       for="{{ field_id }}"
-      class="{% if compact %}mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500{% else %}mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-500{% endif %}"
+      class="{% if compact %}mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500{% else %}mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-500{% endif %}"
     >Ciclo</label>
     <select
       id="{{ field_id }}"

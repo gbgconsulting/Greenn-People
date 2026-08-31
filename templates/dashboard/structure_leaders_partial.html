@@ -1,6 +1,6 @@
-{# Tabela de líderes + paginação HTMX (mesmo contrato dos cadastros). #}
+{% comment %}Tabela de líderes + paginação HTMX. bare=True = sem chrome do table-frame.{% endcomment %}
 <div id="list-container" class="min-w-0">
-  <div class="table-frame">
+  <div class="table-frame{% if bare %} !rounded-none !border-0{% endif %}">
     <table>
       <thead>
         <tr>

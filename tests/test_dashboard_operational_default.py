@@ -1210,12 +1210,12 @@ def test_adherence_lista_paginate_by_20(
 
 
 @pytest.mark.django_db
-def test_structure_remove_visao_por_area_mantem_charts_e_alertas(
+def test_structure_remove_visao_por_area_e_alertas_charts_full_width(
     admin,
     colaborador,
     ciclo_aberto,
 ):
-    """Sem bloco Visão por Área; charts horizontais + Alertas Em breve permanecem."""
+    """Sem Visão por Área / Alertas; charts de cobertura em grid de 2 colunas."""
     client = _login_admin(admin)
     resp = client.get(_structure_url())
     assert resp.status_code == 200
@@ -1224,9 +1224,12 @@ def test_structure_remove_visao_por_area_mantem_charts_e_alertas(
     html = resp.content.decode()
     assert 'Visão por Área' not in html
     assert 'id="cobertura-charts"' in html
-    assert 'Alertas de Gestão' in html
-    assert 'Em breve' in html
-
+    assert 'Alertas de Gestão' not in html
+    assert 'Em breve' not in html
+    assert 'lg:grid-cols-2' in html
+    assert 'Cobertura Total' in html
+    assert 'Com Avaliação' in html
+    assert 'Sem Avaliação' in html
 
 @pytest.mark.django_db
 def test_structure_oculta_lacunas_por_cargo_quando_um_cargo(

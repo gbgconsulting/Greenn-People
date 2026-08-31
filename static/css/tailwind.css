@@ -4,8 +4,8 @@
 @layer theme {
   :root, :host {
     --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
-    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-      "Courier New", monospace;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
     --color-amber-50: oklch(98.7% 0.022 95.277);
     --color-amber-100: oklch(96.2% 0.059 95.617);
     --color-amber-200: oklch(92.4% 0.12 95.746);
@@ -142,7 +142,7 @@
     line-height: 1.5;
     -webkit-text-size-adjust: 100%;
     tab-size: 4;
-    font-family: var(--default-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji");
+    font-family: var(--default-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', 'Noto Sans', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji');
     font-feature-settings: var(--default-font-feature-settings, normal);
     font-variation-settings: var(--default-font-variation-settings, normal);
     -webkit-tap-highlight-color: transparent;
@@ -169,7 +169,7 @@
     font-weight: bolder;
   }
   code, kbd, samp, pre {
-    font-family: var(--default-mono-font-family, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace);
+    font-family: var(--default-mono-font-family, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace);
     font-feature-settings: var(--default-mono-font-feature-settings, normal);
     font-variation-settings: var(--default-mono-font-variation-settings, normal);
     font-size: 1em;
@@ -269,13 +269,13 @@
   :-moz-ui-invalid {
     box-shadow: none;
   }
-  button, input:where([type="button"], [type="reset"], [type="submit"]), ::file-selector-button {
+  button, input:where([type='button'], [type='reset'], [type='submit']), ::file-selector-button {
     appearance: button;
   }
   ::-webkit-inner-spin-button, ::-webkit-outer-spin-button {
     height: auto;
   }
-  [hidden]:where(:not([hidden="until-found"])) {
+  [hidden]:where(:not([hidden='until-found'])) {
     display: none !important;
   }
 }
@@ -821,6 +821,9 @@
   .h-\[85\%\] {
     height: 85%;
   }
+  .h-\[200px\] {
+    height: 200px;
+  }
   .h-\[300px\] {
     height: 300px;
   }
@@ -1027,6 +1030,9 @@
   }
   .w-px {
     width: 1px;
+  }
+  .\!max-w-none {
+    max-width: none !important;
   }
   .max-w-2xl {
     max-width: var(--container-2xl);
@@ -1750,12 +1756,6 @@
   .bg-emerald-500 {
     background-color: var(--color-emerald-500);
   }
-  .bg-emerald-500\/80 {
-    background-color: color-mix(in srgb, oklch(69.6% 0.17 162.48) 80%, transparent);
-    @supports (color: color-mix(in lab, red, red)) {
-      background-color: color-mix(in oklab, var(--color-emerald-500) 80%, transparent);
-    }
-  }
   .bg-emerald-600 {
     background-color: var(--color-emerald-600);
   }
@@ -1860,12 +1860,6 @@
   }
   .bg-surface-card {
     background-color: var(--color-surface-card);
-  }
-  .bg-surface-card\/60 {
-    background-color: color-mix(in srgb, #ffffff 60%, transparent);
-    @supports (color: color-mix(in lab, red, red)) {
-      background-color: color-mix(in oklab, var(--color-surface-card) 60%, transparent);
-    }
   }
   .bg-surface\/80 {
     background-color: color-mix(in srgb, #f8fafc 80%, transparent);
@@ -2021,6 +2015,9 @@
   .\!px-6 {
     padding-inline: calc(var(--spacing) * 6) !important;
   }
+  .px-0 {
+    padding-inline: 0px;
+  }
   .px-0\.5 {
     padding-inline: calc(var(--spacing) * 0.5);
   }
@@ -2140,6 +2137,9 @@
   }
   .pt-24 {
     padding-top: calc(var(--spacing) * 24);
+  }
+  .pt-\[2px\] {
+    padding-top: 2px;
   }
   .pr-3 {
     padding-right: calc(var(--spacing) * 3);
@@ -2853,9 +2853,6 @@
     .group-hover\:bg-amber-500:is(:where(.group):hover *) {
       background-color: var(--color-amber-500);
     }
-    .group-hover\:bg-emerald-500:is(:where(.group):hover *) {
-      background-color: var(--color-emerald-500);
-    }
     .group-hover\:bg-emerald-600:is(:where(.group):hover *) {
       background-color: var(--color-emerald-600);
     }
@@ -3016,6 +3013,14 @@
     }
     .hover\:bg-slate-50:hover {
       background-color: var(--color-slate-50);
+    }
+    .hover\:bg-slate-50\/50:hover {
+      background-color: color-mix(in srgb, oklch(98.4% 0.003 247.858) 50%, transparent);
+    }
+    @supports (color: color-mix(in lab, red, red)) {
+      .hover\:bg-slate-50\/50:hover {
+        background-color: color-mix(in oklab, var(--color-slate-50) 50%, transparent);
+      }
     }
     .hover\:bg-slate-50\/80:hover {
       background-color: color-mix(in srgb, oklch(98.4% 0.003 247.858) 80%, transparent);
@@ -3419,6 +3424,9 @@
     .sm\:w-full {
       width: 100%;
     }
+    .sm\:\!max-w-none {
+      max-width: none !important;
+    }
     .sm\:max-w-\[16rem\] {
       max-width: 16rem;
     }
@@ -3514,6 +3522,9 @@
     }
     .sm\:p-8 {
       padding: calc(var(--spacing) * 8);
+    }
+    .sm\:px-0 {
+      padding-inline: 0px;
     }
     .sm\:px-5 {
       padding-inline: calc(var(--spacing) * 5);
@@ -3629,6 +3640,9 @@
     .md\:max-w-md {
       max-width: var(--container-md);
     }
+    .md\:max-w-none {
+      max-width: none;
+    }
     .md\:min-w-\[300px\] {
       min-width: 300px;
     }
@@ -3730,6 +3744,10 @@
     }
     .md\:text-left {
       text-align: left;
+    }
+    .md\:text-2xl {
+      font-size: var(--text-2xl);
+      line-height: var(--tw-leading, var(--text-2xl--line-height));
     }
     .md\:text-3xl {
       font-size: var(--text-3xl);

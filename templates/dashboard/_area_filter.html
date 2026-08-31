@@ -11,7 +11,7 @@
 {% endcomment %}
 {% with fid=field_id|default:"area" %}
 <div class="min-w-0 w-full sm:w-auto sm:min-w-[10rem] sm:max-w-[16rem]{% if extra_class %} {{ extra_class }}{% endif %}">
-  <label for="{{ fid }}" class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Área</label>
+  <label for="{{ fid }}" class="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Área</label>
   <select
     id="{{ fid }}"
     name="area"
