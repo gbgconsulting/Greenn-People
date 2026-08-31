@@ -5,11 +5,20 @@
 {% block content %}
 <div class="mx-auto max-w-[90rem]">
 <header class="mb-8">
+  <nav class="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500" aria-label="Breadcrumb">
+    <span>Dashboard</span>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true">
+      <path fill-rule="evenodd" d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+    </svg>
+    <span class="font-semibold text-slate-800">Aderência</span>
+  </nav>
   <div class="flex flex-col justify-between gap-6 md:flex-row md:items-start">
     <div class="max-w-2xl">
-      <h1 class="font-display text-3xl font-semibold tracking-tight text-slate-800">Aderência da liderança</h1>
+      <h1 class="font-display text-2xl font-semibold tracking-tight text-slate-800">
+        Aderência da liderança
+      </h1>
       <p class="mt-2 text-base leading-relaxed text-slate-500">
-        Veja como os gestores estão cumprindo prazos no ciclo escolhido.
+        Como os gestores estão cumprindo prazos no ciclo escolhido.
       </p>
       {% if grouped_ciclo_options.arquivo_total %}
         <p class="mt-2 flex items-center gap-1.5 text-sm text-slate-500">
@@ -26,57 +35,43 @@
   </div>
 </header>
 
-<section class="mb-8" aria-labelledby="aderencia-filtros-heading">
-  <div class="mb-3">
-    <h2 id="aderencia-filtros-heading" class="font-display text-lg font-medium text-slate-800">
+<section class="mb-8" aria-labelledby="filtros-heading">
+  <div class="rounded-xl border border-line bg-surface-card p-4 shadow-sm sm:p-6">
+    <h2 id="filtros-heading" class="font-display text-lg font-medium text-slate-800">
       Filtros
     </h2>
-    <p class="mt-0.5 text-sm text-slate-500">
-      Escolha o ciclo e a área para ajustar a visão.
-    </p>
+    <form
+      method="get"
+      class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6"
+      role="search"
+      aria-label="Filtrar aderência"
+    >
+      {% if request %}{% for key, value in request.GET.items %}{% if key != "ciclo" and key != "q" and key != "page" and key != "area" %}
+      <input type="hidden" name="{{ key }}" value="{{ value }}">
+      {% endif %}{% endfor %}{% endif %}
+      {% include "dashboard/_ciclo_selector.html" with ciclo_selector_embed=True hide_q_filter=True hide_arquivo_hint=True compact=True extra_class="!max-w-none sm:!max-w-none w-full" %}
+      {% include "dashboard/_area_filter.html" with extra_class="!max-w-none w-full sm:!max-w-none sm:w-full" %}
+    </form>
   </div>
-  <form
-    method="get"
-    class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end"
-    role="search"
-    aria-label="Filtrar aderência"
-  >
-    {% if request %}{% for key, value in request.GET.items %}{% if key != "ciclo" and key != "q" and key != "page" and key != "area" %}
-    <input type="hidden" name="{{ key }}" value="{{ value }}">
-    {% endif %}{% endfor %}{% endif %}
-    {% include "dashboard/_ciclo_selector.html" with ciclo_selector_embed=True hide_q_filter=True hide_arquivo_hint=True compact=True %}
-    {% include "dashboard/_area_filter.html" %}
-  </form>
 </section>
 
 <section class="mb-8 min-w-0" aria-labelledby="aderencia-heading">
-  <div class="mb-6">
-    <h2 id="aderencia-heading" class="font-display text-2xl font-medium tracking-tight text-slate-800">
-      Onde estamos
-    </h2>
-    <p class="mt-1 text-sm leading-relaxed text-slate-500">
-      {% if ciclo_selecionado %}
-        Média e distribuição em {{ ciclo_selecionado.nome }} — a lista abaixo detalha cada gestor.
-      {% else %}
-        Média e distribuição no escopo — a lista abaixo detalha cada gestor.
-      {% endif %}
-    </p>
-  </div>
+  <h2 id="aderencia-heading" class="sr-only">Indicadores de aderência</h2>
 
   <div class="managerial-panel [overflow-anchor:none]">
     <div class="grid grid-cols-1 gap-6 md:grid-cols-3" aria-label="Indicadores de aderência">
       {% if aderencia_resumo.has_ciclo and aderencia_resumo.media is not None %}
         {% with val=aderencia_resumo.media|stringformat:"d"|add:"%" %}
-        {% include "components/card.html" with label="Aderência média" value=val badge_status=aderencia_resumo.status body="Média dos gestores no escopo filtrado." accent="success" icon="trending_up" value_size="lg" %}
+        {% include "components/card.html" with label="Aderência média" value=val badge_status=aderencia_resumo.status body="Média dos gestores com os filtros aplicados." accent="success" icon="trending_up" value_size="lg" %}
         {% endwith %}
       {% elif aderencia_resumo.has_ciclo %}
-        {% include "components/card.html" with label="Aderência média" value="—" body="Ainda não há dados de aderência neste escopo." accent="success" value_size="lg" %}
+        {% include "components/card.html" with label="Aderência média" value="—" body="Ainda não há dados de aderência nestes filtros." accent="success" value_size="lg" %}
       {% else %}
         {% include "components/card.html" with label="Aderência média" value="—" body="Abra ou escolha um ciclo nos filtros acima." accent="success" value_size="lg" %}
       {% endif %}
 
       {% if aderencia_resumo.has_ciclo %}
-        {% include "components/card.html" with label="Gestores no ciclo" value=aderencia_resumo.total_lideres body="Gestores ativos com time no mesmo escopo da lista." accent="primary" value_size="lg" %}
+        {% include "components/card.html" with label="Gestores no ciclo" value=aderencia_resumo.total_lideres body="Gestores ativos com time nestes filtros." accent="primary" value_size="lg" %}
       {% else %}
         {% include "components/card.html" with label="Gestores no ciclo" value="—" body="Disponível quando houver um ciclo." accent="primary" value_size="lg" %}
       {% endif %}
@@ -85,7 +80,7 @@
         {% if aderencia_resumo.baixa > 0 %}
           {% include "components/card.html" with label="Baixa aderência" value=aderencia_resumo.baixa badge_status="baixa" badge_label="Atenção" body="Abaixo de 50% — priorize na lista." accent="warning" value_size="lg" %}
         {% else %}
-          {% include "components/card.html" with label="Baixa aderência" value=aderencia_resumo.baixa badge_status="alta" badge_label="Em dia" body="Ninguém abaixo de 50% no escopo." accent="success" value_size="lg" %}
+          {% include "components/card.html" with label="Baixa aderência" value=aderencia_resumo.baixa badge_status="alta" badge_label="Em dia" body="Ninguém abaixo de 50% nestes filtros." accent="success" value_size="lg" %}
         {% endif %}
       {% else %}
         {% include "components/card.html" with label="Baixa aderência" value="—" body="Disponível quando houver um ciclo." accent="warning" value_size="lg" %}
@@ -96,4 +91,51 @@
   </div>
 </section>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    var KEY = 'gp-adherence-scroll-top';
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual';
+    }
+    var form = document.querySelector('form[aria-label="Filtrar aderência"]');
+    if (form) {
+      form.querySelectorAll('select').forEach(function (sel) {
+        sel.addEventListener('change', function () {
+          try {
+            sessionStorage.setItem(KEY, '1');
+          } catch (e) {}
+          sel.blur();
+        });
+      });
+    }
+    function pinTop() {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      if (document.body) {
+        document.body.scrollTop = 0;
+      }
+    }
+    var shouldPin = false;
+    try {
+      shouldPin = sessionStorage.getItem(KEY) === '1';
+      if (shouldPin) {
+        sessionStorage.removeItem(KEY);
+      }
+    } catch (e) {}
+    if (!shouldPin) {
+      return;
+    }
+    pinTop();
+    window.addEventListener('load', function () {
+      pinTop();
+      requestAnimationFrame(pinTop);
+      setTimeout(pinTop, 50);
+      setTimeout(pinTop, 200);
+      setTimeout(pinTop, 500);
+    });
+  })();
+</script>
 {% endblock %}
