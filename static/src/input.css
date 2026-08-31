@@ -581,11 +581,12 @@
   }
 
   /*
-   * Shell nav — densidade/tipografia v2 (T044); IA Governança/Cadastros/Sistema intacta.
-   * Estado ativo único: fundo + texto + barra lateral. Ênfase P1 = peso tipográfico (sem borda permanente).
+   * Shell nav — visual limpo (SIDEBAR_REV / SIDEBAR_REC).
+   * IA Governança/Cadastros/Sistema intacta; escopo continua no backend.
+   * Estado ativo único: fundo suave + texto primary + barra lateral.
    */
   .nav-section-label {
-    @apply flex flex-1 items-center gap-1 text-[0.6875rem] font-medium uppercase tracking-wider text-slate-400;
+    @apply flex flex-1 items-center text-xs font-semibold uppercase tracking-wider text-slate-500;
   }
 
   .nav-group {
@@ -593,7 +594,7 @@
   }
 
   .nav-group > summary {
-    @apply mb-1 flex cursor-pointer list-none items-center gap-1 rounded-md px-2 py-1.5 text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500;
+    @apply mb-1 flex cursor-pointer list-none items-center gap-1.5 px-6 py-2 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-inset;
   }
 
   .nav-group > summary::-webkit-details-marker {
@@ -601,19 +602,23 @@
   }
 
   .nav-group__chevron {
-    @apply h-3.5 w-3.5 shrink-0 transition-transform duration-150;
+    @apply h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform duration-150;
   }
 
-  .nav-group[open] > summary .nav-group__chevron {
-    @apply rotate-90;
+  details.nav-group[open] > summary {
+    @apply text-slate-700;
+  }
+
+  details.nav-group[open] > summary .nav-group__chevron {
+    @apply rotate-90 text-slate-500;
   }
 
   .nav-link {
-    @apply flex items-center gap-2.5 rounded-lg border-l-[3px] border-transparent px-2.5 py-2 text-sm tracking-tight text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-800;
+    @apply flex items-center gap-3 border-l-4 border-transparent px-6 py-3 font-ui text-sm font-medium tracking-tight text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-800;
   }
 
   .nav-link[aria-current='page'] {
-    @apply border-emerald-500 bg-emerald-50 font-medium text-emerald-700;
+    @apply border-emerald-800 bg-emerald-800/5 font-semibold text-emerald-800;
   }
 
   .nav-link--emphasis {
@@ -621,15 +626,15 @@
   }
 
   .nav-link--emphasis:not([aria-current='page']) .nav-link__icon {
-    @apply text-emerald-600;
+    @apply text-emerald-800;
   }
 
   .nav-link__icon {
-    @apply h-5 w-5 shrink-0 text-slate-400;
+    @apply h-5 w-5 shrink-0 text-slate-500;
   }
 
   .nav-link[aria-current='page'] .nav-link__icon {
-    @apply text-emerald-600;
+    @apply text-emerald-800;
   }
 
   .nav-link__label {
@@ -640,18 +645,17 @@
     @apply flex min-w-0 flex-1 items-center justify-between gap-2;
   }
 
-  /* Marca do chrome autenticado — display + tracking; só sob .app-shell (sidebar/topbar). */
+  /* Marca do chrome autenticado — Fraunces sólido; tamanho no template. */
   .shell-brand {
-    @apply bg-brand-gradient bg-clip-text font-display text-base font-semibold tracking-tight text-transparent;
+    @apply font-display font-bold tracking-tight text-emerald-800;
   }
 
   /*
-   * Sidebar desktop: modo ícone-only.
-   * Largura (w-64 ↔ w-16) é alternada em JS — utilities Tailwind vencem @layer components.
-   * Labels: equivalente a x-show="!collapsed" via .sidebar--collapsed.
+   * Sidebar desktop: modo ícone-only (SIDEBAR_REC).
+   * Largura (w-[280px] ↔ w-20) é alternada em JS — utilities Tailwind vencem @layer components.
+   * Marca: apenas logo G (sempre visível).
    */
   #desktop-sidebar.sidebar--collapsed [data-sidebar-label],
-  #desktop-sidebar.sidebar--collapsed .shell-brand,
   #desktop-sidebar.sidebar--collapsed .nav-link__label,
   #desktop-sidebar.sidebar--collapsed .nav-link__text,
   #desktop-sidebar.sidebar--collapsed .nav-link__badge,
@@ -659,12 +663,58 @@
     @apply hidden;
   }
 
-  #desktop-sidebar.sidebar--collapsed .nav-link {
-    @apply justify-center gap-0 px-2;
+  #desktop-sidebar.sidebar--collapsed .sidebar-brand-row {
+    @apply px-0 py-6;
   }
 
-  #desktop-sidebar.sidebar--collapsed .sidebar-brand-row {
-    @apply justify-center px-2;
+  #desktop-sidebar.sidebar--collapsed .sidebar-nav {
+    @apply space-y-2 px-0;
+  }
+
+  #desktop-sidebar.sidebar--collapsed .nav-group {
+    @apply flex flex-col items-center gap-1;
+  }
+
+  #desktop-sidebar.sidebar--collapsed .nav-group ul {
+    @apply flex flex-col items-center gap-1;
+  }
+
+  #desktop-sidebar.sidebar--collapsed .nav-group + .nav-group {
+    @apply mt-3;
+  }
+
+  #desktop-sidebar.sidebar--collapsed .nav-link {
+    @apply h-12 w-12 justify-center gap-0 rounded-r-lg border-l-4 px-0 py-0;
+  }
+
+  #desktop-sidebar.sidebar--collapsed .nav-link[aria-current='page'] {
+    @apply bg-emerald-800/5;
+  }
+
+  #desktop-sidebar.sidebar--collapsed .nav-link__icon {
+    @apply h-6 w-6;
+  }
+
+  #desktop-sidebar.sidebar--collapsed .sidebar-footer {
+    @apply items-center gap-2 px-0 py-4;
+  }
+
+  #desktop-sidebar.sidebar--collapsed .sidebar-collapse-btn,
+  #desktop-sidebar.sidebar--collapsed .sidebar-logout button {
+    @apply h-12 w-12 justify-center gap-0 px-0;
+  }
+
+  /* Ícones recolher/expandir: sem utility .hidden (vence @layer components). */
+  #desktop-sidebar .sidebar-collapse-icon--collapsed {
+    display: none;
+  }
+
+  #desktop-sidebar.sidebar--collapsed .sidebar-collapse-icon--expanded {
+    display: none;
+  }
+
+  #desktop-sidebar.sidebar--collapsed .sidebar-collapse-icon--collapsed {
+    display: block;
   }
 
   /*

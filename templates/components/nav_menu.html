@@ -2,31 +2,32 @@
   Itens de navegação compartilhados (sidebar desktop + drawer mobile).
   Espera `path` no contexto (request.path).
   Item ativo: .nav-link[aria-current=page] — fundo + texto + barra (único estilo).
-  Grupos: <details>; Colaborador sempre aberto; demais abertos só se contêm a página atual.
+  Grupos: <details> com hover/clique; abertos se contêm a página atual.
+  Visibilidade por papel: backend (`user.is_leader` / `is_manager` / `is_admin`) — UI nunca decide.
 {% endcomment %}
 {% if user.is_authenticated %}
 
-{# —— Colaborador (grupo do usuário: sempre aberto) —— #}
-<details class="nav-group" open data-nav-primary>
+{# —— Colaborador —— #}
+<details class="nav-group"{% if path == '/' or '/goals' in path or '/reviews' in path or '/pdi' in path or '/talent/mine' in path %} open{% endif %}>
   <summary>
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="nav-group__chevron" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 0 1 .02-1.06L11.168 10 7.23 6.29a.75.75 0 1 1 1.04-1.08l4.5 4.25a.75.75 0 0 1 0 1.08l-4.5 4.25a.75.75 0 0 1-1.06-.02Z" clip-rule="evenodd" /></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-group__chevron" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
     <span class="nav-section-label">Colaborador</span>
   </summary>
   <ul class="space-y-0.5">
     <li>
       {% url 'dashboard:personal' as u %}
       {% if path == '/' %}
-        {% include "components/nav_link.html" with href=u label="Meu painel" icon="home" is_active="1" only %}
+        {% include "components/nav_link.html" with href=u label="Meu painel" icon="dashboard" is_active="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Meu painel" icon="home" only %}
+        {% include "components/nav_link.html" with href=u label="Meu painel" icon="dashboard" only %}
       {% endif %}
     </li>
     <li>
       {% url 'goals:expectations' as u %}
       {% if '/goals/expectations' in path %}
-        {% include "components/nav_link.html" with href=u label="Expectativas" icon="flag" is_active="1" only %}
+        {% include "components/nav_link.html" with href=u label="Expectativas" icon="clipboard_list" is_active="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Expectativas" icon="flag" only %}
+        {% include "components/nav_link.html" with href=u label="Expectativas" icon="clipboard_list" only %}
       {% endif %}
     </li>
     <li>
@@ -41,30 +42,30 @@
       {% url 'reviews:list' as u %}
       {% if not user.is_leader and not user.is_manager and not user.is_admin %}
         {% if '/reviews' in path %}
-          {% include "components/nav_link.html" with href=u label="Minhas avaliações" icon="clipboard" is_active="1" only %}
+          {% include "components/nav_link.html" with href=u label="Minhas avaliações" icon="star" is_active="1" only %}
         {% else %}
-          {% include "components/nav_link.html" with href=u label="Minhas avaliações" icon="clipboard" only %}
+          {% include "components/nav_link.html" with href=u label="Minhas avaliações" icon="star" only %}
         {% endif %}
       {% elif '/reviews' in path %}
-        {% include "components/nav_link.html" with href=u label="Avaliações" icon="clipboard" is_active="1" only %}
+        {% include "components/nav_link.html" with href=u label="Avaliações" icon="star" is_active="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Avaliações" icon="clipboard" only %}
+        {% include "components/nav_link.html" with href=u label="Avaliações" icon="star" only %}
       {% endif %}
     </li>
     <li>
       {% url 'pdi:list' as u %}
       {% if '/pdi' in path %}
-        {% include "components/nav_link.html" with href=u label="Meu PDI" icon="academic" is_active="1" only %}
+        {% include "components/nav_link.html" with href=u label="Meu PDI" icon="person_add" is_active="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Meu PDI" icon="academic" only %}
+        {% include "components/nav_link.html" with href=u label="Meu PDI" icon="person_add" only %}
       {% endif %}
     </li>
     <li>
       {% url 'talent:mine' as u %}
       {% if '/talent/mine' in path %}
-        {% include "components/nav_link.html" with href=u label="Minha classificação" icon="user" is_active="1" only %}
+        {% include "components/nav_link.html" with href=u label="Minha classificação" icon="trophy" is_active="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Minha classificação" icon="user" only %}
+        {% include "components/nav_link.html" with href=u label="Minha classificação" icon="trophy" only %}
       {% endif %}
     </li>
   </ul>
@@ -73,14 +74,14 @@
 {% if user.is_leader %}
 <details class="nav-group"{% if '/dashboard/team' in path %} open{% endif %}>
   <summary>
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="nav-group__chevron" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 0 1 .02-1.06L11.168 10 7.23 6.29a.75.75 0 1 1 1.04-1.08l4.5 4.25a.75.75 0 0 1 0 1.08l-4.5 4.25a.75.75 0 0 1-1.06-.02Z" clip-rule="evenodd" /></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-group__chevron" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
     <span class="nav-section-label">Líder</span>
   </summary>
   <ul class="space-y-0.5">
     <li>
       {% url 'dashboard:team' as u %}
       {% if '/dashboard/team' in path %}
-        {% include "components/nav_link.html" with href=u label="Painel do time" icon="users" is_active="1" badge_count=leader_pending_badge.total only %}
+        {% include "components/nav_link.html" with href=u label="Painel do time" icon="users" badge_count=leader_pending_badge.total is_active="1" only %}
       {% else %}
         {% include "components/nav_link.html" with href=u label="Painel do time" icon="users" badge_count=leader_pending_badge.total only %}
       {% endif %}
@@ -92,32 +93,32 @@
 {% if user.is_manager %}
 <details class="nav-group"{% if '/dashboard/structure' in path or '/dashboard/adherence' in path or '/talent/matrix' in path or '/talent/' in path and '/talent/mine' not in path %} open{% endif %}>
   <summary>
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="nav-group__chevron" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 0 1 .02-1.06L11.168 10 7.23 6.29a.75.75 0 1 1 1.04-1.08l4.5 4.25a.75.75 0 0 1 0 1.08l-4.5 4.25a.75.75 0 0 1-1.06-.02Z" clip-rule="evenodd" /></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-group__chevron" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
     <span class="nav-section-label">Gerente</span>
   </summary>
   <ul class="space-y-0.5">
     <li>
       {% url 'dashboard:structure' as u %}
       {% if '/dashboard/structure' in path %}
-        {% include "components/nav_link.html" with href=u label="Estrutura" icon="building" is_active="1" only %}
+        {% include "components/nav_link.html" with href=u label="Estrutura" icon="tree" is_active="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Estrutura" icon="building" only %}
+        {% include "components/nav_link.html" with href=u label="Estrutura" icon="tree" only %}
       {% endif %}
     </li>
     <li>
       {% url 'dashboard:adherence' as u %}
       {% if '/dashboard/adherence' in path %}
-        {% include "components/nav_link.html" with href=u label="Aderência" icon="chart" is_active="1" emphasis="1" only %}
+        {% include "components/nav_link.html" with href=u label="Aderência" icon="check_circle" is_active="1" emphasis="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Aderência" icon="chart" emphasis="1" only %}
+        {% include "components/nav_link.html" with href=u label="Aderência" icon="check_circle" emphasis="1" only %}
       {% endif %}
     </li>
     <li>
       {% url 'talent:matrix' as u %}
       {% if '/talent/matrix' in path or '/talent/' in path and '/talent/mine' not in path %}
-        {% include "components/nav_link.html" with href=u label="Matriz de talentos" icon="table" is_active="1" only %}
+        {% include "components/nav_link.html" with href=u label="Matriz de talentos" icon="grid" is_active="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Matriz de talentos" icon="table" only %}
+        {% include "components/nav_link.html" with href=u label="Matriz de talentos" icon="grid" only %}
       {% endif %}
     </li>
   </ul>
@@ -127,7 +128,7 @@
 {% if user.is_admin %}
 <details class="nav-group"{% if '/cycles' in path or '/dashboard/admin' in path %} open{% elif not user.is_manager %}{% if '/dashboard/adherence' in path or '/dashboard/structure' in path or '/talent/matrix' in path or '/talent/' in path and '/talent/mine' not in path %} open{% endif %}{% endif %}>
   <summary>
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="nav-group__chevron" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 0 1 .02-1.06L11.168 10 7.23 6.29a.75.75 0 1 1 1.04-1.08l4.5 4.25a.75.75 0 0 1 0 1.08l-4.5 4.25a.75.75 0 0 1-1.06-.02Z" clip-rule="evenodd" /></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-group__chevron" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
     <span class="nav-section-label">Governança</span>
   </summary>
   <ul class="space-y-0.5">
@@ -143,9 +144,9 @@
     <li>
       {% url 'dashboard:adherence' as u %}
       {% if '/dashboard/adherence' in path %}
-        {% include "components/nav_link.html" with href=u label="Aderência" icon="chart" is_active="1" emphasis="1" only %}
+        {% include "components/nav_link.html" with href=u label="Aderência" icon="check_circle" is_active="1" emphasis="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Aderência" icon="chart" emphasis="1" only %}
+        {% include "components/nav_link.html" with href=u label="Aderência" icon="check_circle" emphasis="1" only %}
       {% endif %}
     </li>
     {% endif %}
@@ -161,17 +162,17 @@
     <li>
       {% url 'dashboard:structure' as u %}
       {% if '/dashboard/structure' in path %}
-        {% include "components/nav_link.html" with href=u label="Estrutura" icon="building" is_active="1" only %}
+        {% include "components/nav_link.html" with href=u label="Estrutura" icon="tree" is_active="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Estrutura" icon="building" only %}
+        {% include "components/nav_link.html" with href=u label="Estrutura" icon="tree" only %}
       {% endif %}
     </li>
     <li>
       {% url 'talent:matrix' as u %}
       {% if '/talent/matrix' in path or '/talent/' in path and '/talent/mine' not in path %}
-        {% include "components/nav_link.html" with href=u label="Matriz de talentos" icon="table" is_active="1" only %}
+        {% include "components/nav_link.html" with href=u label="Matriz de talentos" icon="grid" is_active="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Matriz de talentos" icon="table" only %}
+        {% include "components/nav_link.html" with href=u label="Matriz de talentos" icon="grid" only %}
       {% endif %}
     </li>
     {% endif %}
@@ -180,16 +181,16 @@
 
 <details class="nav-group"{% if '/organization/' in path or '/competencies' in path %} open{% endif %}>
   <summary>
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="nav-group__chevron" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 0 1 .02-1.06L11.168 10 7.23 6.29a.75.75 0 1 1 1.04-1.08l4.5 4.25a.75.75 0 0 1 0 1.08l-4.5 4.25a.75.75 0 0 1-1.06-.02Z" clip-rule="evenodd" /></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-group__chevron" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
     <span class="nav-section-label">Cadastros</span>
   </summary>
   <ul class="space-y-0.5">
     <li>
       {% url 'organization:area_list' as u %}
       {% if '/organization/areas' in path %}
-        {% include "components/nav_link.html" with href=u label="Áreas" icon="map" is_active="1" only %}
+        {% include "components/nav_link.html" with href=u label="Áreas" icon="domain" is_active="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Áreas" icon="map" only %}
+        {% include "components/nav_link.html" with href=u label="Áreas" icon="domain" only %}
       {% endif %}
     </li>
     <li>
@@ -203,17 +204,17 @@
     <li>
       {% url 'organization:user_list' as u %}
       {% if '/organization/users' in path %}
-        {% include "components/nav_link.html" with href=u label="Usuários" icon="users" is_active="1" only %}
+        {% include "components/nav_link.html" with href=u label="Usuários" icon="group_add" is_active="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Usuários" icon="users" only %}
+        {% include "components/nav_link.html" with href=u label="Usuários" icon="group_add" only %}
       {% endif %}
     </li>
     <li>
       {% url 'competencies:competencia_list' as u %}
       {% if '/competencies' in path %}
-        {% include "components/nav_link.html" with href=u label="Competências" icon="sparkles" is_active="1" only %}
+        {% include "components/nav_link.html" with href=u label="Competências" icon="book_open" is_active="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Competências" icon="sparkles" only %}
+        {% include "components/nav_link.html" with href=u label="Competências" icon="book_open" only %}
       {% endif %}
     </li>
   </ul>
@@ -221,16 +222,16 @@
 
 <details class="nav-group"{% if '/audit' in path or '/notifications' in path %} open{% endif %}>
   <summary>
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="nav-group__chevron" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 0 1 .02-1.06L11.168 10 7.23 6.29a.75.75 0 1 1 1.04-1.08l4.5 4.25a.75.75 0 0 1 0 1.08l-4.5 4.25a.75.75 0 0 1-1.06-.02Z" clip-rule="evenodd" /></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-group__chevron" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
     <span class="nav-section-label">Sistema</span>
   </summary>
   <ul class="space-y-0.5">
     <li>
       {% url 'audit:list' as u %}
       {% if '/audit' in path %}
-        {% include "components/nav_link.html" with href=u label="Auditoria" icon="search" is_active="1" only %}
+        {% include "components/nav_link.html" with href=u label="Auditoria" icon="history" is_active="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Auditoria" icon="search" only %}
+        {% include "components/nav_link.html" with href=u label="Auditoria" icon="history" only %}
       {% endif %}
     </li>
     <li>

@@ -2,37 +2,59 @@
   Menu lateral desktop + drawer mobile.
   Paths alinhados a contracts/routes-contract.md.
   Propriedades is_leader / is_manager / is_admin vêm do CustomUser (T016).
-  DS v2 (T044): densidade/tipografia do chrome sob .app-shell — IA People intacta (FR-008).
+  Visibilidade de grupos/itens: backend (`{% if user.is_* %}`) — UI só apresenta.
 {% endcomment %}
 {% with path=request.path %}
 <aside
   id="desktop-sidebar"
-  class="hidden h-screen w-64 shrink-0 flex-col overflow-y-auto border-r border-line bg-surface-card transition-all duration-200 md:flex"
+  class="hidden h-screen w-[280px] shrink-0 flex-col border-r border-line bg-surface-card transition-all duration-200 md:flex"
   aria-label="Navegação principal"
 >
-  <div class="sidebar-brand-row flex shrink-0 items-center gap-2.5 border-b border-line px-3.5 py-3.5">
-    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-brand-gradient text-xs font-semibold text-white shadow-sm" aria-hidden="true">G</span>
-    <a href="{% url 'dashboard:personal' %}" class="shell-brand" data-sidebar-label>
-      Greenn People
-    </a>
+  <div class="sidebar-brand-row flex shrink-0 items-center justify-center px-6 py-6">
+    <a
+      href="{% url 'dashboard:personal' %}"
+      class="sidebar-brand-mark flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-800 font-display text-xl font-medium text-white"
+      aria-label="Greenn People — início"
+      title="Greenn People"
+    >G</a>
   </div>
-  <nav class="flex-1 space-y-2 px-2.5 py-3" aria-label="Menu">
+
+  <nav class="sidebar-nav flex-1 space-y-5 overflow-y-auto px-0 py-2" aria-label="Menu" style="scrollbar-width: none;">
     {% include "components/nav_menu.html" %}
   </nav>
-  <div class="shrink-0 border-t border-line p-2">
+
+  <div class="sidebar-footer mt-auto flex shrink-0 flex-col gap-1 border-t border-line p-4">
     <button
       type="button"
-      class="flex w-full items-center justify-center gap-2 rounded-lg px-2.5 py-2 text-sm text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+      class="sidebar-collapse-btn flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm text-slate-500 transition-colors hover:bg-slate-50 hover:text-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
       aria-expanded="true"
       aria-controls="desktop-sidebar"
       data-sidebar-collapse
       title="Recolher menu"
     >
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5 shrink-0" aria-hidden="true" data-sidebar-collapse-icon>
-        <path fill-rule="evenodd" d="M15.79 14.77a.75.75 0 0 1-1.06.02l-4.5-4.25a.75.75 0 0 1 0-1.08l4.5-4.25a.75.75 0 1 1 1.04 1.08L11.832 10l3.938 3.71a.75.75 0 0 1 .02 1.06Zm-6 0a.75.75 0 0 1-1.06.02l-4.5-4.25a.75.75 0 0 1 0-1.08l4.5-4.25a.75.75 0 1 1 1.04 1.08L5.832 10l3.938 3.71a.75.75 0 0 1 .02 1.06Z" clip-rule="evenodd" />
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="sidebar-collapse-icon sidebar-collapse-icon--expanded h-5 w-5 shrink-0" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+      </svg>
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="sidebar-collapse-icon sidebar-collapse-icon--collapsed h-5 w-5 shrink-0" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
       </svg>
       <span data-sidebar-collapse-label data-sidebar-label>Recolher</span>
     </button>
+    {% if user.is_authenticated %}
+    <form method="post" action="{% url 'accounts:logout' %}" class="sidebar-logout">
+      {% csrf_token %}
+      <button
+        type="submit"
+        class="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm text-slate-500 transition-colors hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+        title="Sair"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5 shrink-0" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+        </svg>
+        <span data-sidebar-label>Sair</span>
+      </button>
+    </form>
+    {% endif %}
   </div>
 </aside>
 
@@ -49,26 +71,42 @@
   aria-label="Navegação mobile"
   aria-hidden="true"
 >
-  <div class="flex items-center justify-between gap-2.5 border-b border-line px-3.5 py-3">
-    <div class="flex min-w-0 items-center gap-2.5">
-      <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-brand-gradient text-xs font-semibold text-white shadow-sm" aria-hidden="true">G</span>
-      <a href="{% url 'dashboard:personal' %}" class="shell-brand truncate">
-        Greenn People
-      </a>
-    </div>
+  <div class="flex items-center justify-between gap-2.5 border-b border-line px-6 py-5">
+    <a
+      href="{% url 'dashboard:personal' %}"
+      class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-800 font-display text-xl font-medium text-white"
+      aria-label="Greenn People — início"
+      title="Greenn People"
+    >G</a>
     <button
       type="button"
       class="rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
       aria-label="Fechar menu"
       data-nav-close
     >
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5" aria-hidden="true">
-        <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
       </svg>
     </button>
   </div>
-  <nav class="flex-1 space-y-2 overflow-y-auto px-2.5 py-3" aria-label="Menu mobile">
+  <nav class="sidebar-nav flex-1 space-y-5 overflow-y-auto px-0 py-2" aria-label="Menu mobile">
     {% include "components/nav_menu.html" %}
   </nav>
+  {% if user.is_authenticated %}
+  <div class="mt-auto border-t border-line p-4">
+    <form method="post" action="{% url 'accounts:logout' %}">
+      {% csrf_token %}
+      <button
+        type="submit"
+        class="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm text-slate-500 transition-colors hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5 shrink-0" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+        </svg>
+        <span>Sair</span>
+      </button>
+    </form>
+  </div>
+  {% endif %}
 </aside>
 {% endwith %}

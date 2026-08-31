@@ -150,8 +150,8 @@
       if (!sidebar || !btn) return;
 
       const KEY = 'gp-sidebar-collapsed';
-      const WIDTH_EXPANDED = 'w-64';
-      const WIDTH_COLLAPSED = 'w-16';
+      const WIDTH_EXPANDED = 'w-[280px]';
+      const WIDTH_COLLAPSED = 'w-20';
       const label = btn.querySelector('[data-sidebar-collapse-label]');
 
       const setCollapsed = (collapsed) => {
@@ -166,7 +166,7 @@
           if (collapsed) {
             group.dataset.wasOpen = group.open ? '1' : '0';
             group.open = true;
-          } else if (group.dataset.wasOpen === '0' && !group.hasAttribute('data-nav-primary')) {
+          } else if (group.dataset.wasOpen === '0') {
             group.open = false;
           }
         });
@@ -184,6 +184,45 @@
 
       btn.addEventListener('click', () => {
         setCollapsed(!sidebar.classList.contains('sidebar--collapsed'));
+      });
+    })();
+
+    /*
+     * Hover nos módulos do menu: só UI (abre/fecha details).
+     * Visibilidade de grupos/itens permanece no backend (templates condicionais).
+     */
+    (function initNavGroupHover() {
+      const roots = [
+        document.getElementById('desktop-sidebar'),
+        document.getElementById('mobile-nav'),
+      ].filter(Boolean);
+
+      const isIconOnly = (root) =>
+        root.id === 'desktop-sidebar' && root.classList.contains('sidebar--collapsed');
+
+      roots.forEach((root) => {
+        root.querySelectorAll('details.nav-group').forEach((group) => {
+          if (group.open) group.dataset.pinned = '1';
+
+          group.addEventListener('mouseenter', () => {
+            if (isIconOnly(root)) return;
+            group.open = true;
+          });
+
+          group.addEventListener('mouseleave', () => {
+            if (isIconOnly(root)) return;
+            if (group.dataset.pinned === '1') return;
+            group.open = false;
+          });
+
+          const summary = group.querySelector(':scope > summary');
+          if (!summary) return;
+          summary.addEventListener('click', () => {
+            requestAnimationFrame(() => {
+              group.dataset.pinned = group.open ? '1' : '0';
+            });
+          });
+        });
       });
     })();
   </script>
