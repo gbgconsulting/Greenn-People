@@ -14,6 +14,7 @@ x-app-environment: &app-environment
   CELERY_BROKER_URL: redis://redis:6379/0
   CELERY_RESULT_BACKEND: redis://redis:6379/0
   DJANGO_SETTINGS_MODULE: config.settings.dev
+  PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8000}
 
 services:
   db:

@@ -1,0 +1,17 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Lembrete de ação PDI — Greenn People{% endblock %}
+
+{% block content %}
+<p style="margin:0 0 12px 0;">Olá {{ user.nome }},</p>
+<p style="margin:0 0 12px 0;">
+  Uma ação do seu PDI &ldquo;{{ pdi.titulo }}&rdquo; vence em
+  <strong>{{ prazo|date:"d/m/Y" }}</strong>:
+</p>
+<p style="margin:0 0 12px 0;padding:12px 14px;background-color:#f8fafc;border-radius:8px;color:#334155;">
+  {{ acao.descricao }}
+</p>
+<p style="margin:0;">
+  Atualize o status ou conclua a ação a tempo no Greenn People.
+</p>
+{% endblock %}

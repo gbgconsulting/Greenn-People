@@ -168,6 +168,8 @@ EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
 EMAIL_USE_TLS = env('EMAIL_USE_TLS')
 DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@greenn.com.br')
+# Origin for absolute links in e-mails (Celery / Beat have no HTTP request).
+PUBLIC_BASE_URL = env('PUBLIC_BASE_URL', default='http://localhost:8000')
 
 # RF-31 / Sprint 9.2.2 — days before deadline to send reminder e-mails
 NOTIFICATION_REMINDER_DAYS = env.int('NOTIFICATION_REMINDER_DAYS', default=3)

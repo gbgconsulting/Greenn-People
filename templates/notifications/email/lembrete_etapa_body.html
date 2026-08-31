@@ -1,0 +1,15 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Lembrete de etapa — Greenn People{% endblock %}
+
+{% block content %}
+<p style="margin:0 0 12px 0;">Olá {{ user.nome }},</p>
+<p style="margin:0 0 12px 0;">
+  O ciclo de avaliação &ldquo;{{ ciclo.nome }}&rdquo; tem data de fim em
+  <strong>{{ data_fim|date:"d/m/Y" }}</strong>.
+</p>
+<p style="margin:0;">
+  Sua avaliação ainda está na etapa &ldquo;{{ etapa_label }}&rdquo;.
+  Conclua as pendências a tempo no Greenn People.
+</p>
+{% endblock %}

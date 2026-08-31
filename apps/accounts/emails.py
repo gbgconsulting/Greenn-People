@@ -1,9 +1,9 @@
-from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 
 from apps.accounts.tokens import email_confirmation_token
+from apps.core.emails import send_templated_email
 
 
 def send_confirmation_email(user, request) -> None:
@@ -21,11 +21,10 @@ def send_confirmation_email(user, request) -> None:
         'accounts/email/confirm_email_subject.txt',
         context,
     ).strip()
-    body = render_to_string('accounts/email/confirm_email_body.txt', context)
-    send_mail(
-        subject,
-        body,
-        None,
-        [user.email],
-        fail_silently=False,
+    send_templated_email(
+        subject=subject,
+        to=user.email,
+        text_template='accounts/email/confirm_email_body.txt',
+        html_template='accounts/email/confirm_email_body.html',
+        context=context,
     )
