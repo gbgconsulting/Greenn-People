@@ -16,8 +16,7 @@
     </p>
   </div>
   <div class="flex flex-wrap items-center gap-2">
-    {% url 'reviews:list' as list_url %}
-    {% include "components/button.html" with label="Voltar à lista" href=list_url variant="secondary" %}
+    {% include "components/button.html" with label="Voltar à lista" href=list_return_url variant="secondary" %}
   </div>
 </div>
 

@@ -7,9 +7,8 @@
 <div class="mx-auto w-full max-w-[1200px] pb-28">
   {# —— Cabeçalho —— #}
   <div class="mb-8">
-    {% url 'reviews:list' as list_url %}
     <a
-      href="{{ list_url }}"
+      href="{% if request.GET.next %}{{ request.GET.next }}{% else %}{% url 'reviews:list' %}{% endif %}"
       class="mb-2 inline-flex items-center gap-1 font-ui text-xs font-semibold uppercase tracking-wide text-slate-500 transition-colors hover:text-emerald-700"
     >
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4" aria-hidden="true">

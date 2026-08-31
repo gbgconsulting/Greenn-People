@@ -296,3 +296,45 @@ def test_gestor_filtra_area_na_subarvore(db, client, admin, duas_areas, ciclo_ab
     html_fora = response_fora.content.decode()
     assert colab_ti.nome in html_fora
     assert colab_rh.nome in html_fora
+
+
+@pytest.mark.django_db
+def test_ver_link_preserva_estado_da_lista(client, hierarquia_duas_areas):
+    lider = hierarquia_duas_areas['lider_ti']
+    aval = hierarquia_duas_areas['aval_ti']
+    client.force_login(lider)
+    list_path = reverse('reviews:list')
+    return_path = f'{list_path}?etapa={Avaliacao.Etapa.INPUT_METAS}&busca=Colab'
+    resp = client.get(return_path)
+    assert resp.status_code == 200
+    html = resp.content.decode()
+    detail_fragment = reverse('reviews:detail', kwargs={'pk': aval.pk})
+    assert detail_fragment in html
+    assert 'next=' in html
+    assert 'etapa=' in html
+
+
+@pytest.mark.django_db
+def test_voltar_do_detalhe_preserva_lista_filtrada(client, hierarquia_duas_areas):
+    lider = hierarquia_duas_areas['lider_ti']
+    aval = hierarquia_duas_areas['aval_ti']
+    client.force_login(lider)
+    return_path = f'{reverse("reviews:list")}?status=pendente&page=2'
+    detail_url = reverse('reviews:detail', kwargs={'pk': aval.pk})
+    resp = client.get(detail_url, {'next': return_path})
+    assert resp.status_code == 200
+    assert resp.context['list_return_url'] == return_path
+    html = resp.content.decode()
+    assert 'status=pendente' in html
+    assert 'page=2' in html
+
+
+@pytest.mark.django_db
+def test_voltar_ignora_next_externo(client, hierarquia_duas_areas):
+    lider = hierarquia_duas_areas['lider_ti']
+    aval = hierarquia_duas_areas['aval_ti']
+    client.force_login(lider)
+    detail_url = reverse('reviews:detail', kwargs={'pk': aval.pk})
+    resp = client.get(detail_url, {'next': 'https://evil.example/phish'})
+    assert resp.status_code == 200
+    assert resp.context['list_return_url'] == reverse('reviews:list')

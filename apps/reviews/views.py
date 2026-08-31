@@ -19,6 +19,7 @@ from apps.cycles.models import Ciclo
 from apps.cycles.services.stage import advance_stage, can_advance
 from apps.goals.forms import get_open_ciclo
 from apps.goals.models import Meta
+from apps.organization.services.navigation import resolve_admin_list_return_url
 from apps.reviews.exceptions import CalculationError
 from apps.reviews.forms import (
     FeedbackForm,
@@ -295,6 +296,10 @@ class AvaliacaoDetailView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
             'colaborador': avaliacao.usuario,
             'is_self': is_self,
             'linhas': linhas,
+            'list_return_url': resolve_admin_list_return_url(
+                self.request,
+                default=reverse('reviews:list'),
+            ),
             'pode_autoavaliar': (
                 is_self and self_assessment_editable(avaliacao)
             ),

@@ -5,17 +5,20 @@
 
 {% block content %}
 <div class="mx-auto w-full max-w-[1440px]">
-  <header class="mb-8">
-    <h1 class="font-display text-2xl font-semibold text-slate-800">
-      Minha Avaliação
-    </h1>
-    <p class="mt-1 font-ui text-sm text-slate-500">
-      {% if avaliacao.ciclo %}
-        Ciclo {{ avaliacao.ciclo.nome }} · etapa {{ avaliacao.get_etapa_display }}.
-      {% else %}
-        Acompanhe seu progresso e resultados nesta avaliação.
-      {% endif %}
-    </p>
+  <header class="mb-8 flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h1 class="font-display text-2xl font-semibold text-slate-800">
+        Minha Avaliação
+      </h1>
+      <p class="mt-1 font-ui text-sm text-slate-500">
+        {% if avaliacao.ciclo %}
+          Ciclo {{ avaliacao.ciclo.nome }} · etapa {{ avaliacao.get_etapa_display }}.
+        {% else %}
+          Acompanhe seu progresso e resultados nesta avaliação.
+        {% endif %}
+      </p>
+    </div>
+    {% include "components/button.html" with label="Voltar à lista" href=list_return_url variant="secondary" %}
   </header>
 
   <section class="mb-8 min-w-0" aria-labelledby="orientacao-heading">

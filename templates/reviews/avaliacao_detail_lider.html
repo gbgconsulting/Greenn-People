@@ -9,8 +9,7 @@
     <h1 class="font-display text-2xl font-semibold text-slate-800">
       Avaliação Detalhada
     </h1>
-    {% url 'reviews:list' as list_url %}
-    {% include "components/button.html" with label="Voltar à lista" href=list_url variant="secondary" %}
+    {% include "components/button.html" with label="Voltar à lista" href=list_return_url variant="secondary" %}
   </header>
 
   <section
