@@ -1,9 +1,9 @@
 {% load organization_display %}
 <div id="list-container">
-  {% include "organization/partials/cargo_list_filters.html" %}
+  <div class="overflow-hidden rounded-xl border border-line bg-surface-card shadow-sm">
+    {% include "organization/partials/cargo_list_filters.html" %}
 
-  <div class="rounded-xl border border-line bg-surface-card shadow-sm">
-    <div class="min-w-0 overflow-x-auto pb-1">
+    <div class="registry-table-scroll">
       <table class="cargo-registry-table">
         <thead>
           <tr>

@@ -3,90 +3,146 @@
 {% block title %}{% if object %}Editar competência{% else %}Nova competência{% endif %} — Greenn People{% endblock %}
 
 {% block content %}
-<div class="mx-auto min-w-0 max-w-lg">
-  <header class="mb-6">
-    <h1 class="font-display text-2xl font-semibold text-slate-800">
+{% url 'competencies:competencia_list' as list_url %}
+<div class="mx-auto w-full max-w-lg">
+  <header class="mb-5 text-center">
+    <h1 class="font-display text-2xl font-semibold tracking-tight text-slate-800">
       {% if object %}Editar competência{% else %}Nova competência{% endif %}
     </h1>
-    <p class="mt-1 font-ui text-sm text-slate-500">Vincule a competência a uma escala de avaliação.</p>
+    <p class="mt-1 font-ui text-sm text-slate-500">
+      Vincule a competência a uma escala de avaliação.
+    </p>
   </header>
 
-  <div class="rounded-xl border border-line bg-surface-card p-6">
-    <form method="post" novalidate>
+  <article class="rounded-xl border border-line bg-surface-card p-5 shadow-[0_2px_4px_rgba(0,0,0,0.04)]">
+    <form method="post" novalidate class="space-y-4">
       {% csrf_token %}
       {% if request.GET.next %}
       <input type="hidden" name="next" value="{{ request.GET.next }}">
       {% endif %}
 
       {% if form.non_field_errors %}
-        <div class="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700" role="alert">
+        <div class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 font-ui text-sm text-rose-700" role="alert">
           {% for error in form.non_field_errors %}{{ error }}{% endfor %}
         </div>
       {% endif %}
 
-      {% include "components/input.html" with label=form.nome.label name=form.nome.html_name type="text" value=form.nome.value id=form.nome.id_for_label error=form.nome.errors.0 %}
+      <div>
+        <label for="{{ form.nome.id_for_label }}" class="mb-1.5 block font-ui text-sm font-medium text-slate-700">
+          {{ form.nome.label }}
+        </label>
+        <input
+          type="text"
+          name="{{ form.nome.html_name }}"
+          id="{{ form.nome.id_for_label }}"
+          value="{{ form.nome.value|default_if_none:'' }}"
+          placeholder="Ex: Comunicação Efetiva"
+          class="block h-10 w-full rounded-lg border border-line bg-slate-100 px-3 text-sm text-slate-800 transition-colors placeholder:text-slate-400 focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600{% if form.nome.errors %} border-rose-300 ring-rose-300 focus:ring-rose-500{% endif %}"
+          aria-invalid="{% if form.nome.errors %}true{% else %}false{% endif %}"
+          {% if form.nome.errors %}aria-describedby="{{ form.nome.id_for_label }}-error"{% endif %}
+        />
+        {% if form.nome.errors %}
+          <p id="{{ form.nome.id_for_label }}-error" class="mt-1 font-ui text-xs text-rose-600" role="alert">{{ form.nome.errors.0 }}</p>
+        {% endif %}
+      </div>
 
-      <div class="mb-4">
-        <label for="{{ form.descricao.id_for_label }}" class="mb-1.5 block text-sm font-medium text-slate-700">{{ form.descricao.label }}</label>
+      <div>
+        <label for="{{ form.descricao.id_for_label }}" class="mb-1.5 block font-ui text-sm font-medium text-slate-700">
+          {{ form.descricao.label }}
+        </label>
         <textarea
           name="{{ form.descricao.html_name }}"
           id="{{ form.descricao.id_for_label }}"
           rows="3"
-          class="w-full rounded-lg border bg-white px-3 py-2 text-sm text-slate-800 transition-colors placeholder:text-slate-400 focus:border-transparent focus:outline-none focus:ring-2 sm:w-full sm:min-w-0{% if form.descricao.errors %} border-rose-300 focus:ring-rose-500{% else %} border-slate-200 hover:border-slate-300 focus:ring-emerald-500{% endif %}"
+          placeholder="Descreva os comportamentos esperados para esta competência..."
+          class="block w-full resize-y rounded-lg border border-line bg-slate-100 px-3 py-2 text-sm text-slate-800 transition-colors placeholder:text-slate-400 focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600{% if form.descricao.errors %} border-rose-300 ring-rose-300 focus:ring-rose-500{% endif %}"
           aria-invalid="{% if form.descricao.errors %}true{% else %}false{% endif %}"
           {% if form.descricao.errors %}aria-describedby="{{ form.descricao.id_for_label }}-error"{% endif %}
         >{{ form.descricao.value|default_if_none:'' }}</textarea>
         {% if form.descricao.errors %}
-          <p id="{{ form.descricao.id_for_label }}-error" class="mt-1.5 text-xs text-rose-600" role="alert">{{ form.descricao.errors.0 }}</p>
+          <p id="{{ form.descricao.id_for_label }}-error" class="mt-1 font-ui text-xs text-rose-600" role="alert">{{ form.descricao.errors.0 }}</p>
         {% endif %}
       </div>
 
-      <div class="mb-4">
-        <label for="{{ form.tipo.id_for_label }}" class="mb-1.5 block text-sm font-medium text-slate-700">{{ form.tipo.label }}</label>
-        <select
-          name="{{ form.tipo.html_name }}"
-          id="{{ form.tipo.id_for_label }}"
-          class="form-control w-full sm:w-full sm:min-w-0{% if form.tipo.errors %} border-rose-300 focus-visible:ring-rose-500{% endif %}"
-          aria-invalid="{% if form.tipo.errors %}true{% else %}false{% endif %}"
-          {% if form.tipo.errors %}aria-describedby="{{ form.tipo.id_for_label }}-error"{% endif %}
-        >
-          {% for value, label in form.tipo.field.choices %}
-            <option value="{{ value|stringformat:'s' }}"{% if form.tipo.value|stringformat:'s' == value|stringformat:'s' %} selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-        {% if form.tipo.errors %}
-          <p id="{{ form.tipo.id_for_label }}-error" class="mt-1.5 text-xs text-rose-600" role="alert">{{ form.tipo.errors.0 }}</p>
-        {% endif %}
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div class="min-w-0">
+          <label for="{{ form.tipo.id_for_label }}" class="mb-1.5 block font-ui text-sm font-medium text-slate-700">
+            {{ form.tipo.label }}
+          </label>
+          <div class="relative">
+            <select
+              name="{{ form.tipo.html_name }}"
+              id="{{ form.tipo.id_for_label }}"
+              class="block h-10 w-full min-w-0 appearance-none truncate rounded-lg border border-line bg-slate-100 pl-3 pr-9 text-sm text-slate-800 transition-colors focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600{% if form.tipo.errors %} border-rose-300 ring-rose-300 focus:ring-rose-500{% endif %}"
+              aria-invalid="{% if form.tipo.errors %}true{% else %}false{% endif %}"
+              {% if form.tipo.errors %}aria-describedby="{{ form.tipo.id_for_label }}-error"{% endif %}
+            >
+              <option value="" disabled{% if not form.tipo.value %} selected{% endif %}>Selecione...</option>
+              {% for value, label in form.tipo.field.choices %}
+                {% if value %}
+                  <option value="{{ value|stringformat:'s' }}"{% if form.tipo.value|stringformat:'s' == value|stringformat:'s' %} selected{% endif %}>{{ label }}</option>
+                {% endif %}
+              {% endfor %}
+            </select>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              class="pointer-events-none absolute inset-y-0 right-0 flex w-9 items-center justify-center text-slate-500"
+              aria-hidden="true"
+            >
+              <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clip-rule="evenodd" class="h-4 w-4" />
+            </svg>
+          </div>
+          {% if form.tipo.errors %}
+            <p id="{{ form.tipo.id_for_label }}-error" class="mt-1 font-ui text-xs text-rose-600" role="alert">{{ form.tipo.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <div class="min-w-0">
+          <label for="{{ form.escala.id_for_label }}" class="mb-1.5 block font-ui text-sm font-medium text-slate-700">
+            {{ form.escala.label }}
+          </label>
+          <div class="relative">
+            <select
+              name="{{ form.escala.html_name }}"
+              id="{{ form.escala.id_for_label }}"
+              class="block h-10 w-full min-w-0 appearance-none truncate rounded-lg border border-line bg-slate-100 pl-3 pr-9 text-sm text-slate-800 transition-colors focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600{% if form.escala.errors %} border-rose-300 ring-rose-300 focus:ring-rose-500{% endif %}"
+              aria-invalid="{% if form.escala.errors %}true{% else %}false{% endif %}"
+              {% if form.escala.errors %}aria-describedby="{{ form.escala.id_for_label }}-error"{% endif %}
+            >
+              <option value="" disabled{% if not form.escala.value %} selected{% endif %}>Selecione...</option>
+              {% for value, label in form.escala.field.choices %}
+                {% if value %}
+                  <option value="{{ value|stringformat:'s' }}"{% if form.escala.value|stringformat:'s' == value|stringformat:'s' %} selected{% endif %}>{{ label }}</option>
+                {% endif %}
+              {% endfor %}
+            </select>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              class="pointer-events-none absolute inset-y-0 right-0 flex w-9 items-center justify-center text-slate-500"
+              aria-hidden="true"
+            >
+              <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clip-rule="evenodd" class="h-4 w-4" />
+            </svg>
+          </div>
+          {% if form.escala.errors %}
+            <p id="{{ form.escala.id_for_label }}-error" class="mt-1 font-ui text-xs text-rose-600" role="alert">{{ form.escala.errors.0 }}</p>
+          {% endif %}
+        </div>
       </div>
 
-      <div class="mb-6">
-        <label for="{{ form.escala.id_for_label }}" class="mb-1.5 block text-sm font-medium text-slate-700">{{ form.escala.label }}</label>
-        <select
-          name="{{ form.escala.html_name }}"
-          id="{{ form.escala.id_for_label }}"
-          class="form-control w-full sm:w-full sm:min-w-0{% if form.escala.errors %} border-rose-300 focus-visible:ring-rose-500{% endif %}"
-          aria-invalid="{% if form.escala.errors %}true{% else %}false{% endif %}"
-          {% if form.escala.errors %}aria-describedby="{{ form.escala.id_for_label }}-error"{% endif %}
-        >
-          {% for value, label in form.escala.field.choices %}
-            <option value="{{ value|stringformat:'s' }}"{% if form.escala.value|stringformat:'s' == value|stringformat:'s' %} selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-        {% if form.escala.errors %}
-          <p id="{{ form.escala.id_for_label }}-error" class="mt-1.5 text-xs text-rose-600" role="alert">{{ form.escala.errors.0 }}</p>
-        {% endif %}
-      </div>
-
-      <div class="flex flex-wrap gap-3">
-        {% include "components/button.html" with label="Salvar" type="submit" variant="primary" %}
+      <footer class="flex flex-wrap gap-3 border-t border-line pt-4">
+        {% include "components/button.html" with label="Salvar" type="submit" variant="primary" extra_class="!h-10 !px-5" %}
         {% if request.GET.next %}
-          {% include "components/button.html" with label="Cancelar" href=request.GET.next variant="secondary" %}
+          {% include "components/button.html" with label="Cancelar" href=request.GET.next variant="secondary" extra_class="!h-10 !px-5" %}
         {% else %}
-          {% url 'competencies:competencia_list' as cancel_url %}
-          {% include "components/button.html" with label="Cancelar" href=cancel_url variant="secondary" %}
+          {% include "components/button.html" with label="Cancelar" href=list_url variant="secondary" extra_class="!h-10 !px-5" %}
         {% endif %}
-      </div>
+      </footer>
     </form>
-  </div>
+  </article>
 </div>
 {% endblock %}

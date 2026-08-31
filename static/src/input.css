@@ -309,6 +309,28 @@
   }
 
   /*
+   * Scroll horizontal das tabelas de cadastro — só eixo X; evita segundo scroll
+   * vertical competindo com o painel principal (.app-shell).
+   */
+  .registry-table-scroll {
+    @apply min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain pb-1;
+  }
+
+  /*
+   * Menu ⋮ flutuante (JS) — escapa overflow do frame; largura pelo conteúdo.
+   */
+  .row-actions-panel--floating {
+    position: fixed !important;
+    right: auto !important;
+    bottom: auto !important;
+    margin: 0 !important;
+    width: max-content;
+    min-width: 10.5rem;
+    max-width: calc(100vw - 1rem);
+    z-index: 50;
+  }
+
+  /*
    * Cadastro de cargos (admin) — grid alinhado ao mock CADASTRO_CARGOS.
    */
   .cargo-registry-table {
