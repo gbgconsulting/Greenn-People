@@ -1,0 +1,33 @@
+{% comment %}
+  Marca Greenn reutilizável.
+
+  variant:
+    - icon: selo isolado (currentColor)
+    - wordmark: ícone + wordmark (currentColor)
+    - wordmark-white: wordmark branco (login / fundos escuros)
+    - sidebar: alterna ícone/wordmark conforme estado do sidebar desktop
+{% endcomment %}
+
+{% if variant == 'sidebar' %}
+  <a
+    href="{% url 'dashboard:personal' %}"
+    class="sidebar-brand-link inline-flex shrink-0 items-center justify-center text-emerald-800"
+    aria-label="Greenn People — início"
+    title="Greenn People"
+  >
+    <span class="sidebar-brand-icon">
+      {% include "components/brand/icone.svg.html" with svg_class="block h-10 w-10" %}
+    </span>
+    <span class="sidebar-brand-wordmark">
+      {% include "components/brand/greenn.svg.html" with svg_class="block h-10 w-auto" %}
+    </span>
+  </a>
+{% elif variant == 'wordmark-white' %}
+  <span class="auth-brand-mark block text-white" role="img" aria-label="greenn">
+    {% include "components/brand/greenn.svg.html" with svg_class="block h-12 w-auto" %}
+  </span>
+{% elif variant == 'wordmark' %}
+  {% include "components/brand/greenn.svg.html" with svg_class=class|default:"block h-10 w-auto" %}
+{% else %}
+  {% include "components/brand/icone.svg.html" with svg_class=class|default:"block h-10 w-10" %}
+{% endif %}

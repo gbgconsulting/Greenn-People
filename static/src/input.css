@@ -650,10 +650,23 @@
     @apply font-display font-bold tracking-tight text-emerald-800;
   }
 
+  /* Login: evita corte vertical da marca (viewBox + altura explícita). */
+  .auth-brand-mark {
+    min-height: 3rem;
+    overflow: visible;
+  }
+
+  .auth-brand-mark svg {
+    display: block;
+    height: 3rem;
+    width: auto;
+    overflow: visible;
+  }
+
   /*
    * Sidebar desktop: modo ícone-only (SIDEBAR_REC).
    * Largura (w-[280px] ↔ w-20) é alternada em JS — utilities Tailwind vencem @layer components.
-   * Marca: apenas logo G (sempre visível).
+   * Marca: ícone (recolhido) / wordmark (expandido) via brand_mark.
    */
   #desktop-sidebar.sidebar--collapsed [data-sidebar-label],
   #desktop-sidebar.sidebar--collapsed .nav-link__label,
@@ -664,7 +677,30 @@
   }
 
   #desktop-sidebar.sidebar--collapsed .sidebar-brand-row {
-    @apply px-0 py-6;
+    @apply mb-2 px-0 pt-6 pb-8;
+  }
+
+  #desktop-sidebar .sidebar-brand-icon {
+    display: none;
+  }
+
+  #desktop-sidebar .sidebar-brand-wordmark {
+    display: block;
+  }
+
+  #desktop-sidebar .sidebar-brand-link,
+  #desktop-sidebar .sidebar-brand-icon,
+  #desktop-sidebar .sidebar-brand-wordmark,
+  #desktop-sidebar .sidebar-brand-link svg {
+    overflow: visible;
+  }
+
+  #desktop-sidebar.sidebar--collapsed .sidebar-brand-icon {
+    display: block;
+  }
+
+  #desktop-sidebar.sidebar--collapsed .sidebar-brand-wordmark {
+    display: none;
   }
 
   #desktop-sidebar.sidebar--collapsed .sidebar-nav {

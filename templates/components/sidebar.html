@@ -10,13 +10,8 @@
   class="hidden h-screen w-[280px] shrink-0 flex-col border-r border-line bg-surface-card transition-all duration-200 md:flex"
   aria-label="Navegação principal"
 >
-  <div class="sidebar-brand-row flex shrink-0 items-center justify-center px-6 py-6">
-    <a
-      href="{% url 'dashboard:personal' %}"
-      class="sidebar-brand-mark flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-800 font-display text-xl font-medium text-white"
-      aria-label="Greenn People — início"
-      title="Greenn People"
-    >G</a>
+  <div class="sidebar-brand-row flex shrink-0 items-center justify-center px-6 pt-6 pb-8 mb-2">
+    {% include "components/brand_mark.html" with variant="sidebar" %}
   </div>
 
   <nav class="sidebar-nav flex-1 space-y-5 overflow-y-auto px-0 py-2" aria-label="Menu" style="scrollbar-width: none;">
@@ -74,10 +69,12 @@
   <div class="flex items-center justify-between gap-2.5 border-b border-line px-6 py-5">
     <a
       href="{% url 'dashboard:personal' %}"
-      class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-800 font-display text-xl font-medium text-white"
+      class="inline-flex shrink-0 items-center text-emerald-800"
       aria-label="Greenn People — início"
       title="Greenn People"
-    >G</a>
+    >
+      {% include "components/brand_mark.html" with variant="icon" %}
+    </a>
     <button
       type="button"
       class="rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
