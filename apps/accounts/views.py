@@ -1,6 +1,7 @@
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import views as auth_views
-from django.http import HttpResponseRedirect
+from django.http import Http404, HttpResponseRedirect
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.decorators import method_decorator
@@ -16,16 +17,24 @@ from apps.accounts.forms import (
     RegisterForm,
     ResendConfirmationForm,
 )
+from apps.accounts.mixins import (
+    LoginRateLimitMixin,
+    PasswordResetRateLimitMixin,
+    RegisterRateLimitMixin,
+    ResendConfirmationRateLimitMixin,
+)
 from apps.accounts.models import CustomUser
 from apps.accounts.tokens import email_confirmation_token
 
 
-class RegisterView(CreateView):
+class RegisterView(RegisterRateLimitMixin, CreateView):
     form_class = RegisterForm
     template_name = 'accounts/register.html'
     success_url = reverse_lazy('accounts:verify_email')
 
     def dispatch(self, request, *args, **kwargs):
+        if not getattr(settings, 'REGISTRATION_ENABLED', False):
+            raise Http404()
         if request.user.is_authenticated:
             return HttpResponseRedirect('/')
         return super().dispatch(request, *args, **kwargs)
@@ -76,7 +85,7 @@ class ConfirmEmailView(View):
             return None
 
 
-class ResendConfirmationView(FormView):
+class ResendConfirmationView(ResendConfirmationRateLimitMixin, FormView):
     form_class = ResendConfirmationForm
     template_name = 'accounts/resend_confirmation.html'
     success_url = reverse_lazy('accounts:verify_email')
@@ -94,7 +103,7 @@ class ResendConfirmationView(FormView):
         return HttpResponseRedirect(self.get_success_url())
 
 
-class LoginView(auth_views.LoginView):
+class LoginView(LoginRateLimitMixin, auth_views.LoginView):
     form_class = EmailAuthenticationForm
     template_name = 'accounts/login.html'
     redirect_authenticated_user = True
@@ -105,7 +114,7 @@ class LogoutView(auth_views.LogoutView):
     http_method_names = ['post', 'options']
 
 
-class PasswordResetView(auth_views.PasswordResetView):
+class PasswordResetView(PasswordResetRateLimitMixin, auth_views.PasswordResetView):
     template_name = 'accounts/password_reset_form.html'
     email_template_name = 'accounts/email/password_reset_body.txt'
     html_email_template_name = 'accounts/email/password_reset_body.html'

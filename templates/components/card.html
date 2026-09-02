@@ -1,3 +1,4 @@
+{% load html_attrs %}
 {% comment %}
   Cartão de conteúdo / métrica (DS v2 — densidade/hierarquia KPI; chrome leve).
   Uso:
@@ -19,7 +20,7 @@
   - Com value + badge_status: badge fica ao lado do label (KPI com origem/status).
   - Sem value + badge_status: badge é o conteúdo principal (ex.: status do PDI).
 {% endcomment %}
-<div class="group relative flex h-full flex-col overflow-hidden rounded-xl border border-line bg-surface-card p-4 sm:p-5 {{ extra_class }}"{% if attrs %} {{ attrs|safe }}{% endif %}>
+<div class="group relative flex h-full flex-col overflow-hidden rounded-xl border border-line bg-surface-card p-4 sm:p-5 {{ extra_class }}"{% if attrs %} {{ attrs|validated_attrs }}{% endif %}>
   {% if accent %}
   <div
     class="absolute inset-x-0 top-0 h-1 transition-colors

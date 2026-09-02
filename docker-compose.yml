@@ -1,5 +1,8 @@
 # Greenn People — app + PostgreSQL + Redis (+ Celery worker/beat)
 #
+# AVISO: credenciais abaixo são só para desenvolvimento local.
+# Em produção, sobrescreva SECRET_KEY, DATABASE_URL e senhas via secrets do deploy.
+#
 # Uso:
 #   docker compose up --build
 #   docker compose exec web python manage.py createsuperuser

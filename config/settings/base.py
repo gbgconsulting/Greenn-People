@@ -17,6 +17,17 @@ env = environ.Env(
     ALLOWED_HOSTS=(list, []),
     EMAIL_PORT=(int, 587),
     EMAIL_USE_TLS=(bool, True),
+    REGISTRATION_ENABLED=(bool, False),
+    SESSION_COOKIE_AGE=(int, 43200),
+    PASSWORD_RESET_TIMEOUT=(int, 3600),
+    RATE_LIMIT_LOGIN=(int, 5),
+    RATE_LIMIT_LOGIN_PERIOD=(int, 60),
+    RATE_LIMIT_PASSWORD_RESET=(int, 3),
+    RATE_LIMIT_PASSWORD_RESET_PERIOD=(int, 300),
+    RATE_LIMIT_REGISTER=(int, 3),
+    RATE_LIMIT_REGISTER_PERIOD=(int, 3600),
+    RATE_LIMIT_RESEND_CONFIRMATION=(int, 3),
+    RATE_LIMIT_RESEND_CONFIRMATION_PERIOD=(int, 300),
 )
 
 environ.Env.read_env(BASE_DIR / '.env')
@@ -173,3 +184,64 @@ PUBLIC_BASE_URL = env('PUBLIC_BASE_URL', default='http://localhost:8000')
 
 # RF-31 / Sprint 9.2.2 — days before deadline to send reminder e-mails
 NOTIFICATION_REMINDER_DAYS = env.int('NOTIFICATION_REMINDER_DAYS', default=3)
+
+# Sessão e reset de senha
+SESSION_COOKIE_AGE = env('SESSION_COOKIE_AGE')
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+PASSWORD_RESET_TIMEOUT = env('PASSWORD_RESET_TIMEOUT')
+
+# Cadastro self-service (desligado por default; habilitar em dev via .env)
+REGISTRATION_ENABLED = env('REGISTRATION_ENABLED')
+
+# Rate limiting (cache-backed — ver CACHES)
+RATE_LIMIT_LOGIN = env('RATE_LIMIT_LOGIN')
+RATE_LIMIT_LOGIN_PERIOD = env('RATE_LIMIT_LOGIN_PERIOD')
+RATE_LIMIT_PASSWORD_RESET = env('RATE_LIMIT_PASSWORD_RESET')
+RATE_LIMIT_PASSWORD_RESET_PERIOD = env('RATE_LIMIT_PASSWORD_RESET_PERIOD')
+RATE_LIMIT_REGISTER = env('RATE_LIMIT_REGISTER')
+RATE_LIMIT_REGISTER_PERIOD = env('RATE_LIMIT_REGISTER_PERIOD')
+RATE_LIMIT_RESEND_CONFIRMATION = env('RATE_LIMIT_RESEND_CONFIRMATION')
+RATE_LIMIT_RESEND_CONFIRMATION_PERIOD = env('RATE_LIMIT_RESEND_CONFIRMATION_PERIOD')
+
+# Health check — token opcional (header X-Health-Token ou ?token=)
+HEALTH_CHECK_TOKEN = env('HEALTH_CHECK_TOKEN', default='')
+
+# Cache — locmem por default; produção sobrescreve para Redis (rate limit compartilhado)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+    },
+}
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'filters': {
+        'redact_sensitive': {
+            '()': 'apps.core.logging_filters.RedactSensitiveFilter',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'filters': ['redact_sensitive'],
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'apps.accounts.security': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.security': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+    },
+}
