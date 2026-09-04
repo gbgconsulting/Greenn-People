@@ -12,23 +12,23 @@
 {% endcomment %}
 {% with s=status|default:"pendente" %}
 {% if s == "concluida" or s == "concluido" or s == "aprovada" or s == "aprovado" or s == "alta" or s == "ativo" %}
-<span class="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 font-ui text-xs font-medium leading-none tracking-tight text-emerald-700 {{ extra_class }}">
+<span class="inline-flex items-center rounded-md border-0 bg-emerald-50 px-2 py-0.5 font-ui text-xs font-medium leading-none tracking-tight text-emerald-700 outline-none ring-0 {{ extra_class }}">
   {% if label %}{{ label }}{% elif s == "concluida" %}Concluída{% elif s == "concluido" %}Concluído{% elif s == "aprovada" %}Aprovada{% elif s == "aprovado" %}Aprovado{% elif s == "alta" %}Alta{% else %}Ativo{% endif %}
 </span>
 {% elif s == "em_andamento" or s == "pendente" or s == "media" %}
-<span class="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 font-ui text-xs font-medium leading-none tracking-tight text-amber-700 {{ extra_class }}">
+<span class="inline-flex items-center rounded-md border-0 bg-amber-50 px-2 py-0.5 font-ui text-xs font-medium leading-none tracking-tight text-amber-700 outline-none ring-0 {{ extra_class }}">
   {% if label %}{{ label }}{% elif s == "em_andamento" %}Em andamento{% elif s == "media" %}Média{% else %}Pendente{% endif %}
 </span>
 {% elif s == "neutro" %}
-<span class="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 font-ui text-xs font-medium leading-none tracking-tight text-slate-600 {{ extra_class }}">
+<span class="inline-flex items-center rounded-md border-0 bg-slate-100 px-2 py-0.5 font-ui text-xs font-medium leading-none tracking-tight text-slate-600 outline-none ring-0 {{ extra_class }}">
   {% if label %}{{ label }}{% else %}Neutro{% endif %}
 </span>
 {% elif s == "atrasada" or s == "reprovada" or s == "reprovado" or s == "baixa" %}
-<span class="inline-flex items-center rounded-md bg-rose-50 px-2 py-0.5 font-ui text-xs font-medium leading-none tracking-tight text-rose-700 {{ extra_class }}">
+<span class="inline-flex items-center rounded-md border-0 bg-rose-50 px-2 py-0.5 font-ui text-xs font-medium leading-none tracking-tight text-rose-700 outline-none ring-0 {{ extra_class }}">
   {% if label %}{{ label }}{% elif s == "atrasada" %}Atrasada{% elif s == "reprovada" %}Reprovada{% elif s == "reprovado" %}Reprovado{% else %}Baixa{% endif %}
 </span>
 {% else %}
-<span class="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 font-ui text-xs font-medium leading-none tracking-tight text-slate-600 {{ extra_class }}">
+<span class="inline-flex items-center rounded-md border-0 bg-slate-100 px-2 py-0.5 font-ui text-xs font-medium leading-none tracking-tight text-slate-600 outline-none ring-0 {{ extra_class }}">
   {% if label %}{{ label }}{% elif s == "arquivado" %}Arquivado{% else %}{{ s|title }}{% endif %}
 </span>
 {% endif %}

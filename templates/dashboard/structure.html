@@ -6,24 +6,22 @@
 {% block content %}
 <div class="mx-auto max-w-[90rem]">
 <header class="mb-8">
-  <nav class="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500" aria-label="Breadcrumb">
-    <span>Dashboard</span>
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true">
-      <path fill-rule="evenodd" d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
-    </svg>
-    <span class="font-semibold text-slate-800">Estrutura</span>
+  <nav class="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400" aria-label="Breadcrumb">
+    <span class="hover:text-slate-600">Dashboard</span>
+    <span class="text-slate-300" aria-hidden="true">/</span>
+    <span class="font-semibold text-emerald-700">Estrutura</span>
   </nav>
   <div class="flex flex-col justify-between gap-6 md:flex-row md:items-start">
     <div class="max-w-2xl">
       <h1 class="font-display text-2xl font-semibold tracking-tight text-slate-800">
         Panorama da Estrutura
       </h1>
-      <p class="mt-2 text-base leading-relaxed text-slate-500">
+      <p class="mt-1.5 text-sm leading-relaxed text-slate-500">
         Visão geral do engajamento e status das avaliações neste ciclo.
       </p>
       {% if grouped_ciclo_options.arquivo_total %}
-        <p class="mt-2 flex items-center gap-1.5 text-sm text-slate-500">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true">
+        <p class="mt-3 flex items-center gap-1.5 text-xs text-slate-500">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4 shrink-0 text-emerald-600" aria-hidden="true">
             <path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z" clip-rule="evenodd" />
           </svg>
           {{ grouped_ciclo_options.arquivo_total }} ciclo{{ grouped_ciclo_options.arquivo_total|pluralize }} encerrado{{ grouped_ciclo_options.arquivo_total|pluralize }} disponíveis no seletor
@@ -37,13 +35,17 @@
 </header>
 
 <section class="mb-8" aria-labelledby="filtros-heading">
-  <div class="rounded-xl border border-line bg-surface-card p-4 shadow-sm sm:p-6">
-    <h2 id="filtros-heading" class="font-display text-lg font-medium text-slate-800">
-      Filtros
+  <div class="rounded-2xl border border-line bg-surface-card p-5 shadow-sm sm:p-6">
+    <h2 id="filtros-heading" class="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4 text-emerald-600" aria-hidden="true">
+        <path fill-rule="evenodd" d="M2.628 1.601C5.028 1.206 7.49 1 10 1s4.973.206 7.372.601a.75.75 0 0 1 .628.74v2.288a2.25 2.25 0 0 1-.659 1.59l-4.682 4.683a2.25 2.25 0 0 0-.659 1.59v3.037c0 .684-.31 1.33-.844 1.757l-1.937 1.55A.75.75 0 0 1 8 18.25v-5.757a2.25 2.25 0 0 0-.659-1.591L2.659 6.22A2.25 2.25 0 0 1 2 4.629V2.34a.75.75 0 0 1 .628-.74Z" clip-rule="evenodd" />
+      </svg>
+      Filtros de Estrutura
     </h2>
     <form
       method="get"
-      class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-6"
+      action="{% url 'dashboard:structure' %}"
+      class="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-6"
       role="search"
       aria-label="Filtrar estrutura"
     >
@@ -57,13 +59,45 @@
           class="form-control !w-full sm:!w-full sm:!min-w-0"
           onchange="this.form.submit()"
         >
-          <option value="">Todos</option>
+          <option value="">Todos os cargos</option>
           {% for c in cargos %}
           <option value="{{ c.pk }}" {% if filtro_cargo_id == c.pk %}selected{% endif %}>{{ c.nome }}</option>
           {% endfor %}
         </select>
       </div>
     </form>
+
+    {% if ciclo_timeline %}
+    <div class="mt-5 flex flex-col justify-between gap-3 border-t border-slate-100 pt-4 text-xs text-slate-500 sm:flex-row sm:items-center">
+      <div class="flex flex-wrap items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4 shrink-0 text-emerald-600" aria-hidden="true">
+          <path fill-rule="evenodd" d="M5.75 2a.75.75 0 0 1 .75.75V4h7V2.75a.75.75 0 0 1 1.5 0V4h.25A2.75 2.75 0 0 1 18 6.75v8.5A2.75 2.75 0 0 1 15.25 18H4.75A2.75 2.75 0 0 1 2 15.25v-8.5A2.75 2.75 0 0 1 4.75 4H5V2.75A.75.75 0 0 1 5.75 2Zm-1 5.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25v-6.5c0-.69-.56-1.25-1.25-1.25H4.75Z" clip-rule="evenodd" />
+        </svg>
+        <span>
+          Aberto em <strong class="text-slate-700">{{ ciclo_timeline.data_inicio|date:"d/m" }}</strong>
+          · Encerra em <strong class="text-slate-700">{{ ciclo_timeline.data_fim|date:"d/m" }}</strong>
+          {% if ciclo_timeline.nao_iniciado %}
+            · <span class="rounded-full bg-slate-100 px-2 py-0.5 font-semibold text-slate-600">Ainda não iniciado</span>
+          {% elif ciclo_timeline.encerrado_calendario %}
+            · <span class="rounded-full bg-slate-100 px-2 py-0.5 font-semibold text-slate-600">Prazo calendário encerrado</span>
+          {% elif ciclo_timeline.dias_restantes == 0 %}
+            · <span class="rounded-full bg-amber-50 px-2 py-0.5 font-semibold text-amber-700">Encerra hoje</span>
+          {% elif ciclo_timeline.dias_restantes == 1 %}
+            · <span class="rounded-full bg-amber-50 px-2 py-0.5 font-semibold text-amber-700">Falta 1 dia</span>
+          {% else %}
+            · <span class="rounded-full bg-amber-50 px-2 py-0.5 font-semibold text-amber-700">Faltam {{ ciclo_timeline.dias_restantes }} dias</span>
+          {% endif %}
+        </span>
+      </div>
+      <div class="flex w-full items-center gap-3 sm:w-64">
+        <span class="shrink-0 text-[11px] font-medium text-slate-400">Progresso do ciclo:</span>
+        <div class="h-2 w-full overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ ciclo_timeline.progresso_percentual }}" aria-label="Progresso calendário do ciclo">
+          <div class="h-2 rounded-full bg-emerald-500" style="width: {{ ciclo_timeline.progresso_percentual }}%"></div>
+        </div>
+        <span class="shrink-0 font-bold text-slate-700">{{ ciclo_timeline.progresso_percentual }}%</span>
+      </div>
+    </div>
+    {% endif %}
   </div>
 </section>
 
@@ -71,35 +105,44 @@
   <h2 id="cobertura-heading" class="sr-only">Cobertura da equipe</h2>
 
   <div class="managerial-panel [overflow-anchor:none]">
-    <div class="grid grid-cols-1 gap-6 md:grid-cols-3" aria-label="Indicadores de cobertura">
+    <div class="grid grid-cols-1 gap-5 md:grid-cols-3" aria-label="Indicadores de cobertura">
       {% if cobertura_resumo.has_ciclo and cobertura_resumo.percentual is not None %}
         {% with val=cobertura_resumo.percentual|stringformat:"d"|add:"%" %}
-        {% include "components/card.html" with label="Cobertura Total" value=val body="Percentual de pessoas com avaliação neste ciclo." accent="success" icon="trending_up" value_size="lg" %}
+        {% include "components/card.html" with label="Cobertura Total" value=val body="Percentual de pessoas com avaliação neste ciclo." accent="success" icon="trending_up" value_size="lg" extra_class="!rounded-2xl !p-6 hover:border-emerald-300 hover:shadow-md transition-all" %}
         {% endwith %}
       {% elif cobertura_resumo.has_ciclo %}
-        {% include "components/card.html" with label="Cobertura Total" value="—" body="Não há pessoas para calcular a cobertura com esses filtros." accent="success" value_size="lg" %}
+        {% include "components/card.html" with label="Cobertura Total" value="—" body="Não há pessoas para calcular a cobertura com esses filtros." accent="success" value_size="lg" extra_class="!rounded-2xl !p-6" %}
       {% else %}
-        {% include "components/card.html" with label="Cobertura Total" value="—" body="Abra ou escolha um ciclo nos filtros acima." accent="success" value_size="lg" %}
+        {% include "components/card.html" with label="Cobertura Total" value="—" body="Abra ou escolha um ciclo nos filtros acima." accent="success" value_size="lg" extra_class="!rounded-2xl !p-6" %}
       {% endif %}
 
       {% if cobertura_resumo.has_ciclo and cobertura_resumo.com_avaliacao is not None %}
         {% with total_str=cobertura_resumo.total|stringformat:"d" %}
         {% with suffix="/ "|add:total_str %}
-        {% include "components/card.html" with label="Com Avaliação" value=cobertura_resumo.com_avaliacao value_suffix=suffix body="Pessoas que já entraram no ciclo." icon="check" value_size="lg" %}
+        {% with secondary=cobertura_resumo.com_avaliacao|stringformat:"d"|add:" no ciclo" %}
+        {% include "components/card.html" with label="Com Avaliação" value=cobertura_resumo.com_avaliacao value_suffix=suffix body="Pessoas que já entraram no ciclo." icon="check" value_size="lg" footer_secondary=secondary extra_class="!rounded-2xl !p-6 hover:border-emerald-300 hover:shadow-md transition-all" %}
+        {% endwith %}
         {% endwith %}
         {% endwith %}
       {% else %}
-        {% include "components/card.html" with label="Com Avaliação" value="—" body="Disponível quando houver um ciclo." value_size="lg" %}
+        {% include "components/card.html" with label="Com Avaliação" value="—" body="Disponível quando houver um ciclo." value_size="lg" extra_class="!rounded-2xl !p-6" %}
       {% endif %}
 
       {% if cobertura_resumo.has_ciclo and cobertura_resumo.sem_avaliacao is not None %}
         {% if cobertura_resumo.sem_avaliacao > 0 %}
-          {% include "components/card.html" with label="Sem Avaliação" value=cobertura_resumo.sem_avaliacao badge_status="pendente" badge_label="Atenção" body="Ainda não iniciaram a avaliação neste ciclo." value_size="lg" %}
+          {% if cobertura_resumo.total %}
+            {% widthratio cobertura_resumo.sem_avaliacao cobertura_resumo.total 100 as sem_pct_raw %}
+          {% else %}
+            {% widthratio 0 1 100 as sem_pct_raw %}
+          {% endif %}
+          {% with hint=sem_pct_raw|stringformat:"d"|add:"% do quadro total" %}
+          {% include "components/card.html" with label="Sem Avaliação" value=cobertura_resumo.sem_avaliacao badge_status="pendente" badge_label="Atenção" body="Ainda não iniciaram a avaliação neste ciclo." value_size="lg" footer_hint=hint footer_hint_tone="warning" footer_label="Ver líderes" footer_scroll_to="tabela-lideres" extra_class="!rounded-2xl !p-6 hover:border-amber-300 hover:shadow-md transition-all" %}
+          {% endwith %}
         {% else %}
-          {% include "components/card.html" with label="Sem Avaliação" value=cobertura_resumo.sem_avaliacao badge_status="concluida" badge_label="Completo" body="Todos já têm avaliação neste ciclo." value_size="lg" %}
+          {% include "components/card.html" with label="Sem Avaliação" value=cobertura_resumo.sem_avaliacao badge_status="concluida" badge_label="Completo" body="Todos já têm avaliação neste ciclo." value_size="lg" extra_class="!rounded-2xl !p-6" %}
         {% endif %}
       {% else %}
-        {% include "components/card.html" with label="Sem Avaliação" value="—" body="Disponível quando houver um ciclo." value_size="lg" %}
+        {% include "components/card.html" with label="Sem Avaliação" value="—" body="Disponível quando houver um ciclo." value_size="lg" extra_class="!rounded-2xl !p-6" %}
       {% endif %}
     </div>
 
@@ -109,26 +152,27 @@
       aria-label="Cobertura por área e cargo"
     >
       {% if chart_cobertura_area.has_data %}
-        {% include "dashboard/_chart_block.html" with chart=chart_cobertura_area script_id="chart-cobertura-area" insight="Quanto por cento das pessoas de cada área já têm avaliação." %}
+        {% include "dashboard/_chart_block.html" with chart=chart_cobertura_area script_id="chart-cobertura-area" insight="Quanto por cento das pessoas de cada área já têm avaliação." extra_class="[&>figure]:!rounded-2xl" %}
       {% else %}
-        {% include "dashboard/_chart_block.html" with chart=chart_cobertura_area script_id="chart-cobertura-area" %}
+        {% include "dashboard/_chart_block.html" with chart=chart_cobertura_area script_id="chart-cobertura-area" extra_class="[&>figure]:!rounded-2xl" %}
       {% endif %}
 
       {% if chart_cobertura_cargo.has_data %}
-        {% include "dashboard/_chart_block.html" with chart=chart_cobertura_cargo script_id="chart-cobertura-cargo" insight="Quanto por cento das pessoas de cada cargo já têm avaliação." %}
+        {% include "dashboard/_chart_block.html" with chart=chart_cobertura_cargo script_id="chart-cobertura-cargo" insight="Quanto por cento das pessoas de cada cargo já têm avaliação." extra_class="[&>figure]:!rounded-2xl" %}
       {% else %}
-        {% include "dashboard/_chart_block.html" with chart=chart_cobertura_cargo script_id="chart-cobertura-cargo" %}
+        {% include "dashboard/_chart_block.html" with chart=chart_cobertura_cargo script_id="chart-cobertura-cargo" extra_class="[&>figure]:!rounded-2xl" %}
       {% endif %}
     </div>
 
-    <div class="min-w-0 overflow-hidden rounded-xl border border-line bg-surface-card shadow-sm" aria-labelledby="lideres-heading">
-      <div class="flex flex-wrap items-start justify-between gap-3 border-b border-line bg-surface-card px-4 py-5 sm:px-6">
-        <div class="min-w-0">
+    <div id="tabela-lideres" class="min-w-0 overflow-hidden rounded-2xl border border-line bg-surface-card shadow-sm" aria-labelledby="lideres-heading">
+      <div class="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 bg-surface-card px-4 py-5 sm:px-6">
+        <div class="min-w-0 max-w-3xl">
           <h3 id="lideres-heading" class="font-display text-xl font-medium tracking-tight text-slate-800">
-            Líderes Diretos
+            Líderes Diretos &amp; Acompanhamento
           </h3>
-          <p class="mt-1 text-sm text-slate-500">
-            Visão secundária por líder. Para o detalhe completo de aderência, use Ver aderência.
+          <p class="mt-1 text-xs leading-relaxed text-slate-500">
+            Status por liderança direta. <strong class="font-semibold text-slate-600">Aderência</strong> mede a qualidade e consistência das obrigações no prazo.
+            Ordenado pela menor aderência primeiro — priorize quem precisa de atenção.
           </p>
         </div>
         {% url 'dashboard:adherence' as adherence_todos_url %}
@@ -139,8 +183,8 @@
       </div>
     </div>
 
-    <details class="group min-w-0 overflow-hidden rounded-xl border border-line bg-surface-card shadow-sm" aria-labelledby="lacunas-area-heading">
-      <summary class="cursor-pointer list-none border-b border-line px-4 py-5 sm:px-6 [&::-webkit-details-marker]:hidden">
+    <details class="group min-w-0 overflow-hidden rounded-2xl border border-line bg-surface-card shadow-sm" aria-labelledby="lacunas-area-heading">
+      <summary class="cursor-pointer list-none border-b border-slate-100 px-4 py-5 sm:px-6 [&::-webkit-details-marker]:hidden">
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div class="min-w-0">
             <h3 id="lacunas-area-heading" class="font-display text-xl font-medium tracking-tight text-slate-800">
@@ -199,8 +243,8 @@
     </details>
 
     {% if mostrar_lacunas_por_cargo %}
-    <details class="group min-w-0 overflow-hidden rounded-xl border border-line bg-surface-card shadow-sm" aria-labelledby="lacunas-cargo-heading">
-      <summary class="cursor-pointer list-none border-b border-line px-4 py-5 sm:px-6 [&::-webkit-details-marker]:hidden">
+    <details class="group min-w-0 overflow-hidden rounded-2xl border border-line bg-surface-card shadow-sm" aria-labelledby="lacunas-cargo-heading">
+      <summary class="cursor-pointer list-none border-b border-slate-100 px-4 py-5 sm:px-6 [&::-webkit-details-marker]:hidden">
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div class="min-w-0">
             <h3 id="lacunas-cargo-heading" class="font-display text-xl font-medium tracking-tight text-slate-800">
@@ -270,16 +314,10 @@
     if ('scrollRestoration' in history) {
       history.scrollRestoration = 'manual';
     }
-    var form = document.querySelector('form[aria-label="Filtrar estrutura"]');
-    if (form) {
-      form.querySelectorAll('select').forEach(function (sel) {
-        sel.addEventListener('change', function () {
-          try {
-            sessionStorage.setItem(KEY, '1');
-          } catch (e) {}
-          sel.blur();
-        });
-      });
+    function stripHash() {
+      if (location.hash) {
+        history.replaceState(null, '', location.pathname + location.search);
+      }
     }
     function pinTop() {
       window.scrollTo(0, 0);
@@ -288,6 +326,27 @@
         document.body.scrollTop = 0;
       }
     }
+    var form = document.querySelector('form[aria-label="Filtrar estrutura"]');
+    if (form) {
+      form.querySelectorAll('select').forEach(function (sel) {
+        sel.addEventListener('change', function () {
+          try {
+            sessionStorage.setItem(KEY, '1');
+          } catch (e) {}
+          stripHash();
+          sel.blur();
+        });
+      });
+    }
+    document.querySelectorAll('[data-scroll-to]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var id = btn.getAttribute('data-scroll-to');
+        var el = id ? document.getElementById(id) : null;
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
     var shouldPin = false;
     try {
       shouldPin = sessionStorage.getItem(KEY) === '1';
@@ -298,8 +357,10 @@
     if (!shouldPin) {
       return;
     }
+    stripHash();
     pinTop();
     window.addEventListener('load', function () {
+      stripHash();
       pinTop();
       requestAnimationFrame(pinTop);
       setTimeout(pinTop, 50);

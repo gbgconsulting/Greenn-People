@@ -7,10 +7,12 @@ passa o QS; este módulo **nunca** chama ``get_visible_users``.
 
 from __future__ import annotations
 
+from datetime import date
 from decimal import Decimal
 from typing import Literal
 
 from django.db.models import Avg, Count, DecimalField, ExpressionWrapper, F, Q, QuerySet
+from django.utils import timezone
 
 from apps.accounts.models import CustomUser
 from apps.cycles.models import Ciclo
@@ -21,6 +23,36 @@ from apps.reviews.models import AvaliacaoCompetencia
 _QUANT = Decimal('0.01')
 
 CoverageDimension = Literal['area', 'cargo']
+
+
+def ciclo_timeline(
+    ciclo: Ciclo | None,
+    *,
+    today: date | None = None,
+) -> dict | None:
+    """Barra calendário do ciclo (datas informativas — encerramento é manual).
+
+    Composição read-only de ``data_inicio`` / ``data_fim``; não altera status.
+    """
+    if ciclo is None:
+        return None
+    ref = today or timezone.localdate()
+    inicio = ciclo.data_inicio
+    fim = ciclo.data_fim
+    span = (fim - inicio).days
+    if span <= 0:
+        progresso = 100 if ref >= fim else 0
+    else:
+        elapsed = (ref - inicio).days
+        progresso = max(0, min(100, int(round(elapsed * 100 / span))))
+    return {
+        'data_inicio': inicio,
+        'data_fim': fim,
+        'progresso_percentual': progresso,
+        'dias_restantes': (fim - ref).days,
+        'encerrado_calendario': ref > fim,
+        'nao_iniciado': ref < inicio,
+    }
 
 
 def _apply_structure_filters(

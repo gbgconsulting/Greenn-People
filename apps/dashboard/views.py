@@ -53,6 +53,7 @@ from apps.dashboard.services.history import (
 )
 from apps.dashboard.services.structure import (
     build_structure_coverage,
+    ciclo_timeline,
     distinct_cargo_count,
     gaps_by_area,
     gaps_by_cargo,
@@ -896,6 +897,7 @@ class StructureDashboardView(LoginRequiredMixin, RequiresManagerOrAdminMixin, Te
         context['cobertura_resumo'] = cobertura['resumo']
         context['chart_cobertura_area'] = cobertura['chart_por_area']
         context['chart_cobertura_cargo'] = cobertura['chart_por_cargo']
+        context['ciclo_timeline'] = ciclo_timeline(ciclo)
         # Lista de líderes já vive dentro do card da seção (sem table-frame duplo).
         context['bare'] = True
         lideres_all = [
