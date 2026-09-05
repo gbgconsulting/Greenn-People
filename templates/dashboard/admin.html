@@ -105,7 +105,7 @@
         {% include "components/card.html" with label="Pendências" value=ciclo_kpis.pendencias badge_status="concluida" badge_label="Em dia" body="Ninguém com etapa em aberto neste ciclo." accent="warning" value_size="lg" %}
       {% endif %}
 
-      {% include "components/card.html" with label="Sem avaliação" value=ciclo_kpis.sem_avaliacao body="Pessoas ativas que ainda não entraram no ciclo." accent="neutral" value_size="lg" %}
+      {% include "components/card.html" with label="Sem avaliação" value=ciclo_kpis.sem_avaliacao body="Elegíveis do ciclo que ainda não entraram." accent="neutral" value_size="lg" %}
     </div>
 
     <div class="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">

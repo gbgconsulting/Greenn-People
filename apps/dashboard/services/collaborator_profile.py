@@ -19,6 +19,7 @@ from django.utils import timezone
 from apps.accounts.models import CustomUser
 from apps.audit.models import AuditLog
 from apps.cycles.models import Ciclo
+from apps.cycles.services.eligibility import filter_coverage_universe
 from apps.dashboard.chart_payloads import SEM_AVALIACAO_KEY
 from apps.organization.models import Area, Cargo
 from apps.reviews.models import Avaliacao
@@ -263,7 +264,11 @@ def build_structure_collaborator_rows(
     status: str = '',
     exclude_user_id: int | None = None,
 ) -> list[dict[str, Any]]:
-    """Lista de colaboradores para a tab Estrutura (AuthZ já no ``visible``)."""
+    """Lista de colaboradores para a tab Estrutura (AuthZ já no ``visible``).
+
+    Com ciclo: só o recorte de cobertura (elegíveis ∪ matriculados) — quem
+    está fora do corte não aparece como ``sem_avaliacao``.
+    """
     qs = visible.select_related('area', 'cargo', 'line_manager')
     if exclude_user_id is not None:
         qs = qs.exclude(pk=exclude_user_id)
@@ -271,6 +276,8 @@ def build_structure_collaborator_rows(
         qs = qs.filter(area_id=area_id)
     if cargo_id is not None:
         qs = qs.filter(cargo_id=cargo_id)
+    if ciclo is not None:
+        qs = filter_coverage_universe(qs, ciclo)
     busca = (busca or '').strip()
     if busca:
         qs = qs.filter(Q(nome__icontains=busca) | Q(email__icontains=busca))

@@ -19,6 +19,7 @@ from django.utils import timezone
 
 from apps.accounts.models import CustomUser
 from apps.accounts.services.scope import get_visible_users
+from apps.cycles.services.eligibility import filter_coverage_universe
 from apps.dashboard.chart_payloads import (
     ADERENCIA_LABELS,
     CHART_TYPE_BAR_HORIZONTAL,
@@ -41,7 +42,7 @@ from apps.dashboard.services.structure import (
 )
 from apps.organization.models import Area, Cargo
 from apps.reviews.models import Avaliacao
-from tests.conftest import DEFAULT_PASSWORD
+from tests.conftest import DEFAULT_PASSWORD, FIXTURE_DATA_ENTRADA
 
 
 @pytest.fixture
@@ -54,6 +55,7 @@ def outsider(db, area, cargo_colab) -> CustomUser:
         cargo=cargo_colab,
         area=area,
         line_manager=None,
+        data_entrada=FIXTURE_DATA_ENTRADA,
         email_confirmado_em=timezone.now(),
     )
 
@@ -73,7 +75,7 @@ def test_coverage_summary_total_equals_visible(
     colaborador,
     outsider,
 ):
-    """KPI ``total`` = count do QS visível ativo — não inclui outsider."""
+    """KPI ``total`` = elegíveis no QS visível — não inclui outsider."""
     visible = _visible_ativos(lider)
     visible_ids = set(visible.values_list('pk', flat=True))
 
@@ -81,9 +83,66 @@ def test_coverage_summary_total_equals_visible(
     assert outsider.pk not in visible_ids
 
     resumo = coverage_summary(visible, ciclo_aberto)
-    assert resumo['total'] == visible.count()
+    expected = filter_coverage_universe(visible, ciclo_aberto).count()
+    assert resumo['total'] == expected
     assert resumo['has_ciclo'] is True
-    assert resumo['total'] == len(visible_ids)
+    assert resumo['total'] == len(visible_ids)  # fixtures são elegíveis
+
+
+@pytest.mark.django_db
+def test_coverage_excludes_inelegivel_fora_do_corte(
+    ciclo_aberto,
+    lider,
+    colaborador,
+    area,
+    cargo_colab,
+):
+    """Fora do admitidos_ate / sem data_entrada não infla sem_avaliacao."""
+    from datetime import timedelta
+
+    posterior = CustomUser.objects.create_user(
+        email='posterior.corte@test.greenn.com.br',
+        password=DEFAULT_PASSWORD,
+        nome='Posterior Corte',
+        cargo=cargo_colab,
+        area=area,
+        line_manager=lider,
+        data_entrada=ciclo_aberto.admitidos_ate + timedelta(days=1),
+        email_confirmado_em=timezone.now(),
+    )
+    sem_data = CustomUser.objects.create_user(
+        email='sem.data.cobertura@test.greenn.com.br',
+        password=DEFAULT_PASSWORD,
+        nome='Sem Data',
+        cargo=cargo_colab,
+        area=area,
+        line_manager=lider,
+        data_entrada=None,
+        email_confirmado_em=timezone.now(),
+    )
+    assert not Avaliacao.objects.filter(
+        ciclo=ciclo_aberto,
+        usuario__in=[posterior, sem_data],
+    ).exists()
+
+    visible = _visible_ativos(lider)
+    assert posterior.pk in set(visible.values_list('pk', flat=True))
+    assert sem_data.pk in set(visible.values_list('pk', flat=True))
+
+    resumo = coverage_summary(visible, ciclo_aberto)
+    universe_ids = set(
+        filter_coverage_universe(visible, ciclo_aberto).values_list('pk', flat=True),
+    )
+    assert posterior.pk not in universe_ids
+    assert sem_data.pk not in universe_ids
+    assert colaborador.pk in universe_ids
+    assert resumo['total'] == len(universe_ids)
+    assert resumo['sem_avaliacao'] == max(
+        resumo['total'] - resumo['com_avaliacao'],
+        0,
+    )
+    # Inelegíveis não viram pendência.
+    assert resumo['total'] < visible.count()
 
 
 @pytest.mark.django_db
@@ -136,6 +195,7 @@ def test_coverage_by_dimension_rows_subset_of_visible(
         cargo=cargo_colab,
         area=area,
         line_manager=lider,
+        data_entrada=FIXTURE_DATA_ENTRADA,
         email_confirmado_em=timezone.now(),
     )
     # Usuário em outra área sob admin — fora do escopo do líder.
@@ -146,15 +206,17 @@ def test_coverage_by_dimension_rows_subset_of_visible(
         cargo=cargo_colab,
         area=outra_area,
         line_manager=admin,
+        data_entrada=FIXTURE_DATA_ENTRADA,
         email_confirmado_em=timezone.now(),
     )
 
     visible = _visible_ativos(lider)
+    expected_total = filter_coverage_universe(visible, ciclo_aberto).count()
     por_area = coverage_by_area(visible, ciclo_aberto)
     por_cargo = coverage_by_cargo(visible, ciclo_aberto)
 
-    assert sum(r['total'] for r in por_area) == visible.count()
-    assert sum(r['total'] for r in por_cargo) == visible.count()
+    assert sum(r['total'] for r in por_area) == expected_total
+    assert sum(r['total'] for r in por_cargo) == expected_total
     assert all(r['area_nome'] != outra_area.nome for r in por_area)
 
     for row in por_area:
@@ -180,8 +242,14 @@ def test_build_structure_coverage_leader_subset_admin(
     pack_admin = build_structure_coverage(visible_admin, ciclo_aberto)
 
     assert pack_lider['resumo']['total'] <= pack_admin['resumo']['total']
-    assert pack_lider['resumo']['total'] == visible_lider.count()
-    assert pack_admin['resumo']['total'] == visible_admin.count()
+    assert pack_lider['resumo']['total'] == filter_coverage_universe(
+        visible_lider,
+        ciclo_aberto,
+    ).count()
+    assert pack_admin['resumo']['total'] == filter_coverage_universe(
+        visible_admin,
+        ciclo_aberto,
+    ).count()
 
     assert set(visible_lider.values_list('pk', flat=True)).issubset(
         set(visible_admin.values_list('pk', flat=True)),
@@ -284,7 +352,7 @@ def _bulk_users(
     cargo: Cargo,
     line_manager: CustomUser | None,
 ) -> list[CustomUser]:
-    """Cria usuários sem hash de senha (só agregação de cobertura)."""
+    """Cria usuários elegíveis sem hash de senha (só agregação de cobertura)."""
     now = timezone.now()
     users = [
         CustomUser(
@@ -293,6 +361,7 @@ def _bulk_users(
             area=area,
             cargo=cargo,
             line_manager=line_manager,
+            data_entrada=FIXTURE_DATA_ENTRADA,
             email_confirmado_em=now,
             is_active=True,
             password='!',
@@ -453,7 +522,10 @@ def test_structure_coverage_area_top_n_weighted_others(
         pack['chart_por_area'],
         expected_top_labels={f'CovArea-{i}' for i in range(1, 9)},
     )
-    assert pack['resumo']['total'] == visible.count()
+    assert pack['resumo']['total'] == filter_coverage_universe(
+        visible,
+        ciclo_aberto,
+    ).count()
 
 
 @pytest.mark.django_db
@@ -479,7 +551,10 @@ def test_structure_coverage_cargo_top_n_weighted_others(
         pack['chart_por_cargo'],
         expected_top_labels={f'CovCargo-{i}' for i in range(1, 9)},
     )
-    assert pack['resumo']['total'] == visible.count()
+    assert pack['resumo']['total'] == filter_coverage_universe(
+        visible,
+        ciclo_aberto,
+    ).count()
 
 
 @pytest.mark.django_db

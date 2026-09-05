@@ -99,6 +99,7 @@ def _usuarios_extra(n: int, *, area, cargo_colab, lider) -> list[CustomUser]:
                 cargo=cargo_colab,
                 area=area,
                 line_manager=lider,
+                data_entrada=date(2020, 1, 15),
                 email_confirmado_em=timezone.now(),
             ),
         )
@@ -804,7 +805,7 @@ def test_team_com_ciclo_aberto_pipeline_kpis_so_do_escopo(
     av_colab.concluida = False
     av_colab.save(update_fields=['etapa', 'concluida'])
 
-    # Extra no escopo sem Avaliacao no aberto → fatia sem_avaliacao.
+    # Extra elegível no escopo sem Avaliacao no aberto → fatia sem_avaliacao.
     extra = CustomUser.objects.create_user(
         email='extra.escopo@test.greenn.com.br',
         password=DEFAULT_PASSWORD,
@@ -812,6 +813,7 @@ def test_team_com_ciclo_aberto_pipeline_kpis_so_do_escopo(
         cargo=cargo_colab,
         area=area,
         line_manager=lider,
+        data_entrada=date(2020, 1, 15),
         email_confirmado_em=timezone.now(),
     )
 
@@ -1641,6 +1643,7 @@ def test_team_busca_filtra_lista_sem_afetar_pipeline(
         cargo=cargo_colab,
         area=area,
         line_manager=lider,
+        data_entrada=date(2020, 1, 15),
         email_confirmado_em=timezone.now(),
     )
     client = _login_lider(lider)
@@ -1676,6 +1679,7 @@ def test_team_etapa_filtra_lista_e_ignora_invalida(
         cargo=cargo_colab,
         area=area,
         line_manager=lider,
+        data_entrada=date(2020, 1, 15),
         email_confirmado_em=timezone.now(),
     )
     av = Avaliacao.objects.get(ciclo=ciclo_aberto, usuario=colaborador)

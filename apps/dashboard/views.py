@@ -20,6 +20,10 @@ from apps.core.mixins import (
     RequiresManagerOrAdminMixin,
 )
 from apps.cycles.models import Ciclo
+from apps.cycles.services.eligibility import (
+    filter_coverage_universe,
+    user_eligible_for_ciclo,
+)
 from apps.dashboard.chart_payloads import (
     CHART_TYPE_BAR,
     CHART_TYPE_BAR_HORIZONTAL,
@@ -383,7 +387,10 @@ class TeamDashboardView(
             if ciclo is None:
                 qs = qs if etapa == SEM_AVALIACAO_KEY else qs.none()
             elif etapa == SEM_AVALIACAO_KEY:
-                qs = qs.exclude(
+                # Só elegíveis / matriculados sem Avaliacao — fora do corte
+                # não é "sem avaliação".
+                universe = filter_coverage_universe(qs, ciclo)
+                qs = universe.exclude(
                     pk__in=Avaliacao.objects.filter(ciclo=ciclo).values(
                         'usuario_id',
                     ),
@@ -456,6 +463,11 @@ class TeamDashboardView(
             {
                 'usuario': membro,
                 'avaliacao': avaliacoes_por_usuario.get(membro.pk),
+                'fora_do_corte': (
+                    ciclo is not None
+                    and avaliacoes_por_usuario.get(membro.pk) is None
+                    and not user_eligible_for_ciclo(membro, ciclo)
+                ),
             }
             for membro in membros
         ]
@@ -512,11 +524,12 @@ class TeamDashboardView(
         self,
         ciclo: Ciclo | None,
     ) -> tuple[dict[str, int] | None, dict[int, str], list[int]]:
-        """Contagens etapa (+ sem_avaliacao) sobre todo o escopo visível.
+        """Contagens etapa (+ sem_avaliacao) sobre o recorte do ciclo no escopo.
 
         Retorna ``(key_counts, etapa_por_usuario, membro_ids)``.
         ``key_counts`` is ``None`` when empty honesto (sem ciclo / sem
         membros / sem avaliações no ciclo) — mesmos critérios do chart US1.
+        ``membro_ids`` = universo de cobertura (elegíveis ∪ matriculados).
         """
         etapa_keys = [choice.value for choice in Avaliacao.Etapa]
         ordered_keys = [*etapa_keys, SEM_AVALIACAO_KEY]
@@ -524,7 +537,12 @@ class TeamDashboardView(
         if ciclo is None:
             return None, {}, []
 
-        membro_ids = list(self.get_base_queryset().values_list('pk', flat=True))
+        membro_ids = list(
+            filter_coverage_universe(self.get_base_queryset(), ciclo).values_list(
+                'pk',
+                flat=True,
+            ),
+        )
         if not membro_ids:
             return None, {}, []
 
@@ -1175,7 +1193,8 @@ class AdminDashboardView(LoginRequiredMixin, RequiresAdminMixin, TemplateView):
 
         Totais/gargalo de pipeline, pendências e sem avaliação. Sem
         ``percentual_encerrados``. Não chama ``get_visible_users``: o
-        universo é o mesmo de ``open_cycle`` (usuários ativos).
+        universo de ``sem_avaliacao`` é o recorte do ciclo (elegíveis ∪
+        matriculados ativos), não todo o quadro.
         """
         if ciclo is None:
             return {
@@ -1214,9 +1233,13 @@ class AdminDashboardView(LoginRequiredMixin, RequiresAdminMixin, TemplateView):
                 )
                 gargalo_count = etapa_counts[gargalo_key]
 
-        eligible = CustomUser.objects.filter(is_active=True).count()
+        universe = filter_coverage_universe(
+            CustomUser.objects.filter(is_active=True),
+            ciclo,
+        )
+        eligible = universe.count()
         cobertos = (
-            Avaliacao.objects.filter(ciclo=ciclo, usuario__is_active=True)
+            Avaliacao.objects.filter(ciclo=ciclo, usuario_id__in=universe)
             .values('usuario_id')
             .distinct()
             .count()

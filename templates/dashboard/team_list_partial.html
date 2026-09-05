@@ -187,7 +187,11 @@
               </td>
               <td class="truncate text-slate-500">{{ item.usuario.cargo.nome|default:"—" }}</td>
               <td>
-                {% include "components/badge_status.html" with status="arquivado" label="Sem avaliação" extra_class="!rounded-full" %}
+                {% if item.fora_do_corte %}
+                  {% include "components/badge_status.html" with status="arquivado" label="Fora do recorte" extra_class="!rounded-full" %}
+                {% else %}
+                  {% include "components/badge_status.html" with status="arquivado" label="Sem avaliação" extra_class="!rounded-full" %}
+                {% endif %}
               </td>
               <td class="text-right"><span class="text-slate-400">—</span></td>
             </tr>

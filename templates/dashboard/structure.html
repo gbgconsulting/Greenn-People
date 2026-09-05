@@ -163,7 +163,7 @@
     <div class="grid grid-cols-1 gap-5 md:grid-cols-3" aria-label="Indicadores de cobertura">
       {% if cobertura_resumo.has_ciclo and cobertura_resumo.percentual is not None %}
         {% with val=cobertura_resumo.percentual|stringformat:"d"|add:"%" %}
-        {% include "components/card.html" with label="Cobertura Total" value=val body="Percentual de pessoas com avaliação neste ciclo." accent="success" icon="trending_up" value_size="lg" extra_class="!rounded-2xl !p-6 hover:border-emerald-300 hover:shadow-md transition-all" %}
+        {% include "components/card.html" with label="Cobertura Total" value=val body="Percentual de elegíveis com avaliação neste ciclo." accent="success" icon="trending_up" value_size="lg" extra_class="!rounded-2xl !p-6 hover:border-emerald-300 hover:shadow-md transition-all" %}
         {% endwith %}
       {% elif cobertura_resumo.has_ciclo %}
         {% include "components/card.html" with label="Cobertura Total" value="—" body="Não há pessoas para calcular a cobertura com esses filtros." accent="success" value_size="lg" extra_class="!rounded-2xl !p-6" %}
@@ -175,7 +175,7 @@
         {% with total_str=cobertura_resumo.total|stringformat:"d" %}
         {% with suffix="/ "|add:total_str %}
         {% with secondary=cobertura_resumo.com_avaliacao|stringformat:"d"|add:" no ciclo" %}
-        {% include "components/card.html" with label="Com Avaliação" value=cobertura_resumo.com_avaliacao value_suffix=suffix body="Pessoas que já entraram no ciclo." icon="check" value_size="lg" footer_secondary=secondary extra_class="!rounded-2xl !p-6 hover:border-emerald-300 hover:shadow-md transition-all" %}
+        {% include "components/card.html" with label="Com Avaliação" value=cobertura_resumo.com_avaliacao value_suffix=suffix body="Pessoas do recorte que já entraram no ciclo." icon="check" value_size="lg" footer_secondary=secondary extra_class="!rounded-2xl !p-6 hover:border-emerald-300 hover:shadow-md transition-all" %}
         {% endwith %}
         {% endwith %}
         {% endwith %}
@@ -190,11 +190,11 @@
           {% else %}
             {% widthratio 0 1 100 as sem_pct_raw %}
           {% endif %}
-          {% with hint=sem_pct_raw|stringformat:"d"|add:"% do quadro total" %}
-          {% include "components/card.html" with label="Sem Avaliação" value=cobertura_resumo.sem_avaliacao badge_status="pendente" badge_label="Atenção" body="Ainda não iniciaram a avaliação neste ciclo." value_size="lg" footer_hint=hint footer_hint_tone="warning" footer_label="Ver líderes" footer_scroll_to="tabela-lideres" extra_class="!rounded-2xl !p-6 hover:border-amber-300 hover:shadow-md transition-all" %}
+          {% with hint=sem_pct_raw|stringformat:"d"|add:"% do recorte do ciclo" %}
+          {% include "components/card.html" with label="Sem Avaliação" value=cobertura_resumo.sem_avaliacao badge_status="pendente" badge_label="Atenção" body="Elegíveis deste ciclo que ainda não têm avaliação." value_size="lg" footer_hint=hint footer_hint_tone="warning" footer_label="Ver líderes" footer_scroll_to="tabela-lideres" extra_class="!rounded-2xl !p-6 hover:border-amber-300 hover:shadow-md transition-all" %}
           {% endwith %}
         {% else %}
-          {% include "components/card.html" with label="Sem Avaliação" value=cobertura_resumo.sem_avaliacao badge_status="concluida" badge_label="Completo" body="Todos já têm avaliação neste ciclo." value_size="lg" extra_class="!rounded-2xl !p-6" %}
+          {% include "components/card.html" with label="Sem Avaliação" value=cobertura_resumo.sem_avaliacao badge_status="concluida" badge_label="Completo" body="Todos os elegíveis deste ciclo já têm avaliação." value_size="lg" extra_class="!rounded-2xl !p-6" %}
         {% endif %}
       {% else %}
         {% include "components/card.html" with label="Sem Avaliação" value="—" body="Disponível quando houver um ciclo." value_size="lg" extra_class="!rounded-2xl !p-6" %}

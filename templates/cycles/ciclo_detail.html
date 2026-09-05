@@ -70,10 +70,10 @@
 
       {% if cobertura_resumo.has_ciclo and cobertura_resumo.percentual is not None %}
         {% with val=cobertura_resumo.percentual|stringformat:"d"|add:"%" %}
-        {% include "components/card.html" with label="Cobertura" value=val body="Percentual de pessoas ativas que já têm avaliação." accent="success" icon="trending_up" value_size="lg" %}
+        {% include "components/card.html" with label="Cobertura" value=val body="Percentual de elegíveis deste ciclo que já têm avaliação." accent="success" icon="trending_up" value_size="lg" %}
         {% endwith %}
       {% elif cobertura_resumo.has_ciclo %}
-        {% include "components/card.html" with label="Cobertura" value="—" body="Não há pessoas ativas para calcular a cobertura." accent="success" value_size="lg" %}
+        {% include "components/card.html" with label="Cobertura" value="—" body="Não há elegíveis no recorte para calcular a cobertura." accent="success" value_size="lg" %}
       {% else %}
         {% include "components/card.html" with label="Cobertura" value="—" body="Não foi possível calcular a cobertura neste ciclo." accent="success" value_size="lg" %}
       {% endif %}

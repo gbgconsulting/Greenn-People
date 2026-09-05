@@ -1,8 +1,8 @@
 """Aggregações de estrutura, cobertura e lacunas (FR-019 / RF-29 / FR-006).
 
-Cobertura = composição de Counts sobre ``visible`` já resolvido + presença de
-``Avaliacao`` no ciclo (mesma regra “tem avaliação” do team chart). O caller
-passa o QS; este módulo **nunca** chama ``get_visible_users``.
+Cobertura = composição de Counts sobre o recorte do ciclo (elegíveis ∪
+matriculados) ∩ ``visible`` já resolvido + presença de ``Avaliacao``.
+O caller passa o QS; este módulo **nunca** chama ``get_visible_users``.
 """
 
 from __future__ import annotations
@@ -16,6 +16,7 @@ from django.utils import timezone
 
 from apps.accounts.models import CustomUser
 from apps.cycles.models import Ciclo
+from apps.cycles.services.eligibility import filter_coverage_universe
 from apps.dashboard.models import AderenciaSnapshot
 from apps.dashboard.services.eligible_leaders import eligible_leader_queryset
 from apps.reviews.models import AvaliacaoCompetencia
@@ -254,16 +255,16 @@ def coverage_summary(
 ) -> dict:
     """KPI de cobertura no escopo filtrado (FR-006 / FR-013).
 
-    Conta usuários em ``visible`` vs presença de ``Avaliacao`` no ciclo —
-    sem recalcular fórmula de nota/aderência.
+    Denominador = recorte do ciclo (elegíveis ∪ já matriculados) ∩
+    ``visible`` filtrado — não o quadro inteiro fora do corte.
     """
     qs = _apply_structure_filters(
         visible,
         area_id=area_id,
         cargo_id=cargo_id,
     )
-    total = qs.count()
     if ciclo is None:
+        total = qs.count()
         return {
             'total': total,
             'com_avaliacao': None,
@@ -272,6 +273,8 @@ def coverage_summary(
             'has_ciclo': False,
         }
 
+    qs = filter_coverage_universe(qs, ciclo)
+    total = qs.count()
     agg = qs.aggregate(
         com_avaliacao=Count(
             'avaliacoes',
@@ -297,14 +300,17 @@ def _coverage_by_dimension(
     area_id: int | None = None,
     cargo_id: int | None = None,
 ) -> list[dict]:
-    """Agrupa cobertura por área ou cargo sobre ``visible`` + ciclo."""
+    """Agrupa cobertura por área ou cargo sobre o recorte do ciclo."""
     if ciclo is None:
         return []
 
-    qs = _apply_structure_filters(
-        visible,
-        area_id=area_id,
-        cargo_id=cargo_id,
+    qs = filter_coverage_universe(
+        _apply_structure_filters(
+            visible,
+            area_id=area_id,
+            cargo_id=cargo_id,
+        ),
+        ciclo,
     )
     if not qs.exists():
         return []
