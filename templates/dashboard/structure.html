@@ -49,6 +49,9 @@
       role="search"
       aria-label="Filtrar estrutura"
     >
+      {% if structure_visao == 'colaborador' %}
+      <input type="hidden" name="visao" value="colaborador" />
+      {% endif %}
       {% include "dashboard/_ciclo_selector.html" with ciclo_selector_embed=True hide_q_filter=True hide_arquivo_hint=True compact=True extra_class="!max-w-none sm:!max-w-none w-full" %}
       {% include "dashboard/_area_filter.html" with extra_class="!max-w-none w-full sm:!max-w-none sm:w-full" %}
       <div class="min-w-0 w-full sm:max-w-[16rem] md:max-w-none">
@@ -101,6 +104,61 @@
   </div>
 </section>
 
+<section class="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3" aria-label="Alternar visão da estrutura">
+  <div class="inline-flex space-x-1 rounded-xl bg-slate-200/70 p-1" role="tablist" aria-label="Visão do ciclo ou por colaborador">
+    {% querystring visao=None page=None busca=None status=None as ciclo_visao_url %}
+    {% querystring visao='colaborador' page=None as colab_visao_url %}
+    <a
+      href="{{ ciclo_visao_url }}"
+      role="tab"
+      aria-selected="{% if structure_visao != 'colaborador' %}true{% else %}false{% endif %}"
+      class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all {% if structure_visao != 'colaborador' %}bg-white text-slate-900 shadow-sm{% else %}text-slate-600 hover:text-slate-900{% endif %}"
+    >
+      Visão do ciclo
+    </a>
+    <a
+      href="{{ colab_visao_url }}"
+      role="tab"
+      aria-selected="{% if structure_visao == 'colaborador' %}true{% else %}false{% endif %}"
+      class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all {% if structure_visao == 'colaborador' %}bg-white text-slate-900 shadow-sm{% else %}text-slate-600 hover:text-slate-900{% endif %}"
+    >
+      Visão por colaborador
+      {% if structure_visao == 'colaborador' and total_colaboradores is not None %}
+      <span class="ml-0.5 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-800">{{ total_colaboradores }}</span>
+      {% endif %}
+    </a>
+  </div>
+</section>
+
+{% if structure_visao == 'colaborador' %}
+<section class="mb-8 min-w-0" aria-labelledby="colaboradores-heading">
+  <h2 id="colaboradores-heading" class="sr-only">Colaboradores no escopo</h2>
+  {% include "dashboard/structure_collaborators_partial.html" %}
+</section>
+
+{# Shell do drawer — painel preenchido via HTMX.
+   transform/max-width inline: utilitários translate-x-full / max-w-[440px]
+   podem não existir no CSS compilado até o próximo rebuild. #}
+<div
+  id="structure-collaborator-drawer-backdrop"
+  class="pointer-events-none fixed inset-0 z-40 bg-slate-900/40 opacity-0 transition-opacity duration-300"
+  hidden
+  data-structure-drawer-backdrop
+></div>
+<aside
+  id="structure-collaborator-drawer"
+  class="fixed inset-y-0 right-0 z-50 flex w-full flex-col border-l border-slate-200 bg-white shadow-2xl transition-transform duration-300"
+  style="max-width: 440px; transform: translateX(100%);"
+  hidden
+  aria-hidden="true"
+  data-structure-drawer
+>
+  <div class="absolute right-4 top-4 z-10">
+    {% include "components/htmx_indicator.html" with indicator_id="structure-drawer-indicator" variant="inline" label="Carregando perfil…" %}
+  </div>
+  <div id="structure-collaborator-drawer-panel" class="flex h-full min-h-0 flex-col"></div>
+</aside>
+{% else %}
 <section class="mb-8 min-w-0" aria-labelledby="cobertura-heading">
   <h2 id="cobertura-heading" class="sr-only">Cobertura da equipe</h2>
 
@@ -304,6 +362,7 @@
     {% endif %}
   </div>
 </section>
+{% endif %}
 </div>
 {% endblock %}
 
@@ -369,6 +428,10 @@
     });
   })();
 </script>
+{% if structure_visao == 'colaborador' %}
+<script src="{% static 'js/structure_collaborator_drawer.js' %}" defer></script>
+{% else %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" defer></script>
 <script src="{% static 'js/dashboard_charts.js' %}" defer></script>
+{% endif %}
 {% endblock %}

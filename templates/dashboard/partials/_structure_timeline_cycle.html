@@ -1,0 +1,52 @@
+{% comment %}Item de ciclo na timeline do drawer de Estrutura.{% endcomment %}
+{% load review_display %}
+<div class="relative">
+  <div class="absolute -left-[27px] top-0.5 h-3.5 w-3.5 rounded-full border-2 border-white {% if first %}bg-emerald-600 ring-2 ring-emerald-100{% else %}bg-slate-300 ring-2 ring-slate-100{% endif %}"></div>
+  <div>
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="text-xs font-bold text-slate-800">{{ item.ciclo.nome }}</span>
+      {% if item.status_tone == 'success' %}
+        {% include "components/badge_status.html" with status="concluido" label=item.status_label extra_class="!text-[10px]" %}
+      {% elif item.status_tone == 'warning' %}
+        {% include "components/badge_status.html" with status="pendente" label=item.status_label extra_class="!text-[10px]" %}
+      {% else %}
+        {% include "components/badge_status.html" with status="neutro" label=item.status_label extra_class="!text-[10px]" %}
+      {% endif %}
+    </div>
+    <div class="mt-1 flex flex-wrap items-center gap-2">
+      {% if item.nota_display %}
+      <p class="text-xs font-medium text-slate-500">
+        Nota:
+        <span class="font-bold text-slate-800">{{ item.nota_display }}</span>
+      </p>
+      {% else %}
+      <p class="text-xs font-medium text-slate-400">Nota: —</p>
+      {% endif %}
+      {% if item.delta %}
+        {% if item.delta.direction == 'up' %}
+        <span class="inline-flex items-center gap-0.5 rounded border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700">↑ {{ item.delta.label }}</span>
+        {% elif item.delta.direction == 'down' %}
+        <span class="inline-flex items-center gap-0.5 rounded border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">↓ {{ item.delta.label }}</span>
+        {% else %}
+        <span class="inline-flex items-center gap-0.5 rounded border border-slate-200 bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600">{{ item.delta.label }}</span>
+        {% endif %}
+      {% endif %}
+    </div>
+    {% if item.avaliador_reliable and item.avaliador_nome %}
+    <p class="mt-0.5 text-[11px] text-slate-400">Avaliador: {{ item.avaliador_nome }}</p>
+    {% endif %}
+  </div>
+</div>
+{% if item.structural_changes %}
+<div class="relative">
+  <div class="absolute -left-[25px] top-1 h-2.5 w-2.5 rounded-full border-2 border-white bg-slate-400"></div>
+  <div class="space-y-1.5 rounded-lg border border-slate-200/70 bg-slate-50 p-2.5">
+    {% for change in item.structural_changes %}
+    <div class="flex items-start gap-1.5 text-[11px] {% if change.kind == 'promotion' %}font-semibold text-emerald-800{% else %}text-slate-600{% endif %}">
+      <span class="mt-0.5 text-slate-400" aria-hidden="true">•</span>
+      <span>{{ change.text }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}

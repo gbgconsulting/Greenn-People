@@ -1,0 +1,149 @@
+{% comment %}
+  Drawer de perfil + histórico do colaborador (Estrutura).
+  Conteúdo HTMX swapado em #structure-collaborator-drawer-panel.
+  Sem botão de lembrete nesta entrega.
+{% endcomment %}
+{% load review_display %}
+<section
+  class="flex h-full flex-col"
+  role="dialog"
+  aria-modal="true"
+  tabindex="-1"
+  data-structure-drawer-content
+  aria-labelledby="structure-collaborator-drawer-heading"
+>
+  <div class="flex h-16 shrink-0 items-center justify-between border-b border-slate-100 px-6">
+    <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Perfil do colaborador</span>
+    <button
+      type="button"
+      class="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+      data-structure-drawer-close
+      aria-label="Fechar perfil"
+    >
+      <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+      </svg>
+    </button>
+  </div>
+
+  <div class="flex-1 space-y-6 overflow-y-auto p-6">
+    <div class="flex items-start gap-4 border-b border-slate-100 pb-6">
+      <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border-2 border-emerald-200 bg-emerald-50 font-display text-2xl font-bold text-emerald-800">
+        {{ iniciais }}
+      </div>
+      <div class="min-w-0">
+        <h3 id="structure-collaborator-drawer-heading" class="font-display text-lg font-semibold leading-tight text-slate-900" tabindex="-1">
+          {{ colaborador.nome|default:colaborador.email }}
+        </h3>
+        {% if colaborador.cargo %}
+        <p class="mt-0.5 text-xs font-semibold text-emerald-700">{{ colaborador.cargo.nome }}</p>
+        {% endif %}
+        <p class="mt-1 text-xs text-slate-400">{{ colaborador.email }}</p>
+        <div class="mt-3 flex flex-wrap gap-1.5">
+          {% if colaborador.area %}
+          <span class="inline-block rounded bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">{{ colaborador.area.nome }}</span>
+          {% endif %}
+          {% if colaborador.line_manager %}
+          <span class="inline-block rounded bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+            Líder: {{ colaborador.line_manager.nome|default:colaborador.line_manager.email }}
+          </span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <h4 class="mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">
+        Ciclo atual{% if current_cycle.ciclo %} ({{ current_cycle.ciclo.nome }}){% endif %}
+      </h4>
+      {% if current_cycle.ciclo %}
+        {% if current_cycle.status_tone == 'warning' %}
+        <div class="rounded-xl border border-amber-200 bg-amber-50/50 p-4">
+          <div class="mb-2 flex items-center justify-between gap-2">
+            <span class="text-xs font-bold text-amber-900">Status da avaliação</span>
+            {% include "components/badge_status.html" with status="pendente" label=current_cycle.status_label %}
+          </div>
+          <p class="text-xs leading-relaxed text-amber-800">
+            {% if current_cycle.avaliacao %}
+              Avaliação em andamento neste ciclo ({{ current_cycle.avaliacao.get_etapa_display }}).
+            {% else %}
+              Avaliação ainda não iniciada neste ciclo.
+            {% endif %}
+          </p>
+        </div>
+        {% elif current_cycle.status_tone == 'success' %}
+        <div class="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4">
+          <div class="mb-2 flex items-center justify-between gap-2">
+            <span class="text-xs font-bold text-emerald-900">Status da avaliação</span>
+            {% include "components/badge_status.html" with status="concluido" label=current_cycle.status_label %}
+          </div>
+          {% if current_cycle.avaliacao and current_cycle.avaliacao.nota_final_lider is not None %}
+          <p class="text-xs text-emerald-800">
+            Nota: <span class="font-bold">{{ current_cycle.avaliacao.nota_final_lider|nota_percentual }}</span>
+          </p>
+          {% endif %}
+        </div>
+        {% else %}
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <div class="mb-2 flex items-center justify-between gap-2">
+            <span class="text-xs font-bold text-slate-800">Status da avaliação</span>
+            {% include "components/badge_status.html" with status="neutro" label=current_cycle.status_label %}
+          </div>
+          {% if current_cycle.avaliacao and current_cycle.avaliacao.nota_final_lider is not None %}
+          <p class="text-xs text-slate-600">
+            Nota: <span class="font-bold">{{ current_cycle.avaliacao.nota_final_lider|nota_percentual }}</span>
+          </p>
+          {% endif %}
+        </div>
+        {% endif %}
+      {% else %}
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <p class="text-xs text-slate-600">Nenhum ciclo selecionado.</p>
+        </div>
+      {% endif %}
+    </div>
+
+    <div>
+      <h4 class="mb-3 text-xs font-bold uppercase tracking-wider text-slate-400">Histórico de ciclos anteriores</h4>
+      {% if timeline_preview or timeline_older %}
+      <div class="space-y-4" data-timeline-wrapper>
+        <div class="relative ml-2 space-y-4 border-l-2 border-slate-200 pl-5">
+          {% for item in timeline_preview %}
+            {% include "dashboard/partials/_structure_timeline_cycle.html" with item=item first=forloop.first %}
+          {% endfor %}
+          {% if has_more_history %}
+          <div id="structure-older-cycles" class="hidden space-y-4 pt-1" data-older-cycles>
+            {% for item in timeline_older %}
+              {% include "dashboard/partials/_structure_timeline_cycle.html" with item=item first=False %}
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+        {% if has_more_history %}
+        <button
+          type="button"
+          class="flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:border-emerald-200 hover:bg-emerald-50/50 hover:text-emerald-700"
+          data-toggle-older-cycles
+          data-total-cycles="{{ timeline_total_cycles }}"
+          aria-expanded="false"
+          aria-controls="structure-older-cycles"
+        >
+          <span data-toggle-older-label>Ver histórico completo ({{ timeline_total_cycles }} ciclos)</span>
+        </button>
+        {% endif %}
+      </div>
+      {% else %}
+        {% include "components/empty_state.html" with title="Sem histórico" message="Ainda não há ciclos anteriores com avaliação para este colaborador." %}
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="flex shrink-0 items-center gap-3 border-t border-slate-100 bg-slate-50/80 p-5">
+    {% if current_cycle.detail_url_avaliacao_id %}
+      {% url 'reviews:detail' current_cycle.detail_url_avaliacao_id as detail_url %}
+      {% include "components/button.html" with label="Ver avaliação completa" href=detail_url variant="secondary" extra_class="!h-10 w-full !text-xs" %}
+    {% else %}
+      <p class="w-full text-center text-xs text-slate-500">Sem avaliação neste ciclo para abrir.</p>
+    {% endif %}
+  </div>
+</section>

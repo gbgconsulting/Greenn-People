@@ -4,7 +4,10 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Avg, Count, F, Q
+from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import render
+from django.urls import reverse
+from django.views import View
 from django.views.generic import ListView, TemplateView
 
 from apps.accounts.models import CustomUser
@@ -51,6 +54,10 @@ from apps.dashboard.services.history import (
     resolve_history_ciclo_selecionado,
     resolve_history_ciclos,
 )
+from apps.dashboard.services.collaborator_profile import (
+    build_collaborator_drawer,
+    build_structure_collaborator_rows,
+)
 from apps.dashboard.services.structure import (
     build_structure_coverage,
     ciclo_timeline,
@@ -70,6 +77,9 @@ from apps.reviews.services.guidance import (
     resolve_next_step,
 )
 from apps.talent.services.classification import get_visible_classification_for_collaborator
+
+_STRUCTURE_VISAO_COLABORADOR = 'colaborador'
+_STRUCTURE_STATUS_FILTERS = frozenset({'', SEM_AVALIACAO_KEY, 'com_avaliacao'})
 
 # KPI liderança (PRD): ≥ 80% alta; faixa intermediária; abaixo = baixa.
 _ADERENCIA_ALTA = Decimal('80')
@@ -851,19 +861,45 @@ class AdherenceListView(
 
 
 class StructureDashboardView(LoginRequiredMixin, RequiresManagerOrAdminMixin, TemplateView):
-    """Painel de estrutura: cobertura (Freeze B) + lacunas secundárias (FR-019 / FR-006)."""
+    """Painel de estrutura: cobertura (Freeze B) + lacunas secundárias (FR-019 / FR-006).
+
+    Default = visão do ciclo. ``?visao=colaborador`` abre a lista + drawer.
+    """
 
     template_name = 'dashboard/structure.html'
     leaders_partial_template_name = 'dashboard/structure_leaders_partial.html'
+    collaborators_partial_template_name = (
+        'dashboard/structure_collaborators_partial.html'
+    )
 
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
-        if (
-            is_htmx(request)
-            and request.headers.get('HX-Target') == '#list-container'
-        ):
-            return render(request, self.leaders_partial_template_name, context)
+        if is_htmx(request):
+            # HTMX 2 envia o id do alvo sem ``#``; aceitar ambos.
+            target = (request.headers.get('HX-Target') or '').lstrip('#')
+            # Lista colaborador: qualquer pedido HTMX da tab devolve só o partial
+            # (paginação/busca). Evita swap da página inteira dentro de #list-container.
+            if context.get('structure_visao') == _STRUCTURE_VISAO_COLABORADOR:
+                return render(
+                    request,
+                    self.collaborators_partial_template_name,
+                    context,
+                )
+            if target == 'list-container':
+                return render(request, self.leaders_partial_template_name, context)
         return self.render_to_response(context)
+
+    def _structure_visao(self) -> str:
+        raw = (self.request.GET.get('visao') or '').strip()
+        if raw == _STRUCTURE_VISAO_COLABORADOR:
+            return _STRUCTURE_VISAO_COLABORADOR
+        return 'ciclo'
+
+    def _collaborator_status_filter(self) -> str:
+        raw = (self.request.GET.get('status') or '').strip()
+        if raw in _STRUCTURE_STATUS_FILTERS:
+            return raw
+        return ''
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -876,13 +912,7 @@ class StructureDashboardView(LoginRequiredMixin, RequiresManagerOrAdminMixin, Te
         cargo_id = parse_optional_int(self.request, 'cargo')
         # AuthZ inalterada — mesmo QS; builder só recebe visible já resolvido.
         visible = get_visible_users(self.request.user).filter(is_active=True)
-
-        cobertura = build_structure_coverage(
-            visible,
-            ciclo,
-            area_id=area_id,
-            cargo_id=cargo_id,
-        )
+        structure_visao = self._structure_visao()
 
         context['ciclo_filtro'] = ciclo
         context['ciclo_selecionado'] = ciclo
@@ -894,12 +924,79 @@ class StructureDashboardView(LoginRequiredMixin, RequiresManagerOrAdminMixin, Te
         context['cargos'] = Cargo.objects.filter(is_active=True).order_by('nivel', 'nome')
         context['filtro_area_id'] = area_id
         context['filtro_cargo_id'] = cargo_id
+        context['ciclo_timeline'] = ciclo_timeline(ciclo)
+        context['structure_visao'] = structure_visao
+        context['bare'] = True
+
+        if structure_visao == _STRUCTURE_VISAO_COLABORADOR:
+            busca = (self.request.GET.get('busca') or '').strip()
+            status = self._collaborator_status_filter()
+            base_rows = build_structure_collaborator_rows(
+                visible,
+                ciclo,
+                area_id=area_id,
+                cargo_id=cargo_id,
+                busca=busca,
+                status='',
+                exclude_user_id=self.request.user.pk,
+            )
+            if status:
+                rows = [
+                    row
+                    for row in base_rows
+                    if (
+                        status == SEM_AVALIACAO_KEY
+                        and row['coverage'] == 'sem_avaliacao'
+                    )
+                    or (
+                        status == 'com_avaliacao'
+                        and row['coverage'] == 'com_avaliacao'
+                    )
+                ]
+            else:
+                rows = base_rows
+            page_obj = paginate_list(self.request, rows)
+            context['page_obj'] = page_obj
+            context['colaboradores_resumo'] = list(page_obj.object_list)
+            context['filtro_busca'] = busca
+            context['filtro_status'] = status
+            context['total_colaboradores'] = len(base_rows)
+            context['total_colaboradores_filtrados'] = len(rows)
+            # Evita templates da visão ciclo quebrarem se referenciados.
+            context['cobertura_resumo'] = {
+                'has_ciclo': ciclo is not None,
+                'percentual': None,
+                'com_avaliacao': None,
+                'sem_avaliacao': None,
+                'total': None,
+            }
+            context['chart_cobertura_area'] = empty_kind_payload(
+                kind=EMPTY_KIND_SEM_DADO,
+                chart_id='chart-cobertura-area',
+                chart_type=CHART_TYPE_BAR_HORIZONTAL,
+                title='Cobertura por área',
+            )
+            context['chart_cobertura_cargo'] = empty_kind_payload(
+                kind=EMPTY_KIND_SEM_DADO,
+                chart_id='chart-cobertura-cargo',
+                chart_type=CHART_TYPE_BAR_HORIZONTAL,
+                title='Cobertura por cargo',
+            )
+            context['lideres_resumo'] = []
+            context['lacunas_por_area'] = []
+            context['lacunas_por_cargo'] = []
+            context['mostrar_lacunas_por_cargo'] = False
+            return context
+
+        cobertura = build_structure_coverage(
+            visible,
+            ciclo,
+            area_id=area_id,
+            cargo_id=cargo_id,
+        )
         context['cobertura_resumo'] = cobertura['resumo']
         context['chart_cobertura_area'] = cobertura['chart_por_area']
         context['chart_cobertura_cargo'] = cobertura['chart_por_cargo']
-        context['ciclo_timeline'] = ciclo_timeline(ciclo)
-        # Lista de líderes já vive dentro do card da seção (sem table-frame duplo).
-        context['bare'] = True
         lideres_all = [
             {
                 **item,
@@ -952,6 +1049,37 @@ class StructureDashboardView(LoginRequiredMixin, RequiresManagerOrAdminMixin, Te
         else:
             context['lacunas_por_cargo'] = []
         return context
+
+
+class StructureCollaboratorDrawerView(
+    LoginRequiredMixin,
+    RequiresManagerOrAdminMixin,
+    View,
+):
+    """GET HTMX: drawer de perfil/histórico do colaborador (escopo Estrutura)."""
+
+    http_method_names = ['get', 'head', 'options']
+    template_name = 'dashboard/partials/_structure_collaborator_drawer.html'
+
+    def get(self, request, user_pk):
+        if not is_htmx(request):
+            url = reverse('dashboard:structure')
+            return HttpResponseRedirect(f'{url}?visao={_STRUCTURE_VISAO_COLABORADOR}')
+
+        visible = get_visible_users(request.user).filter(is_active=True)
+        ciclo = resolve_operational_ciclo(request)
+        payload = build_collaborator_drawer(visible, user_pk, ciclo)
+        if payload is None:
+            raise Http404()
+
+        return render(
+            request,
+            self.template_name,
+            {
+                **payload,
+                'ciclo_selecionado': ciclo,
+            },
+        )
 
 
 class AdminDashboardView(LoginRequiredMixin, RequiresAdminMixin, TemplateView):
