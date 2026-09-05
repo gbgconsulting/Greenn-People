@@ -136,9 +136,6 @@
   {% include "dashboard/structure_collaborators_partial.html" %}
 </section>
 
-{# Shell do drawer — painel preenchido via HTMX.
-   transform/max-width inline: utilitários translate-x-full / max-w-[440px]
-   podem não existir no CSS compilado até o próximo rebuild. #}
 <div
   id="structure-collaborator-drawer-backdrop"
   class="pointer-events-none fixed inset-0 z-40 bg-slate-900/40 opacity-0 transition-opacity duration-300"
