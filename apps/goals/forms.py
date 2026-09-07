@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from decimal import Decimal
+
 from django import forms
 
 from apps.cycles.models import Ciclo
@@ -209,27 +211,52 @@ class MetaForm(forms.ModelForm):
 
 
 class MetaProgressForm(forms.ModelForm):
-    """Atualização de progresso (0–100) na etapa resultados ou pós-reprovação."""
+    """Atualização de progresso binário (0 / 50 / 100) na etapa resultados."""
+
+    progresso = forms.TypedChoiceField(
+        choices=(
+            ('0', 'Não iniciada (0%)'),
+            ('50', 'Em andamento (50%)'),
+            ('100', 'Concluída (100%)'),
+        ),
+        coerce=lambda value: Decimal(str(value)),
+        label='Progresso',
+        error_messages={
+            'required': 'Selecione o estado do progresso.',
+            'invalid_choice': (
+                'Selecione um dos estados: Não iniciada (0%), '
+                'Em andamento (50%) ou Concluída (100%).'
+            ),
+        },
+    )
 
     class Meta:
         model = Meta
         fields = ('progresso',)
-        labels = {
-            'progresso': 'Progresso (%)',
-        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['progresso'].required = True
-        self.fields['progresso'].widget.attrs.update(
-            {
-                'class': _INPUT,
-                'min': '0',
-                'max': '100',
-                'step': '0.01',
-                'inputmode': 'decimal',
-            },
+        self.fields['progresso'].widget = forms.RadioSelect(
+            attrs={'class': 'sr-only peer'},
         )
+        # Valor inicial só pré-seleciona se já for um marco binário canônico.
+        instance = getattr(self, 'instance', None)
+        if instance is not None and instance.pk and not self.is_bound:
+            normalizado = instance.progresso_binario_normalizado()
+            if normalizado is not None:
+                self.initial['progresso'] = str(int(normalizado))
+            else:
+                self.initial.pop('progresso', None)
+
+    def clean_progresso(self):
+        progresso = self.cleaned_data['progresso']
+        if progresso not in Meta.PROGRESSO_BINARIO_VALORES:
+            raise forms.ValidationError(
+                'Selecione um dos estados: Não iniciada (0%), '
+                'Em andamento (50%) ou Concluída (100%).',
+            )
+        return progresso
 
     def clean(self):
         cleaned = super().clean()

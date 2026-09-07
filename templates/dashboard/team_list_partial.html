@@ -148,29 +148,7 @@
                 {% endif %}
               </td>
               <td class="text-right">
-                <div class="inline-flex flex-col items-end gap-1 whitespace-nowrap sm:flex-row sm:flex-wrap sm:justify-end sm:gap-x-3 sm:gap-y-1">
-                  {% if item.avaliacao.etapa == "avaliacao" %}
-                  <a
-                    href="{% url 'reviews:leader_assessment' item.avaliacao.pk %}"
-                    class="inline-flex h-8 items-center rounded-lg bg-emerald-700 px-3 font-ui text-xs font-semibold text-white hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
-                  >Avaliar</a>
-                  {% else %}
-                  <a
-                    href="{% url 'reviews:detail' item.avaliacao.pk %}"
-                    class="inline-flex h-8 items-center rounded-lg bg-emerald-700 px-3 font-ui text-xs font-semibold text-white hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
-                  >Revisar</a>
-                  {% endif %}
-                  <a
-                    href="{% url 'reviews:detail' item.avaliacao.pk %}"
-                    class="inline-flex h-8 items-center font-ui text-xs font-medium text-slate-600 hover:text-slate-800"
-                  >Ver</a>
-                  {% if item.pode_enviar_feedback_continuo %}
-                  <a
-                    href="{% url 'reviews:continuous_feedback_create' item.usuario.pk %}"
-                    class="inline-flex h-8 items-center font-ui text-xs font-medium text-slate-600 hover:text-slate-800"
-                  >Enviar feedback</a>
-                  {% endif %}
-                </div>
+                {% include "components/row_actions_menu.html" with menu_label=item.usuario.nome|default:item.usuario.email items_partial="dashboard/partials/team_member_row_actions_items.html" item=item %}
               </td>
             </tr>
               {% endif %}
@@ -201,10 +179,7 @@
               </td>
               <td class="text-right">
                 {% if item.pode_enviar_feedback_continuo %}
-                <a
-                  href="{% url 'reviews:continuous_feedback_create' item.usuario.pk %}"
-                  class="inline-flex h-8 items-center font-ui text-xs font-medium text-slate-600 hover:text-slate-800"
-                >Enviar feedback</a>
+                {% include "components/row_actions_menu.html" with menu_label=item.usuario.nome|default:item.usuario.email items_partial="dashboard/partials/team_member_row_actions_items.html" item=item %}
                 {% else %}
                 <span class="text-slate-400">—</span>
                 {% endif %}
@@ -232,22 +207,7 @@
                 {% endif %}
               </td>
               <td class="text-right">
-                <div class="inline-flex flex-col items-end gap-1 whitespace-nowrap sm:flex-row sm:flex-wrap sm:justify-end sm:gap-x-3 sm:gap-y-1">
-                  <a
-                    href="{% url 'reviews:detail' item.avaliacao.pk %}"
-                    class="inline-flex h-8 items-center font-ui text-xs font-medium text-slate-600 hover:text-slate-800"
-                  >Ver</a>
-                  <a
-                    href="{% url 'reviews:feedback_list' item.avaliacao.pk %}"
-                    class="inline-flex h-8 items-center font-ui text-xs font-medium text-slate-600 hover:text-slate-800"
-                  >Feedbacks do ciclo</a>
-                  {% if item.pode_enviar_feedback_continuo %}
-                  <a
-                    href="{% url 'reviews:continuous_feedback_create' item.usuario.pk %}"
-                    class="inline-flex h-8 items-center font-ui text-xs font-medium text-slate-600 hover:text-slate-800"
-                  >Enviar feedback</a>
-                  {% endif %}
-                </div>
+                {% include "components/row_actions_menu.html" with menu_label=item.usuario.nome|default:item.usuario.email items_partial="dashboard/partials/team_member_row_actions_items.html" item=item %}
               </td>
             </tr>
             {% endif %}

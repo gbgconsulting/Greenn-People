@@ -8,7 +8,9 @@
     <div>
       <h1 class="font-display text-2xl font-semibold text-slate-800">Gestão de Metas</h1>
       <p class="mt-1 font-ui text-sm text-slate-500">
-        {% if ciclo_aberto %}
+        {% if revisando_colaborador %}
+          Acompanhe e gerencie o progresso e o ciclo de homologação das metas do time.
+        {% elif ciclo_aberto %}
           Acompanhe e gerencie o progresso das metas do ciclo {{ ciclo_aberto.nome }}.
         {% else %}
           Não há ciclo aberto no momento.
@@ -16,6 +18,18 @@
       </p>
     </div>
     <div class="flex flex-wrap items-center gap-2">
+      {% if revisando_colaborador %}
+        {% url 'dashboard:team' as team_url %}
+        <a
+          href="{{ team_url }}"
+          class="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 font-ui text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1"
+        >
+          <svg class="size-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Voltar ao Painel do Time
+        </a>
+      {% endif %}
       {% if avaliacao_pk and rotulo_avanco %}
         <form method="post" action="{% url 'reviews:advance' avaliacao_pk %}" class="inline">
           {% csrf_token %}
@@ -29,6 +43,72 @@
       {% endif %}
     </div>
   </header>
+
+  {% if colaborador_filtro %}
+  <section
+    class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm"
+    aria-label="Filtro ativo por colaborador"
+  >
+    <div class="flex flex-wrap items-center gap-2 font-ui text-sm">
+      <span class="text-xs font-medium text-slate-500">Filtrando por colaborador:</span>
+      <span class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800">
+        <span class="size-2 rounded-full bg-emerald-600" aria-hidden="true"></span>
+        <strong>{{ colaborador_filtro.nome|default:colaborador_filtro.email }}</strong>
+        {% if colaborador_filtro.cargo or colaborador_filtro.area %}
+        <span class="font-normal text-emerald-700/80">
+          ({% if colaborador_filtro.cargo %}{{ colaborador_filtro.cargo.nome }}{% endif %}{% if colaborador_filtro.cargo and colaborador_filtro.area %} · {% endif %}{% if colaborador_filtro.area %}{{ colaborador_filtro.area.nome }}{% endif %})
+        </span>
+        {% endif %}
+        <a
+          href="{% url 'goals:meta_list' %}{% if status_filtro %}?status={{ status_filtro }}{% endif %}"
+          class="ml-0.5 font-bold text-emerald-700 hover:text-emerald-900"
+          title="Remover filtro de colaborador"
+          aria-label="Remover filtro de colaborador"
+        >×</a>
+      </span>
+      {% if ciclo_aberto %}
+      <span class="text-xs text-slate-400" aria-hidden="true">|</span>
+      <span class="text-xs text-slate-500">
+        Ciclo de avaliação: <strong class="font-semibold text-slate-700">{{ ciclo_aberto.nome }}</strong>
+      </span>
+      {% endif %}
+    </div>
+    <a
+      href="{% url 'goals:meta_list' %}"
+      class="font-ui text-xs font-semibold text-slate-600 transition-colors hover:text-rose-600"
+    >Limpar filtro</a>
+  </section>
+
+  {% if revisando_colaborador %}
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+    <div class="flex min-w-0 items-center gap-3">
+      <span
+        class="inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-line bg-emerald-50 font-ui text-sm font-bold text-emerald-700"
+        aria-hidden="true"
+      >
+        {{ colaborador_filtro.nome|default:colaborador_filtro.email|make_list|first|upper }}
+      </span>
+      <div class="min-w-0">
+        <p class="truncate font-ui text-sm font-semibold text-slate-800">
+          {{ colaborador_filtro.nome|default:colaborador_filtro.email }}
+        </p>
+        <p class="truncate font-ui text-xs text-slate-500">
+          {% if colaborador_filtro.cargo %}{{ colaborador_filtro.cargo.nome }}{% endif %}{% if colaborador_filtro.cargo and colaborador_filtro.area %} · {% endif %}{% if colaborador_filtro.area %}{{ colaborador_filtro.area.nome }}{% endif %}
+        </p>
+      </div>
+    </div>
+    {% if resumo_colaborador %}
+    <span class="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 font-ui text-xs font-medium text-emerald-800">
+      {{ resumo_colaborador.aprovadas }} de {{ resumo_colaborador.total }} meta{{ resumo_colaborador.total|pluralize }} aprovada{{ resumo_colaborador.aprovadas|pluralize }}
+    </span>
+    {% endif %}
+  </div>
+  {% endif %}
+  {% elif filtro_usuario_negado %}
+  <p class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 font-ui text-sm text-amber-900" role="status">
+    Não foi possível filtrar por este colaborador (fora do seu escopo ou indisponível).
+  </p>
+  {% endif %}
 
   {% if avaliacao_pk and rotulo_avanco and not pode_avancar and motivo_bloqueio_avanco %}
   <p class="mb-4 font-ui text-sm text-amber-700" role="status">{{ motivo_bloqueio_avanco }}</p>
@@ -45,14 +125,24 @@
   {% if ciclo_aberto %}
   <nav class="mb-4 flex flex-wrap gap-2" aria-label="Filtro por status">
     <div class="inline-flex flex-wrap gap-1 rounded-xl bg-slate-100 p-1">
+      {% if colaborador_filtro %}
+        {% querystring usuario=colaborador_filtro.pk status=None page=None as todos_url %}
+      {% else %}
+        {% url 'goals:meta_list' as todos_url %}
+      {% endif %}
       <a
-        href="{% url 'goals:meta_list' %}"
+        href="{{ todos_url }}"
         class="rounded-lg px-3 py-1.5 font-ui text-sm transition-colors {% if not status_filtro %}bg-white font-semibold text-emerald-700 shadow-sm{% else %}font-medium text-slate-600 hover:bg-slate-200/60 hover:text-slate-800{% endif %}"
         {% if not status_filtro %}aria-current="page"{% endif %}
       >Todos</a>
       {% for value, label in status_choices %}
+      {% if colaborador_filtro %}
+        {% querystring usuario=colaborador_filtro.pk status=value page=None as status_url %}
+      {% else %}
+        {% querystring usuario=None status=value page=None as status_url %}
+      {% endif %}
       <a
-        href="?status={{ value }}"
+        href="{{ status_url }}"
         class="rounded-lg px-3 py-1.5 font-ui text-sm transition-colors {% if status_filtro == value %}bg-white font-semibold text-emerald-700 shadow-sm{% else %}font-medium text-slate-600 hover:bg-slate-200/60 hover:text-slate-800{% endif %}"
         {% if status_filtro == value %}aria-current="page"{% endif %}
       >{{ label }}</a>

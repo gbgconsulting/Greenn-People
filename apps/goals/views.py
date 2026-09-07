@@ -16,6 +16,8 @@ from django.views.generic import (
 )
 from django.views.generic.detail import SingleObjectMixin
 
+from apps.accounts.models import CustomUser
+from apps.accounts.services.scope import user_in_scope
 from apps.audit.context import audit_actor
 from apps.audit.services import log_scope_denied
 from apps.core.htmx import is_htmx
@@ -353,13 +355,37 @@ class ExpectationsView(LoginRequiredMixin, TemplateView):
 
 
 class MetaListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin, ListView):
-    """Listagem de metas no escopo do usuário, com filtro por status."""
+    """Listagem de metas no escopo do usuário, com filtro por status/colaborador."""
 
     model = Meta
     template_name = 'goals/meta_list.html'
     partial_template_name = 'goals/meta_list_partial.html'
     context_object_name = 'metas'
     scope_user_field = 'usuario'
+
+    def _parse_usuario_filtro_id(self) -> int | None:
+        raw = self.request.GET.get('usuario', '').strip()
+        if not raw.isdigit():
+            return None
+        return int(raw)
+
+    def _resolve_colaborador_filtro(self) -> CustomUser | None:
+        """Resolve ``?usuario=`` apenas se estiver no escopo do viewer (backend)."""
+        usuario_id = self._parse_usuario_filtro_id()
+        if usuario_id is None:
+            return None
+        alvo = (
+            CustomUser.objects.filter(pk=usuario_id)
+            .select_related('cargo', 'area')
+            .first()
+        )
+        if alvo is None:
+            return None
+        if not user_in_scope(self.request.user, usuario_id):
+            # Não vaza existência: filtro inválido → lista vazia no get_queryset.
+            log_scope_denied(self.request.user, alvo)
+            return None
+        return alvo
 
     def get_queryset(self):
         qs = (
@@ -378,6 +404,13 @@ class MetaListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin
         if ciclo is not None:
             qs = qs.filter(objetivo_estrategico__ciclo=ciclo)
 
+        usuario_id = self._parse_usuario_filtro_id()
+        if usuario_id is not None:
+            if user_in_scope(self.request.user, usuario_id):
+                qs = qs.filter(usuario_id=usuario_id)
+            else:
+                qs = qs.none()
+
         status = self.request.GET.get('status', '').strip()
         if status in {c.value for c in Meta.Status}:
             qs = qs.filter(status=status)
@@ -387,6 +420,11 @@ class MetaListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin
         context = super().get_context_data(**kwargs)
         ciclo = get_open_ciclo()
         avaliacao = get_avaliacao_for_user(self.request.user, ciclo)
+        colaborador_filtro = self._resolve_colaborador_filtro()
+        usuario_filtro_solicitado = self._parse_usuario_filtro_id() is not None
+        filtro_usuario_negado = (
+            usuario_filtro_solicitado and colaborador_filtro is None
+        )
 
         meta_rows = [
             _meta_row_context(self.request, meta) for meta in context['metas']
@@ -411,6 +449,10 @@ class MetaListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin
             avaliacao is not None
             and avaliacao.usuario_id == self.request.user.pk
             and avaliacao.etapa in _COLLABORATOR_ADVANCE_ETAPAS
+            and (
+                colaborador_filtro is None
+                or colaborador_filtro.pk == self.request.user.pk
+            )
         ):
             avaliacao_pk = avaliacao.pk
             ok, motivo = can_advance(avaliacao)
@@ -421,14 +463,37 @@ class MetaListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin
             else:
                 rotulo_avanco = 'Enviar resultados para aprovação'
 
+        revisando_colaborador = (
+            colaborador_filtro is not None
+            and colaborador_filtro.pk != self.request.user.pk
+        )
+        pode_criar = (
+            meta_content_editable(avaliacao, meta=None)
+            and avaliacao is not None
+            and avaliacao.etapa == avaliacao.Etapa.INPUT_METAS
+            and not revisando_colaborador
+        )
+
+        resumo_colaborador = None
+        if colaborador_filtro is not None and ciclo is not None:
+            base_colab = Meta.objects.filter(
+                usuario=colaborador_filtro,
+                objetivo_estrategico__ciclo=ciclo,
+            )
+            # Escopo já validado em _resolve_colaborador_filtro.
+            total = base_colab.count()
+            aprovadas = base_colab.filter(status=Meta.Status.APROVADA).count()
+            resumo_colaborador = {
+                'total': total,
+                'aprovadas': aprovadas,
+            }
+
         context.update(
             {
                 'ciclo_aberto': ciclo,
                 'status_filtro': self.request.GET.get('status', '').strip(),
                 'status_choices': Meta.Status.choices,
-                'pode_criar': meta_content_editable(avaliacao, meta=None)
-                and avaliacao is not None
-                and avaliacao.etapa == avaliacao.Etapa.INPUT_METAS,
+                'pode_criar': pode_criar,
                 'meta_rows': meta_rows,
                 'proximo_passo_lista_hint': proximo_passo_lista_hint,
                 'avaliacao_pk': avaliacao_pk,
@@ -436,6 +501,10 @@ class MetaListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin
                 'avanco_desabilitado': not pode_avancar,
                 'rotulo_avanco': rotulo_avanco,
                 'motivo_bloqueio_avanco': motivo_bloqueio_avanco,
+                'colaborador_filtro': colaborador_filtro,
+                'filtro_usuario_negado': filtro_usuario_negado,
+                'revisando_colaborador': revisando_colaborador,
+                'resumo_colaborador': resumo_colaborador,
             },
         )
         return context

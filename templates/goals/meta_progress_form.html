@@ -3,9 +3,12 @@
 {% block title %}Atualizar progresso — Greenn People{% endblock %}
 
 {% block content %}
-<div class="mx-auto max-w-md">
+<div class="mx-auto max-w-lg">
   <h1 class="text-2xl font-semibold text-slate-800">Atualizar progresso</h1>
   <p class="mt-1 text-slate-500">{{ meta.descricao }}</p>
+  <p class="mt-2 text-sm text-slate-500">
+    Informe o marco da meta: não iniciada, em andamento ou concluída.
+  </p>
 
   <form method="post" class="mt-6 space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
     {% csrf_token %}
@@ -14,20 +17,8 @@
       {{ form.non_field_errors }}
     </div>
     {% endif %}
-    <div>
-      <label for="{{ form.progresso.id_for_label }}" class="mb-1 block text-sm font-medium text-slate-700">
-        {{ form.progresso.label }}
-      </label>
-      {{ form.progresso }}
-      {% if form.progresso.errors %}
-      <p class="mt-1 text-xs text-rose-600">{{ form.progresso.errors|striptags }}</p>
-      {% endif %}
-    </div>
-    <div class="flex gap-3">
-      <button
-        type="submit"
-        class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
-      >Salvar</button>
+    {% include "goals/partials/meta_progress_binario.html" with progress_form=form rotulo_salvar_progresso="Salvar" %}
+    <div class="flex gap-3 pt-1">
       <a
         href="{% url 'goals:meta_list' %}"
         class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
