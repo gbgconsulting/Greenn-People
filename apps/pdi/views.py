@@ -15,7 +15,15 @@ from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from django.views.generic.detail import SingleObjectMixin
 
-from apps.accounts.services.scope import user_in_scope
+from apps.accounts.services.scope import (
+    VISAO_EQUIPE,
+    VISAO_PROPRIAS,
+    apply_ownership_visao,
+    can_view_team_ownership_list,
+    ownership_visao_equipe_label,
+    resolve_ownership_visao,
+    user_in_scope,
+)
 from apps.audit.services import log_scope_denied
 from apps.core.htmx import is_htmx
 from apps.core.mixins import HtmxPaginatedListMixin, ScopedObjectMixin
@@ -276,7 +284,11 @@ def _htmx_modal_form_response(
 
 
 class PDIListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin, ListView):
-    """Listagem de PDIs no escopo hierárquico do usuário."""
+    """Listagem de PDIs no escopo hierárquico do usuário.
+
+    Fatia próprias vs equipe via ``?visao=`` (backend). Escopo base sempre
+    via ``ScopedObjectMixin`` / ``get_visible_users``.
+    """
 
     model = PDI
     template_name = 'pdi/pdi_list.html'
@@ -284,6 +296,12 @@ class PDIListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin,
     context_object_name = 'pdis'
     scope_user_field = 'usuario'
     paginate_by = 6
+
+    def _ownership_visao(self):
+        return resolve_ownership_visao(
+            self.request.user,
+            self.request.GET.get('visao'),
+        )
 
     def get_queryset(self):
         qs = (
@@ -307,6 +325,12 @@ class PDIListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin,
             )
             .order_by('usuario__nome', 'usuario__email', '-created_at', 'id')
         )
+        qs = apply_ownership_visao(
+            qs,
+            self.request.user,
+            self._ownership_visao(),
+            user_field=self.scope_user_field,
+        )
         status = self.request.GET.get('status', '').strip()
         if status in {c.value for c in PDI.Status}:
             qs = qs.filter(status=status)
@@ -323,10 +347,22 @@ class PDIListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        viewer_id = self.request.user.pk
+        viewer = self.request.user
+        viewer_id = viewer.pk
         rows = [_pdi_list_row(pdi, viewer_id=viewer_id) for pdi in context['pdis']]
         status_filtro = self.request.GET.get('status', '').strip()
         busca = self.request.GET.get('q', '').strip()
+        visao = self._ownership_visao()
+        mostrar_toggle_visao = can_view_team_ownership_list(viewer)
+        # Porta vazia só para colaborador puro sem PDIs (líder/admin veem o hub
+        # com toggle mesmo sem PDI próprio).
+        mostrar_empty_porta = (
+            not rows
+            and not status_filtro
+            and not busca
+            and not mostrar_toggle_visao
+            and visao == VISAO_PROPRIAS
+        )
         context.update(
             {
                 'pdi_rows': rows,
@@ -335,7 +371,12 @@ class PDIListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin,
                 'hub_filter_choices': _HUB_FILTER_CHOICES,
                 'busca': busca,
                 'pode_criar': True,
-                'mostrar_empty_porta': not rows and not status_filtro and not busca,
+                'mostrar_empty_porta': mostrar_empty_porta,
+                'visao': visao,
+                'mostrar_toggle_visao': mostrar_toggle_visao,
+                'visao_equipe_label': ownership_visao_equipe_label(viewer),
+                'visao_proprias': VISAO_PROPRIAS,
+                'visao_equipe': VISAO_EQUIPE,
             },
         )
         return context

@@ -13,11 +13,11 @@
           type="search"
           name="q"
           value="{{ busca }}"
-          placeholder="Buscar planos por nome ou colaborador..."
+          placeholder="{% if visao == visao_equipe %}Buscar planos por nome ou colaborador...{% else %}Buscar planos por nome...{% endif %}"
           autocomplete="off"
           aria-label="Buscar planos de desenvolvimento"
           class="form-control !w-full !pl-10"
-          hx-get="{{ pdi_list_url }}"
+          hx-get="{{ pdi_list_url }}{% if visao == visao_equipe %}?visao={{ visao_equipe }}{% endif %}"
           hx-trigger="keyup changed delay:300ms, search"
           hx-target="#list-container"
           hx-swap="outerHTML"
@@ -33,9 +33,17 @@
       >
         {% for value, label in hub_filter_choices %}
           {% if value %}
-            {% querystring status=value page=None as filter_url %}
+            {% if visao == visao_equipe %}
+              {% querystring visao=visao_equipe status=value page=None as filter_url %}
+            {% else %}
+              {% querystring visao=None status=value page=None as filter_url %}
+            {% endif %}
           {% else %}
-            {% querystring status=None page=None as filter_url %}
+            {% if visao == visao_equipe %}
+              {% querystring visao=visao_equipe status=None page=None as filter_url %}
+            {% else %}
+              {% querystring visao=None status=None page=None as filter_url %}
+            {% endif %}
           {% endif %}
           <a
             href="{{ filter_url }}"
@@ -63,11 +71,13 @@
   <div class="rounded-xl border border-line bg-surface-card p-8 shadow-[0_2px_4px_rgba(0,0,0,0.04)]">
     {% if busca or status_filtro %}
       {% include "components/empty_state.html" with title="Nenhum PDI neste filtro" message="Nenhum plano corresponde à busca ou ao status selecionado. Tente ajustar os filtros." %}
+    {% elif visao == visao_equipe %}
+      {% include "components/empty_state.html" with title="Nenhum PDI da equipe" message="Nenhum PDI cadastrado no seu escopo (exceto o seu)." %}
     {% elif pode_criar %}
       {% url 'pdi:create' as pdi_create_url %}
-      {% include "components/empty_state.html" with title="Nenhum PDI cadastrado" message="Nenhum PDI cadastrado no seu escopo." cta_label="Iniciar meu primeiro PDI" cta_href=pdi_create_url %}
+      {% include "components/empty_state.html" with title="Nenhum PDI cadastrado" message="Você ainda não tem um PDI. Crie o primeiro plano para acompanhar seu desenvolvimento." cta_label="Iniciar meu primeiro PDI" cta_href=pdi_create_url %}
     {% else %}
-      {% include "components/empty_state.html" with title="Nenhum PDI cadastrado" message="Nenhum PDI cadastrado no seu escopo." %}
+      {% include "components/empty_state.html" with title="Nenhum PDI cadastrado" message="Você ainda não tem um PDI cadastrado." %}
     {% endif %}
   </div>
   {% endif %}

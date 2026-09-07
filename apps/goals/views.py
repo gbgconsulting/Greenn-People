@@ -17,7 +17,15 @@ from django.views.generic import (
 from django.views.generic.detail import SingleObjectMixin
 
 from apps.accounts.models import CustomUser
-from apps.accounts.services.scope import user_in_scope
+from apps.accounts.services.scope import (
+    VISAO_EQUIPE,
+    VISAO_PROPRIAS,
+    apply_ownership_visao,
+    can_view_team_ownership_list,
+    ownership_visao_equipe_label,
+    resolve_ownership_visao,
+    user_in_scope,
+)
 from apps.audit.context import audit_actor
 from apps.audit.services import log_scope_denied
 from apps.core.htmx import is_htmx
@@ -355,7 +363,11 @@ class ExpectationsView(LoginRequiredMixin, TemplateView):
 
 
 class MetaListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin, ListView):
-    """Listagem de metas no escopo do usuário, com filtro por status/colaborador."""
+    """Listagem de metas no escopo do usuário, com filtro por status/colaborador.
+
+    Fatia próprias vs equipe via ``?visao=`` (backend). ``?usuario=`` (revisão
+    de um colaborador) tem precedência sobre a fatia.
+    """
 
     model = Meta
     template_name = 'goals/meta_list.html'
@@ -387,6 +399,15 @@ class MetaListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin
             return None
         return alvo
 
+    def _ownership_visao(self):
+        """Fatia próprias/equipe; ignorada quando ``?usuario=`` está ativo."""
+        if self._parse_usuario_filtro_id() is not None:
+            return None
+        return resolve_ownership_visao(
+            self.request.user,
+            self.request.GET.get('visao'),
+        )
+
     def get_queryset(self):
         qs = (
             super()
@@ -410,6 +431,15 @@ class MetaListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin
                 qs = qs.filter(usuario_id=usuario_id)
             else:
                 qs = qs.none()
+        else:
+            visao = self._ownership_visao()
+            if visao is not None:
+                qs = apply_ownership_visao(
+                    qs,
+                    self.request.user,
+                    visao,
+                    user_field=self.scope_user_field,
+                )
 
         status = self.request.GET.get('status', '').strip()
         if status in {c.value for c in Meta.Status}:
@@ -424,6 +454,16 @@ class MetaListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin
         usuario_filtro_solicitado = self._parse_usuario_filtro_id() is not None
         filtro_usuario_negado = (
             usuario_filtro_solicitado and colaborador_filtro is None
+        )
+        visao = self._ownership_visao()
+        if visao is None:
+            # Revisando ?usuario= — fatia não se aplica; default seguro p/ copy.
+            visao_ativa = VISAO_PROPRIAS
+        else:
+            visao_ativa = visao
+        mostrar_toggle_visao = (
+            can_view_team_ownership_list(self.request.user)
+            and not usuario_filtro_solicitado
         )
 
         meta_rows = [
@@ -445,6 +485,10 @@ class MetaListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin
         rotulo_avanco = ''
         motivo_bloqueio_avanco = ''
         avaliacao_pk = None
+        revisando_colaborador = (
+            colaborador_filtro is not None
+            and colaborador_filtro.pk != self.request.user.pk
+        )
         if (
             avaliacao is not None
             and avaliacao.usuario_id == self.request.user.pk
@@ -453,6 +497,8 @@ class MetaListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin
                 colaborador_filtro is None
                 or colaborador_filtro.pk == self.request.user.pk
             )
+            and visao_ativa == VISAO_PROPRIAS
+            and not revisando_colaborador
         ):
             avaliacao_pk = avaliacao.pk
             ok, motivo = can_advance(avaliacao)
@@ -463,15 +509,12 @@ class MetaListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin
             else:
                 rotulo_avanco = 'Enviar resultados para aprovação'
 
-        revisando_colaborador = (
-            colaborador_filtro is not None
-            and colaborador_filtro.pk != self.request.user.pk
-        )
         pode_criar = (
             meta_content_editable(avaliacao, meta=None)
             and avaliacao is not None
             and avaliacao.etapa == avaliacao.Etapa.INPUT_METAS
             and not revisando_colaborador
+            and visao_ativa == VISAO_PROPRIAS
         )
 
         resumo_colaborador = None
@@ -505,6 +548,13 @@ class MetaListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin
                 'filtro_usuario_negado': filtro_usuario_negado,
                 'revisando_colaborador': revisando_colaborador,
                 'resumo_colaborador': resumo_colaborador,
+                'visao': visao_ativa,
+                'mostrar_toggle_visao': mostrar_toggle_visao,
+                'visao_equipe_label': ownership_visao_equipe_label(
+                    self.request.user,
+                ),
+                'visao_proprias': VISAO_PROPRIAS,
+                'visao_equipe': VISAO_EQUIPE,
             },
         )
         return context

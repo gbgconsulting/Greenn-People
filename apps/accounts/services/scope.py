@@ -9,6 +9,10 @@ from django.db.models import QuerySet
 from apps.accounts.models import CustomUser
 
 ScopeLevel = Literal['collaborator', 'leader', 'manager', 'admin']
+OwnershipVisao = Literal['proprias', 'equipe']
+
+VISAO_PROPRIAS: OwnershipVisao = 'proprias'
+VISAO_EQUIPE: OwnershipVisao = 'equipe'
 
 
 def get_scope_level(user: CustomUser) -> ScopeLevel:
@@ -53,6 +57,50 @@ def user_in_scope(requesting_user: CustomUser, target_user_id: int) -> bool:
     if not getattr(requesting_user, 'pk', None):
         return False
     return get_visible_users(requesting_user).filter(pk=target_user_id).exists()
+
+
+def can_view_team_ownership_list(user: CustomUser) -> bool:
+    """True se o usuário pode alternar para a fatia 'equipe' (escopo − self)."""
+    return get_scope_level(user) != 'collaborator'
+
+
+def resolve_ownership_visao(
+    user: CustomUser,
+    raw: str | None,
+) -> OwnershipVisao:
+    """Resolve ``?visao=`` para listas próprias vs equipe.
+
+    - Colaborador puro: sempre ``proprias`` (pedido ``equipe`` é ignorado).
+    - Líder/gestor/admin: ``equipe`` só se ``raw == 'equipe'``; default ``proprias``.
+    - Valores desconhecidos → ``proprias`` (default seguro).
+
+    Nunca amplia o escopo — só escolhe fatia dentro de ``get_visible_users``.
+    """
+    if not can_view_team_ownership_list(user):
+        return VISAO_PROPRIAS
+    if (raw or '').strip() == VISAO_EQUIPE:
+        return VISAO_EQUIPE
+    return VISAO_PROPRIAS
+
+
+def apply_ownership_visao(
+    qs: QuerySet,
+    user: CustomUser,
+    visao: OwnershipVisao,
+    *,
+    user_field: str = 'usuario',
+) -> QuerySet:
+    """Aplica fatia próprias/equipe sobre um QS já restrito por escopo."""
+    if visao == VISAO_EQUIPE:
+        return qs.exclude(**{f'{user_field}_id': user.pk})
+    return qs.filter(**{f'{user_field}_id': user.pk})
+
+
+def ownership_visao_equipe_label(user: CustomUser) -> str:
+    """Rótulo da fatia equipe (admin = organização; demais = equipe)."""
+    if get_scope_level(user) == 'admin':
+        return 'Organização'
+    return 'Equipe'
 
 
 def _self_and_direct_report_ids(user: CustomUser) -> set[int]:
