@@ -74,6 +74,7 @@ from apps.dashboard.services.structure import (
 from apps.goals.forms import get_open_ciclo
 from apps.organization.models import Area, Cargo
 from apps.reviews.models import Avaliacao
+from apps.reviews.services.continuous_feedback import continuous_feedback_create_allowed
 from apps.reviews.services.evaluation import build_fr005_context, self_assessment_submitted
 from apps.reviews.services.guidance import (
     build_stage_stepper,
@@ -467,6 +468,10 @@ class TeamDashboardView(
                     ciclo is not None
                     and avaliacoes_por_usuario.get(membro.pk) is None
                     and not user_eligible_for_ciclo(membro, ciclo)
+                ),
+                'pode_enviar_feedback_continuo': continuous_feedback_create_allowed(
+                    self.request.user,
+                    membro,
                 ),
             }
             for membro in membros

@@ -7,7 +7,12 @@ from django.forms import BaseModelFormSet, modelformset_factory
 
 from apps.accounts.services.scope import user_in_scope
 from apps.cycles.models import Ciclo
-from apps.reviews.models import Avaliacao, AvaliacaoCompetencia, Feedback
+from apps.reviews.models import (
+    Avaliacao,
+    AvaliacaoCompetencia,
+    Feedback,
+    FeedbackContinuo,
+)
 from apps.reviews.services.evaluation import (
     MSG_AUTOAVALIACAO_INCOMPLETA,
     MSG_AUTOAVALIACAO_JA_ENVIADA,
@@ -382,3 +387,33 @@ class FeedbackForm(forms.ModelForm):
                 'Só é possível registrar feedback em um ciclo aberto.',
             )
         return cleaned
+
+
+class FeedbackContinuoForm(forms.ModelForm):
+    """Conteúdo do feedback contínuo (autor/destinatário definidos na view)."""
+
+    class Meta:
+        model = FeedbackContinuo
+        fields = ('conteudo',)
+        labels = {
+            'conteudo': 'Conteúdo do Feedback',
+        }
+        widgets = {
+            'conteudo': forms.Textarea(
+                attrs={
+                    'class': _FEEDBACK_TEXTAREA,
+                    'rows': 8,
+                    'placeholder': 'Descreva o feedback de forma clara e objetiva...',
+                },
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['conteudo'].required = True
+
+    def clean_conteudo(self):
+        conteudo = (self.cleaned_data.get('conteudo') or '').strip()
+        if not conteudo:
+            raise forms.ValidationError('Informe o conteúdo do feedback.')
+        return conteudo

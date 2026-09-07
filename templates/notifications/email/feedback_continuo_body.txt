@@ -1,0 +1,8 @@
+Olá {{ user.nome }},
+
+{{ autor.nome|default:autor.email }} registrou um feedback para você no Greenn People.
+
+Acesse para ler e, se estiver pendente, dar ciência:
+{{ cta_url }}
+
+Esta é uma mensagem automática — não responda este e-mail.

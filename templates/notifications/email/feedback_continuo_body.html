@@ -1,0 +1,14 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Novo feedback — Greenn People{% endblock %}
+
+{% block content %}
+<p style="margin:0 0 12px 0;">Olá {{ user.nome }},</p>
+<p style="margin:0 0 12px 0;">
+  <strong>{{ autor.nome|default:autor.email }}</strong> registrou um feedback para você
+  no Greenn People.
+</p>
+<p style="margin:0;">
+  Acesse para ler e, se estiver pendente, dar ciência.
+</p>
+{% endblock %}

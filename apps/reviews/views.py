@@ -22,6 +22,7 @@ from apps.goals.models import Meta
 from apps.organization.services.navigation import resolve_admin_list_return_url
 from apps.reviews.exceptions import CalculationError
 from apps.reviews.forms import (
+    FeedbackContinuoForm,
     FeedbackForm,
     LeaderAssessmentFormSet,
     SelfAssessmentFormSet,
@@ -34,7 +35,14 @@ from apps.reviews.forms import (
     resolve_feedback_tipo,
     self_assessment_editable,
 )
-from apps.reviews.models import Avaliacao, AvaliacaoCompetencia, Feedback
+from apps.reviews.models import Avaliacao, AvaliacaoCompetencia, Feedback, FeedbackContinuo
+from apps.reviews.services.continuous_feedback import (
+    can_acknowledge_continuous_feedback,
+    continuous_feedback_create_allowed,
+    create_continuous_feedback,
+    get_destinatario_for_create,
+    get_destinatario_in_scope_for_list,
+)
 from apps.reviews.services.evaluation import (
     MSG_AUTOAVALIACAO_ENVIO_INCOMPLETO,
     MSG_AUTOAVALIACAO_INCOMPLETA,
@@ -1076,6 +1084,168 @@ class FeedbackAcknowledgeView(LoginRequiredMixin, View):
         if not avaliacao.concluida:
             avaliacao.concluida = True
             avaliacao.save(update_fields=['concluida', 'updated_at'])
+
+        messages.success(request, 'Ciência registrada com sucesso.')
+        return HttpResponseRedirect(list_url)
+
+
+class ContinuousFeedbackMineRedirectView(LoginRequiredMixin, View):
+    """Atalho: lista de feedbacks contínuos do próprio usuário."""
+
+    http_method_names = ['get', 'head', 'options']
+
+    def get(self, request, *args, **kwargs):
+        return HttpResponseRedirect(
+            reverse(
+                'reviews:continuous_feedback_list',
+                kwargs={'user_id': request.user.pk},
+            ),
+        )
+
+
+class ContinuousFeedbackListView(
+    LoginRequiredMixin,
+    ScopedObjectMixin,
+    HtmxPaginatedListMixin,
+    ListView,
+):
+    """Histórico de feedbacks contínuos do destinatário (escopo ``destinatario``)."""
+
+    model = FeedbackContinuo
+    template_name = 'reviews/continuous_feedback_list.html'
+    partial_template_name = 'reviews/continuous_feedback_list_partial.html'
+    context_object_name = 'feedbacks'
+    scope_user_field = 'destinatario'
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        self.destinatario = get_destinatario_in_scope_for_list(
+            request,
+            self.kwargs['user_id'],
+        )
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .filter(destinatario_id=self.destinatario.pk)
+            .select_related('autor', 'destinatario')
+            .order_by('-created_at', 'id')
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        rows = [
+            {
+                'feedback': feedback,
+                'pode_dar_ciencia': can_acknowledge_continuous_feedback(
+                    user,
+                    feedback,
+                ),
+            }
+            for feedback in context['feedbacks']
+        ]
+        pendente = next(
+            (row['feedback'] for row in rows if row['pode_dar_ciencia']),
+            None,
+        )
+        context.update(
+            {
+                'colaborador': self.destinatario,
+                'feedback_rows': rows,
+                'feedback_pendente_ciencia': pendente,
+                'is_colaborador_view': user.pk == self.destinatario.pk,
+                'pode_criar': continuous_feedback_create_allowed(
+                    user,
+                    self.destinatario,
+                ),
+            },
+        )
+        return context
+
+
+class ContinuousFeedbackCreateView(LoginRequiredMixin, CreateView):
+    """Registro de feedback contínuo (gestor → colaborador no escopo)."""
+
+    model = FeedbackContinuo
+    form_class = FeedbackContinuoForm
+    template_name = 'reviews/continuous_feedback_form.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        self.destinatario = get_destinatario_for_create(
+            request,
+            self.kwargs['user_id'],
+        )
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                'colaborador': self.destinatario,
+                'destinatario': self.destinatario,
+                'destinatario_rotulo': 'Para',
+            },
+        )
+        return context
+
+    def form_valid(self, form):
+        create_continuous_feedback(
+            autor=self.request.user,
+            destinatario=self.destinatario,
+            conteudo=form.cleaned_data['conteudo'],
+        )
+        messages.success(self.request, 'Feedback registrado com sucesso.')
+        return HttpResponseRedirect(self.get_success_url())
+
+    def get_success_url(self):
+        return reverse(
+            'reviews:continuous_feedback_list',
+            kwargs={'user_id': self.destinatario.pk},
+        )
+
+
+class ContinuousFeedbackAcknowledgeView(LoginRequiredMixin, View):
+    """Colaborador dá ciência ao feedback contínuo (escopo Self)."""
+
+    http_method_names = ['post', 'options']
+
+    def post(self, request, *args, **kwargs):
+        try:
+            feedback = FeedbackContinuo.objects.select_related(
+                'destinatario',
+                'autor',
+            ).get(pk=self.kwargs['pk'])
+        except FeedbackContinuo.DoesNotExist as exc:
+            raise Http404() from exc
+
+        if feedback.destinatario_id != request.user.pk:
+            log_scope_denied(request.user, feedback)
+            raise Http404()
+
+        list_url = reverse(
+            'reviews:continuous_feedback_list',
+            kwargs={'user_id': feedback.destinatario_id},
+        )
+
+        if feedback.ciente_em is not None:
+            messages.info(request, 'Você já deu ciência a este feedback.')
+            return HttpResponseRedirect(list_url)
+
+        if request.POST.get('declaro_ciencia') != 'on':
+            messages.error(
+                request,
+                'Confirme que leu o feedback antes de dar ciência.',
+            )
+            return HttpResponseRedirect(list_url)
+
+        feedback.ciente_em = timezone.now()
+        feedback.save(update_fields=['ciente_em', 'updated_at'])
 
         messages.success(request, 'Ciência registrada com sucesso.')
         return HttpResponseRedirect(list_url)

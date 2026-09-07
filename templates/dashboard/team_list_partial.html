@@ -164,6 +164,12 @@
                     href="{% url 'reviews:detail' item.avaliacao.pk %}"
                     class="inline-flex h-8 items-center font-ui text-xs font-medium text-slate-600 hover:text-slate-800"
                   >Ver</a>
+                  {% if item.pode_enviar_feedback_continuo %}
+                  <a
+                    href="{% url 'reviews:continuous_feedback_create' item.usuario.pk %}"
+                    class="inline-flex h-8 items-center font-ui text-xs font-medium text-slate-600 hover:text-slate-800"
+                  >Enviar feedback</a>
+                  {% endif %}
                 </div>
               </td>
             </tr>
@@ -193,7 +199,16 @@
                   {% include "components/badge_status.html" with status="arquivado" label="Sem avaliação" extra_class="!rounded-full" %}
                 {% endif %}
               </td>
-              <td class="text-right"><span class="text-slate-400">—</span></td>
+              <td class="text-right">
+                {% if item.pode_enviar_feedback_continuo %}
+                <a
+                  href="{% url 'reviews:continuous_feedback_create' item.usuario.pk %}"
+                  class="inline-flex h-8 items-center font-ui text-xs font-medium text-slate-600 hover:text-slate-800"
+                >Enviar feedback</a>
+                {% else %}
+                <span class="text-slate-400">—</span>
+                {% endif %}
+              </td>
             </tr>
             {% elif item.avaliacao.etapa != "avaliacao" and item.avaliacao.etapa != "aprovacao_metas" and item.avaliacao.etapa != "aprovacao_resultados" %}
             <tr>
@@ -225,7 +240,13 @@
                   <a
                     href="{% url 'reviews:feedback_list' item.avaliacao.pk %}"
                     class="inline-flex h-8 items-center font-ui text-xs font-medium text-slate-600 hover:text-slate-800"
-                  >Feedbacks</a>
+                  >Feedbacks do ciclo</a>
+                  {% if item.pode_enviar_feedback_continuo %}
+                  <a
+                    href="{% url 'reviews:continuous_feedback_create' item.usuario.pk %}"
+                    class="inline-flex h-8 items-center font-ui text-xs font-medium text-slate-600 hover:text-slate-800"
+                  >Enviar feedback</a>
+                  {% endif %}
                 </div>
               </td>
             </tr>

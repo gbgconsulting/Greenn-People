@@ -1,0 +1,67 @@
+{% comment %}
+  Painel lateral para dar ciência ao feedback contínuo — ação via POST no backend.
+{% endcomment %}
+<section
+  id="ciencia-assinatura"
+  class="rounded-xl border border-line bg-surface-card p-6 shadow-[0_2px_4px_rgba(0,0,0,0.04)] lg:sticky lg:top-6"
+  aria-labelledby="ciencia-assinatura-heading"
+>
+  <h2 id="ciencia-assinatura-heading" class="mb-4 font-display text-xl font-medium text-slate-800">
+    Dar ciência
+  </h2>
+
+  {% if feedback_pendente_ciencia %}
+  <p class="mb-4 font-ui text-sm leading-relaxed text-slate-500">
+    Depois de ler o feedback do seu gestor, confirme o recebimento abaixo.
+  </p>
+  <form
+    method="post"
+    action="{% url 'reviews:continuous_feedback_acknowledge' feedback_pendente_ciencia.pk %}"
+    id="feedback-continuo-ack-form"
+    class="flex flex-col"
+  >
+    {% csrf_token %}
+    <div class="mb-4 flex items-start gap-3">
+      <input
+        type="checkbox"
+        name="declaro_ciencia"
+        id="declaro-ciencia-continuo"
+        value="on"
+        class="mt-0.5 h-4 w-4 rounded border-slate-300 text-emerald-700 focus:ring-emerald-500"
+        required
+      />
+      <label for="declaro-ciencia-continuo" class="cursor-pointer font-ui text-sm text-slate-600">
+        Li o feedback do meu gestor
+      </label>
+    </div>
+    <button
+      type="submit"
+      id="feedback-continuo-sign-btn"
+      disabled
+      class="inline-flex w-full items-center justify-center rounded-lg bg-brand-gradient px-6 py-3 font-ui text-sm font-semibold text-white shadow-sm transition-all hover:bg-brand-gradient-hover disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      Dar ciência
+    </button>
+  </form>
+  <script>
+    (function initContinuousFeedbackAckForm() {
+      const checkbox = document.getElementById('declaro-ciencia-continuo');
+      const button = document.getElementById('feedback-continuo-sign-btn');
+      if (!checkbox || !button) return;
+      const sync = () => { button.disabled = !checkbox.checked; };
+      checkbox.addEventListener('change', sync);
+      sync();
+    })();
+  </script>
+
+  {% elif is_colaborador_view %}
+  <p class="font-ui text-sm text-slate-500" role="status">
+    Nenhum feedback pendente de ciência no momento.
+  </p>
+
+  {% else %}
+  <p class="font-ui text-sm text-slate-500" role="status">
+    Somente o colaborador destinatário pode dar ciência a este feedback.
+  </p>
+  {% endif %}
+</section>

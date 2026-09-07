@@ -7,7 +7,7 @@ from django.urls import reverse
 from apps.core.emails import absolute_url, send_templated_email
 from apps.cycles.models import Ciclo
 from apps.pdi.models import AcaoPDI
-from apps.reviews.models import Avaliacao
+from apps.reviews.models import Avaliacao, FeedbackContinuo
 
 
 def referencia_lembrete_etapa(avaliacao: Avaliacao) -> str:
@@ -18,6 +18,11 @@ def referencia_lembrete_etapa(avaliacao: Avaliacao) -> str:
 def referencia_lembrete_pdi(acao: AcaoPDI) -> str:
     """Stable pending key for PDI action deadline reminders."""
     return f'acao_pdi:{acao.pk}'
+
+
+def referencia_feedback_continuo(feedback: FeedbackContinuo) -> str:
+    """Stable key for continuous-feedback notification."""
+    return f'feedback_continuo:{feedback.pk}'
 
 
 def send_lembrete_etapa_email(avaliacao: Avaliacao) -> None:
@@ -64,6 +69,30 @@ def send_lembrete_pdi_email(acao: AcaoPDI) -> None:
         to=user.email,
         text_template='notifications/email/lembrete_pdi_body.txt',
         html_template='notifications/email/lembrete_pdi_body.html',
+        context=context,
+    )
+
+
+def send_feedback_continuo_email(feedback: FeedbackContinuo) -> None:
+    """Notify the recipient that a continuous feedback was registered."""
+    user = feedback.destinatario
+    cta_url = absolute_url(reverse('reviews:continuous_feedback_mine'))
+    context = {
+        'user': user,
+        'feedback': feedback,
+        'autor': feedback.autor,
+        'cta_url': cta_url,
+        'cta_label': 'Ler feedback e dar ciência',
+    }
+    subject = _subject(
+        'notifications/email/feedback_continuo_subject.txt',
+        context,
+    )
+    send_templated_email(
+        subject=subject,
+        to=user.email,
+        text_template='notifications/email/feedback_continuo_body.txt',
+        html_template='notifications/email/feedback_continuo_body.html',
         context=context,
     )
 

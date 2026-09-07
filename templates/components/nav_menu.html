@@ -41,15 +41,23 @@
     <li>
       {% url 'reviews:list' as u %}
       {% if not user.is_leader and not user.is_manager and not user.is_admin %}
-        {% if '/reviews' in path %}
+        {% if '/reviews' in path and '/feedbacks/continuo' not in path %}
           {% include "components/nav_link.html" with href=u label="Minhas avaliações" icon="star" is_active="1" only %}
         {% else %}
           {% include "components/nav_link.html" with href=u label="Minhas avaliações" icon="star" only %}
         {% endif %}
-      {% elif '/reviews' in path %}
+      {% elif '/reviews' in path and '/feedbacks/continuo' not in path and '/usuarios/' not in path %}
         {% include "components/nav_link.html" with href=u label="Avaliações" icon="star" is_active="1" only %}
       {% else %}
         {% include "components/nav_link.html" with href=u label="Avaliações" icon="star" only %}
+      {% endif %}
+    </li>
+    <li>
+      {% url 'reviews:continuous_feedback_mine' as u %}
+      {% if '/feedbacks/continuo' in path or '/usuarios/' in path and '/feedbacks/continuo' in path %}
+        {% include "components/nav_link.html" with href=u label="Meus feedbacks" icon="chat" is_active="1" only %}
+      {% else %}
+        {% include "components/nav_link.html" with href=u label="Meus feedbacks" icon="chat" only %}
       {% endif %}
     </li>
     <li>

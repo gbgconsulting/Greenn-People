@@ -11,6 +11,26 @@ urlpatterns = [
         name='list',
     ),
     path(
+        'feedbacks/continuo/',
+        views.ContinuousFeedbackMineRedirectView.as_view(),
+        name='continuous_feedback_mine',
+    ),
+    path(
+        'feedbacks/continuo/<int:pk>/acknowledge/',
+        views.ContinuousFeedbackAcknowledgeView.as_view(),
+        name='continuous_feedback_acknowledge',
+    ),
+    path(
+        'usuarios/<int:user_id>/feedbacks/continuo/',
+        views.ContinuousFeedbackListView.as_view(),
+        name='continuous_feedback_list',
+    ),
+    path(
+        'usuarios/<int:user_id>/feedbacks/continuo/new/',
+        views.ContinuousFeedbackCreateView.as_view(),
+        name='continuous_feedback_create',
+    ),
+    path(
         '<int:pk>/advance/',
         views.AdvanceStageView.as_view(),
         name='advance',
