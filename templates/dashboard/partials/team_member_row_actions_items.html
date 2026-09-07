@@ -1,9 +1,25 @@
 {% comment %}
   Itens do menu ⋮ de ações do Painel do time (por colaborador).
-  Requer: item (usuario + avaliacao opcional + pode_enviar_feedback_continuo).
+  Requer: item (usuario + avaliacao opcional + pode_enviar_feedback_continuo +
+  pode_avancar / rotulo_avanco). team_return_url opcional para redirect pós-avanço.
 {% endcomment %}
 {% if item.avaliacao %}
   {% url 'reviews:detail' item.avaliacao.pk as detail_href %}
+  {% if item.pode_avancar and item.rotulo_avanco %}
+  <form
+    method="post"
+    action="{% url 'reviews:advance' item.avaliacao.pk %}"
+    class="block"
+  >
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ team_return_url|default:request.get_full_path }}">
+    <button
+      type="submit"
+      class="block w-full px-3 py-2 text-left font-ui text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-50 hover:text-emerald-800"
+      role="menuitem"
+    >{{ item.rotulo_avanco }}</button>
+  </form>
+  {% endif %}
   {% if item.avaliacao.etapa == "avaliacao" %}
     {% url 'reviews:leader_assessment' item.avaliacao.pk as leader_href %}
     {% include "components/row_actions_menu_item.html" with href=leader_href label="Avaliar" %}

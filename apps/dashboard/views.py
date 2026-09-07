@@ -71,8 +71,10 @@ from apps.dashboard.services.structure import (
     leaders_with_adherence,
     partition_gap_rows,
 )
+from apps.cycles.services.stage import can_advance
 from apps.goals.forms import get_open_ciclo
 from apps.organization.models import Area, Cargo
+from apps.reviews.forms import can_leader_assess
 from apps.reviews.models import Avaliacao
 from apps.reviews.services.continuous_feedback import continuous_feedback_create_allowed
 from apps.reviews.services.evaluation import build_fr005_context, self_assessment_submitted
@@ -332,8 +334,28 @@ _TEAM_ATTENTION_PRIORITY = {
     Avaliacao.Etapa.APROVACAO_METAS: 1,
     Avaliacao.Etapa.APROVACAO_RESULTADOS: 2,
 }
+# Liberar próxima etapa no painel (mesmos rótulos de reviews.views._ADVANCE_LABELS).
+_TEAM_LEADER_ADVANCE_LABELS = {
+    Avaliacao.Etapa.APROVACAO_METAS: 'Liberar etapa de resultados',
+    Avaliacao.Etapa.APROVACAO_RESULTADOS: 'Liberar etapa de avaliação',
+    Avaliacao.Etapa.AVALIACAO: 'Avançar para feedback',
+}
 # Densidade do ranking de atenção (eixo longo) — mesmo teto Top-N (N=8).
 _TEAM_DESTAQUE_LIMIT = DENSITY_TOP_N
+
+
+def _team_member_advance_fields(user, avaliacao: Avaliacao | None) -> dict:
+    """CTA de avanço no painel quando o líder já pode liberar a próxima etapa."""
+    if avaliacao is None:
+        return {'pode_avancar': False, 'rotulo_avanco': ''}
+    rotulo = _TEAM_LEADER_ADVANCE_LABELS.get(avaliacao.etapa)
+    if not rotulo or not can_leader_assess(user, avaliacao):
+        return {'pode_avancar': False, 'rotulo_avanco': ''}
+    ok, _motivo = can_advance(avaliacao)
+    return {
+        'pode_avancar': ok,
+        'rotulo_avanco': rotulo if ok else '',
+    }
 
 # Chips / barras do gráfico "Estágios do ciclo" — rótulos curtos alinhados ao chart.
 _TEAM_ETAPA_CHIP_LABELS: dict[str, str] = {
@@ -457,25 +479,30 @@ class TeamDashboardView(
                 for avaliacao in Avaliacao.objects.filter(
                     ciclo=ciclo,
                     usuario_id__in=[m.pk for m in membros],
-                ).select_related('ciclo')
+                ).select_related('ciclo', 'usuario', 'usuario__line_manager')
             }
 
-        context['membros_resumo'] = [
-            {
+        actor = self.request.user
+        context['membros_resumo'] = []
+        for membro in membros:
+            avaliacao = avaliacoes_por_usuario.get(membro.pk)
+            row = {
                 'usuario': membro,
-                'avaliacao': avaliacoes_por_usuario.get(membro.pk),
+                'avaliacao': avaliacao,
                 'fora_do_corte': (
                     ciclo is not None
-                    and avaliacoes_por_usuario.get(membro.pk) is None
+                    and avaliacao is None
                     and not user_eligible_for_ciclo(membro, ciclo)
                 ),
                 'pode_enviar_feedback_continuo': continuous_feedback_create_allowed(
-                    self.request.user,
+                    actor,
                     membro,
                 ),
             }
-            for membro in membros
-        ]
+            row.update(_team_member_advance_fields(actor, avaliacao))
+            context['membros_resumo'].append(row)
+
+        context['team_return_url'] = self.request.get_full_path()
 
         # US3 / T031: tendência etapa/conclusão só com intenção explícita (GET).
         if is_history_mode(self.request):
@@ -641,16 +668,19 @@ class TeamDashboardView(
             for av in Avaliacao.objects.filter(
                 ciclo=ciclo,
                 usuario_id__in=attention_ids,
-            ).select_related('ciclo')
+            ).select_related('ciclo', 'usuario', 'usuario__line_manager')
         }
 
+        actor = self.request.user
         items: list[dict] = []
         for usuario_id in attention_ids:
             usuario = usuarios.get(usuario_id)
             avaliacao = avaliacoes.get(usuario_id)
             if usuario is None or avaliacao is None:
                 continue
-            items.append({'usuario': usuario, 'avaliacao': avaliacao})
+            item = {'usuario': usuario, 'avaliacao': avaliacao}
+            item.update(_team_member_advance_fields(actor, avaliacao))
+            items.append(item)
 
         items.sort(
             key=lambda item: (

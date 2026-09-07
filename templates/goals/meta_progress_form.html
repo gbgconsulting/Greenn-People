@@ -18,10 +18,10 @@
     </div>
     {% endif %}
     {% include "goals/partials/meta_progress_binario.html" with progress_form=form rotulo_salvar_progresso="Salvar" %}
-    <div class="flex gap-3 pt-1">
+    <div class="flex gap-3 pt-2">
       <a
         href="{% url 'goals:meta_list' %}"
-        class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+        class="inline-flex h-8 items-center rounded-lg border border-slate-200 bg-white px-3 font-ui text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50"
       >Cancelar</a>
     </div>
   </form>

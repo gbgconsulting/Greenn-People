@@ -69,7 +69,6 @@
     --container-xl: 36rem;
     --container-2xl: 42rem;
     --container-3xl: 48rem;
-    --container-4xl: 56rem;
     --container-5xl: 64rem;
     --container-6xl: 72rem;
     --container-7xl: 80rem;
@@ -713,6 +712,10 @@
     width: calc(var(--spacing) * 1.5);
     height: calc(var(--spacing) * 1.5);
   }
+  .size-2 {
+    width: calc(var(--spacing) * 2);
+    height: calc(var(--spacing) * 2);
+  }
   .size-2\.5 {
     width: calc(var(--spacing) * 2.5);
     height: calc(var(--spacing) * 2.5);
@@ -740,6 +743,10 @@
   .size-8 {
     width: calc(var(--spacing) * 8);
     height: calc(var(--spacing) * 8);
+  }
+  .size-10 {
+    width: calc(var(--spacing) * 10);
+    height: calc(var(--spacing) * 10);
   }
   .\!h-9 {
     height: calc(var(--spacing) * 9) !important;
@@ -1085,6 +1092,9 @@
   }
   .max-w-\[12rem\] {
     max-width: 12rem;
+  }
+  .max-w-\[17rem\] {
+    max-width: 17rem;
   }
   .max-w-\[90rem\] {
     max-width: 90rem;
@@ -2186,9 +2196,6 @@
   .\!px-2\.5 {
     padding-inline: calc(var(--spacing) * 2.5) !important;
   }
-  .\!px-3 {
-    padding-inline: calc(var(--spacing) * 3) !important;
-  }
   .\!px-4 {
     padding-inline: calc(var(--spacing) * 4) !important;
   }
@@ -2671,6 +2678,12 @@
   }
   .text-emerald-700 {
     color: var(--color-emerald-700);
+  }
+  .text-emerald-700\/80 {
+    color: color-mix(in srgb, oklch(50.8% 0.118 165.612) 80%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      color: color-mix(in oklab, var(--color-emerald-700) 80%, transparent);
+    }
   }
   .text-emerald-800 {
     color: var(--color-emerald-800);
@@ -3325,9 +3338,6 @@
     .hover\:bg-emerald-700:hover {
       background-color: var(--color-emerald-700);
     }
-    .hover\:bg-emerald-800:hover {
-      background-color: var(--color-emerald-800);
-    }
     .hover\:bg-emerald-900:hover {
       background-color: var(--color-emerald-900);
     }
@@ -3443,6 +3453,9 @@
     }
     .hover\:text-emerald-800:hover {
       color: var(--color-emerald-800);
+    }
+    .hover\:text-emerald-900:hover {
+      color: var(--color-emerald-900);
     }
     .hover\:text-red-600:hover {
       color: var(--color-red-600);
@@ -3876,12 +3889,6 @@
     }
     .sm\:gap-8 {
       gap: calc(var(--spacing) * 8);
-    }
-    .sm\:gap-x-3 {
-      column-gap: calc(var(--spacing) * 3);
-    }
-    .sm\:gap-y-1 {
-      row-gap: var(--spacing);
     }
     .sm\:p-3 {
       padding: calc(var(--spacing) * 3);

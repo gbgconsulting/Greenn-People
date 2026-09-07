@@ -137,7 +137,8 @@
               {% include "components/badge_status.html" with status="media" label=item.avaliacao.get_etapa_display extra_class="!rounded-full" %}
             {% endif %}
           </div>
-          <div class="flex shrink-0 items-center justify-end">
+          <div class="flex shrink-0 items-center justify-end gap-1.5">
+            {% include "dashboard/partials/team_member_advance_button.html" with item=item %}
             {% include "components/row_actions_menu.html" with menu_label=item.usuario.nome|default:item.usuario.email items_partial="dashboard/partials/team_member_row_actions_items.html" item=item %}
           </div>
         </li>

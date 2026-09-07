@@ -148,7 +148,10 @@
                 {% endif %}
               </td>
               <td class="text-right">
-                {% include "components/row_actions_menu.html" with menu_label=item.usuario.nome|default:item.usuario.email items_partial="dashboard/partials/team_member_row_actions_items.html" item=item %}
+                <div class="inline-flex items-center justify-end gap-1.5">
+                  {% include "dashboard/partials/team_member_advance_button.html" with item=item %}
+                  {% include "components/row_actions_menu.html" with menu_label=item.usuario.nome|default:item.usuario.email items_partial="dashboard/partials/team_member_row_actions_items.html" item=item %}
+                </div>
               </td>
             </tr>
               {% endif %}
@@ -207,7 +210,10 @@
                 {% endif %}
               </td>
               <td class="text-right">
-                {% include "components/row_actions_menu.html" with menu_label=item.usuario.nome|default:item.usuario.email items_partial="dashboard/partials/team_member_row_actions_items.html" item=item %}
+                <div class="inline-flex items-center justify-end gap-1.5">
+                  {% include "dashboard/partials/team_member_advance_button.html" with item=item %}
+                  {% include "components/row_actions_menu.html" with menu_label=item.usuario.nome|default:item.usuario.email items_partial="dashboard/partials/team_member_row_actions_items.html" item=item %}
+                </div>
               </td>
             </tr>
             {% endif %}
