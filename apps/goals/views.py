@@ -48,6 +48,7 @@ from apps.goals.services.approval import (
     reject_resultado,
 )
 from apps.reviews.models import Avaliacao
+from apps.reviews.services.display import escala_rotulo, format_nivel_display
 from apps.reviews.services.evaluation import build_fr005_context, self_assessment_submitted
 from apps.reviews.services.guidance import (
     detect_owner_correction_kind,
@@ -82,18 +83,62 @@ def _cargo_nivel_label(cargo) -> str:
     return _CARGO_NIVEL_LABELS.get(cargo.nivel, str(cargo.nivel))
 
 
-def _competencia_segments(nivel_esperado, valor_minimo: int, valor_maximo: int) -> list[bool]:
-    """Segmentos preenchidos para a barra de nível esperado (apresentação)."""
+def _competencia_target_level(nivel_esperado, valor_minimo: int, valor_maximo: int) -> int | None:
+    """Nível-alvo discreto (clamp na escala) para pin visual — só apresentação."""
     if valor_maximo is None or valor_minimo is None or valor_maximo < valor_minimo:
-        return []
+        return None
     try:
         filled_level = int(round(float(nivel_esperado)))
     except (TypeError, ValueError):
-        filled_level = valor_minimo
+        return None
+    return max(valor_minimo, min(valor_maximo, filled_level))
+
+
+def _competencia_segments(nivel_esperado, valor_minimo: int, valor_maximo: int) -> list[bool]:
+    """Segmentos preenchidos para a barra de nível esperado (apresentação)."""
+    filled_level = _competencia_target_level(nivel_esperado, valor_minimo, valor_maximo)
+    if filled_level is None:
+        return []
     return [
         level <= filled_level
         for level in range(valor_minimo, valor_maximo + 1)
     ]
+
+
+def _resumo_autoavaliacao_strip(fr005: dict) -> dict:
+    """Copy do strip compacto de autoavaliação (UI só consome; AuthZ intacto)."""
+    if fr005.get('autoavaliacao_enviada'):
+        return {
+            'badge': 'Enviada',
+            'badge_class': 'bg-emerald-50 text-emerald-800 border-emerald-200',
+            'detail': 'Referência enviada por você — separada da nota oficial.',
+        }
+    avaliacao = fr005.get('avaliacao')
+    if avaliacao is not None and avaliacao.etapa == Avaliacao.Etapa.AVALIACAO:
+        return {
+            'badge': 'Etapa aberta',
+            'badge_class': 'bg-slate-100 text-slate-600 border-slate-200',
+            'detail': 'Aguardando seu preenchimento',
+        }
+    return {
+        'badge': None,
+        'badge_class': '',
+        'detail': 'Disponível na etapa de avaliação do ciclo.',
+    }
+
+
+def _escala_legenda(competencias_resumo: list) -> dict | None:
+    """Min/max únicos da escala das competências (ou None se mistos/ausentes)."""
+    ranges: set[tuple[int, int]] = set()
+    for item in competencias_resumo:
+        escala = getattr(item.get('competencia'), 'escala', None)
+        if escala is None:
+            continue
+        ranges.add((escala.valor_minimo, escala.valor_maximo))
+    if len(ranges) != 1:
+        return None
+    minimo, maximo = next(iter(ranges))
+    return {'minimo': minimo, 'maximo': maximo}
 
 
 def _proximo_passo_pos_reprovacao(avaliacao, meta, *, is_owner, pode_progresso):
@@ -290,20 +335,49 @@ class ExpectationsView(LoginRequiredMixin, TemplateView):
         context['surface_cta'] = self._surface_cta_context(fr005)
         # Apresentação do mock de expectativas (sem mudar FR-005 / AuthZ).
         cargo = fr005.get('cargo')
+        competencias_resumo = fr005.get('competencias_resumo') or []
         context['area'] = getattr(user, 'area', None)
         context['cargo_nivel_label'] = _cargo_nivel_label(cargo)
-        context['competencias_cards'] = [
-            {
-                **item,
-                'segments': _competencia_segments(
-                    item['nivel_esperado'],
-                    item['competencia'].escala.valor_minimo,
-                    item['competencia'].escala.valor_maximo,
-                ),
-                'nivel_esperado_display': item['nivel_esperado'],
-            }
-            for item in fr005.get('competencias_resumo') or []
-        ]
+        context['resumo_autoavaliacao'] = _resumo_autoavaliacao_strip(fr005)
+        context['escala_legenda'] = _escala_legenda(competencias_resumo)
+        context['competencias_cards'] = []
+        for item in competencias_resumo:
+            competencia = item['competencia']
+            escala = competencia.escala
+            target = _competencia_target_level(
+                item['nivel_esperado'],
+                escala.valor_minimo,
+                escala.valor_maximo,
+            )
+            nivel_txt = format_nivel_display(item['nivel_esperado'])
+            rotulo = escala_rotulo(escala, target) if target is not None else ''
+            if rotulo:
+                nivel_badge = f'{nivel_txt} / {escala.valor_maximo} ({rotulo})'
+            else:
+                nivel_badge = f'{nivel_txt} / {escala.valor_maximo}'
+            auto_nota = item.get('nota_autoavaliacao')
+            context['competencias_cards'].append(
+                {
+                    **item,
+                    'segments': _competencia_segments(
+                        item['nivel_esperado'],
+                        escala.valor_minimo,
+                        escala.valor_maximo,
+                    ),
+                    'segment_levels': list(
+                        range(escala.valor_minimo, escala.valor_maximo + 1),
+                    ),
+                    'target_level': target,
+                    'nivel_esperado_display': item['nivel_esperado'],
+                    'nivel_esperado_badge': nivel_badge,
+                    'nivel_esperado_rotulo': rotulo,
+                    'autoavaliacao_label': (
+                        format_nivel_display(auto_nota)
+                        if auto_nota is not None
+                        else 'Ainda não avaliada'
+                    ),
+                },
+            )
         return context
 
     def _surface_cta_context(self, fr005: dict) -> dict | None:

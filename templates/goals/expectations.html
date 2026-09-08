@@ -6,115 +6,137 @@
 {% block content %}
 {% url 'goals:meta_list' as metas_url %}
 
-<header class="mb-8 flex flex-wrap items-start justify-between gap-4">
+{# —— Cabeçalho da página + CTA (mapa 008 / surface_cta do backend) —— #}
+<header class="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
   <div class="max-w-2xl">
-    <h1 class="font-display text-2xl font-semibold text-slate-800">
+    <h1 class="font-display text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
       Minhas Expectativas
     </h1>
     <p class="mt-1 font-ui text-sm text-slate-500">
-      Confira as competências e metas vinculadas ao seu cargo atual.
+      Confira as competências e metas vinculadas ao seu cargo atual e prepare-se para o ciclo avaliativo.
     </p>
   </div>
-  <div class="flex flex-wrap items-center gap-2">
-    {# T034: CTA compacto do mapa 008 — sem bloco next_step/stepper #}
+  <div class="flex shrink-0 flex-wrap items-center gap-2">
     {% if surface_cta %}
-      {% include "components/button.html" with label=surface_cta.label href=surface_cta.href variant="primary" %}
+      {% include "components/button.html" with label=surface_cta.label href=surface_cta.href variant="primary" extra_class="!rounded-xl" %}
     {% elif ciclo_aberto %}
-      {% include "components/button.html" with label="Ir para metas" href=metas_url variant="primary" %}
+      {% include "components/button.html" with label="Ir para metas" href=metas_url variant="primary" extra_class="!rounded-xl" %}
     {% endif %}
   </div>
 </header>
 
-<div class="grid grid-cols-1 gap-6 xl:grid-cols-12">
-  {# —— Coluna principal: cargo, KPIs e competências —— #}
-  <div class="flex min-w-0 flex-col gap-6 xl:col-span-8">
+<div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+  {# —— Coluna principal: cargo, resumo e competências (mesma largura) —— #}
+  <div class="min-w-0 space-y-5 lg:col-span-8">
 
+    {# —— Identidade do cargo —— #}
     {% if cargo %}
     <section
-      class="relative overflow-hidden rounded-xl border border-line bg-surface-card p-5 shadow-[0_2px_4px_rgba(0,0,0,0.04)] sm:p-6"
+      class="relative overflow-hidden rounded-2xl border border-line bg-surface-card p-5 shadow-sm sm:p-6"
       aria-labelledby="cargo-atual-heading"
     >
       <div class="absolute inset-x-0 top-0 h-1 bg-brand-gradient" aria-hidden="true"></div>
-      <div class="flex flex-wrap items-start justify-between gap-4">
-        <div class="min-w-0">
-          <span class="mb-3 inline-block rounded bg-emerald-50 px-2 py-1 font-ui text-xs font-semibold tracking-wide text-emerald-700">
-            Cargo Atual
+      <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div class="min-w-0 space-y-1.5">
+          <span class="inline-flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 font-ui text-xs font-semibold text-emerald-700">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-3.5 w-3.5" aria-hidden="true">
+              <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd" />
+            </svg>
+            Cargo Atual Mapeado
           </span>
-          <h2 id="cargo-atual-heading" class="font-display text-xl font-medium tracking-tight text-slate-800 sm:text-2xl">
+          <h2 id="cargo-atual-heading" class="font-display text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
             {{ cargo.nome }}
           </h2>
           {% if area %}
-          <p class="mt-1 flex items-center gap-2 font-ui text-sm text-slate-500 sm:text-base">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true">
-              <path fill-rule="evenodd" d="M4.25 2A2.25 2.25 0 0 0 2 4.25v11.5A2.25 2.25 0 0 0 4.25 18h11.5A2.25 2.25 0 0 0 18 15.75V4.25A2.25 2.25 0 0 0 15.75 2H4.25ZM6 13.25V15h1.5v-1.75a.75.75 0 0 0-.75-.75h-.75a.75.75 0 0 0-.75.75ZM6.75 7a.75.75 0 0 0-.75.75V11c0 .414.336.75.75.75h.75a.75.75 0 0 0 .75-.75V7.75A.75.75 0 0 0 7.5 7h-.75ZM11 13.25V15h1.5v-1.75a.75.75 0 0 0-.75-.75h-.75a.75.75 0 0 0-.75.75ZM11.75 7a.75.75 0 0 0-.75.75V11c0 .414.336.75.75.75h.75a.75.75 0 0 0 .75-.75V7.75A.75.75 0 0 0 12.5 7h-.75Z" clip-rule="evenodd" />
-            </svg>
-            {{ area.nome }}
-          </p>
+          <p class="font-ui text-xs font-medium text-slate-500">{{ area.nome }}</p>
           {% endif %}
         </div>
         {% if cargo_nivel_label %}
-        <div class="rounded-lg border border-line bg-slate-50 px-4 py-3 text-center">
-          <span class="block font-ui text-xs font-semibold tracking-wide text-slate-500">Nível de Senioridade</span>
-          <span class="mt-0.5 block font-display text-lg font-medium text-emerald-700">{{ cargo_nivel_label }}</span>
+        <div class="flex shrink-0 flex-col items-end justify-center rounded-xl border border-slate-200/80 bg-slate-50 px-5 py-3 text-right">
+          <span class="block font-ui text-xs font-semibold uppercase tracking-wide text-slate-400">Nível de Senioridade</span>
+          <span class="mt-0.5 block font-display text-xl font-semibold leading-tight text-emerald-700">{{ cargo_nivel_label }}</span>
         </div>
         {% endif %}
       </div>
     </section>
     {% endif %}
 
-    <section class="min-w-0" aria-labelledby="resumo-desempenho-heading">
+    {# —— Strip compacto de status —— #}
+    <section
+      class="rounded-xl border border-line bg-surface-card px-5 py-4 shadow-sm sm:px-6"
+      aria-labelledby="resumo-desempenho-heading"
+      data-purpose="compact-status-bar"
+    >
       <h2 id="resumo-desempenho-heading" class="sr-only">Resumo de desempenho</h2>
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div class="rounded-xl border border-line bg-surface-card p-5 shadow-[0_2px_4px_rgba(0,0,0,0.04)]">
-          <p class="text-xs uppercase tracking-wide text-slate-500">Nota atual</p>
-          <p class="mt-2 font-display text-3xl font-semibold tabular-nums tracking-tight text-slate-800">
-            {{ nota_atual|nota_percentual }}
-          </p>
-          <p class="mt-1.5 text-sm leading-snug text-slate-500">
-            {% if nota_atual_origem == "lider" %}
-              Nota consolidada do líder{% if ciclo_aberto %} · {{ ciclo_aberto.nome }}{% endif %}
-            {% else %}
-              Aguardando avaliação do líder{% if ciclo_aberto %} · {{ ciclo_aberto.nome }}{% endif %}.
-            {% endif %}
-          </p>
+      <div class="grid grid-cols-1 gap-6 divide-y divide-slate-100 md:grid-cols-3 md:divide-x md:divide-y-0">
+        <div class="flex items-center gap-3.5 md:pr-4">
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
+            </svg>
+          </div>
+          <div class="min-w-0">
+            <p class="font-ui text-xs font-medium uppercase tracking-wide text-slate-400">Nota Consolidada do Ciclo</p>
+            <div class="mt-0.5 flex flex-wrap items-baseline gap-2">
+              <span class="font-ui text-base font-semibold tabular-nums text-slate-700">{{ nota_atual|nota_percentual }}</span>
+              <span class="font-ui text-xs text-slate-500">
+                {% if nota_atual_origem == "lider" %}
+                  Nota consolidada do líder{% if ciclo_aberto %} · {{ ciclo_aberto.nome }}{% endif %}
+                {% else %}
+                  Aguardando avaliação do líder
+                {% endif %}
+              </span>
+            </div>
+          </div>
         </div>
-        <div class="rounded-xl border border-line bg-surface-card p-5 shadow-[0_2px_4px_rgba(0,0,0,0.04)]">
-          <p class="text-xs uppercase tracking-wide text-slate-500">Autoavaliação</p>
-          <p class="mt-2 font-display text-3xl font-semibold tabular-nums tracking-tight text-slate-800">
-            {% if autoavaliacao_enviada and nota_autoavaliacao is not None %}
-              {{ nota_autoavaliacao|nota_percentual }}
-            {% else %}
-              —
-            {% endif %}
-          </p>
-          <p class="mt-1.5 text-sm leading-snug text-slate-500">
-            {% if autoavaliacao_enviada %}
-              Referência enviada por você — separada da nota oficial.
-              {% if avaliacao %}
-                <a href="{% url 'reviews:self_assessment' avaliacao.pk %}" class="font-medium text-emerald-700 hover:underline">Ver autoavaliação</a>
+
+        <div class="flex items-center gap-3.5 pt-4 md:px-6 md:pt-0">
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
+            </svg>
+          </div>
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+              <p class="font-ui text-xs font-medium uppercase tracking-wide text-slate-400">Autoavaliação</p>
+              {% if resumo_autoavaliacao.badge %}
+              <span class="inline-flex items-center rounded border px-1.5 py-0.5 font-ui text-xs font-semibold {{ resumo_autoavaliacao.badge_class }}">
+                {{ resumo_autoavaliacao.badge }}
+              </span>
               {% endif %}
-            {% elif avaliacao and avaliacao.etapa == "avaliacao" %}
-              Preencha na etapa de avaliação.
-              <a href="{% url 'reviews:self_assessment' avaliacao.pk %}" class="font-medium text-emerald-700 hover:underline">Ir para autoavaliação</a>
-            {% else %}
-              Disponível na etapa de avaliação do ciclo.
-            {% endif %}
-          </p>
+            </div>
+            <p class="mt-1 font-ui text-xs font-semibold text-slate-600">
+              {% if autoavaliacao_enviada and nota_autoavaliacao is not None %}
+                {{ nota_autoavaliacao|nota_percentual }} — {{ resumo_autoavaliacao.detail }}
+                {% if avaliacao %}
+                  <a href="{% url 'reviews:self_assessment' avaliacao.pk %}" class="font-semibold text-emerald-700 hover:underline">Ver</a>
+                {% endif %}
+              {% else %}
+                {{ resumo_autoavaliacao.detail }}
+                {% if avaliacao and avaliacao.etapa == "avaliacao" and not autoavaliacao_enviada %}
+                  <a href="{% url 'reviews:self_assessment' avaliacao.pk %}" class="font-semibold text-emerald-700 hover:underline">Ir</a>
+                {% endif %}
+              {% endif %}
+            </p>
+          </div>
         </div>
-        <div class="rounded-xl border border-line bg-surface-card p-5 shadow-[0_2px_4px_rgba(0,0,0,0.04)]">
-          <p class="text-xs uppercase tracking-wide text-slate-500">Nível esperado</p>
-          <p class="mt-2 font-display text-3xl font-semibold tabular-nums tracking-tight text-emerald-700">
-            {% if vinculo_pendente %}—{% else %}{{ competencias_resumo|length }}{% endif %}
-          </p>
-          <p class="mt-1.5 text-sm leading-snug text-slate-500">
-            {% if vinculo_pendente %}
-              Vínculo de cargo/competências pendente.
-            {% elif cargo %}
-              Perfil do cargo {{ cargo.nome }}{% if cargo_nivel_label %} {{ cargo_nivel_label }}{% endif %}.
-            {% else %}
-              Competências com nível definido para o seu cargo.
-            {% endif %}
-          </p>
+
+        <div class="flex items-center gap-3.5 pt-4 md:pl-6 md:pt-0">
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>
+          </div>
+          <div class="min-w-0">
+            <p class="font-ui text-xs font-medium uppercase tracking-wide text-slate-400">Competências Mapeadas</p>
+            <p class="mt-0.5 font-ui text-xs font-semibold text-slate-800">
+              {% if vinculo_pendente %}
+                Vínculo de cargo/competências pendente
+              {% else %}
+                {{ competencias_resumo|length }} competência{{ competencias_resumo|length|pluralize:"s" }} ativa{{ competencias_resumo|length|pluralize:"s" }} de referência
+              {% endif %}
+            </p>
+          </div>
         </div>
       </div>
     </section>
@@ -148,77 +170,99 @@
       </div>
     </section>
     {% else %}
-    <section class="min-w-0" aria-labelledby="competencias-heading">
-      <h2 id="competencias-heading" class="mb-4 flex items-center gap-2 font-display text-lg font-medium tracking-tight text-slate-800">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5 shrink-0 text-emerald-700" aria-hidden="true">
-          <path d="M10 3.5a1.5 1.5 0 0 1 1.5 1.5v.172a3.5 3.5 0 0 1 1.828 1.828H13.5a1.5 1.5 0 1 1 0 3h-.172A3.5 3.5 0 0 1 11.5 13.828V14a1.5 1.5 0 1 1-3 0v-.172A3.5 3.5 0 0 1 6.672 12H6.5a1.5 1.5 0 1 1 0-3h.172A3.5 3.5 0 0 1 8.5 7.172V7A1.5 1.5 0 0 1 10 3.5Z" />
-          <path d="M3.28 3.22a.75.75 0 0 0-1.06 1.06l1.06 1.06a.75.75 0 0 0 1.06-1.06L3.28 3.22ZM16.72 3.22l1.06 1.06a.75.75 0 1 1-1.06 1.06l-1.06-1.06a.75.75 0 0 1 1.06-1.06ZM3.28 16.78l1.06-1.06a.75.75 0 1 1 1.06 1.06l-1.06 1.06a.75.75 0 1 1-1.06-1.06ZM16.72 16.78a.75.75 0 0 1 0-1.06l1.06-1.06a.75.75 0 1 1 1.06 1.06l-1.06 1.06a.75.75 0 0 1-1.06 0Z" />
-        </svg>
-        Competências do Cargo
-      </h2>
-
-      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {% for item in competencias_cards %}
-        <article class="rounded-xl border border-line bg-surface-card p-5 shadow-[0_2px_4px_rgba(0,0,0,0.04)] transition-transform duration-200 hover:-translate-y-0.5">
-          <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <span class="rounded bg-slate-100 px-2 py-0.5 font-ui text-xs font-semibold text-slate-600">
-              {{ item.competencia.get_tipo_display }}
-            </span>
-            <span class="font-ui text-xs text-slate-500">
-              Escala {{ item.competencia.escala.valor_minimo }}–{{ item.competencia.escala.valor_maximo }}
-            </span>
+    <section class="min-w-0 space-y-4" aria-labelledby="competencias-heading" data-purpose="competencies-container">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 id="competencias-heading" class="font-display text-xl font-bold tracking-tight text-slate-900">
+          Competências do Cargo
+        </h2>
+        <div class="flex flex-wrap items-center gap-3 font-ui text-xs text-slate-500">
+          <div class="flex items-center gap-1.5">
+            <span class="h-2.5 w-2.5 rounded-sm border border-emerald-500 bg-emerald-100" aria-hidden="true"></span>
+            <span>Nível Esperado (Alvo)</span>
           </div>
-
-          <div class="mb-4 flex items-start justify-between gap-3">
-            <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700" aria-hidden="true">
-              {% if item.competencia.tipo == "lideranca" %}
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5">
-                <path d="M10 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM6 8a2 2 0 1 1-4 0 2 2 0 0 1 4 0ZM1.49 15.326a.78.78 0 0 1-.358-.442 3 3 0 0 1 4.308-3.516 6.484 6.484 0 0 0-1.905 3.959c-.023.222-.014.442.025.654a4.97 4.97 0 0 1-2.07-.655ZM16.44 15.98a4.97 4.97 0 0 0 2.07-.654.78.78 0 0 0 .357-.442 3 3 0 0 0-4.308-3.517 6.484 6.484 0 0 1 1.907 3.96 2.32 2.32 0 0 1-.026.654ZM18 8a2 2 0 1 1-4 0 2 2 0 0 1 4 0ZM5.304 16.19a.844.844 0 0 1-.277-.71 5 5 0 0 1 9.947 0 .843.843 0 0 1-.277.71A6.975 6.975 0 0 1 10 18a6.974 6.974 0 0 1-4.696-1.81Z" />
-              </svg>
-              {% elif item.competencia.tipo == "tecnica" %}
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5">
-                <path d="M10 1a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5A.75.75 0 0 1 10 1ZM5.05 3.05a.75.75 0 0 1 1.06 0l1.062 1.06A.75.75 0 1 1 6.11 5.17L5.05 4.11a.75.75 0 0 1 0-1.06ZM14.95 3.05a.75.75 0 0 1 0 1.06L13.89 5.17a.75.75 0 1 1-1.06-1.06l1.06-1.06a.75.75 0 0 1 1.06 0ZM3 8.25a.75.75 0 0 0 0 1.5h1.5a.75.75 0 0 0 0-1.5H3ZM15.5 8.25a.75.75 0 0 0 0 1.5H17a.75.75 0 0 0 0-1.5h-1.5ZM7.172 12.828a.75.75 0 0 1 0 1.06l-1.06 1.06a.75.75 0 1 1-1.062-1.06l1.061-1.06a.75.75 0 0 1 1.06 0ZM13.89 12.828a.75.75 0 0 1 1.06 0l1.06 1.06a.75.75 0 1 1-1.06 1.06l-1.06-1.06a.75.75 0 0 1 0-1.06ZM10 14.5a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5a.75.75 0 0 1 .75-.75Z" />
-                <path fill-rule="evenodd" d="M10 6a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm-2.5 4a2.5 2.5 0 1 1 5 0 2.5 2.5 0 0 1-5 0Z" clip-rule="evenodd" />
-              </svg>
-              {% else %}
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5">
-                <path fill-rule="evenodd" d="M10 2c-2.236 0-4.43.18-6.512.527C2.35 2.716 1.5 3.753 1.5 4.914V9.5c0 2.015.932 3.892 2.504 5.294a9.377 9.377 0 0 0 5.276 2.832l.72.128a.75.75 0 0 0 .264 0l.72-.128a9.377 9.377 0 0 0 5.276-2.832c1.572-1.402 2.504-3.279 2.504-5.294V4.914c0-1.161-.85-2.198-1.988-2.387A41.548 41.548 0 0 0 10 2ZM6.75 6a.75.75 0 0 0 0 1.5h6.5a.75.75 0 0 0 0-1.5h-6.5Zm0 2.5a.75.75 0 0 0 0 1.5h3.5a.75.75 0 0 0 0-1.5h-3.5Z" clip-rule="evenodd" />
-              </svg>
-              {% endif %}
-            </span>
-
-            <div class="flex flex-col items-end">
-              <span class="mb-1 font-ui text-xs font-semibold text-slate-500">Nível Esperado</span>
-              {% if item.segments %}
-              <div
-                class="flex gap-1"
-                role="img"
-                aria-label="Nível esperado {{ item.nivel_esperado_display|floatformat:'-2' }} de {{ item.competencia.escala.valor_maximo }}"
-              >
-                {% for filled in item.segments %}
-                <span class="h-2 w-5 rounded-full sm:w-6 {% if filled %}bg-emerald-600{% else %}bg-slate-200{% endif %}"></span>
-                {% endfor %}
-              </div>
-              {% endif %}
-              <span class="mt-1 font-ui text-sm font-semibold tabular-nums text-emerald-700">
-                {{ item.nivel_esperado_display|floatformat:"-2" }} / {{ item.competencia.escala.valor_maximo }}
-              </span>
-              {% if item.nota_atual is not None %}
-              <span class="mt-0.5 font-ui text-xs tabular-nums text-slate-500">
-                Nota do líder: {{ item.nota_atual }}
-              </span>
-              {% endif %}
-            </div>
-          </div>
-
-          <h3 class="font-ui text-sm font-semibold tracking-tight text-slate-800">
-            {{ item.competencia.nome }}
-          </h3>
-          {% if item.competencia.descricao %}
-          <p class="mt-1.5 line-clamp-3 font-ui text-sm leading-relaxed text-slate-500">
-            {{ item.competencia.descricao }}
-          </p>
+          {% if escala_legenda %}
+          <span class="rounded bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+            Escala de {{ escala_legenda.minimo }} a {{ escala_legenda.maximo }}
+          </span>
           {% endif %}
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {% for item in competencias_cards %}
+        <article class="flex flex-col justify-between space-y-4 rounded-xl border border-line bg-surface-card p-5 shadow-sm transition-colors hover:border-slate-300">
+          <div>
+            <div class="mb-3 flex items-center justify-between gap-2">
+              <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700" aria-hidden="true">
+                {% if item.competencia.tipo == "lideranca" %}
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4">
+                  <path d="M10 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM6 8a2 2 0 1 1-4 0 2 2 0 0 1 4 0ZM1.49 15.326a.78.78 0 0 1-.358-.442 3 3 0 0 1 4.308-3.516 6.484 6.484 0 0 0-1.905 3.959c-.023.222-.014.442.025.654a4.97 4.97 0 0 1-2.07-.655ZM16.44 15.98a4.97 4.97 0 0 0 2.07-.654.78.78 0 0 0 .357-.442 3 3 0 0 0-4.308-3.517 6.484 6.484 0 0 1 1.907 3.96 2.32 2.32 0 0 1-.026.654ZM18 8a2 2 0 1 1-4 0 2 2 0 0 1 4 0ZM5.304 16.19a.844.844 0 0 1-.277-.71 5 5 0 0 1 9.947 0 .843.843 0 0 1-.277.71A6.975 6.975 0 0 1 10 18a6.974 6.974 0 0 1-4.696-1.81Z" />
+                </svg>
+                {% elif item.competencia.tipo == "tecnica" %}
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4">
+                  <path d="M10 1a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5A.75.75 0 0 1 10 1ZM5.05 3.05a.75.75 0 0 1 1.06 0l1.062 1.06A.75.75 0 1 1 6.11 5.17L5.05 4.11a.75.75 0 0 1 0-1.06ZM14.95 3.05a.75.75 0 0 1 0 1.06L13.89 5.17a.75.75 0 1 1-1.06-1.06l1.06-1.06a.75.75 0 0 1 1.06 0ZM3 8.25a.75.75 0 0 0 0 1.5h1.5a.75.75 0 0 0 0-1.5H3ZM15.5 8.25a.75.75 0 0 0 0 1.5H17a.75.75 0 0 0 0-1.5h-1.5ZM7.172 12.828a.75.75 0 0 1 0 1.06l-1.06 1.06a.75.75 0 1 1-1.062-1.06l1.061-1.06a.75.75 0 0 1 1.06 0ZM13.89 12.828a.75.75 0 0 1 1.06 0l1.06 1.06a.75.75 0 1 1-1.06 1.06l-1.06-1.06a.75.75 0 0 1 0-1.06ZM10 14.5a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5a.75.75 0 0 1 .75-.75Z" />
+                  <path fill-rule="evenodd" d="M10 6a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm-2.5 4a2.5 2.5 0 1 1 5 0 2.5 2.5 0 0 1-5 0Z" clip-rule="evenodd" />
+                </svg>
+                {% else %}
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4">
+                  <path fill-rule="evenodd" d="M10 2c-2.236 0-4.43.18-6.512.527C2.35 2.716 1.5 3.753 1.5 4.914V9.5c0 2.015.932 3.892 2.504 5.294a9.377 9.377 0 0 0 5.276 2.832l.72.128a.75.75 0 0 0 .264 0l.72-.128a9.377 9.377 0 0 0 5.276-2.832c1.572-1.402 2.504-3.279 2.504-5.294V4.914c0-1.161-.85-2.198-1.988-2.387A41.548 41.548 0 0 0 10 2ZM6.75 6a.75.75 0 0 0 0 1.5h6.5a.75.75 0 0 0 0-1.5h-6.5Zm0 2.5a.75.75 0 0 0 0 1.5h3.5a.75.75 0 0 0 0-1.5h-3.5Z" clip-rule="evenodd" />
+                </svg>
+                {% endif %}
+              </span>
+              <span class="rounded bg-slate-100 px-2 py-0.5 font-ui text-[11px] font-semibold text-slate-600">
+                {{ item.competencia.get_tipo_display }}
+              </span>
+            </div>
+            <h3 class="font-ui text-sm font-bold leading-snug text-slate-900">
+              {{ item.competencia.nome }}
+            </h3>
+            {% if item.competencia.descricao %}
+            <p class="mt-2 line-clamp-3 font-ui text-xs leading-relaxed text-slate-500">
+              {{ item.competencia.descricao }}
+            </p>
+            {% endif %}
+          </div>
+
+          <div class="border-t border-slate-100 pt-3">
+            <div class="mb-1.5 flex items-center justify-between gap-2 font-ui text-xs">
+              <span class="font-medium text-slate-500">Nível de entrega esperado:</span>
+              <span class="rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 font-semibold tabular-nums text-emerald-800">
+                {{ item.nivel_esperado_badge }}
+              </span>
+            </div>
+            {% if item.segments %}
+            <div
+              class="relative grid gap-1.5 pt-1"
+              style="grid-template-columns: repeat({{ item.segments|length }}, minmax(0, 1fr))"
+              role="img"
+              aria-label="Nível esperado {{ item.nivel_esperado_display|nivel_display }} de {{ item.competencia.escala.valor_maximo }}"
+            >
+              {% for level in item.segment_levels %}
+              <div
+                class="relative h-2 rounded {% if level <= item.target_level %}bg-emerald-100{% else %}bg-slate-100{% endif %}"
+                title="Nível {{ level }}{% if level == item.target_level %} — Meta{% endif %}"
+              >
+                {% if level == item.target_level %}
+                <span class="absolute -bottom-4 left-1/2 -translate-x-1/2 font-ui text-xs font-semibold uppercase tracking-wide text-emerald-700">
+                  Meta
+                </span>
+                {% endif %}
+              </div>
+              {% endfor %}
+            </div>
+            {% endif %}
+            <div class="mt-5 pt-1 font-ui text-xs text-slate-400">
+              <span class="font-normal text-slate-500">
+                Sua autoavaliação:
+                <span class="font-semibold text-slate-600">{{ item.autoavaliacao_label }}</span>
+              </span>
+            </div>
+            {% if item.nota_atual is not None %}
+            <p class="mt-1 font-ui text-[10px] tabular-nums text-slate-400">
+              Nota do líder: {{ item.nota_atual|nivel_display }}
+            </p>
+            {% endif %}
+          </div>
         </article>
         {% empty %}
         <div class="col-span-full rounded-xl border border-line bg-surface-card px-4 py-6">
@@ -231,70 +275,87 @@
   </div>
 
   {# —— Coluna lateral: metas vinculadas —— #}
-  <aside class="min-w-0 xl:col-span-4" aria-labelledby="metas-vinculadas-heading">
-    <section class="flex h-full flex-col overflow-hidden rounded-xl border border-line bg-surface-card shadow-[0_2px_4px_rgba(0,0,0,0.04)]">
-      <div class="border-b border-line bg-slate-50/80 px-5 py-4">
-        <div class="flex flex-wrap items-start justify-between gap-2">
-          <h2 id="metas-vinculadas-heading" class="flex items-center gap-2 font-display text-lg font-medium tracking-tight text-slate-800">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5 shrink-0 text-emerald-700" aria-hidden="true">
-              <path fill-rule="evenodd" d="M5.5 3A2.5 2.5 0 0 0 3 5.5v2.879a2.5 2.5 0 0 0 .732 1.767l6.5 6.5a2.5 2.5 0 0 0 3.536 0l2.878-2.878a2.5 2.5 0 0 0 0-3.536l-6.5-6.5A2.5 2.5 0 0 0 8.38 3H5.5ZM6 7a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd" />
-            </svg>
+  <aside class="min-w-0 lg:col-span-4" aria-labelledby="metas-vinculadas-heading" data-purpose="linked-goals-panel">
+    <div class="overflow-hidden rounded-xl border border-line bg-surface-card shadow-sm">
+      <div class="flex items-center justify-between gap-2 border-b border-slate-100 bg-slate-50/50 px-4 py-4">
+        <div class="flex min-w-0 items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5 shrink-0 text-emerald-700" aria-hidden="true">
+            <path fill-rule="evenodd" d="M5.5 3A2.5 2.5 0 0 0 3 5.5v2.879a2.5 2.5 0 0 0 .732 1.767l6.5 6.5a2.5 2.5 0 0 0 3.536 0l2.878-2.878a2.5 2.5 0 0 0 0-3.536l-6.5-6.5A2.5 2.5 0 0 0 8.38 3H5.5ZM6 7a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd" />
+          </svg>
+          <h2 id="metas-vinculadas-heading" class="font-display text-base font-bold tracking-tight text-slate-900">
             Metas Vinculadas
           </h2>
-          {% if ciclo_aberto %}
-          <p class="font-ui text-xs text-slate-500">Ciclo: {{ ciclo_aberto.nome }}</p>
-          {% endif %}
         </div>
+        {% if ciclo_aberto %}
+        <span class="shrink-0 rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 font-ui text-[11px] font-semibold text-emerald-800">
+          Ciclo: {{ ciclo_aberto.nome }}
+        </span>
+        {% endif %}
       </div>
 
       {% if not ciclo_aberto %}
-      <div class="flex flex-1 items-center justify-center p-4">
+      <div class="flex items-center justify-center p-4">
         {% include "components/empty_state.html" with title="Sem ciclo aberto" message="Não há ciclo aberto no momento. As metas aparecerão aqui quando um ciclo estiver ativo." %}
       </div>
       {% elif metas %}
-      <div class="min-w-0 flex-1 overflow-x-auto">
-        <table class="w-full min-w-[16rem] border-collapse text-left text-sm">
-          <thead>
-            <tr class="border-b border-line bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-              <th class="px-4 py-3 font-semibold">Meta</th>
-              <th class="whitespace-nowrap px-4 py-3 text-right font-semibold">Progresso</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-line">
-            {% for meta in metas %}
-            <tr class="transition-colors hover:bg-slate-50/80">
-              <td class="px-4 py-3 align-top">
-                <div class="font-ui text-sm font-semibold leading-snug text-slate-800">{{ meta.descricao }}</div>
-                <div class="mt-1 flex items-start gap-1 font-ui text-xs text-slate-500">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true">
-                    <path fill-rule="evenodd" d="M4.25 2A2.25 2.25 0 0 0 2 4.25v11.5A2.25 2.25 0 0 0 4.25 18h11.5A2.25 2.25 0 0 0 18 15.75V4.25A2.25 2.25 0 0 0 15.75 2H4.25Zm4.03 6.28a.75.75 0 0 0-1.06-1.06L4.97 9.47a.75.75 0 0 0 0 1.06l2.25 2.25a.75.75 0 0 0 1.06-1.06l-.97-.97h3.065a.75.75 0 0 0 0-1.5H7.31l.97-.97Zm5.47 4.22a.75.75 0 0 0 0-1.5h-3.065a.75.75 0 0 0 0 1.5H13.75Z" clip-rule="evenodd" />
-                  </svg>
-                  <span>Obj: {{ meta.objetivo_estrategico.descricao }}</span>
-                </div>
-                <div class="mt-2">
-                  {% include "components/badge_status.html" with status=meta.status label=meta.get_status_display %}
-                </div>
-              </td>
-              <td class="whitespace-nowrap px-4 py-3 text-right align-top">
-                {% if meta.progresso is not None %}
-                {% include "components/badge_status.html" with status=meta.get_progresso_binario_badge_status label=meta.get_progresso_binario_label %}
-                {% else %}
-                <span class="inline-flex items-center justify-center rounded-md bg-slate-100 px-2 py-0.5 font-ui text-xs font-medium text-slate-500">
-                  —
-                </span>
-                {% endif %}
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+      <div class="space-y-4 p-4">
+        {% for meta in metas %}
+        <div class="space-y-2.5 rounded-lg border border-slate-200/90 bg-white p-3.5 transition-all hover:border-emerald-200 hover:shadow-sm">
+          <div class="flex items-start justify-between gap-2">
+            <span class="font-ui text-xs font-bold uppercase tracking-tight text-slate-900">{{ meta.descricao }}</span>
+            {% if meta.progresso is not None %}
+              {% include "components/badge_status.html" with status=meta.get_progresso_binario_badge_status label=meta.get_progresso_binario_label extra_class="!font-semibold" %}
+            {% else %}
+              {% include "components/badge_status.html" with status="neutro" label="Sem progresso" extra_class="!font-semibold" %}
+            {% endif %}
+          </div>
+          <div class="flex items-center gap-1.5 font-ui text-xs text-slate-600">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden="true">
+              <path fill-rule="evenodd" d="M3 6a3 3 0 0 1 3-3h2.25a3 3 0 0 1 3 3v2.25a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6Zm9.75 0a3 3 0 0 1 3-3H18a3 3 0 0 1 3 3v2.25a3 3 0 0 1-3 3h-2.25a3 3 0 0 1-3-3V6ZM3 15.75a3 3 0 0 1 3-3h2.25a3 3 0 0 1 3 3V18a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-2.25Zm9.75 0a3 3 0 0 1 3-3H18a3 3 0 0 1 3 3V18a3 3 0 0 1-3 3h-2.25a3 3 0 0 1-3-3v-2.25Z" clip-rule="evenodd" />
+            </svg>
+            <span class="truncate text-[11px] font-medium text-slate-500">Obj: {{ meta.objetivo_estrategico.descricao }}</span>
+          </div>
+          <div class="flex items-center justify-between border-t border-slate-100 pt-2 font-ui text-[11px]">
+            <span class="text-slate-400">Validação da Liderança</span>
+            <span class="inline-flex items-center gap-1 font-semibold {% if meta.status == 'aprovada' %}text-emerald-700{% elif meta.status == 'reprovada' %}text-rose-700{% else %}text-amber-700{% endif %}">
+              {% if meta.status == "aprovada" %}
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-3.5 w-3.5" aria-hidden="true">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd" />
+              </svg>
+              {% endif %}
+              {{ meta.get_status_display }}
+            </span>
+          </div>
+        </div>
+        {% endfor %}
+
+        {# Tip honesto: metas acompanham o ciclo; nota consolidada = competências (PRD / RF-15). #}
+        <div class="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-3 text-center">
+          <div class="flex items-center justify-center gap-1.5 font-ui text-[11px] font-medium text-slate-600">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-3.5 w-3.5 text-emerald-700" aria-hidden="true">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z" clip-rule="evenodd" />
+            </svg>
+            <span>Papel das metas no ciclo</span>
+          </div>
+          <p class="mt-2 font-ui text-[11px] leading-snug text-slate-500">
+            As metas acompanham o desempenho acordado. A
+            <strong class="font-semibold text-slate-700">nota consolidada</strong>
+            do ciclo é calculada a partir das competências avaliadas pelo líder.
+          </p>
+        </div>
       </div>
       {% else %}
-      <div class="flex flex-1 items-center justify-center p-4">
+      <div class="flex items-center justify-center p-4">
         {% include "components/empty_state.html" with title="Sem metas neste ciclo" message="Você ainda não possui metas vinculadas para este período." %}
       </div>
       {% endif %}
-    </section>
+
+      <div class="border-t border-slate-100 bg-slate-50/70 p-3 text-center">
+        <a href="{{ metas_url }}" class="font-ui text-xs font-semibold text-emerald-800 transition-colors hover:text-emerald-900 hover:underline">
+          Ver minhas metas
+        </a>
+      </div>
+    </div>
   </aside>
 </div>
 {% endblock %}
