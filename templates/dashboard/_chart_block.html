@@ -28,22 +28,18 @@
     kpi_badge_label  — rótulo do badge
     canvas_class     — classes extras no wrapper do canvas (ex. dashboard-chart-canvas--compact)
     extra_class      — classes extras no wrapper
+    frameless        — sem chrome de figure (borda/padding); útil quando já há card pai
+    hide_title       — omite o h3 (título já está no card pai)
 
   Convenção DOM (dashboard_charts.js):
     <canvas data-chart-payload="script-id"></canvas>
     {{ chart|json_script:"script-id" }}
 
   Anatomia: title → insight → (mini-KPI | canvas) → figcaption / empty_state.
-  Mobile (~375px / SC-006): empilha KPI full-width → chart; sm+ lado a lado.
-  Com mini-KPI: CSS grid (não flex+stretch) para o canvas ter largura real no
-  init do Chart.js — evita gráfico em branco com card KPI gigante.
-  Figcaption: doughnut (+ valor além da cor); bar_grouped com parts se útil.
-  Sem figcaption em bar / bar_horizontal / area / radar (datalabel, tooltip,
-  legenda Chart.js ou tabela irmã — Freeze D / chart-catalog 009), salvo
-  html_legend (barra 100% empilhada do histórico: dot + % do ciclo mais recente).
   Sem sombra; empty honesto.
 {% endcomment %}
-{% with payload_id=script_id|default:chart.id chart_title=title|default:chart.title %}
+{% with payload_id=script_id|default:chart.id frameless=frameless|default:False hide_title=hide_title|default:False %}
+{% if not hide_title %}{% firstof title chart.title "" as chart_title %}{% endif %}
 {% firstof insight chart.insight "" as chart_insight %}
 <div class="{% if kpi_label %}grid w-full min-w-0 grid-cols-1 gap-4 sm:grid-cols-[10rem_minmax(0,1fr)] lg:grid-cols-[11rem_minmax(0,1fr)] sm:items-start{% else %}flex h-full min-w-0 w-full flex-col{% endif %} {{ extra_class }}">
   {% if kpi_label %}
@@ -52,7 +48,7 @@
   </div>
   {% endif %}
 
-  <figure class="flex h-full min-w-0 w-full flex-col rounded-xl border border-line bg-surface-card p-4 sm:p-5"{% if payload_id %} aria-labelledby="{{ payload_id }}-heading"{% endif %}>
+  <figure class="flex h-full min-w-0 w-full flex-col{% if not frameless %} rounded-xl border border-line bg-surface-card p-4 sm:p-5{% endif %}"{% if payload_id and chart_title %} aria-labelledby="{{ payload_id }}-heading"{% endif %}>
     {% if chart_title %}
     <h3 id="{{ payload_id }}-heading" class="font-display text-lg font-medium tracking-tight text-slate-800">{{ chart_title }}</h3>
     {% endif %}
@@ -66,7 +62,7 @@
       <canvas
         data-chart-payload="{{ payload_id }}"
         role="img"
-        {% if chart_title %}aria-label="{{ chart_title }}"{% endif %}
+        {% if chart_title %}aria-label="{{ chart_title }}"{% elif chart.title %}aria-label="{{ chart.title }}"{% endif %}
       ></canvas>
     </div>
 

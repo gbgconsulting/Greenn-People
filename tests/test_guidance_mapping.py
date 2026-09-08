@@ -81,7 +81,7 @@ _MAPA_ETAPA_PAPEL: list[tuple[str, str, str, str | None, bool]] = [
     (
         'colaborador',
         ETAPA_AVALIACAO,
-        'Faça a autoavaliação',
+        'Sua autoavaliação está aguardando você',
         'reviews:self_assessment',
         False,
     ),
@@ -198,7 +198,7 @@ def test_avaliacao_concluida_com_pk_cta_detail():
     )
 
     _assert_dto_shape(g)
-    assert g.title == 'Ciclo concluído para você'
+    assert g.title == 'Sua parte neste ciclo está concluída'
     assert g.cta_url_name == 'reviews:detail'
     assert g.cta_kwargs == {'pk': 99}
     assert g.blocked_reason is None
@@ -208,7 +208,7 @@ def test_avaliacao_concluida_sem_pk_sem_cta():
     g = resolve_next_step(role='lider', concluida=True, etapa=ETAPA_FEEDBACK)
 
     _assert_dto_shape(g)
-    assert g.title == 'Ciclo concluído para você'
+    assert g.title == 'Sua parte neste ciclo está concluída'
     assert g.cta_url_name is None
     assert g.blocked_reason == 'Avaliação concluída; sem próxima ação de etapa.'
 
@@ -315,7 +315,7 @@ def test_pos_reprovacao_nao_aplica_quando_concluida():
         etapa=ETAPA_APROVACAO_METAS,
         owner_correction_kind='metas',
     )
-    assert g.title == 'Ciclo concluído para você'
+    assert g.title == 'Sua parte neste ciclo está concluída'
     assert g.cta_url_name == 'reviews:detail'
 
 

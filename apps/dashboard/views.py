@@ -83,7 +83,16 @@ from apps.reviews.services.guidance import (
     detect_owner_correction_kind,
     resolve_next_step,
 )
+from apps.reviews.services.team_avaliacao_list import user_initials
 from apps.talent.services.classification import get_visible_classification_for_collaborator
+
+
+def _primeiro_nome(user) -> str:
+    """Primeiro token do nome cadastral (apresentação; sem AuthZ)."""
+    nome = (getattr(user, 'nome', None) or '').strip()
+    if not nome:
+        return ''
+    return nome.split()[0]
 
 _STRUCTURE_VISAO_COLABORADOR = 'colaborador'
 _STRUCTURE_STATUS_FILTERS = frozenset({'', SEM_AVALIACAO_KEY, 'com_avaliacao'})
@@ -161,15 +170,18 @@ class PersonalDashboardView(LoginRequiredMixin, TemplateView):
         )
         context['chart_gaps_competencia'] = self._chart_gaps_competencia(context)
         context.update(self._guidance_presentation_context(context, ciclo=ciclo))
+        # Greeting / chip — só apresentação a partir do perfil já autenticado.
+        context['user_iniciais'] = user_initials(user)
+        context['user_primeiro_nome'] = _primeiro_nome(user)
         return context
 
     def _guidance_role(self) -> str:
-        """Papel de apresentação a partir de flags já existentes (sem AuthZ nova)."""
-        user = self.request.user
-        if getattr(user, 'is_admin', False):
-            return 'rh'
-        if user.is_leader:
-            return 'lider'
+        """Papel de orientação no Meu Painel — sempre colaborador.
+
+        Esta superfície é participação pessoal no ciclo (paridade com o hub
+        ``is_self`` em reviews), não acompanhamento estrutural de RH/líder.
+        Admin/líder com avaliação própria recebe urgência de autoavaliação etc.
+        """
         return 'colaborador'
 
     def _guidance_presentation_context(
@@ -219,6 +231,12 @@ class PersonalDashboardView(LoginRequiredMixin, TemplateView):
         if avaliacao is not None and etapa == Avaliacao.Etapa.AVALIACAO:
             auto_submitted = self_assessment_submitted(avaliacao)
 
+        stage_stepper = build_stage_stepper(
+            etapa=etapa,
+            has_open_ciclo=has_open_ciclo,
+            vinculo_pendente=vinculo_pendente,
+            concluida=concluida,
+        )
         return {
             'next_step': resolve_next_step(
                 role=self._guidance_role(),
@@ -230,11 +248,10 @@ class PersonalDashboardView(LoginRequiredMixin, TemplateView):
                 owner_correction_kind=owner_correction_kind,
                 self_assessment_submitted=auto_submitted,
             ),
-            'stage_stepper': build_stage_stepper(
-                etapa=etapa,
-                has_open_ciclo=has_open_ciclo,
-                vinculo_pendente=vinculo_pendente,
-                concluida=concluida,
+            'stage_stepper': stage_stepper,
+            # Apresentação: todas as etapas `concluida` no DTO (sem lógica no front).
+            'stage_stepper_completo': all(
+                step.state == 'concluida' for step in stage_stepper.stages
             ),
         }
 

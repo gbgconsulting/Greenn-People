@@ -116,7 +116,7 @@ def test_personal_ciclo_query_honra_participacao(
     assert resp.context['avaliacao'].pk != avaliacao.pk
     # Arquivo = leitura (próximo passo não empurra etapa do aberto).
     next_step = resp.context['next_step']
-    assert next_step.title == 'Ciclo concluído para você'
+    assert next_step.title == 'Sua parte neste ciclo está concluída'
 
 
 @pytest.mark.django_db
@@ -216,3 +216,19 @@ def test_personal_seletor_so_ciclos_com_participacao(
     assert comigo.pk in arquivo_pks
     assert sem_mim.pk not in arquivo_pks
     assert ciclo_aberto.pk in {c.pk for c in opts['operacional']}
+
+
+@pytest.mark.django_db
+def test_personal_guidance_role_sempre_colaborador(admin, lider):
+    """Meu Painel orienta como participante — admin/líder não viram RH/gestor aqui."""
+    from django.test import RequestFactory
+
+    from apps.dashboard.views import PersonalDashboardView
+
+    view = PersonalDashboardView()
+    rf = RequestFactory()
+    for user in (admin, lider):
+        request = rf.get(_personal_url())
+        request.user = user
+        view.request = request
+        assert view._guidance_role() == 'colaborador'

@@ -19,6 +19,7 @@
   - footer_label + footer_href — link de ação no rodapé (opcional; mock painel pessoal)
   - footer_scroll_to — id de elemento para scroll suave sem alterar a URL (alternativa a footer_href)
   - footer_hint — texto auxiliar à esquerda no rodapé (ex. "% do quadro")
+  - footer_hint_icon — lock | (vazio) — ícone decorativo opcional ao lado do hint
   - footer_secondary — ênfase à direita quando não há link (ex. "89 no ciclo")
   - Com value + badge_status: badge fica ao lado do label (KPI com origem/status).
   - Sem value + badge_status: badge é o conteúdo principal (ex.: status do PDI).
@@ -91,7 +92,14 @@
   {% if footer_hint or footer_secondary or footer_scroll_to %}
   <div class="mt-auto flex items-center gap-2 border-t border-line pt-3 font-ui text-[11px] leading-snug text-slate-500 {% if footer_hint %}justify-between{% else %}justify-end{% endif %}">
     {% if footer_hint %}
-    <span class="{% if footer_hint_tone == 'warning' %}font-medium text-amber-700{% elif footer_hint_tone == 'success' %}font-semibold text-emerald-600{% endif %}">{{ footer_hint }}</span>
+    <span class="inline-flex items-center gap-1 {% if footer_hint_tone == 'warning' %}font-medium text-amber-700{% elif footer_hint_tone == 'success' %}font-semibold text-emerald-600{% endif %}">
+      {% if footer_hint_icon == 'lock' %}
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-3.5 shrink-0 text-slate-400" aria-hidden="true">
+        <path fill-rule="evenodd" d="M10 1a4.5 4.5 0 0 0-4.5 4.5V9H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-.5V5.5A4.5 4.5 0 0 0 10 1Zm3 8V5.5a3 3 0 1 0-6 0V9h6Z" clip-rule="evenodd" />
+      </svg>
+      {% endif %}
+      {{ footer_hint }}
+    </span>
     {% endif %}
     {% if footer_scroll_to and footer_label %}
     <button

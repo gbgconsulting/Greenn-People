@@ -339,15 +339,22 @@ def _resolve_special(
         kwargs = _pk_kwargs(avaliacao_pk)
         if avaliacao_pk is not None:
             return _guidance(
-                'Ciclo concluído para você',
-                'Não há próxima ação de etapa nesta avaliação.',
+                'Sua parte neste ciclo está concluída',
+                (
+                    'Você já cumpriu todas as etapas desta avaliação. '
+                    'Revise seus resultados abaixo ou abra o histórico '
+                    'quando quiser.'
+                ),
                 cta_label='Ver avaliação',
                 cta_url_name='reviews:detail',
                 cta_kwargs=kwargs,
             )
         return _guidance(
-            'Ciclo concluído para você',
-            'Não há próxima ação de etapa nesta avaliação.',
+            'Sua parte neste ciclo está concluída',
+            (
+                'Não há pendências suas neste momento. '
+                'Quando um novo ciclo abrir, as próximas ações aparecem aqui.'
+            ),
             blocked_reason='Avaliação concluída; sem próxima ação de etapa.',
         )
 
@@ -456,25 +463,32 @@ def _resolve_etapa_colaborador(
         kwargs = _pk_kwargs(avaliacao_pk)
         if avaliacao_pk is None:
             return _guidance(
-                'Faça a autoavaliação',
-                'Preencha as notas das competências na sua avaliação.',
+                'Sua autoavaliação está aguardando você',
+                (
+                    'A etapa de Avaliação está aberta. Preencha suas notas '
+                    'para permitir que seu líder avance para o feedback final.'
+                ),
                 blocked_reason='Avaliação ainda sem identificador para o CTA.',
             )
         if self_assessment_submitted is True:
             return _guidance(
-                'Autoavaliação enviada',
+                'Autoavaliação enviada — agora é a vez do líder',
                 (
-                    'Sua autoavaliação foi registrada e não pode mais '
-                    'ser alterada.'
+                    'Sua autoavaliação já está registrada. '
+                    'Acompanhe aqui; a nota oficial e o feedback '
+                    'aparecem quando o líder concluir a etapa.'
                 ),
                 cta_label='Ver autoavaliação',
                 cta_url_name='reviews:self_assessment',
                 cta_kwargs=kwargs,
             )
         return _guidance(
-            'Faça a autoavaliação',
-            'Preencha as notas das competências na sua avaliação.',
-            cta_label='Autoavaliar',
+            'Sua autoavaliação está aguardando você',
+            (
+                'A etapa de Avaliação está aberta. Preencha suas notas '
+                'para permitir que seu líder avance para o feedback final.'
+            ),
+            cta_label='Preencher autoavaliação',
             cta_url_name='reviews:self_assessment',
             cta_kwargs=kwargs,
         )
