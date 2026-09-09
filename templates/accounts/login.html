@@ -7,19 +7,14 @@
 {% block layout %}
 <main class="flex min-h-screen w-full flex-col md:flex-row">
   {# Painel narrativo (desktop) #}
-  <section class="relative hidden flex-col justify-between overflow-hidden bg-emerald-950 p-8 md:flex md:w-1/2 lg:w-3/5 lg:p-12">
+  <section class="relative hidden min-h-screen bg-emerald-950 p-8 md:grid md:w-1/2 md:grid-rows-[auto_1fr_auto] lg:w-3/5 lg:p-12">
     <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(16,185,129,0.25),_transparent_55%),radial-gradient(ellipse_at_bottom_left,_rgba(20,184,166,0.2),_transparent_50%)]" aria-hidden="true"></div>
 
-    <div class="relative z-10 flex items-center gap-2">
-      <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-200">
-        <svg class="h-5 w-5 text-emerald-950" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A14.94 14.94 0 0 0 12 17c6 0 9-4 9-9a5 5 0 0 0-4-4c-1.65 0-3.07.88-4.21 2.14C11.54 5.45 10.34 5 9 5c-2.76 0-5 2.24-5 5 0 5.25 4.25 9 9 9 .9 0 1.77-.12 2.6-.34l.8 1.84 1.89-.82C16.17 16.1 17 12.5 17 8z"/>
-        </svg>
-      </div>
-      <h1 class="text-xl font-semibold tracking-tight text-emerald-200">Greenn People</h1>
+    <div class="relative z-10 self-start">
+      {% include "components/brand_mark.html" with variant="wordmark-white" %}
     </div>
 
-    <div class="relative z-10 max-w-lg">
+    <div class="relative z-10 flex max-w-lg flex-col justify-center self-center">
       <h2 class="mb-6 text-3xl font-bold tracking-tight text-white lg:text-4xl xl:text-5xl xl:leading-tight">
         Potencializando o crescimento humano.
       </h2>
@@ -61,8 +56,8 @@
       </div>
     </div>
 
-    <div class="relative z-10 flex items-center justify-between text-xs font-medium uppercase tracking-wider text-emerald-200/50">
-      <span>© 2026 Greenn People</span>
+    <div class="relative z-10 self-end">
+      <span class="text-xs font-medium uppercase tracking-wider text-emerald-200/50">© 2026 Greenn People</span>
     </div>
   </section>
 

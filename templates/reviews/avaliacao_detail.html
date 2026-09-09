@@ -16,8 +16,7 @@
     </p>
   </div>
   <div class="flex flex-wrap items-center gap-2">
-    {% url 'reviews:list' as list_url %}
-    {% include "components/button.html" with label="Voltar à lista" href=list_url variant="secondary" %}
+    {% include "components/button.html" with label="Voltar à lista" href=list_return_url variant="secondary" %}
   </div>
 </div>
 
@@ -60,6 +59,9 @@
     {% if pode_autoavaliar %}
       {% url 'reviews:self_assessment' avaliacao.pk as self_url %}
       {% include "components/button.html" with label="Autoavaliar" href=self_url variant="secondary" extra_class="w-full sm:w-auto" %}
+    {% elif pode_ver_autoavaliacao %}
+      {% url 'reviews:self_assessment' avaliacao.pk as self_url %}
+      {% include "components/button.html" with label="Ver autoavaliação" href=self_url variant="secondary" extra_class="w-full sm:w-auto" %}
     {% endif %}
     {% if pode_avaliar_lider %}
       {% url 'reviews:leader_assessment' avaliacao.pk as leader_url %}

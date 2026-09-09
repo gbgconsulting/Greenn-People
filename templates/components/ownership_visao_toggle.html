@@ -1,0 +1,41 @@
+{% comment %}
+  Toggle Minhas / Equipe (ou Organização) — fatia de listagem.
+
+  Links GET na mesma URL; estado vem do backend (`visao`, `mostrar_toggle_visao`).
+  Preserva filtros vigentes (status, q…), troca só `visao` e limpa `page`.
+
+  Contexto:
+    visao — 'proprias' | 'equipe'
+    visao_equipe_label — rótulo da fatia equipe
+    visao_proprias / visao_equipe — constantes
+{% endcomment %}
+{% querystring visao=None page=None usuario=None as proprias_url %}
+{% querystring visao=visao_equipe page=None usuario=None as equipe_url %}
+<nav
+  class="mb-4 inline-flex rounded-lg border border-line bg-slate-100 p-1"
+  role="navigation"
+  aria-label="Minhas ou da equipe"
+  data-component="ownership-visao-toggle"
+>
+  {% if visao != visao_equipe %}
+  <a
+    href="{{ proprias_url }}"
+    class="rounded-md bg-brand-gradient px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
+    aria-current="page"
+  >Minhas</a>
+  <a
+    href="{{ equipe_url }}"
+    class="rounded-md px-4 py-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-slate-800"
+  >{{ visao_equipe_label }}</a>
+  {% else %}
+  <a
+    href="{{ proprias_url }}"
+    class="rounded-md px-4 py-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-slate-800"
+  >Minhas</a>
+  <a
+    href="{{ equipe_url }}"
+    class="rounded-md bg-brand-gradient px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
+    aria-current="page"
+  >{{ visao_equipe_label }}</a>
+  {% endif %}
+</nav>

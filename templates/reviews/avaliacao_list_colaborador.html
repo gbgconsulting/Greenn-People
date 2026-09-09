@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Minhas Avaliações — Greenn People{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-[1440px]">
+  <header class="mb-6">
+    <h1 class="font-display text-2xl font-semibold tracking-tight text-slate-800">
+      Minhas Avaliações
+    </h1>
+    <p class="mt-1 max-w-2xl font-ui text-sm text-slate-500">
+      Acompanhe seu histórico de desempenho e o progresso das avaliações em cada ciclo.
+    </p>
+  </header>
+
+  {% include "reviews/avaliacao_list_colaborador_partial.html" %}
+</div>
+{% endblock %}

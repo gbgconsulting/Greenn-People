@@ -24,6 +24,7 @@ from apps.dashboard.chart_payloads import (
     CHART_TYPE_BAR_HORIZONTAL,
     CHART_TYPE_DOUGHNUT,
     CHART_TYPE_DOUGHNUT_OR_BAR,
+    CHART_TYPE_RADAR,
     CHART_TYPES,
     EMPTY_KIND_COPY,
     EMPTY_KIND_ESCOPO,
@@ -91,10 +92,12 @@ def test_catalog_includes_new_types():
     assert CHART_TYPE_BAR_HORIZONTAL in CHART_TYPES
     assert CHART_TYPE_AREA in CHART_TYPES
     assert CHART_TYPE_DOUGHNUT in CHART_TYPES
+    assert CHART_TYPE_RADAR in CHART_TYPES
     assert CHART_TYPE_BAR_HORIZONTAL in SINGLE_SERIES_TYPES
     assert CHART_TYPE_AREA in SINGLE_SERIES_TYPES
     assert CHART_TYPE_AREA in MULTI_SERIES_TYPES
     assert CHART_TYPE_BAR_GROUPED in MULTI_SERIES_TYPES
+    assert CHART_TYPE_RADAR in MULTI_SERIES_TYPES
 
 
 def test_status_triad_unchanged():
@@ -572,6 +575,58 @@ def test_coverage_bar_payload_applies_top_n_weighted_others():
     assert len(payload['values']) <= DENSITY_TOP_N + 1
 
 
+def test_coverage_bar_orders_by_percent_asc_others_last():
+    """Exceção primeiro (% ASC); barra Outros fora da ordenação, fixa no final."""
+    from apps.dashboard.chart_payloads import (
+        DENSITY_TOP_N,
+        OTHERS_LABEL,
+        coverage_bar_payload,
+    )
+
+    # Top-N por volume (totais altos e distintos); % propositalmente fora de ordem.
+    top_rows = [
+        {'area_nome': 'Alta', 'com_avaliacao': 90, 'total': 100, 'percentual': 90.0},
+        {'area_nome': 'Baixa', 'com_avaliacao': 8, 'total': 80, 'percentual': 10.0},
+        {'area_nome': 'Media', 'com_avaliacao': 30, 'total': 60, 'percentual': 50.0},
+        {'area_nome': 'Quarenta', 'com_avaliacao': 20, 'total': 50, 'percentual': 40.0},
+        {'area_nome': 'Trinta', 'com_avaliacao': 12, 'total': 40, 'percentual': 30.0},
+        {'area_nome': 'Vinte', 'com_avaliacao': 6, 'total': 30, 'percentual': 20.0},
+        {'area_nome': 'Setenta', 'com_avaliacao': 14, 'total': 20, 'percentual': 70.0},
+        {'area_nome': 'Sessenta', 'com_avaliacao': 6, 'total': 10, 'percentual': 60.0},
+    ]
+    assert len(top_rows) == DENSITY_TOP_N
+    residual_rows = [
+        {'area_nome': f'Residual-{i}', 'com_avaliacao': 1, 'total': 1, 'percentual': 100.0}
+        for i in range(5)
+    ]
+
+    payload = coverage_bar_payload(
+        top_rows + residual_rows,
+        chart_id='chart-cobertura-area',
+        title='Cobertura por área',
+        label_key='area_nome',
+        empty_message='Sem cobertura.',
+    )
+
+    assert payload['has_data'] is True
+    assert payload['labels'][-1] == OTHERS_LABEL
+    real_labels = payload['labels'][:-1]
+    real_values = payload['values'][:-1]
+    assert real_labels == [
+        'Baixa',
+        'Vinte',
+        'Trinta',
+        'Quarenta',
+        'Media',
+        'Sessenta',
+        'Setenta',
+        'Alta',
+    ]
+    assert real_values == [10, 20, 30, 40, 50, 60, 70, 90]
+    assert real_values == sorted(real_values)
+    assert OTHERS_LABEL not in real_labels
+
+
 def test_coverage_bar_payload_passthrough_at_most_n_has_no_others():
     """T005: ≤ N categorias — sem rótulo Outros no payload emitido."""
     from apps.dashboard.chart_payloads import (
@@ -749,7 +804,7 @@ def test_top_n_coverage_residual_is_weighted_not_mean_of_percentuais():
 
 
 def test_top_n_gap_keeps_largest_abs_gap_with_nota_omits_rest():
-    """(c) Gap ``bar_grouped``: Top-N por |gap| com nota; resto omitido (sem média)."""
+    """(c) Gap |gap|: Top-N com nota; resto omitido (sem média) — usado por radar pessoal."""
     density_n, others_label, top_n_with_others = _density_api()
     # 12 competências com nota (|gap| 12..1) + 3 sem nota (null ≠ 0).
     with_nota = [
@@ -935,7 +990,7 @@ def test_personal_gap_top_n_by_abs_gap_omits_rest():
     payload = _personal_gap_chart(_personal_gap_resumo())
 
     assert payload['has_data'] is True
-    assert payload['type'] == CHART_TYPE_BAR_GROUPED
+    assert payload['type'] == CHART_TYPE_RADAR
     labels = list(payload['labels'])
     assert others_label not in labels
     assert len(labels) == density_n
@@ -1000,7 +1055,7 @@ def test_personal_dashboard_does_not_honor_visao_historico(
     resp_hist = client.get(url, {'visao': 'historico', 'ciclos': '1,2,3'})
     assert resp_hist.status_code == 200
     chart = resp_hist.context['chart_gaps_competencia']
-    assert chart['type'] == CHART_TYPE_BAR_GROUPED
+    assert chart['type'] == CHART_TYPE_RADAR
     assert chart['type'] != CHART_TYPE_AREA
 
     html = resp_hist.content.decode()

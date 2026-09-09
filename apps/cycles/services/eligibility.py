@@ -6,7 +6,7 @@ from datetime import date
 from typing import TYPE_CHECKING, TypedDict
 
 from django.contrib.auth import get_user_model
-from django.db.models import Count, Q
+from django.db.models import Count, Q, QuerySet
 
 if TYPE_CHECKING:
     from apps.accounts.models import CustomUser
@@ -33,6 +33,31 @@ def user_eligible_for_ciclo(user: CustomUser, ciclo: Ciclo) -> bool:
     if entrada is None:
         return False
     return entrada <= ciclo.admitidos_ate
+
+
+def filter_coverage_universe(
+    qs: QuerySet[CustomUser],
+    ciclo: Ciclo,
+) -> QuerySet[CustomUser]:
+    """Universo de cobertura / ``sem_avaliacao`` para um ciclo.
+
+    Com ``admitidos_ate`` definido: quem já tem ``Avaliacao`` no ciclo
+    (snapshot) **ou** é elegível pelo corte. Quem está fora do recorte e
+    não tem avaliação **não** entra — não é pendência, é exclusão do ciclo.
+
+    Sem corte (legado / ``admitidos_ate`` NULL): mantém o QS intacto — não
+    há recorte para aplicar.
+    """
+    if ciclo.admitidos_ate is None:
+        return qs
+
+    enrolled = Q(avaliacoes__ciclo=ciclo)
+    eligible = Q(
+        is_active=True,
+        data_entrada__isnull=False,
+        data_entrada__lte=ciclo.admitidos_ate,
+    )
+    return qs.filter(enrolled | eligible).distinct()
 
 
 def preview_admission_counts(admitidos_ate: date) -> AdmissionPreviewCounts:

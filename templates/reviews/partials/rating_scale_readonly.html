@@ -1,0 +1,18 @@
+<div class="flex flex-wrap gap-2" role="group" aria-label="{{ aria_label }}">
+  {% for option in options %}
+  <div
+    class="flex h-8 w-8 items-center justify-center rounded text-sm font-medium tabular-nums
+           {% if option == selected %}
+             bg-brand-gradient text-white shadow-sm
+           {% else %}
+             bg-slate-200/80 text-slate-500 opacity-50
+           {% endif %}"
+    aria-hidden="true"
+  >
+    {{ option }}
+  </div>
+  {% endfor %}
+</div>
+{% if rotulo %}
+<p class="mt-1 font-ui text-sm font-semibold text-emerald-700">{{ rotulo }}</p>
+{% endif %}

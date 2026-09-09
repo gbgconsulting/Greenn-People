@@ -1,0 +1,532 @@
+<!DOCTYPE html><html class="h-full bg-[#f8fafc]" lang="pt-BR"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Minhas Expectativas | Greenn People</title>
+<!-- Google Fonts: Fraunces & Source Sans 3 -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&amp;family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;display=swap" rel="stylesheet">
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<!-- Tailwind CSS v3 with Plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              200: '#a7f3d0',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              800: '#065f46',
+              900: '#064e3b',
+              deep: '#0F3D2E',
+            },
+            surface: {
+              subtle: '#f8fafc',
+              card: '#ffffff',
+              border: '#e2e8f0',
+              hover: '#f1f5f9'
+            }
+          },
+          fontFamily: {
+            serif: ['Fraunces', 'Georgia', 'serif'],
+            sans: ['"Source Sans 3"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+<!-- Custom Typography & Micro-interactions Styles -->
+<style data-purpose="custom-typography">
+    body {
+      font-family: 'Source Sans 3', sans-serif;
+      color: #1e293b;
+      -webkit-font-smoothing: antialiased;
+    }
+    .font-fraunces {
+      font-family: 'Fraunces', Georgia, serif;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .material-symbols-outlined.fill-1 {
+      font-variation-settings: 'FILL' 1;
+    }
+  </style>
+<!-- Scale Indicator Styles -->
+<style data-purpose="scale-indicator">
+    .scale-step {
+      position: relative;
+      height: 8px;
+      background-color: #f1f5f9;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+    }
+    .scale-step.expected {
+      background-color: #d1fae5;
+    }
+    .scale-step.user-filled {
+      background-color: #059669;
+    }
+  </style>
+</head>
+<body class="h-full flex overflow-hidden">
+<!-- BEGIN: LeftSidebar -->
+<aside class="w-64 bg-white border-r border-surface-border flex flex-col justify-between shrink-0 select-none z-20">
+<!-- Top Area: Logo & Navigation Links -->
+<div class="flex flex-col h-full overflow-y-auto">
+<!-- Logo Container -->
+<div class="px-6 py-5 flex items-center gap-3 border-b border-slate-100">
+<div class="w-10 h-10 rounded-xl bg-brand-deep text-brand-100 flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-2xl text-emerald-400">eco</span>
+</div>
+<div>
+<span class="text-lg font-fraunces font-bold tracking-tight text-slate-900 block leading-tight">greenn</span>
+<span class="text-xs font-semibold uppercase tracking-wider text-brand-700">People Core</span>
+</div>
+</div>
+<!-- Navigation Menus -->
+<nav class="p-4 space-y-6 flex-1 text-sm font-medium">
+<!-- Group: Colaborador -->
+<div>
+<p class="px-3 text-[11px] font-bold tracking-wider text-slate-400 uppercase mb-2">Colaborador</p>
+<ul class="space-y-1">
+<li class="">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">space_dashboard</span>
+<span class="">Painel Inicial</span>
+</a>
+</li>
+<li class="">
+<!-- Active Item: Expectativas -->
+<a class="flex items-center justify-between px-3 py-2 rounded-lg bg-brand-50 text-brand-800 font-semibold border-l-4 border-brand-600 shadow-xs" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[20px] text-brand-700 fill-1">assignment_turned_in</span>
+<span class="">Minhas Expectativas</span>
+</div>
+<span class="w-2 h-2 rounded-full bg-brand-600"></span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">grade</span>
+<span class="">Autoavaliação</span>
+<span class="ml-auto text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">Pendente</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">track_changes</span>
+<span class="">Minhas Metas</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">forum</span>
+<span class="">Feedbacks &amp; PDI</span>
+</a>
+</li>
+</ul>
+</div>
+<!-- Group: Liderança & Organização -->
+<div>
+<p class="px-3 text-[11px] font-bold tracking-wider text-slate-400 uppercase mb-2">Liderança &amp; Gestão</p>
+<ul class="space-y-1">
+<li class="">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">groups</span>
+<span class="">Gestão da Equipe</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">account_tree</span>
+<span class="">Matriz 9-Box</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">sync</span>
+<span class="">Ciclos Avaliativos</span>
+</a>
+</li>
+</ul>
+</div>
+</nav>
+<!-- Sidebar Footer User Profile -->
+<div class="p-3 border-t border-slate-100 bg-slate-50/50">
+<div class="flex items-center gap-3 p-2 rounded-lg hover:bg-white transition-colors cursor-pointer border border-transparent hover:border-slate-200">
+<div class="w-9 h-9 rounded-full bg-emerald-700 text-white font-semibold text-xs flex items-center justify-center">
+            JR
+          </div>
+<div class="flex-1 min-w-0">
+<p class="text-xs font-bold text-slate-900 truncate">Juliana Ramos</p>
+<p class="text-[11px] text-slate-500 truncate">juliana.ramos@greenn.com</p>
+</div>
+<span class="material-symbols-outlined text-slate-400 text-sm">more_vert</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- END: LeftSidebar -->
+<!-- BEGIN: MainContentWrapper -->
+<div class="flex-1 flex flex-col h-full overflow-hidden">
+<!-- Top System Breadcrumbs & Quick Notification Bar -->
+<header class="h-14 bg-white border-b border-surface-border px-8 flex items-center justify-between shrink-0">
+<div class="flex items-center gap-2 text-xs text-slate-500 font-medium">
+<span class="hover:text-slate-700 cursor-pointer">Início</span>
+<span class="material-symbols-outlined text-xs text-slate-400">chevron_right</span>
+<span class="hover:text-slate-700 cursor-pointer">Carreira &amp; Avaliação</span>
+<span class="material-symbols-outlined text-xs text-slate-400">chevron_right</span>
+<span class="text-brand-900 font-semibold">Expectativas de Cargo</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-medium">
+<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+<span class="">Ciclo Vigente: <strong>Teste_metas (2024.1)</strong></span>
+</div>
+<button aria-label="Notificações" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-md hover:bg-slate-100" type="button">
+<span class="material-symbols-outlined text-xl">notifications</span>
+</button>
+</div>
+</header>
+<!-- Scrollable Main View Area -->
+<main class="flex-1 overflow-y-auto px-8 py-6 space-y-6">
+<!-- BEGIN: PageHeader -->
+<section class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+<div>
+<h1 class="font-fraunces text-3xl font-bold tracking-tight text-slate-900">
+            Minhas Expectativas
+          </h1>
+<p class="text-sm text-slate-500 mt-1">
+            Confira as competências e metas vinculadas ao seu cargo atual e prepare-se para o ciclo avaliativo.
+          </p>
+</div>
+<div>
+<a class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all transform active:scale-95" href="#">
+<span class="">Preencher autoavaliação</span>
+<span class="material-symbols-outlined text-base">arrow_forward</span>
+</a>
+</div>
+</section>
+<!-- END: PageHeader -->
+<!-- BEGIN: RoleIdentityCard -->
+<div class="bg-white rounded-2xl border border-surface-border p-6 shadow-sm relative overflow-hidden">
+<!-- Subtle decorative top accent line -->
+<div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-brand-600 via-emerald-500 to-teal-400"></div>
+<div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+<div class="space-y-1.5">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-emerald-50 text-brand-700 border border-emerald-200 text-xs font-semibold">
+<span class="material-symbols-outlined text-xs">verified</span>
+<span class="">Cargo Atual Mapeado</span>
+</div>
+<h2 class="font-fraunces text-2xl font-bold text-slate-900 tracking-tight">
+              Analista de Departamento Pessoal JR
+            </h2>
+<div class="flex items-center gap-2 text-xs text-slate-500 font-medium">
+<span class="material-symbols-outlined text-base text-slate-400">domain</span>
+<span class="">Gente e Gestão</span>
+<span class="text-slate-300">•</span>
+<span class="">Matriz Corporativa</span>
+<span class="text-slate-300">•</span>
+<span class="">CBO 4110-10</span>
+</div>
+</div>
+<!-- Seniority Badge Box -->
+<div class="bg-slate-50 border border-slate-200/80 rounded-xl px-5 py-3 text-right shrink-0 flex flex-col justify-center items-end">
+<span class="text-[11px] uppercase tracking-wider font-semibold text-slate-400 block">Nível de Senioridade</span>
+<span class="font-fraunces text-xl font-bold text-brand-700 leading-tight">Júnior</span>
+</div>
+</div>
+</div>
+<!-- END: RoleIdentityCard -->
+<!-- BEGIN: CompactSummaryStrip (Replaces 3 redundant large cards) -->
+<section class="bg-white border border-surface-border rounded-xl shadow-xs px-6 py-4" data-purpose="compact-status-bar">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+<!-- Segment 1: Nota Consolidada -->
+<div class="flex items-center gap-3.5 pr-4">
+<div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-xl">analytics</span>
+</div>
+<div>
+<p class="text-xs text-slate-400 font-medium uppercase tracking-wider">Nota Consolidada do Ciclo</p>
+<div class="flex items-baseline gap-2 mt-0.5">
+<span class="text-base font-bold text-slate-700">—</span>
+<span class="text-xs text-slate-500">Aguardando avaliação do líder</span>
+</div>
+</div>
+</div>
+<!-- Segment 2: Autoavaliação -->
+<div class="flex items-center gap-3.5 md:px-6 pt-4 md:pt-0"><div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-xl">edit_note</span></div><div><div class="flex items-center gap-2"><p class="text-xs text-slate-400 font-medium uppercase tracking-wider">Autoavaliação</p><span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">Etapa aberta</span></div><p class="text-xs font-medium text-slate-600 mt-1">Aguardando seu preenchimento</p></div></div>
+<!-- Segment 3: Competências Mapeadas -->
+<div class="flex items-center gap-3.5 md:pl-6 pt-4 md:pt-0">
+<div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-xl">checklist_rtl</span>
+</div>
+<div>
+<p class="text-xs text-slate-400 font-medium uppercase tracking-wider">Competências Mapeadas</p>
+<p class="text-xs font-bold text-slate-800 mt-0.5">
+                4 competências ativas de referência
+              </p>
+</div>
+</div>
+</div>
+</section>
+<!-- END: CompactSummaryStrip -->
+<!-- BEGIN: LayoutTwoColumns (Main Grid + Goals Sidebar) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+<!-- Column Left: Competências Grid (8 Cols) -->
+<section class="lg:col-span-8 space-y-4" data-purpose="competencies-container">
+<!-- Section Title Bar -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-brand-700">psychology</span>
+<h3 class="font-fraunces text-xl font-bold text-slate-900">Competências do Cargo</h3>
+</div>
+<!-- Legend & Range Badge -->
+<div class="flex items-center gap-3 text-xs text-slate-500">
+<div class="flex items-center gap-1.5">
+<span class="w-2.5 h-2.5 rounded-sm bg-emerald-100 border border-emerald-500"></span>
+<span class="">Nível Esperado (Alvo)</span>
+</div>
+<span class="px-2 py-0.5 bg-slate-100 text-slate-600 font-semibold rounded text-[11px]">
+                Escala de 1 a 5
+              </span>
+</div>
+</div>
+<!-- Cards Grid (2 columns on tablet/desktop) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<!-- Competência Card 1: Aprendizado Contínuo -->
+<article class="bg-white border border-surface-border rounded-xl p-5 shadow-xs hover:border-slate-300 transition-all flex flex-col justify-between space-y-4">
+<div>
+<div class="flex items-center justify-between mb-3">
+<div class="w-8 h-8 rounded-lg bg-emerald-50 text-brand-700 flex items-center justify-center">
+<span class="material-symbols-outlined text-lg">school</span>
+</div>
+<span class="px-2 py-0.5 text-[11px] font-semibold bg-slate-100 text-slate-600 rounded">
+                    Comportamental
+                  </span>
+</div>
+<h4 class="text-sm font-bold text-slate-900 leading-snug">
+                  Aprendizado Contínuo e Curiosidade
+                </h4>
+<p class="text-xs text-slate-500 mt-2 leading-relaxed">
+                  O colaborador demonstra curiosidade, busca aprender coisas novas e aplica esse aprendizado no dia a dia de trabalho?
+                </p>
+</div>
+<!-- Visual Expected Level Scale (Clear Differentiation) -->
+<div class="pt-3 border-t border-slate-100">
+<div class="flex items-center justify-between text-xs mb-1.5">
+<span class="text-slate-500 font-medium">Nível de entrega esperado:</span>
+<span class="font-bold text-brand-800 bg-brand-50 px-2 py-0.5 rounded border border-brand-200">
+                    2 / 5 (Básico)
+                  </span>
+</div>
+<!-- 5-segment scale with Target Pin -->
+<div class="grid grid-cols-5 gap-1.5 relative pt-1">
+<!-- Segment 1: expected area -->
+<div class="scale-step expected relative group" title="Nível 1"></div>
+<!-- Segment 2: expected target pin -->
+<div class="scale-step expected relative group" title="Nível 2 - Meta">
+<span class="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[9px] font-bold text-brand-700 uppercase tracking-tight">Meta</span>
+</div>
+<!-- Segment 3: beyond expected -->
+<div class="scale-step" title="Nível 3"></div>
+<!-- Segment 4: beyond expected -->
+<div class="scale-step" title="Nível 4"></div>
+<!-- Segment 5: beyond expected -->
+<div class="scale-step" title="Nível 5"></div>
+</div>
+<div class="flex justify-between items-center text-[10px] text-slate-400 mt-5 pt-1"><span class="text-slate-500 font-normal">Sua autoavaliação: <span class="font-medium text-slate-600">Ainda não avaliada</span></span><span class="text-slate-400 text-[10px]">Ciclo 2024.1</span></div>
+</div>
+</article>
+<!-- Competência Card 2: Autonomia & Ownership -->
+<article class="bg-white border border-surface-border rounded-xl p-5 shadow-xs hover:border-slate-300 transition-all flex flex-col justify-between space-y-4">
+<div>
+<div class="flex items-center justify-between mb-3">
+<div class="w-8 h-8 rounded-lg bg-emerald-50 text-brand-700 flex items-center justify-center">
+<span class="material-symbols-outlined text-lg">rocket_launch</span>
+</div>
+<span class="px-2 py-0.5 text-[11px] font-semibold bg-slate-100 text-slate-600 rounded">
+                    Comportamental
+                  </span>
+</div>
+<h4 class="text-sm font-bold text-slate-900 leading-snug">
+                  Autonomia &amp; Ownership
+                </h4>
+<p class="text-xs text-slate-500 mt-2 leading-relaxed">
+                  Demonstra iniciativa, assume responsabilidade pelas entregas e age como dono do resultado, sem depender de cobranças constantes?
+                </p>
+</div>
+<!-- Visual Expected Level Scale -->
+<div class="pt-3 border-t border-slate-100">
+<div class="flex items-center justify-between text-xs mb-1.5">
+<span class="text-slate-500 font-medium">Nível de entrega esperado:</span>
+<span class="font-bold text-brand-800 bg-brand-50 px-2 py-0.5 rounded border border-brand-200">
+                    2 / 5 (Básico)
+                  </span>
+</div>
+<!-- 5-segment scale with Target Pin -->
+<div class="grid grid-cols-5 gap-1.5 relative pt-1">
+<div class="scale-step expected relative" title="Nível 1"></div>
+<div class="scale-step expected relative" title="Nível 2 - Meta">
+<span class="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[9px] font-bold text-brand-700 uppercase tracking-tight">Meta</span>
+</div>
+<div class="scale-step" title="Nível 3"></div>
+<div class="scale-step" title="Nível 4"></div>
+<div class="scale-step" title="Nível 5"></div>
+</div>
+<div class="flex justify-between items-center text-[10px] text-slate-400 mt-5 pt-1"><span class="text-slate-500 font-normal">Sua autoavaliação: <span class="font-medium text-slate-600">Ainda não avaliada</span></span><span class="text-slate-400 text-[10px]">Ciclo 2024.1</span></div>
+</div>
+</article>
+<!-- Competência Card 3: Comunicação Eficiente -->
+<article class="bg-white border border-surface-border rounded-xl p-5 shadow-xs hover:border-slate-300 transition-all flex flex-col justify-between space-y-4">
+<div>
+<div class="flex items-center justify-between mb-3">
+<div class="w-8 h-8 rounded-lg bg-emerald-50 text-brand-700 flex items-center justify-center">
+<span class="material-symbols-outlined text-lg">chat</span>
+</div>
+<span class="px-2 py-0.5 text-[11px] font-semibold bg-slate-100 text-slate-600 rounded">
+                    Comportamental
+                  </span>
+</div>
+<h4 class="text-sm font-bold text-slate-900 leading-snug">
+                  Comunicação Eficiente
+                </h4>
+<p class="text-xs text-slate-500 mt-2 leading-relaxed">
+                  O colaborador se comunica de maneira clara e transparente, sabe ouvir, dá e recebe feedbacks e mantém o time bem informado?
+                </p>
+</div>
+<!-- Visual Expected Level Scale -->
+<div class="pt-3 border-t border-slate-100">
+<div class="flex items-center justify-between text-xs mb-1.5">
+<span class="text-slate-500 font-medium">Nível de entrega esperado:</span>
+<span class="font-bold text-brand-800 bg-brand-50 px-2 py-0.5 rounded border border-brand-200">
+                    2 / 5 (Básico)
+                  </span>
+</div>
+<!-- 5-segment scale with Target Pin -->
+<div class="grid grid-cols-5 gap-1.5 relative pt-1">
+<div class="scale-step expected relative" title="Nível 1"></div>
+<div class="scale-step expected relative" title="Nível 2 - Meta">
+<span class="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[9px] font-bold text-brand-700 uppercase tracking-tight">Meta</span>
+</div>
+<div class="scale-step" title="Nível 3"></div>
+<div class="scale-step" title="Nível 4"></div>
+<div class="scale-step" title="Nível 5"></div>
+</div>
+<div class="flex justify-between items-center text-[10px] text-slate-400 mt-5 pt-1"><span class="text-slate-500 font-normal">Sua autoavaliação: <span class="font-medium text-slate-600">Ainda não avaliada</span></span><span class="text-slate-400 text-[10px]">Ciclo 2024.1</span></div>
+</div>
+</article>
+<!-- Competência Card 4: Confiabilidade e Responsabilidade -->
+<article class="bg-white border border-surface-border rounded-xl p-5 shadow-xs hover:border-slate-300 transition-all flex flex-col justify-between space-y-4">
+<div>
+<div class="flex items-center justify-between mb-3">
+<div class="w-8 h-8 rounded-lg bg-emerald-50 text-brand-700 flex items-center justify-center">
+<span class="material-symbols-outlined text-lg">task_alt</span>
+</div>
+<span class="px-2 py-0.5 text-[11px] font-semibold bg-slate-100 text-slate-600 rounded">
+                    Comportamental
+                  </span>
+</div>
+<h4 class="text-sm font-bold text-slate-900 leading-snug">
+                  Confiabilidade e Responsabilidade
+                </h4>
+<p class="text-xs text-slate-500 mt-2 leading-relaxed">
+                  O colaborador é confiável, cumpre prazos e compromissos e pode ser contado para entregar o que foi combinado?
+                </p>
+</div>
+<!-- Visual Expected Level Scale -->
+<div class="pt-3 border-t border-slate-100">
+<div class="flex items-center justify-between text-xs mb-1.5">
+<span class="text-slate-500 font-medium">Nível de entrega esperado:</span>
+<span class="font-bold text-brand-800 bg-brand-50 px-2 py-0.5 rounded border border-brand-200">
+                    2 / 5 (Básico)
+                  </span>
+</div>
+<!-- 5-segment scale with Target Pin -->
+<div class="grid grid-cols-5 gap-1.5 relative pt-1">
+<div class="scale-step expected relative" title="Nível 1"></div>
+<div class="scale-step expected relative" title="Nível 2 - Meta">
+<span class="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[9px] font-bold text-brand-700 uppercase tracking-tight">Meta</span>
+</div>
+<div class="scale-step" title="Nível 3"></div>
+<div class="scale-step" title="Nível 4"></div>
+<div class="scale-step" title="Nível 5"></div>
+</div>
+<div class="flex justify-between items-center text-[10px] text-slate-400 mt-5 pt-1"><span class="text-slate-500 font-normal">Sua autoavaliação: <span class="font-medium text-slate-600">Ainda não avaliada</span></span><span class="text-slate-400 text-[10px]">Ciclo 2024.1</span></div>
+</div>
+</article>
+</div>
+<!-- BEGIN: EvolutionHistoryHook -->
+<div class="bg-gradient-to-r from-emerald-50/70 via-slate-50 to-white rounded-xl border border-emerald-100 p-4 mt-6"><div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4"><div class="flex items-start sm:items-center gap-3.5"><div class="w-10 h-10 rounded-xl bg-brand-50 border border-brand-200 text-brand-700 flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-xl">timeline</span></div><div><div class="flex items-center gap-2"><h5 class="text-sm font-bold text-slate-900">Histórico de Evolução nas Competências</h5><span class="text-[10px] bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded-full">Trajetória Ativa</span></div><p class="text-xs text-slate-500 mt-0.5">No ciclo 2023.2 sua média foi de 1.8/5. Acompanhe a evolução contínua das suas entregas em relação ao cargo.</p></div></div><div class="flex items-center gap-3 shrink-0"><a class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-brand-800 hover:text-brand-900 bg-white border border-slate-200 hover:border-brand-200 rounded-lg shadow-xs transition-all" href="#"><span class="">Comparar com ciclos anteriores</span><span class="material-symbols-outlined text-xs">open_in_new</span></a></div></div></div>
+<!-- END: EvolutionHistoryHook -->
+</section>
+<!-- End Column Left -->
+<!-- Column Right: Metas Vinculadas Side Panel (4 Cols) -->
+<aside class="lg:col-span-4" data-purpose="linked-goals-panel">
+<div class="bg-white border border-surface-border rounded-xl shadow-xs overflow-hidden">
+<!-- Panel Header -->
+<div class="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-brand-700 text-lg">label</span>
+<h3 class="font-fraunces text-base font-bold text-slate-900">Metas Vinculadas</h3>
+</div>
+<span class="text-[11px] font-semibold text-brand-800 bg-brand-50 px-2 py-0.5 rounded border border-brand-200">
+                Ciclo: Teste_metas
+              </span>
+</div>
+<!-- Panel Content / Goals List -->
+<div class="p-4 space-y-4">
+<!-- Meta Card 1 -->
+<div class="border border-slate-200/90 rounded-lg p-3.5 bg-white hover:border-brand-200 hover:shadow-xs transition-all space-y-2.5">
+<div class="flex items-start justify-between gap-2">
+<span class="text-xs font-bold text-slate-900 uppercase tracking-tight">melhorar deploy</span>
+<span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 shrink-0">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                    Concluída
+                  </span>
+</div>
+<div class="flex items-center gap-1.5 text-xs text-slate-600">
+<span class="material-symbols-outlined text-sm text-slate-400">flag</span>
+<span class="text-[11px] font-medium text-slate-500 truncate">Obj: MELHORAR SKILLS TÉCNICAS</span>
+</div>
+<!-- Approval Status Bar -->
+<div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+<span class="text-slate-400">Validação da Liderança</span>
+<span class="text-emerald-700 font-semibold inline-flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">check_circle</span>
+                    Aprovada
+                  </span>
+</div>
+</div>
+<!-- Contextual Metric Box -->
+<div class="rounded-lg bg-slate-50 p-3 border border-dashed border-slate-200 text-center"><div class="flex items-center justify-center gap-1.5 text-[11px] text-slate-600 font-medium"><span class="material-symbols-outlined text-sm text-brand-700">info</span><span class="">Impacto das metas na composição final</span></div><div class="flex items-baseline justify-center gap-2 mt-1"><span class="font-fraunces text-2xl font-bold text-brand-800">30%</span><span class="text-xs text-slate-500 font-medium">da avaliação global</span></div><div class="mt-2 pt-2 border-t border-slate-200/80 text-[11px] text-slate-500 leading-snug text-center"><p class="">A nota final do ciclo é composta por <strong class="text-slate-700 font-semibold">70%</strong> da avaliação de competências e <strong class="text-slate-700 font-semibold">30%</strong> pelo atingimento das metas acordadas.</p></div></div>
+</div>
+<!-- Panel Footer Action Link -->
+<div class="p-3 bg-slate-50/70 border-t border-slate-100 text-center">
+<a class="inline-flex items-center gap-1 text-xs font-semibold text-brand-800 hover:text-brand-900 transition-colors" href="#">
+<span class="">Ver metas de ciclos anteriores</span>
+<span class="material-symbols-outlined text-xs">open_in_new</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- End Column Right -->
+</div>
+<!-- END: LayoutTwoColumns -->
+</main>
+</div>
+<!-- END: MainContentWrapper -->
+
+
+</body></html>

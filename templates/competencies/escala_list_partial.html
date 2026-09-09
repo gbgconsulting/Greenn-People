@@ -16,9 +16,7 @@
         <td class="text-slate-600">{{ escala.valor_minimo }}</td>
         <td class="text-slate-600">{{ escala.valor_maximo }}</td>
         <td class="text-right">
-          <a href="{% url 'competencies:escala_update' escala.pk %}" class="font-medium text-emerald-700 hover:text-emerald-800">Editar</a>
-          <span class="mx-2 text-slate-300">|</span>
-          <a href="{% url 'competencies:escala_delete' escala.pk %}" class="font-medium text-rose-600 hover:text-rose-700">Desativar</a>
+          {% include "components/row_actions_menu.html" with menu_label=escala.nome items_partial="competencies/partials/escala_row_actions_items.html" escala=escala %}
         </td>
       </tr>
       {% empty %}

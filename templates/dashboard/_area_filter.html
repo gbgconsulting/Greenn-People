@@ -1,0 +1,27 @@
+{% comment %}
+  Select de Área (estrutura / aderência) — filtro GET ``area``.
+
+  Contexto:
+    areas          — queryset/lista de Area (já filtradas pelo caller)
+    filtro_area_id — pk selecionado ou None
+
+  Parâmetros:
+    field_id    — id do <select> (default: "area")
+    extra_class — classes extras no wrapper
+{% endcomment %}
+{% with fid=field_id|default:"area" %}
+<div class="min-w-0 w-full sm:w-auto sm:min-w-[10rem] sm:max-w-[16rem]{% if extra_class %} {{ extra_class }}{% endif %}">
+  <label for="{{ fid }}" class="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Área</label>
+  <select
+    id="{{ fid }}"
+    name="area"
+    class="form-control w-full"
+    onchange="this.form.submit()"
+  >
+    <option value="">Todas</option>
+    {% for a in areas %}
+    <option value="{{ a.pk }}" {% if filtro_area_id == a.pk %}selected{% endif %}>{{ a.nome }}</option>
+    {% endfor %}
+  </select>
+</div>
+{% endwith %}

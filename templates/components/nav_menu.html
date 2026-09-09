@@ -1,221 +1,256 @@
 {% comment %}
   Itens de navegação compartilhados (sidebar desktop + drawer mobile).
   Espera `path` no contexto (request.path).
-  Item ativo: classes via .nav-link + aria-current="page" (contracts/a11y-shell.md).
-  Experimento: anatomia do guia Figma (alvos ~40–48px) sem trocar IA de produto.
+  Item ativo: .nav-link[aria-current=page] — fundo + texto + barra (único estilo).
+  Grupos: <details> com hover/clique; abertos se contêm a página atual.
+  Visibilidade por papel: backend (`user.is_leader` / `is_manager` / `is_admin`) — UI nunca decide.
 {% endcomment %}
 {% if user.is_authenticated %}
-<div>
-  <p class="nav-section-label">Colaborador</p>
+
+{# —— Colaborador —— #}
+<details class="nav-group"{% if path == '/' or '/goals' in path or '/reviews' in path or '/pdi' in path or '/talent/mine' in path %} open{% endif %}>
+  <summary>
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-group__chevron" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+    <span class="nav-section-label">Colaborador</span>
+  </summary>
   <ul class="space-y-0.5">
     <li>
       {% url 'dashboard:personal' as u %}
       {% if path == '/' %}
-        {% include "components/nav_link.html" with href=u label="Meu painel" is_active="1" only %}
+        {% include "components/nav_link.html" with href=u label="Meu painel" icon="dashboard" is_active="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Meu painel" only %}
+        {% include "components/nav_link.html" with href=u label="Meu painel" icon="dashboard" only %}
       {% endif %}
     </li>
     <li>
       {% url 'goals:expectations' as u %}
       {% if '/goals/expectations' in path %}
-        {% include "components/nav_link.html" with href=u label="Expectativas" is_active="1" only %}
+        {% include "components/nav_link.html" with href=u label="Expectativas" icon="clipboard_list" is_active="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Expectativas" only %}
+        {% include "components/nav_link.html" with href=u label="Expectativas" icon="clipboard_list" only %}
       {% endif %}
     </li>
     <li>
       {% url 'goals:meta_list' as u %}
       {% if path == '/goals/' or path == '/goals' or '/goals/' in path and '/expectations' not in path %}
-        {% include "components/nav_link.html" with href=u label="Metas" is_active="1" only %}
+        {% include "components/nav_link.html" with href=u label="Metas" icon="target" is_active="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Metas" only %}
+        {% include "components/nav_link.html" with href=u label="Metas" icon="target" only %}
       {% endif %}
     </li>
     <li>
       {% url 'reviews:list' as u %}
-      {% if '/reviews' in path %}
-        {% include "components/nav_link.html" with href=u label="Avaliações" is_active="1" only %}
+      {% if not user.is_leader and not user.is_manager and not user.is_admin %}
+        {% if '/reviews' in path and '/feedbacks/continuo' not in path %}
+          {% include "components/nav_link.html" with href=u label="Minhas avaliações" icon="star" is_active="1" only %}
+        {% else %}
+          {% include "components/nav_link.html" with href=u label="Minhas avaliações" icon="star" only %}
+        {% endif %}
+      {% elif '/reviews' in path and '/feedbacks/continuo' not in path and '/usuarios/' not in path %}
+        {% include "components/nav_link.html" with href=u label="Avaliações" icon="star" is_active="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Avaliações" only %}
+        {% include "components/nav_link.html" with href=u label="Avaliações" icon="star" only %}
+      {% endif %}
+    </li>
+    <li>
+      {% url 'reviews:continuous_feedback_mine' as u %}
+      {% if '/feedbacks/continuo' in path or '/usuarios/' in path and '/feedbacks/continuo' in path %}
+        {% include "components/nav_link.html" with href=u label="Meus feedbacks" icon="chat" is_active="1" only %}
+      {% else %}
+        {% include "components/nav_link.html" with href=u label="Meus feedbacks" icon="chat" only %}
       {% endif %}
     </li>
     <li>
       {% url 'pdi:list' as u %}
       {% if '/pdi' in path %}
-        {% include "components/nav_link.html" with href=u label="Meu PDI" is_active="1" only %}
+        {% include "components/nav_link.html" with href=u label="Meu PDI" icon="person_add" is_active="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Meu PDI" only %}
+        {% include "components/nav_link.html" with href=u label="Meu PDI" icon="person_add" only %}
       {% endif %}
     </li>
     <li>
       {% url 'talent:mine' as u %}
       {% if '/talent/mine' in path %}
-        {% include "components/nav_link.html" with href=u label="Minha classificação" is_active="1" only %}
+        {% include "components/nav_link.html" with href=u label="Minha classificação" icon="trophy" is_active="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Minha classificação" only %}
+        {% include "components/nav_link.html" with href=u label="Minha classificação" icon="trophy" only %}
       {% endif %}
     </li>
   </ul>
-</div>
+</details>
 
 {% if user.is_leader %}
-<div>
-  <p class="nav-section-label">Líder</p>
+<details class="nav-group"{% if '/dashboard/team' in path %} open{% endif %}>
+  <summary>
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-group__chevron" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+    <span class="nav-section-label">Líder</span>
+  </summary>
   <ul class="space-y-0.5">
     <li>
       {% url 'dashboard:team' as u %}
       {% if '/dashboard/team' in path %}
-        {% include "components/nav_link.html" with href=u label="Painel do time" is_active="1" badge_count=leader_pending_badge.total only %}
+        {% include "components/nav_link.html" with href=u label="Painel do time" icon="users" badge_count=leader_pending_badge.total is_active="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Painel do time" badge_count=leader_pending_badge.total only %}
+        {% include "components/nav_link.html" with href=u label="Painel do time" icon="users" badge_count=leader_pending_badge.total only %}
       {% endif %}
     </li>
   </ul>
-</div>
+</details>
 {% endif %}
 
 {% if user.is_manager %}
-<div>
-  <p class="nav-section-label">Gerente</p>
+<details class="nav-group"{% if '/dashboard/structure' in path or '/dashboard/adherence' in path or '/talent/matrix' in path or '/talent/' in path and '/talent/mine' not in path %} open{% endif %}>
+  <summary>
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-group__chevron" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+    <span class="nav-section-label">Gerente</span>
+  </summary>
   <ul class="space-y-0.5">
     <li>
       {% url 'dashboard:structure' as u %}
       {% if '/dashboard/structure' in path %}
-        {% include "components/nav_link.html" with href=u label="Estrutura" is_active="1" only %}
+        {% include "components/nav_link.html" with href=u label="Estrutura" icon="tree" is_active="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Estrutura" only %}
+        {% include "components/nav_link.html" with href=u label="Estrutura" icon="tree" only %}
       {% endif %}
     </li>
     <li>
       {% url 'dashboard:adherence' as u %}
       {% if '/dashboard/adherence' in path %}
-        {% include "components/nav_link.html" with href=u label="Aderência" is_active="1" emphasis="1" only %}
+        {% include "components/nav_link.html" with href=u label="Aderência" icon="check_circle" is_active="1" emphasis="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Aderência" emphasis="1" only %}
+        {% include "components/nav_link.html" with href=u label="Aderência" icon="check_circle" emphasis="1" only %}
       {% endif %}
     </li>
     <li>
       {% url 'talent:matrix' as u %}
       {% if '/talent/matrix' in path or '/talent/' in path and '/talent/mine' not in path %}
-        {% include "components/nav_link.html" with href=u label="Matriz de talentos" is_active="1" only %}
+        {% include "components/nav_link.html" with href=u label="Matriz de talentos" icon="grid" is_active="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Matriz de talentos" only %}
+        {% include "components/nav_link.html" with href=u label="Matriz de talentos" icon="grid" only %}
       {% endif %}
     </li>
   </ul>
-</div>
+</details>
 {% endif %}
 
 {% if user.is_admin %}
-<div>
-  <p class="nav-section-label">Governança</p>
+<details class="nav-group"{% if '/cycles' in path or '/dashboard/admin' in path %} open{% elif not user.is_manager %}{% if '/dashboard/adherence' in path or '/dashboard/structure' in path or '/talent/matrix' in path or '/talent/' in path and '/talent/mine' not in path %} open{% endif %}{% endif %}>
+  <summary>
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-group__chevron" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+    <span class="nav-section-label">Governança</span>
+  </summary>
   <ul class="space-y-0.5">
     <li>
       {% url 'cycles:ciclo_list' as u %}
       {% if '/cycles' in path %}
-        {% include "components/nav_link.html" with href=u label="Ciclos" is_active="1" emphasis="1" only %}
+        {% include "components/nav_link.html" with href=u label="Ciclos" icon="cycle" is_active="1" emphasis="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Ciclos" emphasis="1" only %}
+        {% include "components/nav_link.html" with href=u label="Ciclos" icon="cycle" emphasis="1" only %}
       {% endif %}
     </li>
     {% if not user.is_manager %}
     <li>
       {% url 'dashboard:adherence' as u %}
       {% if '/dashboard/adherence' in path %}
-        {% include "components/nav_link.html" with href=u label="Aderência" is_active="1" emphasis="1" only %}
+        {% include "components/nav_link.html" with href=u label="Aderência" icon="check_circle" is_active="1" emphasis="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Aderência" emphasis="1" only %}
+        {% include "components/nav_link.html" with href=u label="Aderência" icon="check_circle" emphasis="1" only %}
       {% endif %}
     </li>
     {% endif %}
     <li>
       {% url 'dashboard:admin' as u %}
       {% if '/dashboard/admin' in path %}
-        {% include "components/nav_link.html" with href=u label="Painel admin" is_active="1" only %}
+        {% include "components/nav_link.html" with href=u label="Painel admin" icon="shield" is_active="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Painel admin" only %}
+        {% include "components/nav_link.html" with href=u label="Painel admin" icon="shield" only %}
       {% endif %}
     </li>
     {% if not user.is_manager %}
     <li>
       {% url 'dashboard:structure' as u %}
       {% if '/dashboard/structure' in path %}
-        {% include "components/nav_link.html" with href=u label="Estrutura" is_active="1" only %}
+        {% include "components/nav_link.html" with href=u label="Estrutura" icon="tree" is_active="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Estrutura" only %}
+        {% include "components/nav_link.html" with href=u label="Estrutura" icon="tree" only %}
       {% endif %}
     </li>
     <li>
       {% url 'talent:matrix' as u %}
       {% if '/talent/matrix' in path or '/talent/' in path and '/talent/mine' not in path %}
-        {% include "components/nav_link.html" with href=u label="Matriz de talentos" is_active="1" only %}
+        {% include "components/nav_link.html" with href=u label="Matriz de talentos" icon="grid" is_active="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Matriz de talentos" only %}
+        {% include "components/nav_link.html" with href=u label="Matriz de talentos" icon="grid" only %}
       {% endif %}
     </li>
     {% endif %}
   </ul>
-</div>
+</details>
 
-<div>
-  <p class="nav-section-label">Cadastros</p>
+<details class="nav-group"{% if '/organization/' in path or '/competencies' in path %} open{% endif %}>
+  <summary>
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-group__chevron" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+    <span class="nav-section-label">Cadastros</span>
+  </summary>
   <ul class="space-y-0.5">
     <li>
       {% url 'organization:area_list' as u %}
       {% if '/organization/areas' in path %}
-        {% include "components/nav_link.html" with href=u label="Áreas" is_active="1" only %}
+        {% include "components/nav_link.html" with href=u label="Áreas" icon="domain" is_active="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Áreas" only %}
+        {% include "components/nav_link.html" with href=u label="Áreas" icon="domain" only %}
       {% endif %}
     </li>
     <li>
       {% url 'organization:cargo_list' as u %}
       {% if '/organization/positions' in path %}
-        {% include "components/nav_link.html" with href=u label="Cargos" is_active="1" only %}
+        {% include "components/nav_link.html" with href=u label="Cargos" icon="briefcase" is_active="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Cargos" only %}
+        {% include "components/nav_link.html" with href=u label="Cargos" icon="briefcase" only %}
       {% endif %}
     </li>
     <li>
       {% url 'organization:user_list' as u %}
       {% if '/organization/users' in path %}
-        {% include "components/nav_link.html" with href=u label="Usuários" is_active="1" only %}
+        {% include "components/nav_link.html" with href=u label="Usuários" icon="group_add" is_active="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Usuários" only %}
+        {% include "components/nav_link.html" with href=u label="Usuários" icon="group_add" only %}
       {% endif %}
     </li>
     <li>
       {% url 'competencies:competencia_list' as u %}
       {% if '/competencies' in path %}
-        {% include "components/nav_link.html" with href=u label="Competências" is_active="1" only %}
+        {% include "components/nav_link.html" with href=u label="Competências" icon="book_open" is_active="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Competências" only %}
+        {% include "components/nav_link.html" with href=u label="Competências" icon="book_open" only %}
       {% endif %}
     </li>
   </ul>
-</div>
+</details>
 
-<div>
-  <p class="nav-section-label">Sistema</p>
+<details class="nav-group"{% if '/audit' in path or '/notifications' in path %} open{% endif %}>
+  <summary>
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-group__chevron" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+    <span class="nav-section-label">Sistema</span>
+  </summary>
   <ul class="space-y-0.5">
     <li>
       {% url 'audit:list' as u %}
       {% if '/audit' in path %}
-        {% include "components/nav_link.html" with href=u label="Auditoria" is_active="1" only %}
+        {% include "components/nav_link.html" with href=u label="Auditoria" icon="history" is_active="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Auditoria" only %}
+        {% include "components/nav_link.html" with href=u label="Auditoria" icon="history" only %}
       {% endif %}
     </li>
     <li>
       {% url 'notifications:log_list' as u %}
       {% if '/notifications' in path %}
-        {% include "components/nav_link.html" with href=u label="Notificações" is_active="1" only %}
+        {% include "components/nav_link.html" with href=u label="Notificações" icon="bell" is_active="1" only %}
       {% else %}
-        {% include "components/nav_link.html" with href=u label="Notificações" only %}
+        {% include "components/nav_link.html" with href=u label="Notificações" icon="bell" only %}
       {% endif %}
     </li>
   </ul>
-</div>
+</details>
 {% endif %}
 {% endif %}

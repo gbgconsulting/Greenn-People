@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Configuração de Ciclos - Greenn People</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;500;600;700&amp;family=Source+Sans+3:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "status-critical": "#f43f5e",
+                        "on-primary-fixed-variant": "#005137",
+                        "on-surface-variant": "#3d4a42",
+                        "secondary-fixed": "#71f8e4",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-container": "#006f64",
+                        "brand-gradient": "linear-gradient(135deg, #059669 0%, #14b8a6 100%)",
+                        "surface": "#f7f9fb",
+                        "tertiary-fixed": "#ffdad7",
+                        "secondary-fixed-dim": "#4fdbc8",
+                        "on-surface": "#191c1e",
+                        "error-container": "#ffdad6",
+                        "on-primary": "#ffffff",
+                        "surface-tint": "#006c4a",
+                        "on-primary-container": "#f5fff7",
+                        "primary": "#006948",
+                        "status-warning": "#f59e0b",
+                        "background": "#f7f9fb",
+                        "surface-bright": "#f7f9fb",
+                        "on-secondary-fixed": "#00201c",
+                        "on-secondary": "#ffffff",
+                        "surface-container-low": "#f2f4f6",
+                        "tertiary-container": "#ba5551",
+                        "on-background": "#191c1e",
+                        "on-error": "#ffffff",
+                        "tertiary": "#9b3e3b",
+                        "error": "#ba1a1a",
+                        "on-error-container": "#93000a",
+                        "on-tertiary": "#ffffff",
+                        "status-success": "#10b981",
+                        "secondary": "#006b5f",
+                        "surface-container-high": "#e6e8ea",
+                        "outline-variant": "#bccac0",
+                        "text-body": "#64748b",
+                        "tertiary-fixed-dim": "#ffb3ae",
+                        "on-tertiary-fixed-variant": "#7f2928",
+                        "text-heading": "#1e293b",
+                        "on-tertiary-container": "#fffbff",
+                        "surface-container": "#eceef0",
+                        "surface-dim": "#d8dadc",
+                        "on-secondary-fixed-variant": "#005048",
+                        "inverse-surface": "#2d3133",
+                        "surface-container-highest": "#e0e3e5",
+                        "primary-fixed-dim": "#68dba9",
+                        "primary-container": "#00855d",
+                        "on-primary-fixed": "#002114",
+                        "inverse-on-surface": "#eff1f3",
+                        "on-tertiary-fixed": "#410004",
+                        "outline": "#6d7a72",
+                        "inverse-primary": "#68dba9",
+                        "secondary-container": "#6df5e1",
+                        "border-subtle": "#e2e8f0",
+                        "surface-variant": "#e0e3e5",
+                        "primary-fixed": "#85f8c4"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sidebar-width": "280px",
+                        "container-padding": "32px",
+                        "gutter": "24px",
+                        "unit": "4px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["\"Source Sans 3\""],
+                        "label-sm": ["\"Source Sans 3\""],
+                        "headline-sm": ["Fraunces"],
+                        "headline-md": ["Fraunces"],
+                        "display-lg": ["Fraunces"],
+                        "body-sm": ["\"Source Sans 3\""],
+                        "label-md": ["\"Source Sans 3\""],
+                        "body-lg": ["\"Source Sans 3\""],
+                        "headline-lg": ["Fraunces"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "600" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "500" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "label-md": ["14px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .fill-icon {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        /* Subtle text selection color */
+        ::selection {
+            background-color: theme('colors.primary-container');
+            color: theme('colors.on-primary-container');
+        }
+        
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: theme('colors.surface');
+        }
+        ::-webkit-scrollbar-thumb {
+            background: theme('colors.outline-variant');
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: theme('colors.outline');
+        }
+
+        .bg-brand-gradient {
+            background-image: linear-gradient(135deg, #059669 0%, #14b8a6 100%);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex antialiased">
+<!-- SideNavBar (Shared Component) -->
+<nav class="hidden md:flex flex-col h-screen py-6 bg-surface-container-lowest fixed left-0 top-0 h-full w-sidebar-width border-r border-outline-variant z-50">
+<div class="px-6 mb-8 flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-brand-gradient flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-white fill-icon">spa</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-semibold bg-brand-gradient bg-clip-text text-transparent">Greenn People</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant">HR Intelligence</p>
+</div>
+</div>
+<div class="flex-1 flex flex-col gap-1 overflow-y-auto mt-4 px-2">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-md text-label-md">Team Directory</span>
+</a>
+<a class="relative flex items-center gap-3 px-4 py-3 bg-primary/5 text-primary font-semibold before:absolute before:left-0 before:top-0 before:h-full before:w-1 before:bg-brand-gradient before:rounded-r-full rounded-lg" href="#">
+<span class="material-symbols-outlined fill-icon">fact_check</span>
+<span class="font-label-md text-label-md">Performance Reviews</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined">ads_click</span>
+<span class="font-label-md text-label-md">Goals &amp; OKRs</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined">school</span>
+<span class="font-label-md text-label-md">Training &amp; Development</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-all rounded-lg mt-auto" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Admin Settings</span>
+</a>
+</div>
+<div class="px-6 mt-6">
+<button class="w-full bg-brand-gradient text-on-primary font-label-md text-label-md py-3 rounded-lg shadow-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                New Review Cycle
+            </button>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-1 ml-0 md:ml-sidebar-width flex flex-col min-h-screen">
+<!-- TopNavBar (Shared Component) -->
+<header class="flex justify-between items-center h-16 px-container-padding sticky top-0 z-40 bg-surface/80 backdrop-blur-md border-b border-outline-variant shadow-sm">
+<div class="flex items-center gap-4">
+<button class="md:hidden text-on-surface-variant p-2 rounded-full hover:bg-surface-container-high/50 transition-all">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">cycle</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Cycle Configuration</h2>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<!-- Navigation Tabs in TopBar (Simulated active state for current view context if applicable) -->
+<nav class="hidden lg:flex items-center gap-6 h-16">
+<a class="text-on-surface-variant hover:text-on-surface font-label-md text-label-md h-full flex items-center border-b-2 border-transparent hover:border-outline-variant transition-colors" href="#">Overview</a>
+<a class="text-primary font-bold font-label-md text-label-md h-full flex items-center border-b-2 border-primary" href="#">Configuração de Ciclos</a>
+<a class="text-on-surface-variant hover:text-on-surface font-label-md text-label-md h-full flex items-center border-b-2 border-transparent hover:border-outline-variant transition-colors" href="#">Templates</a>
+</nav>
+<div class="flex items-center gap-2 border-l border-outline-variant pl-6">
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+<input class="bg-surface-container-lowest border border-border-subtle text-body-sm font-body-sm rounded-full pl-10 pr-4 py-1.5 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary w-48 transition-all" placeholder="Search..." type="text"/>
+</div>
+<button class="text-on-surface-variant p-2 rounded-full hover:bg-surface-container-high/50 transition-all relative group">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-status-critical rounded-full border-2 border-surface group-hover:border-surface-container-high transition-colors"></span>
+</button>
+<button class="text-on-surface-variant p-2 rounded-full hover:bg-surface-container-high/50 transition-all">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+<div class="ml-2 w-8 h-8 rounded-full bg-primary-container flex items-center justify-center border border-primary/20 overflow-hidden shrink-0 cursor-pointer hover:opacity-80 transition-opacity">
+<img alt="HR Administrator Profile" class="w-full h-full object-cover" data-alt="A professional headshot of a smiling HR administrator in a well-lit modern office environment. The lighting is soft and bright, casting gentle shadows that emphasize a warm, welcoming demeanor. The background features subtle indoor plants and sleek architectural lines typical of a high-end corporate setting, aligning with a polished, lush professional aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB-uHFRmk2dDwJrvYz9GQgIwmeL6OgAIKM1NCRW6yDVLtrlNY1AbOmggRiouM6ykwkOg8uOqrQH75z5P8FPoK0_1kozXE_Sx5D44XXBxeQEqeXymCNJ6fjrdSDhFhequszwR4-ngEugdb4F_OPTcDgrAZcMntJD6wgBmHp94m6rMCsPNOL-qb5cBhUA1rX3jQ1q7we4NSl0nUKbUpkozrvGsK_6zifDUmiHzTqIG7cSmJ0IE-Zbgcg6"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Page Content -->
+<div class="flex-1 p-container-padding max-w-[1440px] mx-auto w-full"><div class="bg-[#FEF9C3] border border-primary/20 rounded-xl p-6 mb-8 shadow-sm">
+<div class="flex items-start gap-4">
+<span class="material-symbols-outlined text-status-warning mt-0.5">warning</span>
+<div class="flex-1">
+<h4 class="font-headline-sm text-headline-sm text-on-surface mb-1">Antes de abrir um ciclo</h4>
+<p class="font-body-md text-body-md text-on-surface-variant">Revise pendências de vínculo e cargos. Abrir ciclo continua disponível mesmo com avisos.</p>
+<div class="mt-4 p-4 bg-white/50 rounded-lg border border-primary/10 flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface">11 cargos ativos sem competências/pesos configurados</span>
+<a class="text-primary font-semibold hover:underline flex items-center gap-1" href="#">
+                    Revisar cargos
+                    <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</a>
+</div>
+</div>
+</div>
+</div>
+<!-- Page Header -->
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Configuração de Ciclos</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Gerencie e acompanhe os ciclos de avaliação de desempenho.</p>
+</div>
+<button class="bg-brand-gradient text-on-primary font-label-md text-label-md px-6 py-2.5 rounded-lg shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                    Novo Ciclo
+                </button>
+</div>
+<!-- Filters & Controls Bar -->
+<div class="bg-surface-container-lowest border border-border-subtle rounded-xl p-4 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
+<div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+<!-- Search inside content area for mobile, or specific filtering -->
+<div class="relative flex-1 sm:flex-none sm:w-64">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+<input class="w-full bg-surface border border-border-subtle text-body-sm font-body-sm rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary focus:bg-white transition-colors" placeholder="Buscar ciclo..." type="text"/>
+</div>
+<div class="relative">
+<select class="appearance-none bg-surface border border-border-subtle text-on-surface font-body-sm text-body-sm rounded-lg pl-4 pr-10 py-2 focus:outline-none focus:border-primary focus:bg-white transition-colors cursor-pointer min-w-[140px]">
+<option value="">Status (Todos)</option>
+<option value="draft">Rascunho</option>
+<option value="active">Ativo</option>
+<option value="completed">Concluído</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-[20px]">expand_more</span>
+</div>
+<div class="relative">
+<select class="appearance-none bg-surface border border-border-subtle text-on-surface font-body-sm text-body-sm rounded-lg pl-4 pr-10 py-2 focus:outline-none focus:border-primary focus:bg-white transition-colors cursor-pointer min-w-[120px]">
+<option value="">Ano (Todos)</option>
+<option value="2024">2024</option>
+<option value="2023">2023</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-[20px]">expand_more</span>
+</div>
+<button class="text-primary font-label-sm text-label-sm hover:bg-primary/5 px-3 py-2 rounded-lg transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">filter_alt_off</span>
+                        Limpar
+                    </button>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="font-body-sm text-body-sm">Visualização:</span>
+<button class="p-1.5 rounded bg-surface-container-high text-on-surface shadow-sm"><span class="material-symbols-outlined text-[20px] block">grid_view</span></button>
+<button class="p-1.5 rounded hover:bg-surface-container-low transition-colors"><span class="material-symbols-outlined text-[20px] block">view_list</span></button>
+</div>
+</div>
+<!-- Cycle Bento Grid / Cards View -->
+<div class="mb-6">
+<h3 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Em Andamento</h3>
+</div><div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-gutter">
+<!-- Active Cycle Card -->
+<div class="bg-surface-container-lowest border border-border-subtle rounded-xl overflow-hidden shadow-[0_2px_4px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_16px_rgba(0,0,0,0.06)] transition-all group relative flex flex-col h-full">
+<!-- Accent Bar -->
+<div class="h-1 w-full bg-status-success"></div>
+<div class="p-6 flex-1 flex flex-col">
+<div class="flex justify-between items-start mb-4">
+<div>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-status-success/10 text-status-success font-label-sm text-label-sm mb-2">
+<span class="w-1.5 h-1.5 rounded-full bg-status-success"></span>
+                                    Ativo
+                                </span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Ciclo 2024 - Q3</h3>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface p-1 rounded-full hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="space-y-3 mb-6 flex-1">
+<div class="flex items-center gap-2 text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[18px]">calendar_month</span>
+<span>01 Jul - 30 Set, 2024</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[18px]">group</span>
+<span>450 Participantes</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[18px]">fact_check</span>
+<span>Avaliação 360°</span>
+</div>
+</div>
+<div class="mt-auto">
+<div class="flex justify-between items-end mb-2">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Progresso Geral</span>
+<span class="font-headline-sm text-headline-sm text-primary">68%</span>
+</div>
+<div class="h-2 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-brand-gradient rounded-full" style="width: 68%;"></div>
+</div>
+<div class="flex justify-between mt-3">
+<div class="text-center">
+<div class="font-label-md text-label-md text-on-surface">210</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant font-normal">Concluídas</div>
+</div>
+<div class="text-center border-l border-r border-border-subtle px-4">
+<div class="font-label-md text-label-md text-on-surface">185</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant font-normal">Em Andamento</div>
+</div>
+<div class="text-center">
+<div class="font-label-md text-label-md text-on-surface">55</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant font-normal">Pendentes</div>
+</div>
+</div>
+</div>
+</div>
+<div class="border-t border-border-subtle p-4 bg-surface-bright flex justify-end gap-3">
+<button class="px-4 py-2 bg-surface border border-border-subtle text-on-surface font-label-sm text-label-sm rounded-lg hover:bg-surface-container-low transition-colors">
+                            Ver Relatórios
+                        </button>
+<button class="px-4 py-2 bg-white border border-primary text-primary font-label-sm text-label-sm rounded-lg hover:bg-primary/5 transition-colors">
+                            Gerenciar
+                        </button>
+</div>
+</div>
+<!-- Draft Cycle Card -->
+<div class="bg-surface-container-lowest border border-border-subtle rounded-xl overflow-hidden shadow-[0_2px_4px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_16px_rgba(0,0,0,0.06)] transition-all group relative flex flex-col h-full">
+<!-- Accent Bar -->
+<div class="h-1 w-full bg-status-warning"></div>
+<div class="p-6 flex-1 flex flex-col">
+<div class="flex justify-between items-start mb-4">
+<div>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-status-warning/10 text-status-warning font-label-sm text-label-sm mb-2">
+<span class="w-1.5 h-1.5 rounded-full bg-status-warning"></span>
+                                    Rascunho
+                                </span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Ciclo 2024 - Q4</h3>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface p-1 rounded-full hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="space-y-3 mb-6 flex-1">
+<div class="flex items-center gap-2 text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[18px]">calendar_month</span>
+<span>01 Out - 15 Dez, 2024</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[18px]">group</span>
+<span class="italic text-on-surface-variant/70">Pendente definição</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[18px]">fact_check</span>
+<span>Avaliação Top-Down</span>
+</div>
+</div>
+<div class="mt-auto">
+<div class="bg-surface p-4 rounded-lg border border-border-subtle border-dashed flex items-start gap-3">
+<span class="material-symbols-outlined text-status-warning mt-0.5">warning</span>
+<div>
+<p class="font-label-sm text-label-sm text-on-surface">Configuração Incompleta</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Falta definir os formulários de avaliação e os participantes elegíveis.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="border-t border-border-subtle p-4 bg-surface-bright flex justify-end gap-3">
+<button class="px-4 py-2 bg-surface border border-border-subtle text-on-surface font-label-sm text-label-sm rounded-lg hover:bg-surface-container-low transition-colors">
+                            Excluir
+                        </button>
+<button class="px-4 py-2 bg-white border border-primary text-primary font-label-sm text-label-sm rounded-lg hover:bg-primary/5 transition-colors">
+                            Continuar Edição
+                        </button>
+</div>
+</div>
+<!-- Completed Cycle Card -->
+<div class="col-span-full mt-8 mb-4 flex items-center justify-between">
+<h3 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Encerrados</h3>
+<span class="text-body-sm text-on-surface-variant/70">63 ciclos no arquivo</span>
+</div><div class="bg-surface-container-lowest border border-border-subtle rounded-xl overflow-hidden shadow-[0_2px_4px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_16px_rgba(0,0,0,0.06)] transition-all group relative flex flex-col h-full opacity-80 hover:opacity-100">
+<!-- Accent Bar -->
+<div class="h-1 w-full bg-outline"></div>
+<div class="p-6 flex-1 flex flex-col">
+<div class="flex justify-between items-start mb-4">
+<div>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-highest text-on-surface-variant font-label-sm text-label-sm mb-2">
+<span class="material-symbols-outlined text-[14px]">done_all</span>
+                                    Concluído
+                                </span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Ciclo 2024 - Q2</h3>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface p-1 rounded-full hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="space-y-3 mb-6 flex-1">
+<div class="flex items-center gap-2 text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[18px]">calendar_month</span>
+<span>01 Abr - 30 Jun, 2024</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[18px]">group</span>
+<span>428 Participantes</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[18px]">fact_check</span>
+<span>Avaliação 360°</span>
+</div>
+</div>
+<div class="mt-auto">
+<div class="flex justify-between items-end mb-2">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Engajamento Final</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">94%</span>
+</div>
+<div class="h-2 w-full bg-surface-container-high rounded-full overflow-hidden mb-3">
+<div class="h-full bg-outline rounded-full" style="width: 94%;"></div>
+</div>
+<div class="flex -space-x-2 overflow-hidden mb-1">
+<img alt="Participant" class="inline-block h-8 w-8 rounded-full ring-2 ring-white" data-alt="Small headshot of an employee for a completed cycle thumbnail, professional lighting, soft focus background, modern office setting, bright and clear." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBh40Jn8m3vkUHreq1cmIfk4ktdChXyLVY5KZjnRS_7oxLmxSuIkfe9C5COqiA42qE4JOhpZYtRU6rbyucCPxJ6-eqhtDc7u8dflp6ShueD9u05L5H4GstzS1sXCPajTP6OcT2CA45HSlsosDSoy9PC7IRyzLDl3G_mHMf9C2iotK0WQVnOj0Hl4UpO1D32aUk3PL0m_VyWfo2RnvftcGKiaVJCVkJBI8O6S8Kmo2Lrg2ZiNrySFR7n"/>
+<img alt="Participant" class="inline-block h-8 w-8 rounded-full ring-2 ring-white" data-alt="Small headshot of a female employee for a completed cycle thumbnail, professional lighting, modern office, smiling gently." src="https://lh3.googleusercontent.com/aida-public/AB6AXuATk__5XWMgF-IXoFuZY3nHEBgl7F8SarNgD8sft_Lgvp-22h_T6K9q7_6LbSbyjRxW6NUE1gfomC_RJ9gqgaLlp4VKkvF-0egimOQwm6OYBkuBG9N5Rw0fCD-MdmPlz6RNW5bIJed6By0Un4hQl9SWYhsrMv5wETxyWxaxwhzOxxYlyXngHrR_2-mStuYbk9lOIISQ-UVvJA4BXFPC3TrBCbbYleNI8LC0R99tcaHhBaYe-b8-ytJn"/>
+<img alt="Participant" class="inline-block h-8 w-8 rounded-full ring-2 ring-white" data-alt="Small headshot of an employee wearing glasses for a completed cycle thumbnail, professional lighting, modern office." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBl7ReRCezYzC-b2jnB9jWKMqmxxxUKtLMVMt9snIk9phK6D57VAESBiTjl-DIZIg1xzbbRs_HCHM2cNLDIHOkbb8UpnfdbSmXNNpB6efZyYuD-Nie3zrieBrE0g_-7W6eAABl9Ppud-6H_HNfs07WAoCUWLFwSxuqdkA0oPCPBNxB146P1gG4W3RsNw4cApiyjCdsHs903RIKBGho0TI2NfdFljNqLolrhqv4CjsZd9DWaAp84vczP"/>
+<div class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-surface-container-highest ring-2 ring-white text-on-surface-variant font-label-sm text-label-sm">
+                                    +425
+                                </div>
+</div>
+</div>
+</div>
+<div class="border-t border-border-subtle p-4 bg-surface-bright flex justify-end gap-3"><div class="flex flex-wrap justify-end gap-x-4 gap-y-2">
+<button class="text-primary font-label-sm text-label-sm hover:underline">Visão gerencial</button>
+<button class="text-primary font-label-sm text-label-sm hover:underline">Abrir</button>
+<button class="text-primary font-label-sm text-label-sm hover:underline">Objetivos</button>
+<button class="text-primary font-label-sm text-label-sm hover:underline">Editar</button>
+<button class="text-status-critical font-label-sm text-label-sm hover:underline">Excluir</button>
+</div></div>
+</div>
+<!-- Another Completed Cycle Card -->
+<div class="bg-surface-container-lowest border border-border-subtle rounded-xl overflow-hidden shadow-[0_2px_4px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_16px_rgba(0,0,0,0.06)] transition-all group relative flex flex-col h-full opacity-80 hover:opacity-100">
+<div class="h-1 w-full bg-outline"></div>
+<div class="p-6 flex-1 flex flex-col">
+<div class="flex justify-between items-start mb-4">
+<div>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-highest text-on-surface-variant font-label-sm text-label-sm mb-2">
+<span class="material-symbols-outlined text-[14px]">done_all</span>
+                                    Concluído
+                                </span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Ciclo Anual 2023</h3>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface p-1 rounded-full hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="space-y-3 mb-6 flex-1">
+<div class="flex items-center gap-2 text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[18px]">calendar_month</span>
+<span>01 Nov - 15 Dez, 2023</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[18px]">group</span>
+<span>390 Participantes</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[18px]">fact_check</span>
+<span>Avaliação 360° + Calibração</span>
+</div>
+</div>
+<div class="mt-auto">
+<div class="flex justify-between items-end mb-2">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Engajamento Final</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">98%</span>
+</div>
+<div class="h-2 w-full bg-surface-container-high rounded-full overflow-hidden mb-3">
+<div class="h-full bg-outline rounded-full" style="width: 98%;"></div>
+</div>
+</div>
+</div>
+<div class="border-t border-border-subtle p-4 bg-surface-bright flex justify-end gap-3"><div class="flex flex-wrap justify-end gap-x-4 gap-y-2">
+<button class="text-primary font-label-sm text-label-sm hover:underline">Visão gerencial</button>
+<button class="text-primary font-label-sm text-label-sm hover:underline">Abrir</button>
+<button class="text-primary font-label-sm text-label-sm hover:underline">Objetivos</button>
+<button class="text-primary font-label-sm text-label-sm hover:underline">Editar</button>
+<button class="text-status-critical font-label-sm text-label-sm hover:underline">Excluir</button>
+</div></div>
+</div>
+<!-- Create New Placeholder Card -->
+<div class="bg-surface-bright border-2 border-border-subtle border-dashed rounded-xl overflow-hidden hover:border-primary/50 hover:bg-surface-container-lowest transition-all group flex flex-col items-center justify-center min-h-[350px] cursor-pointer">
+<div class="w-16 h-16 rounded-full bg-primary/5 text-primary flex items-center justify-center mb-4 group-hover:bg-primary/10 transition-colors group-hover:scale-110 duration-300">
+<span class="material-symbols-outlined text-[32px]">add</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-2">Criar Novo Ciclo</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant text-center max-w-[200px]">Inicie a configuração de um novo ciclo de avaliação do zero ou usando um template.</p>
+</div>
+</div>
+<!-- Pagination (simulated) -->
+<div class="flex items-center justify-between border-t border-border-subtle pt-6 mt-8">
+<div class="font-body-sm text-body-sm text-on-surface-variant">
+                    Mostrando <span class="font-semibold text-on-surface">1</span> a <span class="font-semibold text-on-surface">4</span> de <span class="font-semibold text-on-surface">12</span> ciclos
+                </div>
+<div class="flex items-center gap-2">
+<button class="p-2 rounded-lg border border-border-subtle text-on-surface-variant hover:bg-surface-container-low disabled:opacity-50 disabled:cursor-not-allowed" disabled="">
+<span class="material-symbols-outlined text-[20px] block">chevron_left</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg bg-primary text-on-primary font-label-sm text-label-sm">1</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-low text-on-surface font-label-sm text-label-sm">2</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-low text-on-surface font-label-sm text-label-sm">3</button>
+<button class="p-2 rounded-lg border border-border-subtle text-on-surface-variant hover:bg-surface-container-low">
+<span class="material-symbols-outlined text-[20px] block">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</body></html>

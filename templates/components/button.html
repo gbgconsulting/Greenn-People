@@ -1,3 +1,4 @@
+{% load html_attrs %}
 {% comment %}
   Botão reutilizável (DS v2 — ritmo, pesos, hover/focus refinados).
   Uso: {% include "components/button.html" with label="Salvar" variant="primary" %}
@@ -15,18 +16,19 @@
     hx_target   — alvo HTMX (default: #modal-container quando hx_get)
     hx_swap     — swap HTMX (default: innerHTML quando hx_get)
     hx_indicator — indicador HTMX (default: #htmx-indicator quando hx_get)
-    attrs       — atributos HTML extras (ex. hx-post / onclick); passar com |safe no caller se necessário
+    attrs       — atributos HTML extras (ex. hx-post / onclick); passar como string estática
     extra_class — classes Tailwind adicionais
 {% endcomment %}
 {% with v=variant|default:"primary" %}
 {% if href %}
 <a
   href="{{ href }}"
+  draggable="false"
   class="{% if v == 'secondary' %}border border-slate-200 bg-white font-medium text-slate-700 hover:border-slate-300 hover:bg-slate-100{% elif v == 'outlined' %}border border-emerald-600 bg-transparent font-medium text-emerald-700 hover:border-emerald-700 hover:bg-emerald-50 hover:text-emerald-800{% else %}bg-brand-gradient font-semibold text-white shadow-sm hover:bg-brand-gradient-hover hover:shadow{% endif %} inline-flex h-12 items-center justify-center gap-2 rounded-lg px-5 font-ui text-sm tracking-tight transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface {% if disabled or v == 'loading' %}pointer-events-none opacity-50{% endif %} {{ extra_class }}"
   {% if disabled or v == 'loading' %}aria-disabled="true" tabindex="-1"{% endif %}
   {% if v == 'loading' %}aria-busy="true"{% endif %}
   {% if hx_get %}hx-get="{{ hx_get }}" hx-target="{{ hx_target|default:'#modal-container' }}" hx-swap="{{ hx_swap|default:'innerHTML' }}" hx-indicator="{{ hx_indicator|default:'#htmx-indicator' }}"{% endif %}
-  {% if attrs %}{{ attrs|safe }}{% endif %}
+  {% if attrs %}{{ attrs|validated_attrs }}{% endif %}
 >{% if v == 'loading' %}<span class="inline-block h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true"></span>{% endif %}{{ label }}</a>
 {% else %}
 <button
@@ -35,7 +37,7 @@
   {% if disabled or v == 'loading' %}disabled{% endif %}
   {% if v == 'loading' %}aria-busy="true"{% endif %}
   {% if hx_get %}hx-get="{{ hx_get }}" hx-target="{{ hx_target|default:'#modal-container' }}" hx-swap="{{ hx_swap|default:'innerHTML' }}" hx-indicator="{{ hx_indicator|default:'#htmx-indicator' }}"{% endif %}
-  {% if attrs %}{{ attrs|safe }}{% endif %}
+  {% if attrs %}{{ attrs|validated_attrs }}{% endif %}
 >{% if v == 'loading' %}<span class="inline-block h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true"></span>{% endif %}{{ label }}</button>
 {% endif %}
 {% endwith %}

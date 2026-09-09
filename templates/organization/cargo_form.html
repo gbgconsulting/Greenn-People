@@ -3,42 +3,127 @@
 {% block title %}{% if object %}Editar cargo{% else %}Novo cargo{% endif %} — Greenn People{% endblock %}
 
 {% block content %}
-<div class="mx-auto min-w-0 max-w-lg">
-  <header class="mb-6">
-    <h1 class="font-display text-2xl font-semibold text-slate-800">
-      {% if object %}Editar cargo{% else %}Novo cargo{% endif %}
-    </h1>
-    <p class="mt-1 font-ui text-sm text-slate-500">Nome e nível de senioridade do cargo.</p>
-  </header>
+{% url 'organization:cargo_list' as default_cancel_url %}
+<div class="mx-auto flex w-full min-w-0 max-w-lg justify-center pt-2 pb-8 md:pt-6">
+  <div class="w-full">
+    <nav aria-label="Breadcrumb" class="mb-6 font-ui text-xs font-semibold tracking-wide text-slate-500">
+      <ol class="inline-flex flex-wrap items-center gap-2">
+        <li><span>Cadastros</span></li>
+        <li class="flex items-center gap-2" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4 shrink-0 text-slate-400">
+            <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 0 1 .02-1.06L11.168 10 7.23 6.29a.75.75 0 1 1 1.04-1.08l4.5 4.25a.75.75 0 0 1 0 1.08l-4.5 4.25a.75.75 0 0 1-1.06-.02Z" clip-rule="evenodd" />
+          </svg>
+        </li>
+        <li>
+          <a href="{% if request.GET.next %}{{ request.GET.next }}{% else %}{{ default_cancel_url }}{% endif %}" class="transition-colors hover:text-emerald-700">Cargos</a>
+        </li>
+        <li class="flex items-center gap-2" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4 shrink-0 text-slate-400">
+            <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 0 1 .02-1.06L11.168 10 7.23 6.29a.75.75 0 1 1 1.04-1.08l4.5 4.25a.75.75 0 0 1 0 1.08l-4.5 4.25a.75.75 0 0 1-1.06-.02Z" clip-rule="evenodd" />
+          </svg>
+        </li>
+        <li aria-current="page">
+          <span class="font-semibold text-slate-800">{% if object %}Editar cargo{% else %}Novo cargo{% endif %}</span>
+        </li>
+      </ol>
+    </nav>
 
-  <div class="rounded-xl border border-line bg-surface-card p-6">
-    <form method="post" novalidate>
-      {% csrf_token %}
+    <article class="overflow-hidden rounded-xl border border-line bg-surface-card shadow-[0_2px_4px_rgba(0,0,0,0.04)]">
+      <div class="h-1 w-full bg-brand-gradient" aria-hidden="true"></div>
 
-      {% if form.non_field_errors %}
-        <div class="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700" role="alert">
-          {% for error in form.non_field_errors %}{{ error }}{% endfor %}
-        </div>
-      {% endif %}
+      <div class="p-6 sm:p-8">
+        <header class="mb-8 border-b border-line pb-6">
+          <h1 class="font-display text-2xl font-semibold tracking-tight text-slate-800">
+            {% if object %}Editar cargo{% else %}Novo cargo{% endif %}
+          </h1>
+          <p class="mt-2 font-ui text-base text-slate-500">
+            {% if object %}Atualize os detalhes do cargo na estrutura.{% else %}Preencha os detalhes para cadastrar uma nova posição na estrutura.{% endif %}
+          </p>
+        </header>
 
-      {% include "components/input.html" with label=form.nome.label name=form.nome.html_name type="text" value=form.nome.value id=form.nome.id_for_label error=form.nome.errors.0 %}
+        <form method="post" novalidate class="space-y-6">
+          {% csrf_token %}
+          {% if request.GET.next %}
+          <input type="hidden" name="next" value="{{ request.GET.next }}">
+          {% endif %}
 
-      {% include "components/input.html" with label=form.nivel.label name=form.nivel.html_name type="number" value=form.nivel.value id=form.nivel.id_for_label error=form.nivel.errors.0 attrs='min="1"' %}
+          {% if form.non_field_errors %}
+            <div class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 font-ui text-sm text-rose-700" role="alert">
+              {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+            </div>
+          {% endif %}
 
-      <div class="mb-6 flex items-center gap-2">
-        {{ form.is_active }}
-        <label for="{{ form.is_active.id_for_label }}" class="text-sm text-slate-700">{{ form.is_active.label }}</label>
-        {% if form.is_active.errors %}
-          <p class="text-xs text-rose-600" role="alert">{{ form.is_active.errors.0 }}</p>
-        {% endif %}
+          {% include "components/input.html" with label=form.nome.label name=form.nome.html_name type="text" value=form.nome.value id=form.nome.id_for_label placeholder="Ex: Analista de Sistemas Senior" error=form.nome.errors.0 extra_class="!bg-slate-50 focus:!bg-white" %}
+
+          <div>
+            <label for="{{ form.nivel.id_for_label }}" class="mb-1.5 block font-ui text-sm font-semibold tracking-wide text-slate-600">{{ form.nivel.label }}</label>
+            <div class="relative">
+              <select
+                name="{{ form.nivel.html_name }}"
+                id="{{ form.nivel.id_for_label }}"
+                class="form-control w-full appearance-none pr-10 sm:w-full sm:min-w-0{% if form.nivel.errors %} border-rose-300 focus-visible:ring-rose-500{% endif %}"
+                aria-invalid="{% if form.nivel.errors %}true{% else %}false{% endif %}"
+                {% if form.nivel.errors %}aria-describedby="{{ form.nivel.id_for_label }}-error"{% endif %}
+                required
+              >
+                {% for value, label in form.nivel.field.choices %}
+                  <option value="{{ value|stringformat:'s' }}"{% if form.nivel.value|stringformat:'s' == value|stringformat:'s' %} selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5">
+                  <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clip-rule="evenodd" />
+                </svg>
+              </div>
+            </div>
+            {% if form.nivel.errors %}
+              <p id="{{ form.nivel.id_for_label }}-error" class="mt-1.5 font-ui text-xs text-rose-600" role="alert">{{ form.nivel.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          <div class="pt-1">
+            <div class="flex items-start gap-3">
+              <div class="relative flex h-5 w-5 shrink-0 items-center justify-center">
+                <input
+                  type="checkbox"
+                  name="{{ form.is_active.html_name }}"
+                  id="{{ form.is_active.id_for_label }}"
+                  {% if form.is_active.value %}checked{% endif %}
+                  class="peer h-5 w-5 cursor-pointer appearance-none rounded border-2 border-slate-300 bg-white transition-colors checked:border-emerald-700 checked:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+                  aria-invalid="{% if form.is_active.errors %}true{% else %}false{% endif %}"
+                />
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="pointer-events-none absolute h-3.5 w-3.5 text-white opacity-0 peer-checked:opacity-100" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd" />
+                </svg>
+              </div>
+              <label for="{{ form.is_active.id_for_label }}" class="cursor-pointer font-ui text-base text-slate-800">{{ form.is_active.label }}</label>
+            </div>
+            <p class="ml-8 mt-1 font-ui text-sm text-slate-500">Cargos inativos não aparecerão nas listagens de alocação.</p>
+            {% if form.is_active.errors %}
+              <p class="ml-8 mt-1 font-ui text-xs text-rose-600" role="alert">{{ form.is_active.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          <footer class="flex items-center justify-end gap-4 border-t border-line pt-6">
+            <a
+              href="{% if request.GET.next %}{{ request.GET.next }}{% else %}{{ default_cancel_url }}{% endif %}"
+              class="inline-flex h-12 items-center justify-center rounded-lg px-5 font-ui text-sm font-semibold tracking-tight text-emerald-700 transition-colors hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+            >
+              Cancelar
+            </a>
+            <button
+              type="submit"
+              class="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-brand-gradient px-5 font-ui text-sm font-semibold tracking-tight text-white shadow-sm transition-colors hover:bg-brand-gradient-hover hover:shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5 shrink-0" aria-hidden="true">
+                <path fill-rule="evenodd" d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V7.621a1.5 1.5 0 0 0-.44-1.06l-4.12-4.122A1.5 1.5 0 0 0 11.378 2H4.5Zm2.25 9.5a.75.75 0 0 0 0 1.5h6.5a.75.75 0 0 0 0-1.5h-6.5Zm0 2.5a.75.75 0 0 0 0 1.5h6.5a.75.75 0 0 0 0-1.5h-6.5Z" clip-rule="evenodd" />
+              </svg>
+              Salvar
+            </button>
+          </footer>
+        </form>
       </div>
-
-      <div class="flex flex-wrap gap-3">
-        {% url 'organization:cargo_list' as cancel_url %}
-        {% include "components/button.html" with label="Salvar" type="submit" variant="primary" %}
-        {% include "components/button.html" with label="Cancelar" href=cancel_url variant="secondary" %}
-      </div>
-    </form>
+    </article>
   </div>
 </div>
 {% endblock %}

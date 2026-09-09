@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Criação do Plano de PDI - Greenn People</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&amp;family=Source+Sans+3:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary-fixed": "#ffdad7",
+                      "on-tertiary-fixed": "#410004",
+                      "secondary-fixed-dim": "#4fdbc8",
+                      "outline": "#6d7a72",
+                      "on-secondary-container": "#006f64",
+                      "on-surface": "#191c1e",
+                      "surface-container-low": "#f2f4f6",
+                      "on-primary-fixed": "#002114",
+                      "on-error": "#ffffff",
+                      "on-primary-fixed-variant": "#005137",
+                      "background": "#f7f9fb",
+                      "text-body": "#64748b",
+                      "status-warning": "#f59e0b",
+                      "tertiary-container": "#ba5551",
+                      "tertiary-fixed-dim": "#ffb3ae",
+                      "surface-bright": "#f7f9fb",
+                      "primary-container": "#00855d",
+                      "outline-variant": "#bccac0",
+                      "on-secondary-fixed-variant": "#005048",
+                      "surface-container-highest": "#e0e3e5",
+                      "on-primary": "#ffffff",
+                      "surface-container-lowest": "#ffffff",
+                      "error": "#ba1a1a",
+                      "inverse-primary": "#68dba9",
+                      "surface-dim": "#d8dadc",
+                      "secondary-fixed": "#71f8e4",
+                      "primary-fixed-dim": "#68dba9",
+                      "primary-fixed": "#85f8c4",
+                      "surface-variant": "#e0e3e5",
+                      "on-secondary": "#ffffff",
+                      "status-critical": "#f43f5e",
+                      "surface-container": "#eceef0",
+                      "surface-tint": "#006c4a",
+                      "on-primary-container": "#f5fff7",
+                      "inverse-surface": "#2d3133",
+                      "brand-gradient": "linear-gradient(135deg, #059669 0%, #14b8a6 100%)",
+                      "primary": "#006948",
+                      "on-tertiary": "#ffffff",
+                      "secondary-container": "#6df5e1",
+                      "on-secondary-fixed": "#00201c",
+                      "on-tertiary-fixed-variant": "#7f2928",
+                      "surface-container-high": "#e6e8ea",
+                      "secondary": "#006b5f",
+                      "status-success": "#10b981",
+                      "on-surface-variant": "#3d4a42",
+                      "border-subtle": "#e2e8f0",
+                      "on-error-container": "#93000a",
+                      "text-heading": "#1e293b",
+                      "on-background": "#191c1e",
+                      "surface": "#f7f9fb",
+                      "tertiary": "#9b3e3b",
+                      "on-tertiary-container": "#fffbff",
+                      "inverse-on-surface": "#eff1f3",
+                      "error-container": "#ffdad6"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "gutter": "24px",
+                      "sidebar-width": "280px",
+                      "unit": "4px",
+                      "container-padding": "32px"
+              },
+              "fontFamily": {
+                      "label-sm": [
+                              "\"Source Sans 3\""
+                      ],
+                      "label-md": [
+                              "\"Source Sans 3\""
+                      ],
+                      "headline-sm": [
+                              "Fraunces"
+                      ],
+                      "headline-md": [
+                              "Fraunces"
+                      ],
+                      "display-lg": [
+                              "Fraunces"
+                      ],
+                      "body-md": [
+                              "\"Source Sans 3\""
+                      ],
+                      "body-sm": [
+                              "\"Source Sans 3\""
+                      ],
+                      "headline-lg": [
+                              "Fraunces"
+                      ],
+                      "body-lg": [
+                              "\"Source Sans 3\""
+                      ]
+              },
+              "fontSize": {
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-sm": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-sm": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.filled {
+            font-variation-settings: 'FILL' 1;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md text-body-md flex min-h-screen">
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 h-full w-sidebar-width bg-surface dark:bg-surface-container-lowest border-r border-border-subtle dark:border-outline-variant hidden lg:flex flex-col py-6 space-y-2 z-40">
+<!-- Header -->
+<div class="px-6 mb-8 flex flex-col gap-2">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-brand-gradient flex items-center justify-center text-white font-bold font-headline-sm">G</div>
+<div>
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary dark:text-primary-fixed">Greenn People</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant">HR Intelligence</p>
+</div>
+</div>
+<button class="mt-6 w-full py-2 px-4 rounded-lg bg-brand-gradient text-white font-label-md text-label-md hover:-translate-y-0.5 transition-transform shadow-sm flex justify-center items-center gap-2">
+<span class="material-symbols-outlined text-lg">add</span>
+                New Goal
+            </button>
+</div>
+<!-- Navigation Tabs -->
+<nav class="flex-1 flex flex-col gap-1">
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-outline px-4 py-3 hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-outline px-4 py-3 hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">groups</span>
+<span class="font-label-md text-label-md">Team Directory</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-outline px-4 py-3 hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">assessment</span>
+<span class="font-label-md text-label-md">Performance Reviews</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-outline px-4 py-3 hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">track_changes</span>
+<span class="font-label-md text-label-md">Goals &amp; OKRs</span>
+</a>
+<a class="flex items-center gap-3 bg-primary/5 text-primary font-semibold border-l-4 border-primary px-4 py-3 opacity-80 transition-all duration-150" href="#">
+<span class="material-symbols-outlined filled">school</span>
+<span class="font-label-md text-label-md">Training &amp; Development</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-outline px-4 py-3 hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Admin Settings</span>
+</a>
+</nav>
+<!-- Footer Tabs -->
+<div class="px-4 flex flex-col gap-1 mt-auto border-t border-border-subtle pt-4">
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-outline px-4 py-3 hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">contact_support</span>
+<span class="font-label-md text-label-md">Support</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-outline px-4 py-3 hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-label-md text-label-md">Logout</span>
+</a>
+</div>
+</aside>
+<!-- BottomNavBar (Mobile) -->
+<nav class="lg:hidden fixed bottom-0 left-0 w-full z-50 h-16 border-t border-border-subtle dark:border-outline-variant bg-surface/90 backdrop-blur-md shadow-lg flex justify-around items-center px-4 pb-safe">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline active:bg-surface-container transition-transform duration-100 hover:scale-95 p-2 rounded-lg" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-sm text-label-sm mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline active:bg-surface-container transition-transform duration-100 hover:scale-95 p-2 rounded-lg" href="#">
+<span class="material-symbols-outlined">groups</span>
+<span class="font-label-sm text-label-sm mt-1">Directory</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline active:bg-surface-container transition-transform duration-100 hover:scale-95 p-2 rounded-lg" href="#">
+<span class="material-symbols-outlined">star</span>
+<span class="font-label-sm text-label-sm mt-1">Reviews</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed font-bold active:bg-surface-container transition-transform duration-100 hover:scale-95 p-2 rounded-lg bg-primary/5" href="#">
+<span class="material-symbols-outlined filled">school</span>
+<span class="font-label-sm text-label-sm mt-1">PDI</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline active:bg-surface-container transition-transform duration-100 hover:scale-95 p-2 rounded-lg" href="#">
+<span class="material-symbols-outlined">more_horiz</span>
+<span class="font-label-sm text-label-sm mt-1">More</span>
+</a>
+</nav>
+<!-- Main Canvas -->
+<main class="flex-1 lg:ml-sidebar-width min-h-screen pb-20 lg:pb-0">
+<!-- Top App Bar (Mobile) -->
+<header class="lg:hidden w-full h-16 sticky top-0 border-b border-border-subtle bg-surface z-40 flex justify-between items-center px-4">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-brand-gradient flex items-center justify-center text-white font-bold font-headline-sm">G</div>
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary">Greenn People</h1>
+</div>
+</header>
+<div class="max-w-[1440px] mx-auto px-4 md:px-8 lg:px-container-padding py-8 lg:py-12">
+<!-- Page Header -->
+<div class="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+<div>
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary text-xl">school</span>
+<span class="font-label-md text-label-md text-primary tracking-wider uppercase">Desenvolvimento Individual</span>
+</div>
+<h1 class="font-display-lg text-display-lg text-text-heading mb-2">Iniciar Novo Ciclo de PDI</h1>
+<p class="font-body-lg text-body-lg text-text-body max-w-2xl">Defina o foco central do seu desenvolvimento antes de estruturar as ações específicas. Este objetivo macro guiará todo o seu ciclo.</p>
+</div>
+</div>
+<!-- Form Container -->
+<div class="max-w-3xl bg-surface-container-lowest rounded-xl border border-border-subtle p-6 md:p-8 shadow-[0_2px_4px_rgba(0,0,0,0.04)]">
+<form action="#" class="space-y-8">
+<!-- Macro Objective -->
+<div class="space-y-2">
+<label class="block font-label-md text-label-md text-text-heading" for="pdi_title">Título do PDI</label>
+<p class="font-body-sm text-body-sm text-text-body mb-3">Dê um nome curto e claro para identificar este ciclo de desenvolvimento.</p>
+<div class="relative">
+<input class="w-full bg-surface-container-low border-none rounded-lg p-4 font-body-md text-body-md text-on-surface focus:ring-2 focus:ring-primary focus:bg-white transition-colors duration-200" id="pdi_title" name="pdi_title" placeholder="Ex: Ciclo de Liderança 2024 ou Especialização Técnica Q3" type="text"/>
+</div>
+</div><div class="space-y-2">
+<label class="block font-label-md text-label-md text-text-heading" for="macro_objective">Objetivo Macro do PDI</label>
+<p class="font-body-sm text-body-sm text-text-body mb-3">O que você deseja alcançar como resultado principal ao final deste ciclo? Seja aspiracional mas realista.</p>
+<div class="relative">
+<textarea class="w-full bg-surface-container-low border-none rounded-lg p-4 font-body-md text-body-md text-on-surface focus:ring-2 focus:ring-primary focus:bg-white transition-colors duration-200 resize-none" id="macro_objective" name="macro_objective" placeholder="Ex: Desenvolver habilidades de liderança técnica para assumir projetos de maior complexidade..." rows="4"></textarea>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<!-- Validity Period -->
+<div class="space-y-2">
+<label class="block font-label-md text-label-md text-text-heading">Período de Validade</label>
+<p class="font-body-sm text-body-sm text-text-body mb-3">Defina a janela de tempo para este ciclo.</p>
+<div class="flex gap-4">
+<div class="flex-1 relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-body pointer-events-none">calendar_today</span>
+<input class="w-full bg-surface-container-low border-none rounded-lg py-3 pl-10 pr-4 font-body-md text-body-md text-on-surface focus:ring-2 focus:ring-primary focus:bg-white transition-colors duration-200 text-sm" id="start_date" name="start_date" type="date"/>
+</div>
+<div class="flex items-center text-text-body">até</div>
+<div class="flex-1 relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-body pointer-events-none">event</span>
+<input class="w-full bg-surface-container-low border-none rounded-lg py-3 pl-10 pr-4 font-body-md text-body-md text-on-surface focus:ring-2 focus:ring-primary focus:bg-white transition-colors duration-200 text-sm" id="end_date" name="end_date" type="date"/>
+</div>
+</div>
+</div>
+<!-- Mentor Selection -->
+<div class="space-y-2">
+<label class="block font-label-md text-label-md text-text-heading" for="mentor">Mentor / Avaliador</label>
+<p class="font-body-sm text-body-sm text-text-body mb-3">Quem acompanhará seu desenvolvimento neste ciclo?</p>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-body pointer-events-none z-10">person_search</span>
+<select class="w-full bg-surface-container-low border-none rounded-lg py-3 pl-10 pr-10 font-body-md text-body-md text-on-surface focus:ring-2 focus:ring-primary focus:bg-white transition-colors duration-200 appearance-none relative z-0" id="mentor" name="mentor">
+<option disabled="" selected="" value="">Selecione um gestor ou mentor...</option>
+<option value="1">Ana Clara (Diretora de RH)</option>
+<option value="2">Carlos Silva (Tech Lead)</option>
+<option value="3">Mariana Costa (Gerente de Projetos)</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-body pointer-events-none z-10">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Divider -->
+<div class="h-px w-full bg-border-subtle my-8"></div>
+<!-- Form Actions -->
+<div class="flex flex-col sm:flex-row justify-end items-center gap-4">
+<button class="w-full sm:w-auto px-6 py-3 rounded-lg font-label-md text-label-md text-primary hover:bg-surface-container transition-colors duration-200" type="button">
+                            Cancelar
+                        </button>
+<button class="w-full sm:w-auto px-8 py-3 rounded-lg bg-brand-gradient text-white font-label-md text-label-md flex items-center justify-center gap-2 hover:-translate-y-0.5 transition-transform shadow-md hover:shadow-lg" type="submit">
+<span>Estruturar PDI e Adicionar Ações</span>
+<span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</form>
+</div>
+</div>
+</main>
+</body></html>

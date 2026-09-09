@@ -18,8 +18,20 @@ from apps.competencies.forms import (
     EscalaForm,
 )
 from apps.competencies.models import Competencia, Escala
+from apps.competencies.services.competencia_list import (
+    STATUS_SEGMENT_OPTIONS,
+    apply_competencia_list_filters,
+    get_allowed_tipo_values,
+    get_base_competencia_list_queryset,
+    get_tipo_filter_options,
+    parse_search_filter,
+    parse_status_filter,
+    parse_tipo_filter,
+    resolve_tipo_filter,
+)
 from apps.core.mixins import HtmxPaginatedListMixin, RequiresAdminMixin
 from apps.organization.models import Cargo
+from apps.organization.services.navigation import resolve_admin_list_return_url
 
 
 class AdminCompetenciesMixin(LoginRequiredMixin, RequiresAdminMixin):
@@ -79,8 +91,42 @@ class CompetenciaListView(AdminCompetenciesMixin, HtmxPaginatedListMixin, ListVi
     partial_template_name = 'competencies/competencia_list_partial.html'
     context_object_name = 'competencias'
 
+    def _parsed_filters(self):
+        base_qs = get_base_competencia_list_queryset()
+        status = parse_status_filter(self.request.GET.get('status'))
+        busca = parse_search_filter(self.request.GET.get('busca'))
+        tipo = resolve_tipo_filter(
+            parse_tipo_filter(self.request.GET.get('tipo')),
+            get_allowed_tipo_values(base_qs),
+        )
+        return base_qs, status, busca, tipo
+
     def get_queryset(self):
-        return Competencia.objects.select_related('escala').order_by('nome')
+        base_qs, status, busca, tipo = self._parsed_filters()
+        return apply_competencia_list_filters(
+            base_qs,
+            status=status,
+            busca=busca,
+            tipo=tipo,
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        base_qs, status, busca, tipo = self._parsed_filters()
+        context.update(
+            {
+                'list_url': reverse('competencies:competencia_list'),
+                'status_segment_options': STATUS_SEGMENT_OPTIONS,
+                'filtro_status': status,
+                'filtro_busca': busca,
+                'filtro_tipo': tipo,
+                'filtro_ativo': bool(busca or status or tipo),
+                'filtro_avancado_ativo': bool(tipo),
+                'filtro_avancado_count': 1 if tipo else 0,
+                'tipo_options': get_tipo_filter_options(base_qs),
+            },
+        )
+        return context
 
 
 class CompetenciaCreateView(AdminCompetenciesMixin, CreateView):
@@ -104,6 +150,12 @@ class CompetenciaUpdateView(AdminCompetenciesMixin, UpdateView):
         messages.success(self.request, 'Competência atualizada com sucesso.')
         return super().form_valid(form)
 
+    def get_success_url(self):
+        return resolve_admin_list_return_url(
+            self.request,
+            default=str(self.success_url),
+        )
+
 
 class CompetenciaDeleteView(AdminCompetenciesMixin, DeleteView):
     """Soft-delete: sets ``is_active=False`` (no hard delete)."""
@@ -118,6 +170,12 @@ class CompetenciaDeleteView(AdminCompetenciesMixin, DeleteView):
         self.object.save(update_fields=['is_active', 'updated_at'])
         messages.success(self.request, 'Competência desativada com sucesso.')
         return HttpResponseRedirect(self.get_success_url())
+
+    def get_success_url(self):
+        return resolve_admin_list_return_url(
+            self.request,
+            default=str(self.success_url),
+        )
 
 
 class CargoCompetenciaUpdateView(

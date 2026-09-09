@@ -50,6 +50,19 @@ class Avaliacao(TimeStampedModel):
         null=True,
         blank=True,
     )
+    autoavaliacao_enviada = models.BooleanField(
+        'autoavaliação enviada',
+        default=False,
+        help_text=(
+            'True quando o colaborador enviou a autoavaliação; '
+            'bloqueia novas edições na etapa de avaliação.'
+        ),
+    )
+    autoavaliacao_enviada_em = models.DateTimeField(
+        'autoavaliação enviada em',
+        null=True,
+        blank=True,
+    )
     concluida = models.BooleanField(
         'concluída',
         default=False,
@@ -190,3 +203,38 @@ class Feedback(TimeStampedModel):
 
     def __str__(self) -> str:
         return f'{self.get_tipo_display()} — {self.avaliacao}'
+
+
+class FeedbackContinuo(TimeStampedModel):
+    """Feedback do gestor ao colaborador fora do ciclo (não afeta ``Avaliacao.concluida``)."""
+
+    destinatario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name='feedbacks_continuos_recebidos',
+        verbose_name='destinatário',
+    )
+    autor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name='feedbacks_continuos_autorados',
+        verbose_name='autor',
+    )
+    conteudo = models.TextField('conteúdo')
+    ciente_em = models.DateTimeField(
+        'ciente em',
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        verbose_name = 'feedback contínuo'
+        verbose_name_plural = 'feedbacks contínuos'
+        ordering = ['-created_at', 'id']
+        indexes = [
+            models.Index(fields=['destinatario', '-created_at']),
+            models.Index(fields=['autor', '-created_at']),
+        ]
+
+    def __str__(self) -> str:
+        return f'Feedback contínuo → {self.destinatario_id} (#{self.pk})'

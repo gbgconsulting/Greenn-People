@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+
+<html class="light" lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Painel administrativo - Greenn People</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&amp;family=Source+Sans+3:ital,wght@0,200..900;1,200..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary": "#ffffff",
+                        "on-secondary-fixed": "#00201c",
+                        "primary-fixed-dim": "#68dba9",
+                        "primary": "#006948",
+                        "text-heading": "#1e293b",
+                        "on-surface-variant": "#3d4a42",
+                        "surface-container-high": "#e6e8ea",
+                        "tertiary-fixed": "#ffdad7",
+                        "status-warning": "#f59e0b",
+                        "surface-tint": "#006c4a",
+                        "on-secondary-fixed-variant": "#005048",
+                        "on-surface": "#191c1e",
+                        "outline": "#6d7a72",
+                        "surface-container-highest": "#e0e3e5",
+                        "secondary-fixed": "#71f8e4",
+                        "inverse-surface": "#2d3133",
+                        "surface-container": "#eceef0",
+                        "inverse-on-surface": "#eff1f3",
+                        "text-body": "#64748b",
+                        "inverse-primary": "#68dba9",
+                        "error-container": "#ffdad6",
+                        "on-error": "#ffffff",
+                        "primary-fixed": "#85f8c4",
+                        "on-secondary-container": "#006f64",
+                        "tertiary-container": "#ba5551",
+                        "on-primary-fixed-variant": "#005137",
+                        "on-tertiary": "#ffffff",
+                        "surface-bright": "#f7f9fb",
+                        "surface-container-low": "#f2f4f6",
+                        "background": "#f7f9fb",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed": "#002114",
+                        "secondary-container": "#6df5e1",
+                        "border-subtle": "#e2e8f0",
+                        "surface-dim": "#d8dadc",
+                        "status-critical": "#f43f5e",
+                        "primary-container": "#00855d",
+                        "secondary": "#006b5f",
+                        "surface": "#f7f9fb",
+                        "on-primary-container": "#f5fff7",
+                        "on-tertiary-fixed": "#410004",
+                        "tertiary": "#9b3e3b",
+                        "on-background": "#191c1e",
+                        "error": "#ba1a1a",
+                        "brand-gradient": "linear-gradient(135deg, #059669 0%, #14b8a6 100%)",
+                        "secondary-fixed-dim": "#4fdbc8",
+                        "surface-variant": "#e0e3e5",
+                        "on-tertiary-container": "#fffbff",
+                        "on-tertiary-fixed-variant": "#7f2928",
+                        "status-success": "#10b981",
+                        "tertiary-fixed-dim": "#ffb3ae",
+                        "surface-container-lowest": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "outline-variant": "#bccac0"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "container-padding": "32px",
+                        "gutter": "24px",
+                        "unit": "4px",
+                        "sidebar-width": "280px"
+                    },
+                    "fontFamily": {
+                        "headline-sm": ["Fraunces"],
+                        "headline-lg": ["Fraunces"],
+                        "body-sm": ["\"Source Sans 3\""],
+                        "body-lg": ["\"Source Sans 3\""],
+                        "label-sm": ["\"Source Sans 3\""],
+                        "body-md": ["\"Source Sans 3\""],
+                        "display-lg": ["Fraunces"],
+                        "headline-md": ["Fraunces"],
+                        "label-md": ["\"Source Sans 3\""]
+                    },
+                    "fontSize": {
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "500" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "500" }],
+                        "label-md": ["14px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Source Sans 3', sans-serif; }
+        .bg-brand-gradient { background: linear-gradient(135deg, #059669 0%, #14b8a6 100%); }
+    </style>
+</head>
+<body class="bg-surface text-on-surface flex min-h-screen">
+<!-- Sidebar Component (Shared JSON) -->
+<aside class="fixed left-0 top-0 h-screen w-[280px] bg-surface-container-lowest dark:bg-inverse-surface border-r border-border-subtle dark:border-outline-variant flex flex-col z-20">
+<div class="p-6">
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed mb-1">Greenn People</h1>
+<p class="font-body-sm text-body-sm text-text-body">Performance Management</p>
+</div>
+<nav class="flex-1 overflow-y-auto py-4">
+<ul class="space-y-1">
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-variant transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="refresh">refresh</span>
+<span class="font-label-md text-label-md">Ciclos</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-variant transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="task_alt">task_alt</span>
+<span class="font-label-md text-label-md">Aderência</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 bg-primary/5 text-primary font-bold border-l-4 border-primary opacity-90 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="admin_panel_settings" style="font-variation-settings: 'FILL' 1;">admin_panel_settings</span>
+<span class="font-label-md text-label-md">Painel admin</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-variant transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="account_tree">account_tree</span>
+<span class="font-label-md text-label-md">Estrutura/Matriz</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-variant transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="domain">domain</span>
+<span class="font-label-md text-label-md">Áreas</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-variant transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="badge">badge</span>
+<span class="font-label-md text-label-md">Cargos</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-variant transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-label-md text-label-md">Usuários</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-variant transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="psychology">psychology</span>
+<span class="font-label-md text-label-md">Competências</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-variant transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="history_edu">history_edu</span>
+<span class="font-label-md text-label-md">Auditoria</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-variant transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="font-label-md text-label-md">Notificações</span>
+</a>
+</li>
+</ul>
+</nav>
+<div class="p-4 border-t border-border-subtle dark:border-outline-variant mt-auto">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-variant transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="font-label-md text-label-md">Sair</span>
+</a>
+</div>
+</aside>
+<!-- TopNavBar Component (Shared JSON) -->
+<header class="fixed top-0 flex justify-between items-center h-16 px-8 ml-[280px] w-[calc(100%-280px)] bg-surface dark:bg-inverse-surface border-b border-border-subtle dark:border-outline-variant z-10">
+<div>
+<a class="text-primary font-bold border-b-2 border-primary pb-1 font-label-md text-label-md" href="#">Ciclo de Performance 2024</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant dark:text-outline-variant hover:text-primary dark:hover:text-primary-fixed transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="text-on-surface-variant dark:text-outline-variant hover:text-primary dark:hover:text-primary-fixed transition-colors flex items-center gap-2">
+<img alt="User Profile Avatar" class="w-8 h-8 rounded-full border border-border-subtle object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBcfPsmx0zhbhSEvk32R0JDN10Ck1KZhJbKaJZPDtGSMkIHsjsiD9xJHM7b0di4SYr088j8PJuL-aOLp6Z4UwUPDrimnnN2f3HljeNId1Lg_k3_AVeNU2eDF5bwDpT8mKQK0GJL85nzcxk4z7uAWw2WT6l660l1uxkkRaRpRzLYpBCYPKIQYLWWw8FHX2HLqaAWJzQarvyGUigyfhqk-LmVIrcmH471eJWB8LEUDil06Jl_0V8Zt-iZ"/>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-[280px] pt-16 flex-1 w-[calc(100%-280px)] p-container-padding max-w-[1440px] mx-auto overflow-x-hidden">
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-8">
+<div class="max-w-2xl">
+<h2 class="font-headline-lg text-headline-lg text-text-heading mb-2">Painel administrativo</h2>
+<p class="font-body-lg text-body-lg text-text-body mb-1">Acompanhe o ciclo em andamento: quem já iniciou, quem está parado e o que ainda falta.</p>
+<p class="font-body-sm text-body-sm text-outline flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">info</span>
+                    3 ciclos encerrados disponíveis no seletor
+                </p>
+</div>
+<div class="flex flex-col items-end gap-4 shrink-0">
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-status-success/10 border border-status-success/20 text-status-success font-label-sm text-label-sm">
+<span class="w-2 h-2 rounded-full bg-status-success animate-pulse"></span>
+                    Ativo · Ciclo 2026
+                </div>
+<div class="flex gap-3">
+<button class="px-6 py-2 bg-surface-container-lowest border border-border-subtle text-text-heading font-label-md text-label-md rounded-lg hover:bg-surface-container-low transition-colors shadow-sm">
+                        Ver aderência
+                    </button>
+<button class="px-6 py-2 bg-brand-gradient text-on-primary font-label-md text-label-md rounded-lg hover:opacity-90 transition-all shadow-sm transform hover:-translate-y-0.5">
+                        Gerenciar ciclos
+                    </button>
+</div>
+</div>
+</div>
+<!-- Cycle Selector -->
+<div class="bg-surface-container-lowest border border-border-subtle rounded-xl p-6 shadow-[0_2px_4px_rgba(0,0,0,0.04)] mb-8 flex flex-wrap items-end gap-4">
+<div class="flex-1 min-w-[200px]">
+<label class="block font-label-sm text-label-sm text-text-body mb-2 uppercase tracking-wider">CICLO</label>
+<div class="relative">
+<select class="w-full bg-surface-container-low border-none rounded-lg py-2.5 pl-4 pr-10 font-body-md text-text-heading focus:ring-2 focus:ring-primary focus:bg-surface-container-lowest appearance-none">
+<optgroup label="Em andamento">
+<option selected="">Ciclo 2026</option>
+</optgroup>
+<optgroup label="Encerrados">
+<option>Ciclo 2025</option>
+<option>Ciclo 2024</option>
+<option>Ciclo 2023</option>
+</optgroup>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-2.5 text-text-body pointer-events-none">expand_more</span>
+</div>
+</div>
+<div class="flex-1 min-w-[250px] relative">
+<span class="material-symbols-outlined absolute left-3 top-2.5 text-text-body">search</span>
+<input class="w-full bg-surface-container-low border-none rounded-lg py-2.5 pl-10 pr-4 font-body-md text-text-heading focus:ring-2 focus:ring-primary focus:bg-surface-container-lowest placeholder:text-outline-variant" placeholder="Buscar ciclo encerrado" type="text"/>
+</div>
+<button class="px-6 py-2.5 bg-surface-container-high text-text-heading font-label-md text-label-md rounded-lg hover:bg-surface-variant transition-colors shrink-0">
+                Aplicar
+            </button>
+</div>
+<!-- Section Header -->
+<div class="flex items-center justify-between mb-6">
+<div>
+<h3 class="font-headline-md text-headline-md text-text-heading">Indicadores do ciclo</h3>
+<p class="font-body-sm text-body-sm text-text-body mt-1">Números de Ciclo 2026 — só deste ciclo, não dos ciclos antigos.</p>
+</div>
+<div class="flex bg-surface-container-low rounded-lg p-1 border border-border-subtle">
+<button class="px-4 py-1.5 bg-brand-gradient text-on-primary rounded-md font-label-sm text-label-sm shadow-sm">Neste ciclo</button>
+<button class="px-4 py-1.5 text-text-body hover:text-text-heading rounded-md font-label-sm text-label-sm transition-colors">Histórico</button>
+</div>
+</div>
+<!-- KPIs Row -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+<!-- KPI 1 -->
+<div class="bg-surface-container-lowest border border-border-subtle rounded-xl p-6 shadow-[0_2px_4px_rgba(0,0,0,0.04)] relative overflow-hidden group">
+<div class="absolute top-0 left-0 w-full h-1 bg-primary/20 group-hover:bg-primary transition-colors"></div>
+<h4 class="font-label-sm text-label-sm text-text-body uppercase tracking-wider mb-2">EM AVALIAÇÃO</h4>
+<div class="text-4xl font-headline-lg text-text-heading mb-2">142</div>
+<p class="font-body-sm text-body-sm text-outline">Mais gente parada em Feedback.</p>
+</div>
+<!-- KPI 2 -->
+<div class="bg-surface-container-lowest border border-border-subtle rounded-xl p-6 shadow-[0_2px_4px_rgba(0,0,0,0.04)] relative overflow-hidden group">
+<div class="absolute top-0 left-0 w-full h-1 bg-status-warning/20 group-hover:bg-status-warning transition-colors"></div>
+<div class="flex justify-between items-start mb-2">
+<h4 class="font-label-sm text-label-sm text-text-body uppercase tracking-wider">PENDÊNCIAS</h4>
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-status-warning/10 text-status-warning">Em andamento</span>
+</div>
+<div class="text-4xl font-headline-lg text-text-heading mb-2">38</div>
+<p class="font-body-sm text-body-sm text-outline">Ainda não terminaram todas as etapas.</p>
+</div>
+<!-- KPI 3 -->
+<div class="bg-surface-container-lowest border border-border-subtle rounded-xl p-6 shadow-[0_2px_4px_rgba(0,0,0,0.04)] relative overflow-hidden group">
+<div class="absolute top-0 left-0 w-full h-1 bg-border-subtle group-hover:bg-outline transition-colors"></div>
+<h4 class="font-label-sm text-label-sm text-text-body uppercase tracking-wider mb-2">SEM AVALIAÇÃO</h4>
+<div class="text-4xl font-headline-lg text-text-heading mb-2">12</div>
+<p class="font-body-sm text-body-sm text-outline">Pessoas ativas que ainda não entraram no ciclo.</p>
+</div>
+</div>
+</main>
+</body></html>

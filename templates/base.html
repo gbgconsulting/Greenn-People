@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
   <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.4/dist/htmx.min.js" defer></script>
   <script src="{% static 'js/modal.js' %}" defer></script>
+  <script src="{% static 'js/row_actions_menu.js' %}" defer></script>
   <style>
     .htmx-indicator {
       opacity: 0;
@@ -22,7 +23,7 @@
   {% block extra_head %}{% endblock %}
 </head>
 <body
-  class="app-shell min-h-screen"
+  class="app-shell h-screen overflow-hidden"
   hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
 >
   <a
@@ -31,9 +32,9 @@
   >
     Ir para o conteúdo
   </a>
-  <div class="flex min-h-screen">
+  <div class="flex h-screen overflow-hidden">
     {% include "components/sidebar.html" %}
-    <div class="flex min-w-0 flex-1 flex-col">
+    <div class="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
       {% include "components/topbar.html" %}
       <main id="main-content" class="flex-1 p-4 md:p-6" tabindex="-1">
         {% if messages %}
@@ -140,6 +141,88 @@
         if (e.key !== 'Escape') return;
         if (typeof window.isAppModalOpen === 'function' && window.isAppModalOpen()) return;
         closeNav();
+      });
+    })();
+
+    (function initDesktopSidebarCollapse() {
+      const sidebar = document.getElementById('desktop-sidebar');
+      const btn = sidebar && sidebar.querySelector('[data-sidebar-collapse]');
+      if (!sidebar || !btn) return;
+
+      const KEY = 'gp-sidebar-collapsed';
+      const WIDTH_EXPANDED = 'w-[280px]';
+      const WIDTH_COLLAPSED = 'w-20';
+      const label = btn.querySelector('[data-sidebar-collapse-label]');
+
+      const setCollapsed = (collapsed) => {
+        sidebar.classList.toggle('sidebar--collapsed', collapsed);
+        sidebar.classList.toggle(WIDTH_EXPANDED, !collapsed);
+        sidebar.classList.toggle(WIDTH_COLLAPSED, collapsed);
+        btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        btn.title = collapsed ? 'Expandir menu' : 'Recolher menu';
+        if (label) label.textContent = collapsed ? 'Expandir' : 'Recolher';
+
+        sidebar.querySelectorAll('details.nav-group').forEach((group) => {
+          if (collapsed) {
+            group.dataset.wasOpen = group.open ? '1' : '0';
+            group.open = true;
+          } else if (group.dataset.wasOpen === '0') {
+            group.open = false;
+          }
+        });
+
+        try {
+          localStorage.setItem(KEY, collapsed ? '1' : '0');
+        } catch (_) {}
+      };
+
+      let initial = false;
+      try {
+        initial = localStorage.getItem(KEY) === '1';
+      } catch (_) {}
+      setCollapsed(initial);
+
+      btn.addEventListener('click', () => {
+        setCollapsed(!sidebar.classList.contains('sidebar--collapsed'));
+      });
+    })();
+
+    /*
+     * Hover nos módulos do menu: só UI (abre/fecha details).
+     * Visibilidade de grupos/itens permanece no backend (templates condicionais).
+     */
+    (function initNavGroupHover() {
+      const roots = [
+        document.getElementById('desktop-sidebar'),
+        document.getElementById('mobile-nav'),
+      ].filter(Boolean);
+
+      const isIconOnly = (root) =>
+        root.id === 'desktop-sidebar' && root.classList.contains('sidebar--collapsed');
+
+      roots.forEach((root) => {
+        root.querySelectorAll('details.nav-group').forEach((group) => {
+          if (group.open) group.dataset.pinned = '1';
+
+          group.addEventListener('mouseenter', () => {
+            if (isIconOnly(root)) return;
+            group.open = true;
+          });
+
+          group.addEventListener('mouseleave', () => {
+            if (isIconOnly(root)) return;
+            if (group.dataset.pinned === '1') return;
+            group.open = false;
+          });
+
+          const summary = group.querySelector(':scope > summary');
+          if (!summary) return;
+          summary.addEventListener('click', () => {
+            requestAnimationFrame(() => {
+              group.dataset.pinned = group.open ? '1' : '0';
+            });
+          });
+        });
       });
     })();
   </script>

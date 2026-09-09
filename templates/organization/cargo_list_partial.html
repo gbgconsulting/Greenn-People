@@ -1,53 +1,69 @@
+{% load organization_display %}
 <div id="list-container">
-  <div class="table-frame">
-    <table class="table-fixed w-full">
-      <colgroup>
-        <col class="w-[40%]" />
-        <col class="w-[25%]" />
-        <col class="w-[15%]" />
-        <col class="w-[20%]" />
-      </colgroup>
-      <thead>
-        <tr>
-          <th>Nome</th>
-          <th>Nível</th>
-          <th>Status</th>
-          <th class="text-right">Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for cargo in cargos %}
-        <tr>
-          <td class="font-medium text-slate-800">{{ cargo.nome }}</td>
-          <td class="text-slate-600">{{ cargo.nivel }}</td>
-          <td>
-            {% if cargo.is_active %}
-              {% include "components/badge_status.html" with status="ativo" %}
-            {% else %}
-              {% include "components/badge_status.html" with status="arquivado" label="Inativo" %}
-            {% endif %}
-          </td>
-          <td class="text-right">
-            <a href="{% url 'competencies:cargo_competencia_update' cargo.pk %}" class="font-medium text-emerald-700 hover:text-emerald-800">Perfil</a>
-            <span class="text-ink-muted"> · </span>
-            <a href="{% url 'organization:cargo_update' cargo.pk %}" class="font-medium text-emerald-700 hover:text-emerald-800">Editar</a>
-            {% if cargo.is_active %}
-            <span class="text-ink-muted"> · </span>
-            <a href="{% url 'organization:cargo_delete' cargo.pk %}" class="font-medium text-rose-600 hover:text-rose-700">Desativar</a>
-            {% endif %}
-          </td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="4" class="!py-8">
-            {% url 'organization:cargo_create' as cargo_create_url %}
-            {% include "components/empty_state.html" with title="Nenhum cargo cadastrado" message="Cadastre o primeiro cargo para definir posições e níveis." cta_label="Novo cargo" cta_href=cargo_create_url %}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+  <div class="overflow-hidden rounded-xl border border-line bg-surface-card shadow-sm">
+    {% include "organization/partials/cargo_list_filters.html" %}
 
-  {% include "components/pagination.html" with page_obj=page_obj %}
+    <div class="registry-table-scroll">
+      <table class="cargo-registry-table">
+        <thead>
+          <tr>
+            <th scope="col" class="col-nome">Nome do cargo</th>
+            <th scope="col" class="col-nivel">Nível</th>
+            <th scope="col" class="col-competencias">Competências vinculadas</th>
+            <th scope="col" class="col-status">Status</th>
+            <th scope="col" class="col-acao text-right">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cargo in cargos %}
+          <tr class="group">
+            <td class="col-nome">
+              <div class="flex min-w-0 items-center gap-3">
+                <span
+                  class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded bg-emerald-50 font-display text-sm font-semibold text-emerald-700{% if not cargo.is_active %} bg-slate-100 text-slate-500{% endif %}"
+                  aria-hidden="true"
+                >{{ cargo.nome|slice:":1"|upper }}</span>
+                <span class="truncate font-ui text-sm font-semibold text-slate-800" title="{{ cargo.nome }}">{{ cargo.nome }}</span>
+              </div>
+            </td>
+            <td class="col-nivel font-ui text-sm text-slate-600">
+              {{ cargo.nivel|cargo_nivel_label }}
+            </td>
+            <td class="col-competencias">
+              <div class="flex items-center gap-2 font-ui text-sm text-slate-700">
+                <svg class="size-4 shrink-0 text-emerald-600{% if not cargo.is_active %} text-slate-400{% endif %}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+                <span class="tabular-nums">{{ cargo.competencias_vinculadas }}</span>
+              </div>
+            </td>
+            <td class="col-status whitespace-nowrap">
+              {% if cargo.is_active %}
+                {% include "components/badge_status.html" with status="ativo" %}
+              {% else %}
+                {% include "components/badge_status.html" with status="arquivado" label="Inativo" %}
+              {% endif %}
+            </td>
+            <td class="col-acao text-right">
+              {% include "components/row_actions_menu.html" with menu_label=cargo.nome items_partial="organization/partials/cargo_row_actions_items.html" cargo=cargo %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="!py-10">
+              {% if filtro_ativo %}
+                {% include "components/empty_state.html" with title="Nenhum resultado" message="Nenhum cargo encontrado com os filtros aplicados." %}
+              {% else %}
+                {% url 'organization:cargo_create' as cargo_create_url %}
+                {% include "components/empty_state.html" with title="Nenhum cargo cadastrado" message="Cadastre o primeiro cargo para definir posições e níveis." cta_label="Novo cargo" cta_href=cargo_create_url %}
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% include "components/pagination_range.html" with page_obj=page_obj simple_nav=True count_noun="cargo,cargos" %}
+  </div>
 </div>

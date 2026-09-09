@@ -7,7 +7,7 @@
 
 ### Confirmação T003 (2026-08-11)
 
-- [x] Catálogo por propósito = Freeze A / FR-001 (doughnut+valor central; `bar_horizontal`; `area`; multi-série / `bar_grouped` quando shape já existir)
+- [x] Catálogo por propósito = Freeze A / FR-001 (doughnut+valor central; `bar_horizontal`; `area`; multi-série / `bar_grouped` / `radar` quando shape já existir)
 - [x] Shape canônico compatível com baseline (FR-002); empty honesto via `has_data` (FR-003); Status Triad inalterada; paleta ampliada só no acabamento
 - [x] Chart.js **4.5.1** apenas; sem lib nova; sem plugin npm — valor central doughnut via plugin inline no IIFE (research R1)
 - [x] Loading só em `extra_js` das superfícies (nunca `base.html`); US2/US3 consomem o mesmo init — referência allowlist-only
@@ -19,7 +19,7 @@
 ```json
 {
   "id": "string",
-  "type": "bar | doughnut | doughnut_or_bar | bar_grouped | bar_horizontal | area",
+  "type": "bar | doughnut | doughnut_or_bar | bar_grouped | bar_horizontal | area | radar",
   "has_data": true,
   "title": "string",
   "labels": ["..."],
@@ -45,7 +45,8 @@
 | Aderência (distribuição) | `doughnut` (+ valor central = total ou % destaque) | admin, adherence, ciclo detalhe |
 | Ranking pendências / atenção | `bar_horizontal` | team, structure (lacunas), ciclo |
 | Tendência temporal | `area` | quando série temporal já existir no domínio; senão não inventar |
-| Comparativo multi-série | `bar_grouped` (já existe) | personal gaps |
+| Comparativo multi-série (barras) | `bar_grouped` | quando o caller preferir barras agrupadas |
+| Comparativo multi-série (radar) | `radar` | personal gaps (esperado × nota) |
 | Contagem categórica | `bar` ou `bar_horizontal` | progresso etapas, escopo |
 
 ---
@@ -68,6 +69,7 @@ Init em `static/js/dashboard_charts.js` (presentation-only; **sem** mudar shape/
 | `bar` / `bar_horizontal` | Off | Datalabel inline na barra (+ mini-KPI); **sem** figcaption duplicando label+valor |
 | `bar_grouped` (curto) | Off | Datalabel + legenda Chart.js (séries) + figcaption com `parts` se útil |
 | `bar_grouped` (muitos pontos) | Off | Tooltip + figcaption (evita saturação de labels) |
+| `radar` (gap pessoal) | Escala `r` mínima | Legenda Chart.js (2 séries); **sem** figcaption — detalhe na tabela irmã |
 | `area` | Off | Labels de categoria + tooltip (+ legenda se multi-série) |
 | `doughnut` | N/A | Valor central + legenda texto+valor (figcaption) |
 

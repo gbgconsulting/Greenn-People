@@ -14,10 +14,17 @@
 
   <form method="post" class="rounded-xl border border-line bg-surface-card p-6">
     {% csrf_token %}
+    {% if request.GET.next %}
+    <input type="hidden" name="next" value="{{ request.GET.next }}">
+    {% endif %}
     <div class="flex flex-wrap gap-3">
       {% include "components/button.html" with label="Desativar" type="submit" variant="primary" extra_class="!bg-rose-600 hover:!from-rose-600 hover:!to-rose-600" %}
-      {% url 'organization:cargo_list' as cancel_url %}
-      {% include "components/button.html" with label="Cancelar" href=cancel_url variant="secondary" %}
+      {% if request.GET.next %}
+        {% include "components/button.html" with label="Cancelar" href=request.GET.next variant="secondary" %}
+      {% else %}
+        {% url 'organization:cargo_list' as cancel_url %}
+        {% include "components/button.html" with label="Cancelar" href=cancel_url variant="secondary" %}
+      {% endif %}
     </div>
   </form>
 </div>

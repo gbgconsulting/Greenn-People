@@ -1,0 +1,87 @@
+{% comment %}Tabela de líderes + paginação HTMX. bare=True = sem chrome do table-frame.{% endcomment %}
+<div id="list-container" class="min-w-0">
+  <div class="table-frame{% if bare %} !rounded-none !border-0{% endif %}">
+    <table>
+      <thead>
+        <tr>
+          <th>Líder Direto</th>
+          <th>Área</th>
+          <th class="text-center">Tamanho do Time</th>
+          <th>
+            <div>Aderência</div>
+            <div class="text-[10px] font-normal normal-case tracking-normal text-slate-400">Qualidade no prazo</div>
+          </th>
+          <th class="text-right">Ação</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in lideres_resumo %}
+        <tr class="group">
+          <td>
+            <div class="flex items-center gap-3">
+              <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-xs font-bold text-emerald-700" aria-hidden="true">
+                {{ item.lider.nome|default:item.lider.email|make_list|first|upper }}
+              </div>
+              <div class="min-w-0">
+                <p class="font-semibold text-slate-900">{{ item.lider.nome|default:item.lider.email }}</p>
+                <p class="text-[11px] text-slate-400">{{ item.lider.email }}</p>
+              </div>
+            </div>
+          </td>
+          <td class="font-medium text-slate-700">{{ item.lider.area.nome|default:"—" }}</td>
+          <td class="text-center font-semibold tabular-nums text-slate-800">
+            {{ item.colaboradores }} pessoa{{ item.colaboradores|pluralize }}
+          </td>
+          <td>
+            {% if item.snapshot %}
+              {% if item.status == "neutro" %}
+                <div class="inline-flex flex-col items-start gap-0.5">
+                  {% include "components/badge_status.html" with status="neutro" %}
+                  <span class="text-[10px] font-medium text-slate-400">Sem obrigações no ciclo</span>
+                </div>
+              {% elif item.status == "alta" %}
+                <div class="inline-flex flex-col items-start gap-0.5">
+                  {% include "components/badge_status.html" with status="alta" label="Alta" %}
+                  <span class="text-[10px] font-medium text-slate-400">{{ item.snapshot.percentual|floatformat:0 }}% de qualidade</span>
+                </div>
+              {% elif item.status == "media" %}
+                <div class="inline-flex flex-col items-start gap-0.5">
+                  {% include "components/badge_status.html" with status="media" label="Média" %}
+                  <span class="text-[10px] font-medium text-slate-400">{{ item.snapshot.percentual|floatformat:0 }}% de qualidade</span>
+                </div>
+              {% elif item.status == "baixa" %}
+                <div class="inline-flex flex-col items-start gap-0.5">
+                  {% include "components/badge_status.html" with status="baixa" label="Baixa" %}
+                  <span class="text-[10px] font-medium text-slate-400">{{ item.snapshot.percentual|floatformat:0 }}% de qualidade</span>
+                </div>
+              {% else %}
+                {% include "components/badge_status.html" with status="arquivado" label="Sem avaliação registrada" %}
+              {% endif %}
+            {% else %}
+              {% include "components/badge_status.html" with status="arquivado" label="Sem avaliação registrada" %}
+            {% endif %}
+          </td>
+          <td class="text-right">
+            {% url 'dashboard:adherence' as adherence_row_url %}
+            <a href="{{ adherence_row_url }}" class="inline-flex rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-emerald-50 hover:text-emerald-700 sm:opacity-0 sm:group-hover:opacity-100">
+              Ver detalhes
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="!py-8">
+            {% if cobertura_resumo.has_ciclo %}
+              {% include "components/empty_state.html" with title="Nenhum líder encontrado" message="Ainda não há informações nesta seção." %}
+            {% else %}
+              {% include "components/empty_state.html" with title="Sem ciclo aberto" message="Não há ciclo aberto. Você pode escolher outro ciclo pelo seletor." %}
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% include "components/pagination_range.html" with page_obj=page_obj simple_nav=True count_noun="líder,líderes" %}
+</div>

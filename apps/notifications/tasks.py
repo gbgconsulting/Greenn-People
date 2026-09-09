@@ -10,14 +10,16 @@ from django.utils import timezone
 
 from apps.cycles.models import Ciclo
 from apps.notifications.emails import (
+    referencia_feedback_continuo,
     referencia_lembrete_etapa,
     referencia_lembrete_pdi,
+    send_feedback_continuo_email,
     send_lembrete_etapa_email,
     send_lembrete_pdi_email,
 )
 from apps.notifications.models import NotificacaoLog, already_sent
-from apps.pdi.models import AcaoPDI
-from apps.reviews.models import Avaliacao
+from apps.pdi.models import AcaoPDI, PDI
+from apps.reviews.models import Avaliacao, FeedbackContinuo
 
 
 def _reminder_days() -> int:
@@ -50,6 +52,7 @@ def _is_pdi_eligible(acao: AcaoPDI, target: date) -> bool:
         and acao.prazo == target
         and acao.pdi.usuario_id is not None
         and acao.pdi.usuario.is_active
+        and acao.pdi.status != PDI.Status.ARQUIVADO
     )
 
 
@@ -152,6 +155,7 @@ def enviar_lembrete_acao_pdi_vencendo() -> dict:
     queryset = (
         AcaoPDI.objects.filter(prazo=target)
         .exclude(status=AcaoPDI.Status.CONCLUIDA)
+        .exclude(pdi__status=PDI.Status.ARQUIVADO)
         .filter(pdi__usuario__is_active=True)
         .select_related('pdi', 'pdi__usuario')
         .order_by('pk')
@@ -193,3 +197,36 @@ def enviar_lembrete_acao_pdi_vencendo() -> dict:
         'pulados': pulados,
         'data_alvo': str(target),
     }
+
+
+@shared_task(name='apps.notifications.tasks.enviar_notificacao_feedback_continuo')
+def enviar_notificacao_feedback_continuo(feedback_id: int) -> str:
+    """E-mail ao destinatário de um feedback contínuo (evento único, dedupe por id)."""
+    try:
+        feedback = FeedbackContinuo.objects.select_related(
+            'destinatario',
+            'autor',
+        ).get(pk=feedback_id)
+    except FeedbackContinuo.DoesNotExist:
+        return 'ausente'
+
+    if not feedback.destinatario_id or not feedback.destinatario.is_active:
+        return 'ineligivel'
+
+    referencia = referencia_feedback_continuo(feedback)
+    janela = ''
+    if already_sent(
+        feedback.destinatario_id,
+        NotificacaoLog.Tipo.FEEDBACK_CONTINUO,
+        referencia,
+        janela,
+    ):
+        return 'duplicado'
+
+    return _log_send(
+        destinatario_id=feedback.destinatario_id,
+        tipo=NotificacaoLog.Tipo.FEEDBACK_CONTINUO,
+        referencia=referencia,
+        janela=janela,
+        send_fn=lambda: send_feedback_continuo_email(feedback),
+    )

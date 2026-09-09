@@ -1,46 +1,63 @@
 <div id="list-container">
-  <div class="table-frame">
-    <table class="table-fixed w-full">
-      <colgroup>
-        <col class="w-[40%]" />
-        <col class="w-[25%]" />
-        <col class="w-[15%]" />
-        <col class="w-[20%]" />
-      </colgroup>
-      <thead>
-        <tr>
-          <th>Nome</th>
-          <th>Tipo</th>
-          <th>Escala</th>
-          <th class="text-right">Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for competencia in competencias %}
-        <tr>
-          <td class="font-medium text-slate-800">{{ competencia.nome }}</td>
-          <td class="text-slate-600">{{ competencia.get_tipo_display }}</td>
-          <td class="text-slate-600">
-            {{ competencia.escala.nome }}
-            <span class="text-slate-400">({{ competencia.escala.valor_minimo }}–{{ competencia.escala.valor_maximo }})</span>
-          </td>
-          <td class="text-right">
-            <a href="{% url 'competencies:competencia_update' competencia.pk %}" class="font-medium text-emerald-700 hover:text-emerald-800">Editar</a>
-            <span class="text-ink-muted"> · </span>
-            <a href="{% url 'competencies:competencia_delete' competencia.pk %}" class="font-medium text-rose-600 hover:text-rose-700">Desativar</a>
-          </td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="4" class="!py-8">
-            {% url 'competencies:competencia_create' as competencia_create_url %}
-            {% include "components/empty_state.html" with title="Nenhuma competência cadastrada" message="Cadastre a primeira competência e vincule a uma escala." cta_label="Nova competência" cta_href=competencia_create_url %}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+  <div class="overflow-hidden rounded-xl border border-line bg-surface-card shadow-sm">
+    {% include "competencies/partials/competencia_list_filters.html" %}
 
-  {% include "components/pagination.html" with page_obj=page_obj %}
+    <div class="registry-table-scroll">
+      <table class="competencia-registry-table">
+        <thead>
+          <tr>
+            <th scope="col" class="col-nome">Nome da competência</th>
+            <th scope="col" class="col-tipo">Tipo</th>
+            <th scope="col" class="col-escala">Escala</th>
+            <th scope="col" class="col-status">Status</th>
+            <th scope="col" class="col-acao text-right">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for competencia in competencias %}
+          <tr class="group{% if not competencia.is_active %} opacity-75{% endif %}">
+            <td class="col-nome">
+              <div class="flex min-w-0 flex-col">
+                <span class="font-ui text-sm font-semibold text-slate-800" title="{{ competencia.nome }}">{{ competencia.nome }}</span>
+                {% if competencia.descricao %}
+                <span class="mt-0.5 line-clamp-2 font-ui text-xs text-slate-500" title="{{ competencia.descricao }}">{{ competencia.descricao }}</span>
+                {% endif %}
+              </div>
+            </td>
+            <td class="col-tipo font-ui text-sm text-slate-600">
+              {{ competencia.get_tipo_display }}
+            </td>
+            <td class="col-escala font-ui text-sm text-slate-600">
+              <span class="block truncate" title="{{ competencia.escala.nome }}">{{ competencia.escala.nome }}</span>
+              <span class="text-xs tabular-nums text-slate-400">({{ competencia.escala.valor_minimo }}–{{ competencia.escala.valor_maximo }})</span>
+            </td>
+            <td class="col-status whitespace-nowrap">
+              {% if competencia.is_active %}
+                {% include "components/badge_status.html" with status="ativo" %}
+              {% else %}
+                {% include "components/badge_status.html" with status="arquivado" label="Inativo" %}
+              {% endif %}
+            </td>
+            <td class="col-acao text-right">
+              {% include "components/row_actions_menu.html" with menu_label=competencia.nome items_partial="competencies/partials/competencia_row_actions_items.html" competencia=competencia %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="!py-10">
+              {% if filtro_ativo %}
+                {% include "components/empty_state.html" with title="Nenhum resultado" message="Nenhuma competência encontrada com os filtros aplicados." %}
+              {% else %}
+                {% url 'competencies:competencia_create' as competencia_create_url %}
+                {% include "components/empty_state.html" with title="Nenhuma competência cadastrada" message="Cadastre a primeira competência e vincule a uma escala." cta_label="Nova competência" cta_href=competencia_create_url %}
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% include "components/pagination_range.html" with page_obj=page_obj simple_nav=True count_noun="competência,competências" %}
+  </div>
 </div>

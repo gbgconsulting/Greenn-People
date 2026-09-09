@@ -1,3 +1,4 @@
+{% load html_attrs %}
 {% comment %}
   Campo de formulário com label.
   Uso: {% include "components/input.html" with label="E-mail" name="email" type="email" %}
@@ -21,7 +22,7 @@
     class="h-12 w-full rounded-lg border bg-white px-3 text-sm text-slate-800 transition-colors placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500 {% if error %}border-rose-300 focus:ring-rose-500{% else %}border-slate-200 hover:border-slate-300 focus:ring-emerald-500{% endif %} {{ extra_class }}"
     aria-invalid="{% if error %}true{% else %}false{% endif %}"
     {% if error %}aria-describedby="{{ field_id }}-error"{% elif help_text %}aria-describedby="{{ field_id }}-help"{% endif %}
-    {% if attrs %}{{ attrs|safe }}{% endif %}
+    {% if attrs %}{{ attrs|validated_attrs }}{% endif %}
   />
   {% if error %}
   <p id="{{ field_id }}-error" class="mt-1.5 text-xs text-rose-600" role="alert">{{ error }}</p>

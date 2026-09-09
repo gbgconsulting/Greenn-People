@@ -3,39 +3,82 @@
 {% block title %}{% if object %}Editar objetivo{% else %}Novo objetivo{% endif %} — Greenn People{% endblock %}
 
 {% block content %}
-<div class="mx-auto max-w-lg">
-  <p class="text-sm text-slate-500">
-    <a href="{% url 'cycles:ciclo_list' %}" class="text-emerald-700 hover:text-emerald-800">Ciclos</a>
-    <span class="mx-1 text-slate-300">/</span>
-    <a href="{% url 'cycles:objetivo_list' ciclo.pk %}" class="text-emerald-700 hover:text-emerald-800">{{ ciclo.nome }}</a>
-  </p>
-  <h1 class="mb-1 mt-1 text-2xl font-semibold text-slate-800">
-    {% if object %}Editar objetivo{% else %}Novo objetivo{% endif %}
-  </h1>
-  <p class="mb-6 text-slate-500">
-    Descreva o objetivo estratégico do ciclo. As metas dos colaboradores serão vinculadas a ele.
-  </p>
+{% url 'cycles:objetivo_list' ciclo.pk as cancel_url %}
+<div class="mx-auto w-full max-w-3xl">
+  <nav aria-label="Breadcrumb" class="mb-4 font-ui text-sm text-slate-500">
+    <ol class="inline-flex flex-wrap items-center gap-1">
+      <li>
+        <a href="{% url 'cycles:ciclo_list' %}" class="transition-colors hover:text-emerald-700">Ciclos</a>
+      </li>
+      <li class="flex items-center gap-1">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true">
+          <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 0 1 .02-1.06L11.168 10 7.23 6.29a.75.75 0 1 1 1.04-1.08l4.5 4.25a.75.75 0 0 1 0 1.08l-4.5 4.25a.75.75 0 0 1-1.06-.02Z" clip-rule="evenodd" />
+        </svg>
+        <a href="{{ cancel_url }}" class="transition-colors hover:text-emerald-700">{{ ciclo.nome }}</a>
+      </li>
+      <li aria-current="page" class="flex items-center gap-1">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true">
+          <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 0 1 .02-1.06L11.168 10 7.23 6.29a.75.75 0 1 1 1.04-1.08l4.5 4.25a.75.75 0 0 1 0 1.08l-4.5 4.25a.75.75 0 0 1-1.06-.02Z" clip-rule="evenodd" />
+        </svg>
+        <span class="font-medium text-slate-800">{% if object %}Editar objetivo{% else %}Novo objetivo{% endif %}</span>
+      </li>
+    </ol>
+  </nav>
 
-  <form method="post" novalidate class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-    {% csrf_token %}
+  <header class="mb-8">
+    <h1 class="font-display text-[2rem] font-semibold leading-10 tracking-tight text-slate-800">
+      {% if object %}Editar objetivo{% else %}Novo objetivo{% endif %}
+    </h1>
+    <p class="mt-2 font-ui text-lg leading-7 text-slate-500">
+      Descreva o objetivo estratégico do ciclo. As metas dos colaboradores serão vinculadas a ele.
+    </p>
+  </header>
 
-    {% if form.non_field_errors %}
-      <div class="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700" role="alert">
-        {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+  <article class="rounded-lg border border-line bg-surface-card p-6 shadow-[0_2px_4px_rgba(0,0,0,0.04)]">
+    <form method="post" novalidate class="space-y-6">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 font-ui text-sm text-rose-700" role="alert">
+          {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+        </div>
+      {% endif %}
+
+      <div>
+        <label for="{{ form.descricao.id_for_label }}" class="mb-2 block font-ui text-sm font-semibold tracking-wide text-slate-600">
+          {{ form.descricao.label }}
+        </label>
+        <textarea
+          name="{{ form.descricao.html_name }}"
+          id="{{ form.descricao.id_for_label }}"
+          rows="6"
+          placeholder="Digite a descrição do objetivo estratégico aqui..."
+          class="block w-full resize-none rounded-lg border border-transparent bg-slate-100 px-4 py-3 font-ui text-base text-slate-800 shadow-sm ring-1 ring-inset ring-slate-200 transition-colors placeholder:text-slate-400 focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600{% if form.descricao.errors %} border-rose-300 ring-rose-300 focus:ring-rose-500{% endif %}"
+          aria-invalid="{% if form.descricao.errors %}true{% else %}false{% endif %}"
+          {% if form.descricao.errors %}aria-describedby="{{ form.descricao.id_for_label }}-error"{% else %}aria-describedby="{{ form.descricao.id_for_label }}-hint"{% endif %}
+        >{{ form.descricao.value|default_if_none:'' }}</textarea>
+        {% if form.descricao.errors %}
+          <p id="{{ form.descricao.id_for_label }}-error" class="mt-2 font-ui text-sm text-rose-600" role="alert">{{ form.descricao.errors.0 }}</p>
+        {% else %}
+          <p id="{{ form.descricao.id_for_label }}-hint" class="mt-2 flex items-center gap-1 font-ui text-sm text-slate-500">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-3.5 w-3.5 shrink-0" aria-hidden="true">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z" clip-rule="evenodd" />
+            </svg>
+            Seja claro e específico para orientar as metas individuais.
+          </p>
+        {% endif %}
       </div>
-    {% endif %}
 
-    <div class="mb-6">
-      <label for="{{ form.descricao.id_for_label }}" class="mb-1 block text-sm font-medium text-slate-700">{{ form.descricao.label }}</label>
-      {{ form.descricao }}
-      {% if form.descricao.errors %}<p class="mt-1 text-xs text-rose-600" role="alert">{{ form.descricao.errors.0 }}</p>{% endif %}
-    </div>
-
-    <div class="flex flex-wrap gap-3">
-      {% url 'cycles:objetivo_list' ciclo.pk as cancel_url %}
-      {% include "components/button.html" with label="Salvar" type="submit" variant="primary" %}
-      {% include "components/button.html" with label="Cancelar" href=cancel_url variant="secondary" %}
-    </div>
-  </form>
+      <footer class="flex items-center justify-end gap-4 border-t border-line pt-6">
+        <a
+          href="{{ cancel_url }}"
+          class="inline-flex items-center justify-center rounded-md px-6 py-2.5 font-ui text-sm font-semibold tracking-wide text-slate-500 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+        >
+          Cancelar
+        </a>
+        {% include "components/button.html" with label="Salvar" type="submit" variant="primary" extra_class="!h-10 !px-6" %}
+      </footer>
+    </form>
+  </article>
 </div>
 {% endblock %}

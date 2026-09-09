@@ -6,10 +6,13 @@ Reusa predicados existentes; sem mutators de stage/aprovação/AuthZ.
 
 from __future__ import annotations
 
+from decimal import Decimal
+
 import pytest
 from django.utils import timezone
 
 from apps.accounts.models import CustomUser
+from apps.competencies.models import CargoCompetencia, Competencia, Escala
 from apps.cycles.services.cycle import close_cycle
 from apps.goals.models import Meta
 from apps.reviews.models import Avaliacao, Feedback
@@ -41,6 +44,37 @@ def _make_colab(*, email: str, lider, area, cargo) -> CustomUser:
 def _avaliacao_for(ciclo, usuario, etapa: str) -> Avaliacao:
     av, _ = Avaliacao.objects.get_or_create(ciclo=ciclo, usuario=usuario)
     return _set_etapa(av, etapa)
+
+
+def _linha_auto_completa(avaliacao: Avaliacao, cargo) -> None:
+    """Uma linha com autoavaliação — elegível ao leader assessment."""
+    escala = Escala.objects.create(
+        nome='Escala Badge',
+        valor_minimo=1,
+        valor_maximo=5,
+    )
+    competencia = Competencia.objects.create(
+        nome='Competência Badge',
+        tipo=Competencia.Tipo.TECNICA,
+        escala=escala,
+    )
+    cc = CargoCompetencia.objects.create(
+        cargo=cargo,
+        competencia=competencia,
+        nivel_esperado=Decimal('3.00'),
+        peso=Decimal('1.00'),
+    )
+    from apps.reviews.models import AvaliacaoCompetencia
+
+    AvaliacaoCompetencia.objects.create(
+        avaliacao=avaliacao,
+        competencia=cc.competencia,
+        peso_utilizado=cc.peso,
+        nivel_esperado_utilizado=cc.nivel_esperado,
+        nota_autoavaliacao=Decimal('3.00'),
+    )
+    avaliacao.autoavaliacao_enviada = True
+    avaliacao.save(update_fields=['autoavaliacao_enviada', 'updated_at'])
 
 
 # --- DTO (sem DB) ---
@@ -105,7 +139,8 @@ def test_soma_n_mais_m_mais_k_elegiveis(
         area=area,
         cargo=cargo_colab,
     )
-    _avaliacao_for(ciclo_aberto, colab_aval, Avaliacao.Etapa.AVALIACAO)
+    av_aval = _avaliacao_for(ciclo_aberto, colab_aval, Avaliacao.Etapa.AVALIACAO)
+    _linha_auto_completa(av_aval, cargo_colab)
 
     colab_fb = _make_colab(
         email='colab-fb@test.greenn.com.br',
@@ -201,6 +236,26 @@ def test_usuario_fora_do_escopo_nao_entra_na_soma(
         colaborador.pk,
         lider.pk,
     }
+
+
+@pytest.mark.django_db
+def test_avaliacao_sem_auto_completa_nao_conta_no_badge(
+    lider,
+    ciclo_aberto,
+    area,
+    cargo_colab,
+):
+    colab = _make_colab(
+        email='colab-sem-auto@test.greenn.com.br',
+        lider=lider,
+        area=area,
+        cargo=cargo_colab,
+    )
+    _avaliacao_for(ciclo_aberto, colab, Avaliacao.Etapa.AVALIACAO)
+
+    badge = resolve_leader_pending_badge(lider)
+    assert badge.avaliacoes == 0
+    assert badge.total == 0
 
 
 @pytest.mark.django_db

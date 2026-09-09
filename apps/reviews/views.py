@@ -1,32 +1,77 @@
+import json
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import ValidationError
 from django.http import Http404, HttpResponseRedirect
 from django.urls import reverse
 from django.utils import timezone
 from django.views import View
+from django.db.models import Q
 from django.views.generic import CreateView, DetailView, ListView
 
 from apps.accounts.services.scope import user_in_scope
 from apps.audit.services import log_scope_denied
+from apps.core.htmx import is_htmx
 from apps.core.mixins import HtmxPaginatedListMixin, ScopedObjectMixin
 from apps.cycles.exceptions import CycleClosedError, StageTransitionError
 from apps.cycles.models import Ciclo
 from apps.cycles.services.stage import advance_stage, can_advance
 from apps.goals.forms import get_open_ciclo
+from apps.goals.models import Meta
+from apps.organization.services.navigation import resolve_admin_list_return_url
 from apps.reviews.exceptions import CalculationError
 from apps.reviews.forms import (
+    FeedbackContinuoForm,
     FeedbackForm,
     LeaderAssessmentFormSet,
     SelfAssessmentFormSet,
     can_acknowledge_feedback,
     can_leader_assess,
     feedback_create_allowed,
+    feedback_destinatario,
     leader_assessment_editable,
+    leader_assessment_permitted,
     resolve_feedback_tipo,
     self_assessment_editable,
 )
-from apps.reviews.models import Avaliacao, AvaliacaoCompetencia, Feedback
-from apps.reviews.services.evaluation import calcular_nota_final_lider
+from apps.reviews.models import Avaliacao, AvaliacaoCompetencia, Feedback, FeedbackContinuo
+from apps.reviews.services.continuous_feedback import (
+    can_acknowledge_continuous_feedback,
+    continuous_feedback_create_allowed,
+    create_continuous_feedback,
+    get_destinatario_for_create,
+    get_destinatario_in_scope_for_list,
+)
+from apps.reviews.services.evaluation import (
+    MSG_AUTOAVALIACAO_ENVIO_INCOMPLETO,
+    MSG_AUTOAVALIACAO_INCOMPLETA,
+    MSG_AUTOAVALIACAO_JA_ENVIADA,
+    calcular_nota_final_lider,
+    self_assessment_complete,
+    self_assessment_submitted,
+    self_assessment_viewable,
+    submit_self_assessment,
+)
+from apps.reviews.services.collaborator_history import (
+    build_collaborator_history_rows,
+    is_collaborator_history_view,
+)
+from apps.reviews.services.team_avaliacao_list import (
+    apply_team_list_filters,
+    build_team_avaliacao_rows,
+    get_allowed_area_ids,
+    get_area_filter_options,
+    is_team_avaliacao_list_view,
+    parse_area_filter,
+    parse_etapa_filter,
+    parse_status_filter,
+    resolve_area_filter,
+    STATUS_FILTER_CHIPS,
+    STATUS_SEGMENT_OPTIONS,
+    ETAPA_FILTER_CHIPS,
+)
+from apps.reviews.services.feedback_display import build_feedback_resumo
 from apps.reviews.services.guidance import (
     build_stage_stepper,
     detect_owner_correction_kind,
@@ -88,13 +133,47 @@ def _advance_context(user, avaliacao: Avaliacao) -> dict:
 
 
 class AvaliacaoListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin, ListView):
-    """Listagem de avaliações no escopo (ciclo aberto quando houver)."""
+    """Listagem de avaliações no escopo (ciclo aberto quando houver).
+
+    Colaboradores sem time veem histórico pessoal de ciclos («Minhas Avaliações»).
+    """
 
     model = Avaliacao
     template_name = 'reviews/avaliacao_list.html'
     partial_template_name = 'reviews/avaliacao_list_partial.html'
+    collaborator_template_name = 'reviews/avaliacao_list_colaborador.html'
+    collaborator_partial_template_name = 'reviews/avaliacao_list_colaborador_partial.html'
     context_object_name = 'avaliacoes'
     scope_user_field = 'usuario'
+
+    def get_template_names(self) -> list[str]:
+        if is_collaborator_history_view(self.request.user):
+            if is_htmx(self.request):
+                return [self.collaborator_partial_template_name]
+            return [self.collaborator_template_name]
+        return super().get_template_names()
+
+    def get_paginate_by(self, queryset=None):
+        if is_collaborator_history_view(self.request.user):
+            return 10
+        return self.paginate_by
+
+    def _get_scoped_team_base_queryset(self):
+        """Escopo hierárquico + ciclo aberto — base para filtros e opções de área."""
+        qs = (
+            super()
+            .get_queryset()
+            .select_related(
+                'ciclo',
+                'usuario',
+                'usuario__area',
+                'usuario__cargo',
+            )
+        )
+        ciclo = get_open_ciclo()
+        if ciclo is not None:
+            qs = qs.filter(ciclo=ciclo)
+        return qs.order_by('usuario__nome', 'usuario__email', 'id')
 
     def get_queryset(self):
         qs = (
@@ -106,37 +185,83 @@ class AvaliacaoListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedList
                 'usuario__area',
                 'usuario__cargo',
             )
-            .order_by('usuario__nome', 'usuario__email', 'id')
         )
-        ciclo = get_open_ciclo()
-        if ciclo is not None:
-            qs = qs.filter(ciclo=ciclo)
+        user = self.request.user
+        if is_collaborator_history_view(user):
+            return qs.filter(usuario_id=user.pk).order_by(
+                '-ciclo__data_inicio',
+                '-ciclo__pk',
+                '-id',
+            )
+
+        base_qs = self._get_scoped_team_base_queryset()
+        allowed_area_ids = get_allowed_area_ids(base_qs)
+        status = parse_status_filter(self.request.GET.get('status'))
+        etapa = parse_etapa_filter(self.request.GET.get('etapa'))
+        area_id = resolve_area_filter(
+            parse_area_filter(self.request.GET.get('area')),
+            allowed_area_ids,
+        )
+
+        qs = apply_team_list_filters(
+            base_qs,
+            status=status,
+            etapa=etapa,
+            area_id=area_id,
+        )
+
+        busca = (self.request.GET.get('busca') or '').strip()
+        if busca:
+            qs = qs.filter(
+                Q(usuario__nome__icontains=busca)
+                | Q(usuario__email__icontains=busca),
+            )
         return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
-        rows = []
-        for avaliacao in context['avaliacoes']:
-            is_self = avaliacao.usuario_id == user.pk
-            rows.append(
+
+        if is_collaborator_history_view(user):
+            context.update(
                 {
-                    'avaliacao': avaliacao,
-                    'is_self': is_self,
-                    'pode_autoavaliar': (
-                        is_self and self_assessment_editable(avaliacao)
-                    ),
-                    'pode_avaliar_lider': (
-                        not is_self
-                        and can_leader_assess(user, avaliacao)
-                        and leader_assessment_editable(avaliacao)
+                    'lista_colaborador': True,
+                    'historico_rows': build_collaborator_history_rows(
+                        context['avaliacoes'],
                     ),
                 },
             )
+            return context
+
+        busca = (self.request.GET.get('busca') or '').strip()
+        base_qs = self._get_scoped_team_base_queryset()
+        allowed_area_ids = get_allowed_area_ids(base_qs)
+        status = parse_status_filter(self.request.GET.get('status'))
+        etapa = parse_etapa_filter(self.request.GET.get('etapa'))
+        area_id = resolve_area_filter(
+            parse_area_filter(self.request.GET.get('area')),
+            allowed_area_ids,
+        )
         context.update(
             {
+                'lista_colaborador': False,
+                'lista_time': is_team_avaliacao_list_view(user),
                 'ciclo_aberto': get_open_ciclo(),
-                'avaliacao_rows': rows,
+                'filtro_busca': busca,
+                'filtro_status': status,
+                'filtro_etapa': etapa,
+                'filtro_area_id': area_id,
+                'filtro_ativo': bool(busca or status or etapa or area_id),
+                'filtro_avancado_ativo': bool(etapa or area_id),
+                'status_segment_options': STATUS_SEGMENT_OPTIONS,
+                'status_chips': STATUS_FILTER_CHIPS,
+                'etapa_chips': ETAPA_FILTER_CHIPS,
+                'area_options': get_area_filter_options(base_qs),
+                'total_escopo_lista': base_qs.count(),
+                'avaliacao_rows': build_team_avaliacao_rows(
+                    context['avaliacoes'],
+                    user,
+                ),
             },
         )
         return context
@@ -147,6 +272,8 @@ class AvaliacaoDetailView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
 
     model = Avaliacao
     template_name = 'reviews/avaliacao_detail.html'
+    collaborator_template_name = 'reviews/avaliacao_detail_colaborador.html'
+    operational_template_name = 'reviews/avaliacao_detail_lider.html'
     context_object_name = 'avaliacao'
     scope_user_field = 'usuario'
     queryset = Avaliacao.objects.select_related(
@@ -156,6 +283,12 @@ class AvaliacaoDetailView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
         'usuario__cargo',
         'usuario__line_manager',
     )
+
+    def get_template_names(self):
+        avaliacao = self.object
+        if avaliacao.usuario_id == self.request.user.pk:
+            return [self.collaborator_template_name]
+        return [self.operational_template_name]
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -167,27 +300,35 @@ class AvaliacaoDetailView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
             .select_related('competencia', 'competencia__escala')
             .order_by('competencia__nome')
         )
-        context.update(
-            {
-                'colaborador': avaliacao.usuario,
-                'is_self': is_self,
-                'linhas': linhas,
-                'pode_autoavaliar': (
-                    is_self and self_assessment_editable(avaliacao)
-                ),
-                'pode_avaliar_lider': (
-                    not is_self
-                    and can_leader_assess(user, avaliacao)
-                    and leader_assessment_editable(avaliacao)
-                ),
-                'pode_criar_feedback': feedback_create_allowed(user, avaliacao),
-                **_advance_context(user, avaliacao),
-                **self._guidance_presentation_context(
-                    avaliacao,
-                    is_self=is_self,
-                ),
-            },
-        )
+        context_payload = {
+            'colaborador': avaliacao.usuario,
+            'is_self': is_self,
+            'linhas': linhas,
+            'list_return_url': resolve_admin_list_return_url(
+                self.request,
+                default=reverse('reviews:list'),
+            ),
+            'pode_autoavaliar': (
+                is_self and self_assessment_editable(avaliacao)
+            ),
+            'pode_ver_autoavaliacao': (
+                is_self
+                and self_assessment_viewable(avaliacao)
+                and self_assessment_submitted(avaliacao)
+            ),
+            'pode_avaliar_lider': (
+                not is_self
+                and can_leader_assess(user, avaliacao)
+                and leader_assessment_permitted(avaliacao)
+            ),
+            'pode_criar_feedback': feedback_create_allowed(user, avaliacao),
+            **_advance_context(user, avaliacao),
+            **self._guidance_presentation_context(
+                avaliacao,
+                is_self=is_self,
+            ),
+        }
+        context.update(context_payload)
         return context
 
     def _guidance_role(self, *, is_self: bool) -> str:
@@ -211,27 +352,41 @@ class AvaliacaoDetailView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
         is_self: bool,
     ) -> dict:
         """Injeta ``next_step`` + ``stage_stepper`` só via ``guidance.py`` (FR-013)."""
-        # Já estamos no detalhe de uma avaliação: vínculo existe.
-        has_open_ciclo = avaliacao.ciclo.status == Ciclo.Status.ABERTO
-        # FR-009 / T028: hub do dono — correção pós-reprovação (só is_self).
-        owner_correction_kind = (
-            detect_owner_correction_kind(avaliacao) if is_self else None
-        )
+        ciclo_aberto = avaliacao.ciclo.status == Ciclo.Status.ABERTO
+        if ciclo_aberto:
+            has_open_ciclo = True
+            concluida = bool(avaliacao.concluida)
+            vinculo_pendente = False
+            owner_correction_kind = (
+                detect_owner_correction_kind(avaliacao) if is_self else None
+            )
+        else:
+            # Ciclo encerrado com participação: leitura (paridade com Meu Painel).
+            has_open_ciclo = True
+            concluida = True
+            vinculo_pendente = False
+            owner_correction_kind = None
+
+        role = self._guidance_role(is_self=is_self)
+        auto_submitted = None
+        if avaliacao.etapa == Avaliacao.Etapa.AVALIACAO:
+            auto_submitted = self_assessment_submitted(avaliacao)
         return {
             'next_step': resolve_next_step(
-                role=self._guidance_role(is_self=is_self),
+                role=role,
                 etapa=avaliacao.etapa,
                 avaliacao_pk=avaliacao.pk,
                 has_open_ciclo=has_open_ciclo,
-                vinculo_pendente=False,
-                concluida=bool(avaliacao.concluida),
+                vinculo_pendente=vinculo_pendente,
+                concluida=concluida,
                 owner_correction_kind=owner_correction_kind,
+                self_assessment_submitted=auto_submitted,
             ),
             'stage_stepper': build_stage_stepper(
                 etapa=avaliacao.etapa,
                 has_open_ciclo=has_open_ciclo,
-                vinculo_pendente=False,
-                concluida=bool(avaliacao.concluida),
+                vinculo_pendente=vinculo_pendente,
+                concluida=concluida,
             ),
         }
 
@@ -353,13 +508,28 @@ class SelfAssessmentView(LoginRequiredMixin, DetailView):
         return obj
 
     def get_queryset(self):
-        return Avaliacao.objects.select_related('ciclo', 'usuario')
+        return Avaliacao.objects.select_related(
+            'ciclo',
+            'usuario',
+            'usuario__cargo',
+        )
 
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             return self.handle_no_permission()
         self.object = self.get_object()
-        if not self_assessment_editable(self.object):
+        if request.method == 'POST':
+            if not self_assessment_editable(self.object):
+                if self_assessment_submitted(self.object):
+                    messages.error(request, MSG_AUTOAVALIACAO_JA_ENVIADA)
+                else:
+                    messages.error(
+                        request,
+                        'A autoavaliação só está disponível na etapa de avaliação '
+                        'de um ciclo aberto.',
+                    )
+                return HttpResponseRedirect(reverse('dashboard:personal'))
+        elif not self_assessment_viewable(self.object):
             messages.error(
                 request,
                 'A autoavaliação só está disponível na etapa de avaliação '
@@ -370,10 +540,18 @@ class SelfAssessmentView(LoginRequiredMixin, DetailView):
 
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
+        action = request.POST.get('action', 'save')
+        pode_editar = self_assessment_editable(self.object)
         formset = SelfAssessmentFormSet(
             request.POST,
             queryset=self._linhas_queryset(),
+            form_kwargs={'editable': pode_editar},
         )
+        if action == 'submit':
+            return self._post_submit(request, formset)
+        return self._post_save(request, formset)
+
+    def _post_save(self, request, formset):
         if formset.is_valid():
             formset.save()
             messages.success(request, 'Autoavaliação salva com sucesso.')
@@ -384,21 +562,66 @@ class SelfAssessmentView(LoginRequiredMixin, DetailView):
         context = self.get_context_data(object=self.object, formset=formset)
         return self.render_to_response(context)
 
+    def _post_submit(self, request, formset):
+        if not formset.is_valid():
+            context = self.get_context_data(object=self.object, formset=formset)
+            return self.render_to_response(context)
+
+        formset.save()
+        if not self_assessment_complete(self.object):
+            messages.error(request, MSG_AUTOAVALIACAO_ENVIO_INCOMPLETO)
+            return HttpResponseRedirect(
+                reverse('reviews:self_assessment', kwargs={'pk': self.object.pk}),
+            )
+
+        try:
+            submit_self_assessment(self.object)
+        except ValidationError as exc:
+            messages.error(request, exc.messages[0])
+            return HttpResponseRedirect(
+                reverse('reviews:self_assessment', kwargs={'pk': self.object.pk}),
+            )
+
+        messages.success(
+            request,
+            'Autoavaliação enviada com sucesso. Não é mais possível alterá-la.',
+        )
+        return HttpResponseRedirect(
+            reverse('reviews:self_assessment', kwargs={'pk': self.object.pk}),
+        )
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        pode_editar = self_assessment_editable(self.object)
         formset = kwargs.get('formset')
         if formset is None:
-            formset = SelfAssessmentFormSet(queryset=self._linhas_queryset())
+            formset = SelfAssessmentFormSet(
+                queryset=self._linhas_queryset(),
+                form_kwargs={'editable': pode_editar},
+            )
 
         context.update(
             {
                 'formset': formset,
-                'pode_editar': True,
+                'pode_editar': pode_editar,
+                'autoavaliacao_enviada': self_assessment_submitted(self.object),
                 'linhas_vazias': len(formset.forms) == 0,
+                'colaborador': self.object.usuario,
+                'metas_ciclo': self._metas_ciclo(),
                 **self._progress_flags(formset),
             },
         )
         return context
+
+    def _metas_ciclo(self):
+        return (
+            Meta.objects.filter(
+                usuario_id=self.object.usuario_id,
+                objetivo_estrategico__ciclo_id=self.object.ciclo_id,
+            )
+            .select_related('objetivo_estrategico')
+            .order_by('id')
+        )
 
     @staticmethod
     def _nota_autoavaliacao_presente(form) -> bool:
@@ -451,7 +674,12 @@ class LeaderAssessmentView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
     """Avaliação do líder por competências (etapa ``avaliacao``; escopo Leader)."""
 
     model = Avaliacao
-    queryset = Avaliacao.objects.select_related('ciclo', 'usuario')
+    queryset = Avaliacao.objects.select_related(
+        'ciclo',
+        'usuario',
+        'usuario__area',
+        'usuario__cargo',
+    )
     template_name = 'reviews/leader_assessment.html'
     context_object_name = 'avaliacao'
     scope_user_field = 'usuario'
@@ -486,11 +714,19 @@ class LeaderAssessmentView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
             )
             return HttpResponseRedirect(reverse('dashboard:personal'))
 
+        if not leader_assessment_permitted(self.object):
+            messages.error(request, MSG_AUTOAVALIACAO_INCOMPLETA)
+            return HttpResponseRedirect(reverse('dashboard:personal'))
+
         return super().dispatch(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
         if not can_leader_assess(request.user, self.object):
+            return HttpResponseRedirect(reverse('dashboard:personal'))
+
+        if not leader_assessment_permitted(self.object):
+            messages.error(request, MSG_AUTOAVALIACAO_INCOMPLETA)
             return HttpResponseRedirect(reverse('dashboard:personal'))
 
         formset = LeaderAssessmentFormSet(
@@ -530,6 +766,9 @@ class LeaderAssessmentView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
                 'linhas_vazias': len(formset.forms) == 0,
                 'colaborador': self.object.usuario,
                 'nota_final_lider': self.object.nota_final_lider,
+                'autoavaliacao_enviada_em': self.object.autoavaliacao_enviada_em,
+                'metas_ciclo': self._metas_ciclo(),
+                'rotulos_por_form': self._rotulos_por_form_json(formset),
                 'pode_avancar': pode_avancar,
                 'avanco_desabilitado': not pode_avancar,
                 'motivo_bloqueio_avanco': motivo_bloqueio_avanco,
@@ -537,6 +776,29 @@ class LeaderAssessmentView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
             },
         )
         return context
+
+    @staticmethod
+    def _rotulos_por_form_json(formset) -> str:
+        """Mapa field_name → rótulos da escala (só UI; validação permanece no backend)."""
+        payload = {}
+        for form in formset.forms:
+            competencia = getattr(form.instance, 'competencia', None)
+            escala = getattr(competencia, 'escala', None) if competencia else None
+            rotulos = getattr(escala, 'rotulos_por_nivel', None) or {}
+            payload[form.add_prefix('nota_lider')] = {
+                str(chave): str(valor) for chave, valor in rotulos.items()
+            }
+        return json.dumps(payload)
+
+    def _metas_ciclo(self):
+        return (
+            Meta.objects.filter(
+                usuario_id=self.object.usuario_id,
+                objetivo_estrategico__ciclo_id=self.object.ciclo_id,
+            )
+            .select_related('objetivo_estrategico')
+            .order_by('id')
+        )
 
     @staticmethod
     def _nota_lider_presente(form) -> bool:
@@ -620,7 +882,11 @@ def _get_avaliacao_in_scope(request, pk: int) -> Avaliacao:
     """Carrega avaliação no escopo; IDOR → 404 + auditoria."""
     try:
         avaliacao = (
-            Avaliacao.objects.select_related('ciclo', 'usuario').get(pk=pk)
+            Avaliacao.objects.select_related(
+                'ciclo',
+                'usuario',
+                'usuario__line_manager',
+            ).get(pk=pk)
         )
     except Avaliacao.DoesNotExist as exc:
         raise Http404() from exc
@@ -671,11 +937,33 @@ class FeedbackListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListM
                     'pode_dar_ciencia': can_acknowledge_feedback(user, feedback),
                 },
             )
+
+        feedback_pendente_ciencia = None
+        feedback_lider = None
+        if user.pk == self.avaliacao.usuario_id:
+            lider_feedbacks = (
+                Feedback.objects.filter(
+                    avaliacao_id=self.avaliacao.pk,
+                    tipo=Feedback.Tipo.LIDER,
+                )
+                .select_related('autor')
+                .order_by('-created_at', 'id')
+            )
+            feedback_lider = lider_feedbacks.first()
+            for feedback in lider_feedbacks:
+                if can_acknowledge_feedback(user, feedback):
+                    feedback_pendente_ciencia = feedback
+                    break
+
         context.update(
             {
                 'avaliacao': self.avaliacao,
                 'colaborador': self.avaliacao.usuario,
                 'feedback_rows': rows,
+                'feedback_lider': feedback_lider,
+                'feedback_pendente_ciencia': feedback_pendente_ciencia,
+                'feedback_resumo': build_feedback_resumo(self.avaliacao),
+                'is_colaborador_view': user.pk == self.avaliacao.usuario_id,
                 'pode_criar': feedback_create_allowed(user, self.avaliacao),
             },
         )
@@ -715,10 +1003,16 @@ class FeedbackCreateView(LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        destinatario, destinatario_rotulo = feedback_destinatario(
+            self.avaliacao,
+            self.request.user,
+        )
         context.update(
             {
                 'avaliacao': self.avaliacao,
                 'colaborador': self.avaliacao.usuario,
+                'destinatario': destinatario,
+                'destinatario_rotulo': destinatario_rotulo,
             },
         )
         return context
@@ -776,6 +1070,13 @@ class FeedbackAcknowledgeView(LoginRequiredMixin, View):
             messages.info(request, 'Você já deu ciência a este feedback.')
             return HttpResponseRedirect(list_url)
 
+        if request.POST.get('declaro_ciencia') != 'on':
+            messages.error(
+                request,
+                'Confirme que leu o feedback antes de dar ciência.',
+            )
+            return HttpResponseRedirect(list_url)
+
         feedback.ciente_em = timezone.now()
         feedback.save(update_fields=['ciente_em', 'updated_at'])
 
@@ -783,6 +1084,168 @@ class FeedbackAcknowledgeView(LoginRequiredMixin, View):
         if not avaliacao.concluida:
             avaliacao.concluida = True
             avaliacao.save(update_fields=['concluida', 'updated_at'])
+
+        messages.success(request, 'Ciência registrada com sucesso.')
+        return HttpResponseRedirect(list_url)
+
+
+class ContinuousFeedbackMineRedirectView(LoginRequiredMixin, View):
+    """Atalho: lista de feedbacks contínuos do próprio usuário."""
+
+    http_method_names = ['get', 'head', 'options']
+
+    def get(self, request, *args, **kwargs):
+        return HttpResponseRedirect(
+            reverse(
+                'reviews:continuous_feedback_list',
+                kwargs={'user_id': request.user.pk},
+            ),
+        )
+
+
+class ContinuousFeedbackListView(
+    LoginRequiredMixin,
+    ScopedObjectMixin,
+    HtmxPaginatedListMixin,
+    ListView,
+):
+    """Histórico de feedbacks contínuos do destinatário (escopo ``destinatario``)."""
+
+    model = FeedbackContinuo
+    template_name = 'reviews/continuous_feedback_list.html'
+    partial_template_name = 'reviews/continuous_feedback_list_partial.html'
+    context_object_name = 'feedbacks'
+    scope_user_field = 'destinatario'
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        self.destinatario = get_destinatario_in_scope_for_list(
+            request,
+            self.kwargs['user_id'],
+        )
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .filter(destinatario_id=self.destinatario.pk)
+            .select_related('autor', 'destinatario')
+            .order_by('-created_at', 'id')
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        rows = [
+            {
+                'feedback': feedback,
+                'pode_dar_ciencia': can_acknowledge_continuous_feedback(
+                    user,
+                    feedback,
+                ),
+            }
+            for feedback in context['feedbacks']
+        ]
+        pendente = next(
+            (row['feedback'] for row in rows if row['pode_dar_ciencia']),
+            None,
+        )
+        context.update(
+            {
+                'colaborador': self.destinatario,
+                'feedback_rows': rows,
+                'feedback_pendente_ciencia': pendente,
+                'is_colaborador_view': user.pk == self.destinatario.pk,
+                'pode_criar': continuous_feedback_create_allowed(
+                    user,
+                    self.destinatario,
+                ),
+            },
+        )
+        return context
+
+
+class ContinuousFeedbackCreateView(LoginRequiredMixin, CreateView):
+    """Registro de feedback contínuo (gestor → colaborador no escopo)."""
+
+    model = FeedbackContinuo
+    form_class = FeedbackContinuoForm
+    template_name = 'reviews/continuous_feedback_form.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        self.destinatario = get_destinatario_for_create(
+            request,
+            self.kwargs['user_id'],
+        )
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                'colaborador': self.destinatario,
+                'destinatario': self.destinatario,
+                'destinatario_rotulo': 'Para',
+            },
+        )
+        return context
+
+    def form_valid(self, form):
+        create_continuous_feedback(
+            autor=self.request.user,
+            destinatario=self.destinatario,
+            conteudo=form.cleaned_data['conteudo'],
+        )
+        messages.success(self.request, 'Feedback registrado com sucesso.')
+        return HttpResponseRedirect(self.get_success_url())
+
+    def get_success_url(self):
+        return reverse(
+            'reviews:continuous_feedback_list',
+            kwargs={'user_id': self.destinatario.pk},
+        )
+
+
+class ContinuousFeedbackAcknowledgeView(LoginRequiredMixin, View):
+    """Colaborador dá ciência ao feedback contínuo (escopo Self)."""
+
+    http_method_names = ['post', 'options']
+
+    def post(self, request, *args, **kwargs):
+        try:
+            feedback = FeedbackContinuo.objects.select_related(
+                'destinatario',
+                'autor',
+            ).get(pk=self.kwargs['pk'])
+        except FeedbackContinuo.DoesNotExist as exc:
+            raise Http404() from exc
+
+        if feedback.destinatario_id != request.user.pk:
+            log_scope_denied(request.user, feedback)
+            raise Http404()
+
+        list_url = reverse(
+            'reviews:continuous_feedback_list',
+            kwargs={'user_id': feedback.destinatario_id},
+        )
+
+        if feedback.ciente_em is not None:
+            messages.info(request, 'Você já deu ciência a este feedback.')
+            return HttpResponseRedirect(list_url)
+
+        if request.POST.get('declaro_ciencia') != 'on':
+            messages.error(
+                request,
+                'Confirme que leu o feedback antes de dar ciência.',
+            )
+            return HttpResponseRedirect(list_url)
+
+        feedback.ciente_em = timezone.now()
+        feedback.save(update_fields=['ciente_em', 'updated_at'])
 
         messages.success(request, 'Ciência registrada com sucesso.')
         return HttpResponseRedirect(list_url)

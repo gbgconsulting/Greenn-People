@@ -1,0 +1,26 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Confirme seu e-mail — Greenn People{% endblock %}
+
+{% block content %}
+<p style="margin:0 0 12px 0;">Olá {{ user.nome }},</p>
+<p style="margin:0 0 20px 0;">
+  Para confirmar a posse do seu e-mail e liberar o acesso ao Greenn People,
+  use o botão abaixo.
+</p>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0">
+  <tr>
+    <td align="center" bgcolor="#059669" style="border-radius:8px;">
+      <a href="{{ protocol }}://{{ domain }}{% url 'accounts:confirm_email' uidb64=uid token=token %}"
+         style="display:inline-block;padding:12px 22px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:8px;">
+        Confirmar e-mail
+      </a>
+    </td>
+  </tr>
+</table>
+{% endblock %}
+
+{% block footer %}
+Se você não solicitou este cadastro, ignore esta mensagem.<br>
+Greenn People — mensagem automática, não responda este e-mail.
+{% endblock %}

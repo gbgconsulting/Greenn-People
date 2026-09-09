@@ -1,12 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}Ciclos — Greenn People{% endblock %}
+{% block title %}Configuração de Ciclos — Greenn People{% endblock %}
 
 {% block content %}
-<header class="mb-5 flex flex-wrap items-start justify-between gap-3">
+<header class="mb-6 flex flex-wrap items-start justify-between gap-4">
   <div>
-    <h1 class="font-display text-2xl font-semibold text-slate-800">Ciclos de avaliação</h1>
-    <p class="mt-1 text-sm text-slate-500">
+    <h1 class="font-display text-2xl font-semibold text-slate-800">Configuração de Ciclos</h1>
+    <p class="mt-1 max-w-2xl font-ui text-sm leading-relaxed text-slate-500">
+      Gerencie e acompanhe os ciclos de avaliação de desempenho.
       Ao criar um ciclo com «Admitidos até», ele abre e inclui só os elegíveis.
       Só um ciclo pode estar aberto por vez.
     </p>
@@ -18,52 +19,65 @@
 {% if rh_pre_open_checklist %}
 <section
   id="rh-pre-open-checklist"
-  class="mb-5 rounded-xl border {% if rh_checklist_has_blockers %}border-amber-200 bg-amber-50{% else %}border-emerald-200 bg-emerald-50/60{% endif %} px-4 py-4"
+  class="mb-6 rounded-xl border {% if rh_checklist_has_blockers %}border-amber-200 bg-amber-50{% else %}border-emerald-200 bg-emerald-50/60{% endif %} px-5 py-5 shadow-sm"
   aria-labelledby="rh-pre-open-checklist-title"
   data-component="rh-pre-open-checklist"
   data-advisory-only="true"
 >
-  <h2
-    id="rh-pre-open-checklist-title"
-    class="font-display text-base font-medium tracking-tight text-slate-800"
-  >
-    Antes de abrir um ciclo
-  </h2>
-  <p class="mt-1 font-ui text-sm leading-relaxed text-slate-600">
-    Revise pendências de vínculo e cargos. Abrir ciclo continua disponível mesmo com avisos.
-  </p>
+  <div class="flex items-start gap-3">
+    {% if rh_checklist_has_blockers %}
+    <svg class="mt-0.5 h-5 w-5 shrink-0 text-amber-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path fill-rule="evenodd" d="M8.485 2.495c.646-1.128 2.284-1.128 2.93 0l6.28 10.96c.643 1.122-.168 2.545-1.465 2.545H3.67c-1.297 0-2.108-1.423-1.465-2.545l6.28-10.96ZM10 6a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 6Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd" />
+    </svg>
+    {% endif %}
+    <div class="min-w-0 flex-1">
+      <h2
+        id="rh-pre-open-checklist-title"
+        class="font-display text-base font-medium tracking-tight text-slate-800"
+      >
+        Antes de abrir um ciclo
+      </h2>
+      <p class="mt-1 font-ui text-sm leading-relaxed text-slate-600">
+        Revise pendências de vínculo e cargos. Abrir ciclo continua disponível mesmo com avisos.
+      </p>
 
-  {% if rh_checklist_has_blockers %}
-  <ul class="mt-3 list-none space-y-2" role="list">
-    {% for item in rh_pre_open_checklist.items %}
-    <li
-      class="flex min-w-0 flex-col gap-2 rounded-lg border border-amber-200/80 bg-white/70 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
-      data-blocker-kind="{{ item.kind }}"
-    >
-      <span class="min-w-0 font-ui text-sm leading-relaxed text-amber-950">
-        {{ item.label }}
-      </span>
-      {% if item.fix_url_name == 'organization:user_pending' %}
-        {% url 'organization:user_pending' as fix_href %}
-        <a
-          href="{{ fix_href }}"
-          class="inline-flex min-h-11 w-full shrink-0 items-center font-ui text-sm font-medium text-emerald-700 hover:text-emerald-800 sm:w-auto sm:min-h-0"
-        >Corrigir vínculos</a>
-      {% elif item.fix_url_name == 'organization:cargo_list' %}
-        {% url 'organization:cargo_list' as fix_href %}
-        <a
-          href="{{ fix_href }}"
-          class="inline-flex min-h-11 w-full shrink-0 items-center font-ui text-sm font-medium text-emerald-700 hover:text-emerald-800 sm:w-auto sm:min-h-0"
-        >Revisar cargos</a>
+      {% if rh_checklist_has_blockers %}
+      <ul class="mt-4 list-none space-y-2" role="list">
+        {% for item in rh_pre_open_checklist.items %}
+        <li
+          class="flex min-w-0 flex-col gap-2 rounded-lg border border-amber-200/80 bg-white/70 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+          data-blocker-kind="{{ item.kind }}"
+        >
+          <span class="min-w-0 font-ui text-sm leading-relaxed text-amber-950">
+            {{ item.label }}
+          </span>
+          {% if item.fix_url_name == 'organization:user_pending' %}
+            {% url 'organization:user_pending' as fix_href %}
+            <a
+              href="{{ fix_href }}"
+              class="inline-flex min-h-11 w-full shrink-0 items-center gap-1 font-ui text-sm font-semibold text-emerald-700 hover:text-emerald-800 sm:w-auto sm:min-h-0"
+            >Corrigir vínculos
+              <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638l-3.96-3.96a.75.75 0 1 1 1.06-1.06l5.25 5.25a.75.75 0 0 1 0 1.06l-5.25 5.25a.75.75 0 1 1-1.06-1.06l3.96-3.96H3.75A.75.75 0 0 1 3 10Z" clip-rule="evenodd" /></svg>
+            </a>
+          {% elif item.fix_url_name == 'organization:cargo_list' %}
+            {% url 'organization:cargo_list' as fix_href %}
+            <a
+              href="{{ fix_href }}"
+              class="inline-flex min-h-11 w-full shrink-0 items-center gap-1 font-ui text-sm font-semibold text-emerald-700 hover:text-emerald-800 sm:w-auto sm:min-h-0"
+            >Revisar cargos
+              <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638l-3.96-3.96a.75.75 0 1 1 1.06-1.06l5.25 5.25a.75.75 0 0 1 0 1.06l-5.25 5.25a.75.75 0 1 1-1.06-1.06l3.96-3.96H3.75A.75.75 0 0 1 3 10Z" clip-rule="evenodd" /></svg>
+            </a>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="mt-3 font-ui text-sm text-emerald-900" role="status" data-field="no-blockers">
+        Sem pendências operacionais neste escopo (usuários sem área/cargo e cargos sem competências/pesos).
+      </p>
       {% endif %}
-    </li>
-    {% endfor %}
-  </ul>
-  {% else %}
-  <p class="mt-3 font-ui text-sm text-emerald-900" role="status" data-field="no-blockers">
-    Sem pendências operacionais neste escopo (usuários sem área/cargo e cargos sem competências/pesos).
-  </p>
-  {% endif %}
+    </div>
+  </div>
 </section>
 {% endif %}
 

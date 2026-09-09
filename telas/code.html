@@ -1,0 +1,430 @@
+<!DOCTYPE html><html lang="pt-BR"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Painel Admin - Greenn People</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;500;600&amp;family=Source+Sans+3:wght@400;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "secondary-fixed": "#71f8e4",
+                      "on-secondary": "#ffffff",
+                      "secondary": "#006b5f",
+                      "inverse-primary": "#68dba9",
+                      "on-primary-fixed": "#002114",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-container-low": "#f2f4f6",
+                      "inverse-on-surface": "#eff1f3",
+                      "inverse-surface": "#2d3133",
+                      "primary-fixed": "#85f8c4",
+                      "on-tertiary-fixed-variant": "#7f2928",
+                      "surface-dim": "#d8dadc",
+                      "secondary-container": "#6df5e1",
+                      "status-warning": "#f59e0b",
+                      "on-secondary-fixed": "#00201c",
+                      "surface-tint": "#006c4a",
+                      "surface-container-highest": "#e0e3e5",
+                      "on-primary-fixed-variant": "#005137",
+                      "on-error": "#ffffff",
+                      "text-heading": "#1e293b",
+                      "tertiary-fixed": "#ffdad7",
+                      "status-success": "#10b981",
+                      "tertiary-fixed-dim": "#ffb3ae",
+                      "on-secondary-container": "#006f64",
+                      "primary-container": "#00855d",
+                      "on-tertiary-fixed": "#410004",
+                      "primary": "#006948",
+                      "primary-fixed-dim": "#68dba9",
+                      "on-tertiary-container": "#fffbff",
+                      "surface-container": "#eceef0",
+                      "on-background": "#191c1e",
+                      "border-subtle": "#e2e8f0",
+                      "surface-bright": "#f7f9fb",
+                      "secondary-fixed-dim": "#4fdbc8",
+                      "tertiary-container": "#ba5551",
+                      "on-primary": "#ffffff",
+                      "outline-variant": "#bccac0",
+                      "background": "#f7f9fb",
+                      "tertiary": "#9b3e3b",
+                      "on-surface-variant": "#3d4a42",
+                      "brand-gradient": "linear-gradient(135deg, #059669 0%, #14b8a6 100%)",
+                      "surface-variant": "#e0e3e5",
+                      "surface": "#f7f9fb",
+                      "on-tertiary": "#ffffff",
+                      "error": "#ba1a1a",
+                      "text-body": "#64748b",
+                      "error-container": "#ffdad6",
+                      "status-critical": "#f43f5e",
+                      "on-error-container": "#93000a",
+                      "outline": "#6d7a72",
+                      "surface-container-high": "#e6e8ea",
+                      "on-primary-container": "#f5fff7",
+                      "on-secondary-fixed-variant": "#005048",
+                      "on-surface": "#191c1e"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "sidebar-width": "280px",
+                      "gutter": "24px",
+                      "unit": "4px",
+                      "container-padding": "32px"
+              },
+              "fontFamily": {
+                      "body-sm": [
+                              "\"Source Sans 3\""
+                      ],
+                      "body-md": [
+                              "\"Source Sans 3\""
+                      ],
+                      "headline-lg": [
+                              "Fraunces"
+                      ],
+                      "label-md": [
+                              "\"Source Sans 3\""
+                      ],
+                      "label-sm": [
+                              "\"Source Sans 3\""
+                      ],
+                      "display-lg": [
+                              "Fraunces"
+                      ],
+                      "body-lg": [
+                              "\"Source Sans 3\""
+                      ],
+                      "headline-md": [
+                              "Fraunces"
+                      ],
+                      "headline-sm": [
+                              "Fraunces"
+                      ]
+              },
+              "fontSize": {
+                      "body-sm": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-sm": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "500"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+</head>
+<body class="bg-surface text-on-surface font-body-md antialiased min-h-screen">
+<!-- Top Navigation Bar -->
+<header class="bg-surface-bright dark:bg-surface-bright border-b border-border-subtle flex justify-between items-center h-16 px-gutter ml-sidebar-width w-[calc(100%-280px)] fixed top-0 z-10 transition-transform scale-95 active:scale-90">
+<div class="flex items-center gap-4">
+<span class="font-headline-sm text-headline-sm font-semibold text-primary">Greenn People</span>
+<div class="h-6 w-px bg-border-subtle mx-2 hidden md:block"></div>
+<nav class="hidden md:flex gap-6">
+<a class="text-primary font-bold border-b-2 border-primary pb-1 font-label-md text-label-md" href="#">Ciclo de Performance 2024</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors flex items-center gap-2 font-label-md text-label-md">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">logout</span>
+                Logout
+            </button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-border-subtle">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="A detailed, professional corporate headshot of a diverse team leader in a modern, well-lit office setting, symbolizing the user profile. The style is bright and clean, aligning with the premium HR B2B aesthetic of the platform." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDs-0demOrDSvNuotCm7RCY9WpardoEDDMrUcC2GiFHws2W1VWmv42RRDLoUtcI27HQ3DZNhEnDp_ZogjF8CkV0fBFdY6MH3f08DagR4dIrHwAUrXjo7ApAEDxKnYEgnkXZVI88TAHi7SRaWEgnX7_qwJ0dE3RcMR1MEXMiLc3TnaG6fa7s7cAZJjVJ__ToLLjpR3mMkKParABO1Eq2Zn20NxFeoUzYwWiwU1Pq5far0zXD36hGzlkp">
+</div>
+</div>
+</header>
+<!-- Side Navigation Bar -->
+<aside class="bg-surface-container-lowest dark:bg-surface-container-lowest fixed left-0 top-0 h-full w-sidebar-width border-r border-border-subtle dark:border-outline-variant flex flex-col py-6 z-20">
+<div class="px-6 mb-8 flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary font-bold">
+                 GP
+            </div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim leading-tight">Greenn People</h1>
+<span class="font-label-sm text-label-sm text-on-surface-variant block">Governança</span>
+</div>
+</div>
+<nav class="flex-1 overflow-y-auto px-4 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-all duration-200 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">refresh</span>
+<span class="">Ciclos</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-all duration-200 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">check_circle</span>
+<span class="">Aderência</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-primary font-bold bg-secondary-container/10 border-l-4 border-primary transition-all duration-200 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="">Painel admin</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-all duration-200 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">grid_view</span>
+<span class="">Estrutura/Matriz</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-all duration-200 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">domain</span>
+<span class="">Áreas</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-all duration-200 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">work</span>
+<span class="">Cargos</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-all duration-200 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">group</span>
+<span class="">Usuários</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-all duration-200 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">star</span>
+<span class="">Competências</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-all duration-200 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">security</span>
+<span class="">Auditoria</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-all duration-200 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">notifications</span>
+<span class="">Notificações</span>
+</a>
+</nav>
+<div class="px-4 mt-auto pt-4 border-t border-border-subtle">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-error transition-colors hover:bg-error-container/20 font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">logout</span>
+<span class="">Sair</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-sidebar-width mt-16 p-container-padding max-w-[1440px] mx-auto min-h-[calc(100vh-64px)] bg-slate-50 relative z-0">
+<div class="mb-8 flex justify-between items-end">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-text-heading mb-2">Painel do Líder</h2>
+<p class="font-body-md text-text-body">Visão geral do seu time no ciclo atual de performance.</p>
+</div>
+<button class="bg-brand-gradient text-white px-6 py-2.5 rounded-lg font-label-md text-label-md shadow-sm hover:-translate-y-0.5 transition-transform">
+                Nova Ação
+            </button>
+</div>
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+<!-- Pendências do Time -->
+<div class="xl:col-span-2 bg-white border border-border-subtle rounded-xl p-6 shadow-[0_2px_4px_rgba(0,0,0,0.04)]">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-headline-sm text-headline-sm text-text-heading">Pendências do Time</h3>
+<span class="bg-status-warning/10 text-status-warning px-3 py-1 rounded-full font-label-sm text-label-sm">4 Ações Necessárias</span>
+</div>
+<div class="space-y-4">
+<div class="flex items-center justify-between p-4 bg-surface rounded-lg border border-border-subtle">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">description</span>
+</div>
+<div>
+<h4 class="font-label-md text-label-md text-text-heading">Aprovação de Metas - Q1</h4>
+<p class="font-body-sm text-body-sm text-text-body">Ana Silva submeteu 3 novas metas.</p>
+</div>
+</div>
+<button class="bg-primary text-white hover:bg-primary-container font-label-md text-label-md px-6 py-2 rounded-lg transition-colors shadow-sm">Revisar</button>
+</div>
+<div class="flex items-center justify-between p-4 bg-surface rounded-lg border border-border-subtle">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-status-critical/10 flex items-center justify-center text-status-critical">
+<span class="material-symbols-outlined">feedback</span>
+</div>
+<div>
+<h4 class="font-label-md text-label-md text-text-heading">Feedback Pendente (30 dias)</h4>
+<p class="font-body-sm text-body-sm text-text-body">Carlos Mendes aguarda feedback mensal.</p>
+</div>
+</div>
+<button class="bg-primary text-white hover:bg-primary-container font-label-md text-label-md px-6 py-2 rounded-lg transition-colors shadow-sm">Agendar</button>
+</div>
+</div>
+</div>
+<!-- KPI: Minha Aderência -->
+<div class="bg-white border border-border-subtle rounded-xl p-6 shadow-[0_2px_4px_rgba(0,0,0,0.04)] flex flex-col justify-between bg-primary/5">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-text-heading mb-2">Minha Aderência</h3>
+<p class="font-body-sm text-text-body mb-6">Índice de completude das rotinas de gestão do seu time.</p>
+</div>
+<div class="flex items-end gap-4 mb-4">
+<span class="font-display-lg text-display-lg text-primary leading-none">85%</span>
+<span class="bg-status-success/10 text-status-success px-2 py-1 rounded font-label-sm flex items-center gap-1 mb-2">
+<span class="material-symbols-outlined text-[14px]">arrow_upward</span> 5%
+                    </span>
+</div>
+<div class="w-full bg-surface-variant rounded-full h-2 mb-2">
+<div class="bg-primary h-2 rounded-full" style="width: 85%"></div>
+</div>
+<div class="flex justify-between text-label-sm text-text-body">
+<span class="">Meta: 90%</span>
+<span class="">Bom</span>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+<!-- Chart: Distribuição de Estágios -->
+<div class="bg-white border border-border-subtle rounded-xl p-6 shadow-[0_2px_4px_rgba(0,0,0,0.04)]">
+<h3 class="font-headline-sm text-headline-sm text-text-heading mb-6">Estágios do Ciclo</h3>
+<div class="h-64 flex items-end justify-center gap-4 mb-4 relative">
+<!-- Simplistic Bar Chart Representation -->
+<div class="w-16 bg-surface-variant rounded-t-sm h-[20%] relative group">
+<div class="absolute -top-6 left-1/2 -translate-x-1/2 text-label-sm text-text-body opacity-0 group-hover:opacity-100 transition-opacity">Auto</div>
+</div>
+<div class="w-16 bg-primary/40 rounded-t-sm h-[60%] relative group">
+<div class="absolute -top-6 left-1/2 -translate-x-1/2 text-label-sm text-text-body opacity-0 group-hover:opacity-100 transition-opacity">Gestor</div>
+</div>
+<div class="w-16 bg-primary rounded-t-sm h-[85%] relative group">
+<div class="absolute -top-6 left-1/2 -translate-x-1/2 text-label-sm text-text-body opacity-0 group-hover:opacity-100 transition-opacity">Calibração</div>
+</div>
+<div class="w-16 bg-status-success rounded-t-sm h-[40%] relative group">
+<div class="absolute -top-6 left-1/2 -translate-x-1/2 text-label-sm text-text-body opacity-0 group-hover:opacity-100 transition-opacity">Concluído</div>
+</div>
+</div>
+<div class="flex justify-between px-2">
+<span class="text-label-sm text-text-body w-16 text-center">Autoav.</span>
+<span class="text-label-sm text-text-body w-16 text-center">Gestor</span>
+<span class="text-label-sm text-text-body w-16 text-center">Calib.</span>
+<span class="text-label-sm text-text-body w-16 text-center">Fim</span>
+</div>
+</div>
+<!-- Team Overview -->
+<div class="xl:col-span-2 bg-white border border-border-subtle rounded-xl p-0 shadow-[0_2px_4px_rgba(0,0,0,0.04)] overflow-hidden">
+<div class="p-6 border-b border-border-subtle flex justify-between items-center bg-white relative z-10">
+<h3 class="font-headline-sm text-headline-sm text-text-heading">Visão do Time</h3>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-body">search</span>
+<input class="pl-10 pr-4 py-2 bg-surface-container-lowest border border-border-subtle rounded-lg font-body-sm text-text-heading focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary w-64 placeholder-text-body" placeholder="Buscar colaborador..." type="text">
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface border-b border-border-subtle text-label-sm text-text-body uppercase tracking-wider">
+<th class="p-4 font-semibold">Colaborador</th>
+<th class="p-4 font-semibold">Cargo</th>
+<th class="p-4 font-semibold">Status Avaliação</th>
+<th class="p-4 font-semibold text-right">Ação</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-subtle divide-y-8 divide-transparent">
+<tr class="hover:bg-slate-50 transition-colors">
+<td class="p-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-label-md">AS</div>
+<span class="font-body-md font-medium text-text-heading">Ana Silva</span>
+</div>
+</td>
+<td class="p-4 text-body-sm text-text-body">Analista Sênior</td>
+<td class="p-4">
+<span class="bg-status-success/10 text-status-success px-2 py-1 rounded-full font-label-sm">Concluído</span>
+</td>
+<td class="p-4 text-right">
+<button class="text-primary hover:text-primary-container"><div class="flex items-center gap-1 justify-end font-label-sm"><span class="material-symbols-outlined text-[20px]">visibility</span><span class="">Ver</span></div></button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 transition-colors">
+<td class="p-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-status-warning/20 text-status-warning flex items-center justify-center font-label-md">CM</div>
+<span class="font-body-md font-medium text-text-heading">Carlos Mendes</span>
+</div>
+</td>
+<td class="p-4 text-body-sm text-text-body">Desenvolvedor Pleno</td>
+<td class="p-4">
+<span class="bg-status-warning/10 text-status-warning px-2 py-1 rounded-full font-label-sm">Pendente Gestor</span>
+</td>
+<td class="p-4 text-right">
+<button class="bg-primary/10 text-primary hover:bg-primary hover:text-white px-4 py-1.5 rounded-lg font-label-sm transition-all">Avaliar</button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 transition-colors">
+<td class="p-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-variant text-text-body flex items-center justify-center font-label-md">MR</div>
+<span class="font-body-md font-medium text-text-heading">Mariana Rosa</span>
+</div>
+</td>
+<td class="p-4 text-body-sm text-text-body">Designer UX</td>
+<td class="p-4">
+<span class="bg-surface-variant text-text-body px-2 py-1 rounded-full font-label-sm">Autoavaliação</span>
+</td>
+<td class="p-4 text-right">
+<button class="text-primary hover:text-primary-container"><span class="material-symbols-outlined text-[20px]">notifications</span></button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</main>
+
+
+</body></html>

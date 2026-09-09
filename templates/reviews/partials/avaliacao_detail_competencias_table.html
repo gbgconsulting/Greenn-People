@@ -1,0 +1,45 @@
+{% load review_display %}
+{% comment %}
+  Tabela de competências do detalhe (colaborador e operacional).
+{% endcomment %}
+<section class="min-w-0" aria-labelledby="competencias-heading">
+  <div class="mb-3">
+    <h2 id="competencias-heading" class="font-display text-lg font-medium tracking-tight text-slate-800">
+      Competências
+    </h2>
+  </div>
+  <div class="table-frame">
+    <table>
+      <thead>
+        <tr>
+          <th>Competência</th>
+          <th>Nível esperado</th>
+          <th>Peso</th>
+          <th>Autoavaliação</th>
+          <th>Nota líder</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for linha in linhas %}
+        <tr>
+          <td class="font-medium text-slate-800">{{ linha.competencia.nome }}</td>
+          <td class="tabular-nums text-slate-600">{{ linha.nivel_esperado_utilizado|nivel_display }}</td>
+          <td class="tabular-nums text-slate-600">{{ linha.peso_utilizado|nivel_display }}</td>
+          <td class="tabular-nums text-slate-800">
+            {% if linha.nota_autoavaliacao is not None %}{{ linha.nota_autoavaliacao|nivel_display }}{% else %}—{% endif %}
+          </td>
+          <td class="tabular-nums text-slate-800">
+            {% if linha.nota_lider is not None %}{{ linha.nota_lider|nivel_display }}{% else %}—{% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="!py-8">
+            {% include "components/empty_state.html" with title="Sem competências" message="Ainda não há competências registradas nesta avaliação. Elas são criadas ao entrar na etapa de avaliação." %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>

@@ -15,6 +15,7 @@ Denylist intacta (allowlist testes).
 from __future__ import annotations
 
 from datetime import date
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
@@ -34,11 +35,13 @@ from apps.dashboard.chart_payloads import (
     EMPTY_KIND_SEM_NOTA,
     HISTORY_DEFAULT_N,
 )
+from apps.dashboard.models import AderenciaSnapshot
 from apps.dashboard.services.history import (
     STATUS_MAP,
     build_stage_history,
     default_history_ciclos,
     parse_history_ciclos,
+    resolve_history_ciclos,
 )
 from apps.reviews.models import Avaliacao
 from tests.conftest import DEFAULT_PASSWORD
@@ -55,9 +58,11 @@ _CHART_SURFACES = (
     _ROOT / 'templates' / 'dashboard' / 'admin.html',
     _ROOT / 'templates' / 'dashboard' / 'team.html',
     _ROOT / 'templates' / 'dashboard' / 'structure.html',
-    _ROOT / 'templates' / 'dashboard' / 'adherence.html',
     _ROOT / 'templates' / 'dashboard' / 'personal.html',
     _ROOT / 'templates' / 'cycles' / 'ciclo_detail.html',
+)
+_NO_CHART_SURFACES = (
+    _ROOT / 'templates' / 'dashboard' / 'adherence.html',
 )
 _CANVAS_CSS = _ROOT / 'static' / 'src' / 'input.css'
 _DASHBOARD_CHARTS_JS = _ROOT / 'static' / 'js' / 'dashboard_charts.js'
@@ -191,7 +196,7 @@ def test_team_sem_visao_permanece_operacional_nao_tendencia(
     assert resp.context.get('chart_stage_history') is None
     chart = resp.context['chart_escopo_status']
     assert chart['has_data'] is True
-    assert chart['type'] == CHART_TYPE_BAR_HORIZONTAL
+    assert chart['type'] == CHART_TYPE_BAR
     assert chart['type'] != CHART_TYPE_AREA
     html = resp.content.decode()
     assert 'data-chart-payload="chart-stage-history"' not in html
@@ -233,6 +238,7 @@ def test_admin_visao_historico_stacked_cap_n_e_kpis_janela(
     assert 'mesmo ponto' in html.lower()
     assert 'sem registro' in html.lower()
     assert 'data-component="visao-toggle"' in html
+    assert 'name="ciclo"' in html
     # Toggle ativo em Histórico; Neste ciclo remove a query.
     toggle = html.split('data-component="visao-toggle"')[1].split('</nav>')[0]
     assert 'aria-current="page"' in toggle
@@ -394,6 +400,82 @@ def test_admin_visao_historico_aderencia_empty_sem_nota(
     assert _COPY_SEM_NOTA in html
     assert 'data-chart-payload="chart-aderencia-distribuicao"' not in html
     assert 'data-chart-payload="chart-stage-history"' in html
+
+
+# --- ``?ciclo=`` singular honrado na visão histórica (seletor agrupado) ------
+
+
+@pytest.mark.django_db
+def test_admin_visao_historico_ciclo_singular_filtra_janela_e_kpis(
+    admin,
+    colaborador,
+):
+    """``?visao=historico&ciclo=``: seletor singular → janela de 1 ciclo; KPIs mudam."""
+    arquivo = _seed_arquivo(n=5, usuario=colaborador)
+    alvo = arquivo[2]
+    # Garante avaliação no ciclo alvo para o chart ter dado.
+    assert Avaliacao.objects.filter(ciclo=alvo, usuario=colaborador).exists()
+
+    client = _login(admin)
+
+    resp_default = client.get(_admin_url(), {'visao': 'historico'})
+    assert resp_default.status_code == 200
+    history_default = resp_default.context['chart_stage_history']
+    assert len(history_default['labels']) == 5
+
+    resp_filtrado = client.get(
+        _admin_url(),
+        {'visao': 'historico', 'ciclo': alvo.pk},
+    )
+    assert resp_filtrado.status_code == 200
+    assert resp_filtrado.context['ciclo_selecionado'].pk == alvo.pk
+    history_filtrado = resp_filtrado.context['chart_stage_history']
+    assert history_filtrado['labels'] == [alvo.nome]
+    assert len(history_filtrado['labels']) != len(history_default['labels'])
+
+
+@pytest.mark.django_db
+def test_admin_visao_historico_ciclo_singular_com_aderencia_plota_doughnut(
+    admin,
+    lider,
+    colaborador,
+):
+    """``?visao=historico&ciclo=`` com snapshot → doughnut de aderência plotável."""
+    arquivo = _seed_arquivo(n=3, usuario=colaborador)
+    alvo = arquivo[1]
+    AderenciaSnapshot.objects.create(
+        lider=lider,
+        ciclo=alvo,
+        percentual=Decimal('72.00'),
+        componentes={},
+        calculado_em=timezone.now(),
+    )
+
+    client = _login(admin)
+    resp = client.get(
+        _admin_url(),
+        {'visao': 'historico', 'ciclo': alvo.pk},
+    )
+
+    assert resp.status_code == 200
+    chart = resp.context['chart_aderencia_distribuicao']
+    assert chart.get('has_data') is True
+    html = resp.content.decode()
+    assert 'data-chart-payload="chart-aderencia-distribuicao"' in html
+    assert _COPY_SEM_NOTA not in html
+
+
+@pytest.mark.django_db
+def test_resolve_history_ciclos_honra_ciclo_singular(db):
+    """``resolve_history_ciclos`` usa ``?ciclo=`` quando ``?ciclos=`` ausente."""
+    from django.test import RequestFactory
+
+    ciclos = _seed_arquivo(n=5)
+    alvo = ciclos[3]
+    request = RequestFactory().get('/', {'visao': 'historico', 'ciclo': str(alvo.pk)})
+    janela = resolve_history_ciclos(request)
+    assert len(janela) == 1
+    assert janela[0].pk == alvo.pk
 
 
 # --- Pessoal MUST NOT (quickstart §3.5) --------------------------------------
@@ -659,12 +741,13 @@ def test_build_stage_history_agrupa_tres_status(
 
 
 def test_t034_chart_block_sem_figcaption_bar_horizontal_area():
-    """T034 / chart-catalog: bar, bar_horizontal e area sem figcaption duplicado."""
+    """T034 / chart-catalog: bar, bar_horizontal, area e radar sem figcaption duplicado."""
     source = _CHART_BLOCK.read_text(encoding='utf-8')
     assert 'figcaption' in source
     assert 'chart.type != "bar"' in source
     assert 'chart.type != "bar_horizontal"' in source
     assert 'chart.type != "area"' in source
+    assert 'chart.type != "radar"' in source
     assert 'html_legend' in source
     assert 'dashboard-chart-canvas' in source
     assert 'min-w-0' in source
@@ -748,3 +831,10 @@ def test_t037_base_sem_chartjs_global_e_partials_sem_chart_block():
         text = path.read_text(encoding='utf-8')
         assert 'chart.js@4.5.1' in text.lower(), path.name
         assert 'dashboard_charts.js' in text, path.name
+
+    for path in _NO_CHART_SURFACES:
+        text = path.read_text(encoding='utf-8')
+        assert 'chart.js' not in text.lower(), path.name
+        assert 'dashboard_charts' not in text, path.name
+        assert '_chart_block' not in text, path.name
+        assert 'data-chart-payload' not in text, path.name

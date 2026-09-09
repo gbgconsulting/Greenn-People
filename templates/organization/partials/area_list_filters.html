@@ -1,0 +1,137 @@
+{% comment %}
+  Toolbar de filtros — cadastro de áreas (admin).
+  Requer: list_url, status_segment_options, filtro_status, filtro_busca,
+  filtro_parent_id, parent_options, filtro_avancado_ativo, filtro_avancado_count
+{% endcomment %}
+<div class="border-b border-line bg-slate-50/50 px-6 py-4">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div class="relative w-full sm:w-72">
+      <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400" aria-hidden="true">
+        <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35m1.85-5.15a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </span>
+      <input
+        id="area-busca-input"
+        type="search"
+        name="busca"
+        value="{{ filtro_busca }}"
+        placeholder="Buscar área..."
+        autocomplete="off"
+        aria-label="Buscar área por nome"
+        data-area-filter
+        hx-preserve="true"
+        hx-get="{{ list_url }}"
+        hx-trigger="keyup changed delay:300ms, search"
+        hx-target="#list-container"
+        hx-swap="outerHTML"
+        hx-push-url="true"
+        hx-include="[data-area-filter]"
+        class="form-control !h-10 !min-w-0 !w-full !pl-9 text-sm"
+      />
+    </div>
+
+    <div class="flex w-full items-center gap-3 sm:w-auto">
+      <div
+        class="filter-segment-bar shrink-0"
+        role="group"
+        aria-label="Filtrar por status da área"
+      >
+        {% for key, label in status_segment_options %}
+          {% if key %}
+            {% if filtro_status == key %}
+              {% querystring status=None page=None as segment_url %}
+            {% else %}
+              {% querystring status=key page=None as segment_url %}
+            {% endif %}
+          {% else %}
+            {% querystring status=None page=None as segment_url %}
+          {% endif %}
+          <a
+            href="{{ segment_url }}"
+            hx-get="{{ segment_url }}"
+            hx-target="#list-container"
+            hx-swap="outerHTML"
+            hx-push-url="true"
+            class="filter-segment-item{% if key %}{% if filtro_status == key %} is-active{% endif %}{% else %}{% if not filtro_status %} is-active{% endif %}{% endif %}"
+            {% if key %}
+              {% if filtro_status == key %}aria-current="true"{% endif %}
+            {% else %}
+              {% if not filtro_status %}aria-current="true"{% endif %}
+            {% endif %}
+          >{{ label }}</a>
+        {% endfor %}
+      </div>
+
+      {% if parent_options|length > 0 %}
+      <div class="hidden h-8 w-px bg-line sm:block" aria-hidden="true"></div>
+
+      <details
+        class="group relative w-full sm:w-auto"
+        {% if filtro_avancado_ativo %}open{% endif %}
+      >
+        <summary
+          class="flex h-10 cursor-pointer list-none items-center justify-center rounded-lg border border-line bg-surface-card px-3 font-ui text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1 [&::-webkit-details-marker]:hidden"
+          aria-label="Filtros avançados"
+        >
+          <svg class="size-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+          </svg>
+          {% if filtro_avancado_ativo %}
+            <span class="ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-emerald-100 px-1.5 font-ui text-[10px] font-semibold text-emerald-700" aria-label="Filtros ativos">
+              {{ filtro_avancado_count }}
+            </span>
+          {% endif %}
+        </summary>
+
+        <div class="absolute right-0 z-20 mt-2 w-full min-w-[16rem] rounded-xl border border-line bg-surface-card p-4 shadow-lg sm:w-72">
+          <p class="mb-3 font-ui text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Refinar lista
+          </p>
+
+          <div>
+            <label for="area-parent-select" class="mb-1 block font-ui text-xs font-medium text-slate-600">
+              Área pai
+            </label>
+            <select
+              id="area-parent-select"
+              name="parent"
+              data-area-filter
+              hx-get="{{ list_url }}"
+              hx-trigger="change"
+              hx-target="#list-container"
+              hx-swap="outerHTML"
+              hx-push-url="true"
+              hx-include="[data-area-filter]"
+              class="form-control !h-9 !min-w-0 !w-full text-sm"
+            >
+              <option value="">Todas as áreas pai</option>
+              {% for option in parent_options %}
+                <option value="{{ option.pk }}" {% if filtro_parent_id == option.pk %}selected{% endif %}>{{ option.nome }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          {% if filtro_avancado_ativo %}
+          <div class="mt-4 border-t border-line pt-3">
+            {% querystring parent=None page=None as clear_advanced_url %}
+            <a
+              href="{{ clear_advanced_url }}"
+              hx-get="{{ clear_advanced_url }}"
+              hx-target="#list-container"
+              hx-swap="outerHTML"
+              hx-push-url="true"
+              class="font-ui text-xs font-medium text-slate-500 underline-offset-2 hover:text-slate-700 hover:underline"
+            >Limpar filtros</a>
+          </div>
+          {% endif %}
+        </div>
+      </details>
+      {% endif %}
+
+      {% if filtro_status %}
+      <input type="hidden" name="status" value="{{ filtro_status }}" data-area-filter />
+      {% endif %}
+    </div>
+  </div>
+</div>

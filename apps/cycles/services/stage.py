@@ -178,11 +178,13 @@ def _check_cargo_competencias(avaliacao: Avaliacao) -> tuple[bool, str]:
 
 
 def _check_avaliacao(avaliacao: Avaliacao) -> tuple[bool, str]:
-    """avaliacao → feedback: todas notas_lider + nota_final_lider calculada."""
+    """avaliacao → feedback: autoavaliação completa, notas_lider e nota_final."""
     AvaliacaoCompetencia = apps.get_model('reviews', 'AvaliacaoCompetencia')
     linhas = AvaliacaoCompetencia.objects.filter(avaliacao_id=avaliacao.pk)
     if not linhas.exists():
         return False, 'Não há linhas de competência na avaliação.'
+    if linhas.filter(nota_autoavaliacao__isnull=True).exists():
+        return False, 'O colaborador deve concluir a autoavaliação antes de avançar.'
     if linhas.filter(nota_lider__isnull=True).exists():
         return False, 'Todas as competências devem ter nota do líder.'
     if avaliacao.nota_final_lider is None:

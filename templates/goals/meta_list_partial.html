@@ -21,6 +21,8 @@
             {% include "components/empty_state.html" with title="Sem ciclo aberto" message="Não há ciclo aberto. As metas aparecerão quando um ciclo estiver ativo." %}
           {% elif status_filtro %}
             {% include "components/empty_state.html" with title="Nenhuma meta neste filtro" message="Nenhuma meta com este status no ciclo atual. Tente remover o filtro ou escolha outro status." %}
+          {% elif visao == visao_equipe %}
+            {% include "components/empty_state.html" with title="Nenhuma meta da equipe" message="Nenhuma meta cadastrada no seu escopo (exceto as suas) no ciclo atual." %}
           {% elif pode_criar %}
             {% url 'goals:meta_create' as meta_create_url %}
             {% include "components/empty_state.html" with title="Nenhuma meta cadastrada" message="Nenhuma meta cadastrada no ciclo atual." cta_label="Nova meta" cta_href=meta_create_url %}

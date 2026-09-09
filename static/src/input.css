@@ -154,6 +154,426 @@
     @apply bg-slate-50;
   }
 
+  /*
+   * Histórico pessoal de avaliações (colaborador) — grid 12 colunas do mock
+   * sem depender de grid-cols-12 (não gerado no build Tailwind deste repo).
+   */
+  .collaborator-history-table {
+    @apply min-w-[640px] w-full table-fixed border-collapse text-left text-sm text-ink;
+  }
+
+  .collaborator-history-table thead {
+    @apply bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500;
+  }
+
+  .collaborator-history-table th {
+    @apply border-b border-line px-4 py-2 font-semibold;
+  }
+
+  .collaborator-history-table td {
+    @apply border-b border-line px-4 py-2.5 align-middle;
+  }
+
+  .collaborator-history-table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
+  .collaborator-history-table tbody tr:hover {
+    @apply bg-slate-50/60;
+  }
+
+  .collaborator-history-table .col-ciclo {
+    width: 26%;
+  }
+
+  .collaborator-history-table .col-status {
+    width: 34%;
+  }
+
+  .collaborator-history-table .col-nota {
+    width: 22%;
+  }
+
+  .collaborator-history-table .col-acao {
+    width: 8%;
+  }
+
+  /*
+   * Listagem operacional de avaliações (líder/gestor/RH).
+   */
+  .leader-team-table {
+    @apply min-w-[880px] w-full table-fixed border-collapse text-left text-sm text-ink;
+  }
+
+  .leader-team-table thead {
+    @apply bg-slate-50/80 text-xs font-semibold uppercase tracking-wider text-slate-500;
+  }
+
+  .leader-team-table th {
+    @apply border-b border-line px-6 py-4 font-semibold;
+  }
+
+  .leader-team-table td {
+    @apply border-b border-line px-6 py-4 align-middle;
+  }
+
+  .leader-team-table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
+  .leader-team-table tbody tr:hover {
+    @apply bg-slate-50/60;
+  }
+
+  .leader-team-table .col-colaborador {
+    width: 26%;
+  }
+
+  .leader-team-table .col-area {
+    width: 14%;
+  }
+
+  .leader-team-table .col-cargo {
+    width: 22%;
+  }
+
+  .leader-team-table .col-etapa {
+    width: 14%;
+  }
+
+  .leader-team-table .col-nota {
+    width: 10%;
+  }
+
+  .leader-team-table .col-acao {
+    width: 8%;
+  }
+
+  /*
+   * Cadastro de usuários (admin) — grid alinhado ao mock CADASTRO_USUÁRIOS.
+   */
+  .user-registry-table {
+    @apply min-w-[880px] w-full table-fixed border-collapse text-left text-sm text-ink;
+  }
+
+  .user-registry-table thead {
+    @apply bg-slate-50/80 text-xs font-semibold uppercase tracking-wider text-slate-500;
+  }
+
+  .user-registry-table th {
+    @apply border-b border-line px-6 py-4 font-semibold;
+  }
+
+  .user-registry-table td {
+    @apply border-b border-line px-6 py-4 align-middle;
+  }
+
+  .user-registry-table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
+  .user-registry-table tbody tr:hover {
+    @apply bg-slate-50/60;
+  }
+
+  .user-registry-table .col-nome {
+    width: 14%;
+  }
+
+  .user-registry-table .col-email {
+    width: 16%;
+  }
+
+  .user-registry-table .col-area {
+    width: 12%;
+  }
+
+  .user-registry-table .col-cargo {
+    width: 12%;
+  }
+
+  .user-registry-table .col-gestor {
+    width: 14%;
+  }
+
+  .user-registry-table .col-entrada {
+    width: 10%;
+  }
+
+  .user-registry-table .col-status {
+    width: 10%;
+  }
+
+  .user-registry-table .col-acao {
+    width: 8%;
+  }
+
+  /*
+   * Scroll horizontal das tabelas de cadastro — só eixo X; evita segundo scroll
+   * vertical competindo com o painel principal (.app-shell).
+   */
+  .registry-table-scroll {
+    @apply min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain pb-1;
+  }
+
+  /*
+   * Menu ⋮ flutuante (JS) — escapa overflow do frame; largura pelo conteúdo.
+   */
+  .row-actions-panel--floating {
+    position: fixed !important;
+    right: auto !important;
+    bottom: auto !important;
+    margin: 0 !important;
+    width: max-content;
+    min-width: 10.5rem;
+    max-width: calc(100vw - 1rem);
+    z-index: 50;
+  }
+
+  /*
+   * Cadastro de cargos (admin) — grid alinhado ao mock CADASTRO_CARGOS.
+   */
+  .cargo-registry-table {
+    @apply min-w-[760px] w-full table-fixed border-collapse text-left text-sm text-ink;
+  }
+
+  .cargo-registry-table thead {
+    @apply bg-slate-50/80 text-xs font-semibold uppercase tracking-wider text-slate-500;
+  }
+
+  .cargo-registry-table th {
+    @apply border-b border-line px-6 py-4 font-semibold;
+  }
+
+  .cargo-registry-table td {
+    @apply border-b border-line px-6 py-4 align-middle;
+  }
+
+  .cargo-registry-table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
+  .cargo-registry-table tbody tr:hover {
+    @apply bg-slate-50/60;
+  }
+
+  .cargo-registry-table .col-nome {
+    width: 34%;
+  }
+
+  .cargo-registry-table .col-nivel {
+    width: 14%;
+  }
+
+  .cargo-registry-table .col-competencias {
+    width: 20%;
+  }
+
+  .cargo-registry-table .col-status {
+    width: 14%;
+  }
+
+  .cargo-registry-table .col-acao {
+    width: 8%;
+  }
+
+  /*
+   * Cadastro de áreas (admin) — grid alinhado ao mock CADASTRO_ÁREAS.
+   */
+  .area-registry-table {
+    @apply min-w-[800px] w-full table-fixed border-collapse text-left text-sm text-ink;
+  }
+
+  .area-registry-table thead {
+    @apply bg-slate-50/80 text-xs font-semibold uppercase tracking-wider text-slate-500;
+  }
+
+  .area-registry-table th {
+    @apply border-b border-line px-6 py-4 font-semibold;
+  }
+
+  .area-registry-table td {
+    @apply border-b border-line px-6 py-4 align-middle;
+  }
+
+  .area-registry-table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
+  .area-registry-table tbody tr:hover {
+    @apply bg-slate-50/60;
+  }
+
+  .area-registry-table .col-nome {
+    width: 48%;
+  }
+
+  .area-registry-table .col-colaboradores {
+    width: 18%;
+  }
+
+  .area-registry-table .col-status {
+    width: 18%;
+  }
+
+  .area-registry-table .col-acao {
+    width: 8%;
+  }
+
+  /*
+   * Objetivos estratégicos (admin, por ciclo) — grid alinhado ao mock TELA_OBJETIVOS.
+   */
+  .objetivo-registry-table {
+    @apply min-w-[640px] w-full table-fixed border-collapse text-left text-sm text-ink;
+  }
+
+  .objetivo-registry-table thead {
+    @apply bg-slate-50/80 text-xs font-semibold uppercase tracking-wider text-slate-500;
+  }
+
+  .objetivo-registry-table th {
+    @apply border-b border-line px-6 py-4 font-semibold;
+  }
+
+  .objetivo-registry-table td {
+    @apply border-b border-line px-6 py-4 align-middle;
+  }
+
+  .objetivo-registry-table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
+  .objetivo-registry-table tbody tr:hover {
+    @apply bg-slate-50/60;
+  }
+
+  .objetivo-registry-table .col-descricao {
+    width: 62%;
+  }
+
+  .objetivo-registry-table .col-metas {
+    width: 18%;
+  }
+
+  .objetivo-registry-table .col-acao {
+    width: 8%;
+  }
+
+  /*
+   * Cadastro de competências (admin) — grid alinhado ao mock CADASTRO_COMPETENCIAS.
+   */
+  .competencia-registry-table {
+    @apply min-w-[880px] w-full table-fixed border-collapse text-left text-sm text-ink;
+  }
+
+  .competencia-registry-table thead {
+    @apply bg-slate-50/80 text-xs font-semibold uppercase tracking-wider text-slate-500;
+  }
+
+  .competencia-registry-table th {
+    @apply border-b border-line px-6 py-4 font-semibold;
+  }
+
+  .competencia-registry-table td {
+    @apply border-b border-line px-6 py-4 align-middle;
+  }
+
+  .competencia-registry-table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
+  .competencia-registry-table tbody tr:hover {
+    @apply bg-slate-50/60;
+  }
+
+  .competencia-registry-table .col-nome {
+    width: 34%;
+  }
+
+  .competencia-registry-table .col-tipo {
+    width: 16%;
+  }
+
+  .competencia-registry-table .col-escala {
+    width: 22%;
+  }
+
+  .competencia-registry-table .col-status {
+    width: 14%;
+  }
+
+  .competencia-registry-table .col-acao {
+    width: 8%;
+  }
+
+  .area-tree-child {
+    @apply relative;
+  }
+
+  .area-tree-connector {
+    @apply pointer-events-none absolute top-1/2 -translate-y-1/2 border-line;
+    left: 0.75rem;
+    width: 1rem;
+    height: 0;
+    border-top: 1px solid var(--color-line);
+  }
+
+  .area-tree-connector::before {
+    content: '';
+    @apply absolute border-line;
+    left: 0;
+    bottom: 50%;
+    width: 0;
+    height: 1.75rem;
+    border-left: 1px solid var(--color-line);
+  }
+
+  /* Barra segmentada — filtros de status (lista avaliações líder). */
+  .filter-segment-bar {
+    @apply inline-flex max-w-full overflow-x-auto rounded-lg bg-slate-100/90 p-1;
+  }
+
+  .filter-segment-item {
+    @apply shrink-0 rounded-md px-3 py-1.5 font-ui text-xs font-medium text-slate-600 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1;
+  }
+
+  .filter-segment-item:hover:not(.is-active) {
+    @apply text-slate-800;
+  }
+
+  .filter-segment-item.is-active {
+    @apply bg-white text-slate-800 shadow-sm;
+  }
+
+  /* Autoavaliação — botões de escala discretos */
+  .rating-radio-label {
+    @apply flex h-16 w-16 cursor-pointer items-center justify-center rounded-lg border border-line bg-surface-card text-lg font-medium text-slate-600 shadow-sm transition-all hover:bg-slate-50;
+  }
+
+  .rating-radio:checked + .rating-radio-label {
+    @apply border-emerald-600 bg-emerald-600 text-white shadow-md;
+  }
+
+  .rating-radio:focus-visible + .rating-radio-label {
+    @apply ring-2 ring-emerald-500 ring-offset-2 ring-offset-surface outline-none;
+  }
+
+  .rating-radio:disabled + .rating-radio-label {
+    @apply cursor-not-allowed opacity-60;
+  }
+
+  .rating-radio-label--compact {
+    @apply h-8 w-8 text-sm shadow-sm;
+  }
+
+  .rating-radio:checked + .rating-radio-label--compact {
+    @apply border-transparent bg-brand-gradient text-white shadow-sm;
+  }
+
+  .rating-radio:not(:checked) + .rating-radio-label--compact:hover {
+    @apply border-emerald-600 bg-slate-50;
+  }
+
   /* Filtros/selects — docs → Inputs e formulários (.form-control)
    * Experimento Figma Input: altura ~48px (h-12) + hover de borda. */
   .form-control {
@@ -161,32 +581,176 @@
   }
 
   /*
-   * Shell nav — densidade/tipografia v2 (T044); IA Governança/Cadastros/Sistema intacta.
-   * Alvos de clique confortáveis; ênfase P1 via marker.
+   * Shell nav — visual limpo (SIDEBAR_REV / SIDEBAR_REC).
+   * IA Governança/Cadastros/Sistema intacta; escopo continua no backend.
+   * Estado ativo único: fundo suave + texto primary + barra lateral.
    */
   .nav-section-label {
-    @apply mb-1 px-3 text-[0.6875rem] font-medium uppercase tracking-wider text-slate-400;
+    @apply flex flex-1 items-center text-xs font-semibold uppercase tracking-wider text-slate-500;
+  }
+
+  .nav-group {
+    @apply border-0;
+  }
+
+  .nav-group > summary {
+    @apply mb-1 flex cursor-pointer list-none items-center gap-1.5 px-6 py-2 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-inset;
+  }
+
+  .nav-group > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .nav-group__chevron {
+    @apply h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform duration-150;
+  }
+
+  details.nav-group[open] > summary {
+    @apply text-slate-700;
+  }
+
+  details.nav-group[open] > summary .nav-group__chevron {
+    @apply rotate-90 text-slate-500;
   }
 
   .nav-link {
-    @apply block rounded-lg px-3 py-2 text-sm tracking-tight text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-800;
+    @apply flex items-center gap-3 border-l-4 border-transparent px-6 py-3 font-ui text-sm font-medium tracking-tight text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-800;
   }
 
   .nav-link[aria-current='page'] {
-    @apply bg-emerald-50 font-medium text-emerald-700;
+    @apply border-emerald-800 bg-emerald-800/5 font-semibold text-emerald-800;
   }
 
   .nav-link--emphasis {
-    @apply border-l-2 border-emerald-500 font-semibold text-slate-800;
+    @apply font-semibold text-slate-800;
   }
 
-  .nav-link--emphasis[aria-current='page'] {
-    @apply bg-emerald-50 text-emerald-800;
+  .nav-link--emphasis:not([aria-current='page']) .nav-link__icon {
+    @apply text-emerald-800;
   }
 
-  /* Marca do chrome autenticado — display + tracking; só sob .app-shell (sidebar/topbar). */
+  .nav-link__icon {
+    @apply h-5 w-5 shrink-0 text-slate-500;
+  }
+
+  .nav-link[aria-current='page'] .nav-link__icon {
+    @apply text-emerald-800;
+  }
+
+  .nav-link__label {
+    @apply min-w-0 flex-1 truncate;
+  }
+
+  .nav-link__text {
+    @apply flex min-w-0 flex-1 items-center justify-between gap-2;
+  }
+
+  /* Marca do chrome autenticado — Fraunces sólido; tamanho no template. */
   .shell-brand {
-    @apply bg-brand-gradient bg-clip-text font-display text-base font-semibold tracking-tight text-transparent;
+    @apply font-display font-bold tracking-tight text-emerald-800;
+  }
+
+  /* Login: evita corte vertical da marca (viewBox + altura explícita). */
+  .auth-brand-mark {
+    min-height: 3rem;
+    overflow: visible;
+  }
+
+  .auth-brand-mark svg {
+    display: block;
+    height: 3rem;
+    width: auto;
+    overflow: visible;
+  }
+
+  /*
+   * Sidebar desktop: modo ícone-only (SIDEBAR_REC).
+   * Largura (w-[280px] ↔ w-20) é alternada em JS — utilities Tailwind vencem @layer components.
+   * Marca: ícone (recolhido) / wordmark (expandido) via brand_mark.
+   */
+  #desktop-sidebar.sidebar--collapsed [data-sidebar-label],
+  #desktop-sidebar.sidebar--collapsed .nav-link__label,
+  #desktop-sidebar.sidebar--collapsed .nav-link__text,
+  #desktop-sidebar.sidebar--collapsed .nav-link__badge,
+  #desktop-sidebar.sidebar--collapsed .nav-group > summary {
+    @apply hidden;
+  }
+
+  #desktop-sidebar.sidebar--collapsed .sidebar-brand-row {
+    @apply mb-2 px-0 pt-6 pb-8;
+  }
+
+  #desktop-sidebar .sidebar-brand-icon {
+    display: none;
+  }
+
+  #desktop-sidebar .sidebar-brand-wordmark {
+    display: block;
+  }
+
+  #desktop-sidebar .sidebar-brand-link,
+  #desktop-sidebar .sidebar-brand-icon,
+  #desktop-sidebar .sidebar-brand-wordmark,
+  #desktop-sidebar .sidebar-brand-link svg {
+    overflow: visible;
+  }
+
+  #desktop-sidebar.sidebar--collapsed .sidebar-brand-icon {
+    display: block;
+  }
+
+  #desktop-sidebar.sidebar--collapsed .sidebar-brand-wordmark {
+    display: none;
+  }
+
+  #desktop-sidebar.sidebar--collapsed .sidebar-nav {
+    @apply space-y-2 px-0;
+  }
+
+  #desktop-sidebar.sidebar--collapsed .nav-group {
+    @apply flex flex-col items-center gap-1;
+  }
+
+  #desktop-sidebar.sidebar--collapsed .nav-group ul {
+    @apply flex flex-col items-center gap-1;
+  }
+
+  #desktop-sidebar.sidebar--collapsed .nav-group + .nav-group {
+    @apply mt-3;
+  }
+
+  #desktop-sidebar.sidebar--collapsed .nav-link {
+    @apply h-12 w-12 justify-center gap-0 rounded-r-lg border-l-4 px-0 py-0;
+  }
+
+  #desktop-sidebar.sidebar--collapsed .nav-link[aria-current='page'] {
+    @apply bg-emerald-800/5;
+  }
+
+  #desktop-sidebar.sidebar--collapsed .nav-link__icon {
+    @apply h-6 w-6;
+  }
+
+  #desktop-sidebar.sidebar--collapsed .sidebar-footer {
+    @apply items-center gap-2 px-0 py-4;
+  }
+
+  #desktop-sidebar.sidebar--collapsed .sidebar-collapse-btn,
+  #desktop-sidebar.sidebar--collapsed .sidebar-logout button {
+    @apply h-12 w-12 justify-center gap-0 px-0;
+  }
+
+  /* Ícones recolher/expandir: sem utility .hidden (vence @layer components). */
+  #desktop-sidebar .sidebar-collapse-icon--collapsed {
+    display: none;
+  }
+
+  #desktop-sidebar.sidebar--collapsed .sidebar-collapse-icon--expanded {
+    display: none;
+  }
+
+  #desktop-sidebar.sidebar--collapsed .sidebar-collapse-icon--collapsed {
+    display: block;
   }
 
   /*
@@ -227,5 +791,99 @@
       height: 19rem;
       min-height: 19rem;
     }
+  }
+
+  /*
+   * Canvas do painel do líder — altura suficiente para rótulos no eixo
+   * sem voltar ao canvas gerencial pleno (19rem).
+   */
+  .dashboard-chart-canvas.dashboard-chart-canvas--compact {
+    @apply mt-4;
+    height: 15.5rem;
+    min-height: 15.5rem;
+  }
+
+  @media (min-width: 640px) {
+    .dashboard-chart-canvas.dashboard-chart-canvas--compact {
+      height: 16.5rem;
+      min-height: 16.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .dashboard-chart-canvas.dashboard-chart-canvas--compact {
+      height: 17.5rem;
+      min-height: 17.5rem;
+    }
+  }
+
+  /*
+   * Radar (gap pessoal) — área extra para pointLabels sem clip no canvas.
+   */
+  .dashboard-chart-canvas.dashboard-chart-canvas--radar {
+    @apply mt-4;
+    height: 18.75rem; /* ~300px */
+    min-height: 18.75rem;
+  }
+
+  @media (min-width: 640px) {
+    .dashboard-chart-canvas.dashboard-chart-canvas--radar {
+      height: 21.25rem; /* ~340px */
+      min-height: 21.25rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .dashboard-chart-canvas.dashboard-chart-canvas--radar {
+      height: 22.5rem; /* ~360px */
+      min-height: 22.5rem;
+    }
+  }
+
+  /*
+   * Histórico empilhado (admin / ciclo_detail) — plot alto + largura total do card.
+   */
+  .dashboard-chart-canvas.dashboard-chart-canvas--stacked-history {
+    height: 18.75rem; /* ~300px — mockup ciclo_historico */
+    min-height: 18.75rem;
+  }
+
+  @media (min-width: 640px) {
+    .dashboard-chart-canvas.dashboard-chart-canvas--stacked-history {
+      height: 18.75rem;
+      min-height: 18.75rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .dashboard-chart-canvas.dashboard-chart-canvas--stacked-history {
+      height: 18.75rem;
+      min-height: 18.75rem;
+    }
+  }
+
+  /*
+   * Hub PDI — cartões com barra de progresso alinhada entre colunas da grade.
+   * Cabeçalho flex-1 absorve títulos de alturas diferentes; progresso e rodapé
+   * têm altura fixa (inclui espaço reservado para "Arquivar plano").
+   */
+  .pdi-hub-card {
+    @apply flex h-full min-h-0 flex-col self-stretch;
+  }
+
+  .pdi-hub-card__body {
+    @apply flex min-h-0 flex-1 flex-col gap-6 p-6;
+  }
+
+  .pdi-hub-card__head {
+    @apply flex min-h-0 flex-1 flex-col;
+  }
+
+  .pdi-hub-card__progress {
+    @apply shrink-0;
+  }
+
+  .pdi-hub-card__footer {
+    @apply shrink-0 border-t border-line pt-4;
   }
 }

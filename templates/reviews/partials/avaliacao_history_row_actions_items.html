@@ -1,0 +1,4 @@
+{% url 'reviews:detail' row.avaliacao.pk as detail_href %}
+{% with next_qs=request.get_full_path|urlencode %}
+{% include "components/row_actions_menu_item.html" with href=detail_href next_qs=next_qs label="Ver detalhes" %}
+{% endwith %}

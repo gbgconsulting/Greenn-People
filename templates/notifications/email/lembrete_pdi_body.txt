@@ -4,6 +4,7 @@ Uma ação do seu PDI "{{ pdi.titulo }}" vence em {{ prazo|date:"d/m/Y" }}:
 
 {{ acao.descricao }}
 
-Acesse o Greenn People para atualizar o status ou concluir a ação a tempo.
+Acesse o Greenn People para atualizar o status ou concluir a ação a tempo:
+{{ cta_url }}
 
 Esta é uma mensagem automática — não responda este e-mail.

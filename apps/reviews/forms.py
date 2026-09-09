@@ -7,7 +7,21 @@ from django.forms import BaseModelFormSet, modelformset_factory
 
 from apps.accounts.services.scope import user_in_scope
 from apps.cycles.models import Ciclo
-from apps.reviews.models import Avaliacao, AvaliacaoCompetencia, Feedback
+from apps.reviews.models import (
+    Avaliacao,
+    AvaliacaoCompetencia,
+    Feedback,
+    FeedbackContinuo,
+)
+from apps.reviews.services.evaluation import (
+    MSG_AUTOAVALIACAO_INCOMPLETA,
+    MSG_AUTOAVALIACAO_JA_ENVIADA,
+    self_assessment_submitted,
+    self_assessment_viewable,
+)
+from apps.reviews.widgets import ScaleRatingWidget
+
+_DISCRETE_SCALE_MAX_OPTIONS = 10
 
 _INPUT = (
     'w-full max-w-[8rem] rounded-lg border border-slate-200 px-3 py-2 text-sm '
@@ -24,11 +38,9 @@ _TEXTAREA = (
 
 def self_assessment_editable(avaliacao: Avaliacao | None) -> bool:
     """True se o colaborador pode registrar notas de autoavaliação."""
-    if avaliacao is None:
+    if not self_assessment_viewable(avaliacao):
         return False
-    if avaliacao.ciclo.status != Ciclo.Status.ABERTO:
-        return False
-    return avaliacao.etapa == Avaliacao.Etapa.AVALIACAO
+    return not self_assessment_submitted(avaliacao)
 
 
 class SelfAssessmentForm(forms.ModelForm):
@@ -41,24 +53,45 @@ class SelfAssessmentForm(forms.ModelForm):
             'nota_autoavaliacao': 'Sua nota',
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, editable: bool = True, **kwargs):
         super().__init__(*args, **kwargs)
+        self._editable = editable
         escala = None
         if self.instance.pk and self.instance.competencia_id:
             competencia = getattr(self.instance, 'competencia', None)
             if competencia is not None:
                 escala = getattr(competencia, 'escala', None)
 
-        attrs = {
-            'class': _INPUT,
-            'step': '0.01',
-            'inputmode': 'decimal',
-        }
+        field = self.fields['nota_autoavaliacao']
+        field.required = False
+
         if escala is not None:
-            attrs['min'] = str(escala.valor_minimo)
-            attrs['max'] = str(escala.valor_maximo)
-        self.fields['nota_autoavaliacao'].widget.attrs.update(attrs)
-        self.fields['nota_autoavaliacao'].required = False
+            span = escala.valor_maximo - escala.valor_minimo
+            if span < _DISCRETE_SCALE_MAX_OPTIONS:
+                field.widget = ScaleRatingWidget(
+                    min_value=escala.valor_minimo,
+                    max_value=escala.valor_maximo,
+                )
+            else:
+                attrs = {
+                    'class': _INPUT,
+                    'step': '0.01',
+                    'inputmode': 'decimal',
+                    'min': str(escala.valor_minimo),
+                    'max': str(escala.valor_maximo),
+                }
+                field.widget.attrs.update(attrs)
+        else:
+            field.widget.attrs.update(
+                {
+                    'class': _INPUT,
+                    'step': '0.01',
+                    'inputmode': 'decimal',
+                },
+            )
+
+        if not self._editable:
+            field.disabled = True
 
     def clean_nota_autoavaliacao(self):
         nota = self.cleaned_data.get('nota_autoavaliacao')
@@ -80,6 +113,8 @@ class SelfAssessmentForm(forms.ModelForm):
         cleaned = super().clean()
         avaliacao = self.instance.avaliacao if self.instance.pk else None
         if not self_assessment_editable(avaliacao):
+            if self_assessment_submitted(avaliacao):
+                raise forms.ValidationError(MSG_AUTOAVALIACAO_JA_ENVIADA)
             raise forms.ValidationError(
                 'A autoavaliação só pode ser registrada na etapa de avaliação '
                 'de um ciclo aberto.',
@@ -117,12 +152,19 @@ SelfAssessmentFormSet = modelformset_factory(
 
 
 def leader_assessment_editable(avaliacao: Avaliacao | None) -> bool:
-    """True se o líder pode registrar notas na etapa de avaliação."""
+    """True se a etapa/ciclo permitem avaliação do líder (sem ordem auto→líder)."""
     if avaliacao is None:
         return False
     if avaliacao.ciclo.status != Ciclo.Status.ABERTO:
         return False
     return avaliacao.etapa == Avaliacao.Etapa.AVALIACAO
+
+
+def leader_assessment_permitted(avaliacao: Avaliacao | None) -> bool:
+    """True se o líder pode registrar notas (etapa correta + autoavaliação enviada)."""
+    return leader_assessment_editable(avaliacao) and self_assessment_submitted(
+        avaliacao,
+    )
 
 
 def can_leader_assess(assessor, avaliacao: Avaliacao) -> bool:
@@ -156,16 +198,35 @@ class LeaderAssessmentForm(forms.ModelForm):
             if competencia is not None:
                 escala = getattr(competencia, 'escala', None)
 
-        attrs = {
-            'class': _INPUT,
-            'step': '0.01',
-            'inputmode': 'decimal',
-        }
+        field = self.fields['nota_lider']
+        field.required = False
+
         if escala is not None:
-            attrs['min'] = str(escala.valor_minimo)
-            attrs['max'] = str(escala.valor_maximo)
-        self.fields['nota_lider'].widget.attrs.update(attrs)
-        self.fields['nota_lider'].required = False
+            span = escala.valor_maximo - escala.valor_minimo
+            if span < _DISCRETE_SCALE_MAX_OPTIONS:
+                field.widget = ScaleRatingWidget(
+                    min_value=escala.valor_minimo,
+                    max_value=escala.valor_maximo,
+                    compact=True,
+                    aria_label='Nota do líder',
+                )
+            else:
+                attrs = {
+                    'class': _INPUT,
+                    'step': '0.01',
+                    'inputmode': 'decimal',
+                    'min': str(escala.valor_minimo),
+                    'max': str(escala.valor_maximo),
+                }
+                field.widget.attrs.update(attrs)
+        else:
+            field.widget.attrs.update(
+                {
+                    'class': _INPUT,
+                    'step': '0.01',
+                    'inputmode': 'decimal',
+                },
+            )
 
     @property
     def comparacao_nivel(self) -> str:
@@ -206,6 +267,8 @@ class LeaderAssessmentForm(forms.ModelForm):
                 'A avaliação do líder só pode ser registrada na etapa de '
                 'avaliação de um ciclo aberto.',
             )
+        if not self_assessment_submitted(avaliacao):
+            raise forms.ValidationError(MSG_AUTOAVALIACAO_INCOMPLETA)
         return cleaned
 
 
@@ -227,6 +290,8 @@ class BaseLeaderAssessmentFormSet(BaseModelFormSet):
                     'A avaliação do líder só pode ser registrada na etapa de '
                     'avaliação de um ciclo aberto.',
                 )
+            if not self_assessment_submitted(avaliacao):
+                raise forms.ValidationError(MSG_AUTOAVALIACAO_INCOMPLETA)
 
 
 LeaderAssessmentFormSet = modelformset_factory(
@@ -263,6 +328,28 @@ def can_acknowledge_feedback(user, feedback: Feedback) -> bool:
     return feedback.avaliacao.usuario_id == getattr(user, 'pk', None)
 
 
+_FEEDBACK_TEXTAREA = (
+    'w-full min-h-[160px] resize-y rounded-lg border border-slate-200 bg-slate-50 '
+    'px-4 py-4 text-sm text-ink focus:border-transparent focus:bg-white '
+    'focus:outline-none focus:ring-2 focus:ring-emerald-500'
+)
+
+
+def feedback_destinatario(avaliacao: Avaliacao, autor) -> tuple:
+    """Pessoa exibida no cartão contextual e rótulo do campo.
+
+    Líder registra feedback *para* o liderado; colaborador registra *para* o gestor
+    (contraparte da conversa de feedback). Sem gestor definido, cai no colaborador.
+    """
+    colaborador = avaliacao.usuario
+    if getattr(autor, 'pk', None) == colaborador.pk:
+        gestor = getattr(colaborador, 'line_manager', None)
+        if gestor is not None:
+            return gestor, 'Para'
+        return colaborador, 'Colaborador'
+    return colaborador, 'Para'
+
+
 class FeedbackForm(forms.ModelForm):
     """Conteúdo estruturado do feedback (tipo/autor definidos na view)."""
 
@@ -270,14 +357,14 @@ class FeedbackForm(forms.ModelForm):
         model = Feedback
         fields = ('conteudo',)
         labels = {
-            'conteudo': 'Conteúdo',
+            'conteudo': 'Conteúdo do Feedback',
         }
         widgets = {
             'conteudo': forms.Textarea(
                 attrs={
-                    'class': _TEXTAREA,
-                    'rows': 5,
-                    'placeholder': 'Descreva o feedback de forma clara e objetiva.',
+                    'class': _FEEDBACK_TEXTAREA,
+                    'rows': 8,
+                    'placeholder': 'Descreva o feedback de forma clara e objetiva...',
                 },
             ),
         }
@@ -300,3 +387,33 @@ class FeedbackForm(forms.ModelForm):
                 'Só é possível registrar feedback em um ciclo aberto.',
             )
         return cleaned
+
+
+class FeedbackContinuoForm(forms.ModelForm):
+    """Conteúdo do feedback contínuo (autor/destinatário definidos na view)."""
+
+    class Meta:
+        model = FeedbackContinuo
+        fields = ('conteudo',)
+        labels = {
+            'conteudo': 'Conteúdo do Feedback',
+        }
+        widgets = {
+            'conteudo': forms.Textarea(
+                attrs={
+                    'class': _FEEDBACK_TEXTAREA,
+                    'rows': 8,
+                    'placeholder': 'Descreva o feedback de forma clara e objetiva...',
+                },
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['conteudo'].required = True
+
+    def clean_conteudo(self):
+        conteudo = (self.cleaned_data.get('conteudo') or '').strip()
+        if not conteudo:
+            raise forms.ValidationError('Informe o conteúdo do feedback.')
+        return conteudo

@@ -1,0 +1,46 @@
+{% comment %}
+  Controle segmentado de progresso binário (0 / 50 / 100).
+  Compacto para caber na coluna Progresso sem esticar a tabela.
+{% endcomment %}
+{% with field=progress_form.progresso %}
+<div class="flex min-w-0 max-w-[17rem] flex-col gap-1.5">
+  <div class="flex min-w-0 flex-wrap items-center gap-1.5">
+    <fieldset class="min-w-0">
+      <legend class="sr-only">{{ field.label }}</legend>
+      <div
+        class="inline-flex max-w-full rounded-lg border border-slate-200 bg-slate-100 p-0.5 font-ui text-[11px] leading-none"
+        role="radiogroup"
+        aria-label="{{ field.label }}"
+      >
+        {% for value, choice_label in field.field.choices %}
+        <label class="cursor-pointer">
+          <input
+            type="radio"
+            name="{{ field.html_name }}"
+            value="{{ value }}"
+            class="sr-only peer"
+            {% if field.value != None and field.value|stringformat:"s" == value|stringformat:"s" %}checked{% endif %}
+            {% if forloop.first %}required{% endif %}
+          >
+          <span
+            class="inline-block px-2 py-1.5 font-medium text-slate-600 transition peer-checked:rounded-md peer-checked:bg-white peer-checked:font-semibold peer-checked:text-slate-900 peer-checked:shadow-sm peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-1 peer-focus-visible:outline-emerald-600 {% if value == '100' %}peer-checked:!text-emerald-800{% endif %}"
+          >
+            {% if value == '0' %}Não iniciada{% elif value == '50' %}Em andamento{% else %}Concluída{% endif %}
+          </span>
+        </label>
+        {% endfor %}
+      </div>
+    </fieldset>
+    <button
+      type="submit"
+      class="inline-flex h-7 shrink-0 items-center rounded-lg bg-brand-gradient px-2.5 font-ui text-[11px] font-semibold text-white shadow-sm transition-colors hover:bg-brand-gradient-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1"
+    >{{ rotulo_salvar_progresso|default:"Salvar" }}</button>
+  </div>
+  {% if field.errors %}
+  <p class="font-ui text-xs text-rose-600">{{ field.errors|striptags }}</p>
+  {% endif %}
+  {% if progress_form.non_field_errors %}
+  <p class="font-ui text-xs text-rose-600">{{ progress_form.non_field_errors|striptags }}</p>
+  {% endif %}
+</div>
+{% endwith %}

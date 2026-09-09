@@ -68,7 +68,7 @@ Registrar **quais** includes/arquivos são a fonte canônica desta rodada e **qu
 | `templates/dashboard/_chart_block.html` | Bloco reutilizável: title → insight → (mini-KPI \| canvas) → figcaption / `empty_state` | Fora de partials HTMX; sem sombra; empty via `has_data` falso |
 | `static/js/dashboard_charts.js` | Init Chart a partir de `json_script` + `data-chart-payload` | Init em `DOMContentLoaded`; **sem** `htmx:afterSwap` no canvas; catálogo 009 types only; mono teal + amber só quando payload/highlight indicar |
 
-Types canônicos (referência intacta 009): `bar` \| `doughnut` \| `doughnut_or_bar` \| `bar_grouped` \| `bar_horizontal` \| `area`.
+Types canônicos (referência 009 + radar gap pessoal): `bar` \| `doughnut` \| `doughnut_or_bar` \| `bar_grouped` \| `bar_horizontal` \| `area` \| `radar`.
 
 Empty kinds canônicos (012 / payloads): `operacional` \| `escopo` \| `sem_dado` \| `sem_nota`.
 

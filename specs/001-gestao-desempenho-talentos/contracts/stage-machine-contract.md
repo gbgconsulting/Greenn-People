@@ -34,7 +34,7 @@ def is_cycle_closed(avaliacao: Avaliacao) -> bool:
 | `aprovacao_metas` | `resultados` | ≥1 meta E 100% com `status=aprovada` |
 | `resultados` | `aprovacao_resultados` | Todas metas aprovadas têm `progresso` registrado |
 | `aprovacao_resultados` | `avaliacao` | 100% com `status_resultado=aprovado` |
-| `avaliacao` | `feedback` | Todas `AvaliacaoCompetencia` com `nota_lider`; `nota_final_lider` calculada |
+| `avaliacao` | `feedback` | Autoavaliação completa em todas as linhas; todas `AvaliacaoCompetencia` com `nota_lider`; `nota_final_lider` calculada |
 | `feedback` | (concluída) | Feedback líder registrado; `ciente_em` preenchido |
 
 ## Regras invariantes

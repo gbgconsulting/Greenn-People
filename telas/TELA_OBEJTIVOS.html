@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+
+<html class="light" lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Objetivos estratégicos - Greenn People</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&amp;family=Source+Sans+3:ital,wght@0,200..900;1,200..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                            "on-primary-fixed-variant": "#005137",
+                            "on-surface-variant": "#3d4a42",
+                            "on-tertiary-fixed-variant": "#7f2928",
+                            "on-secondary-container": "#006f64",
+                            "primary": "#006948",
+                            "surface-container-lowest": "#ffffff",
+                            "border-subtle": "#e2e8f0",
+                            "status-warning": "#f59e0b",
+                            "secondary-fixed": "#71f8e4",
+                            "on-primary": "#ffffff",
+                            "surface-tint": "#006c4a",
+                            "inverse-surface": "#2d3133",
+                            "tertiary": "#9b3e3b",
+                            "brand-gradient": "linear-gradient(135deg, #059669 0%, #14b8a6 100%)",
+                            "on-surface": "#191c1e",
+                            "surface-container-low": "#f2f4f6",
+                            "secondary-container": "#6df5e1",
+                            "error": "#ba1a1a",
+                            "on-error": "#ffffff",
+                            "surface-container-highest": "#e0e3e5",
+                            "surface-container": "#eceef0",
+                            "status-critical": "#f43f5e",
+                            "on-tertiary-fixed": "#410004",
+                            "outline-variant": "#bccac0",
+                            "inverse-on-surface": "#eff1f3",
+                            "surface-dim": "#d8dadc",
+                            "error-container": "#ffdad6",
+                            "surface": "#f7f9fb",
+                            "primary-fixed-dim": "#68dba9",
+                            "outline": "#6d7a72",
+                            "on-secondary": "#ffffff",
+                            "text-body": "#64748b",
+                            "secondary-fixed-dim": "#4fdbc8",
+                            "on-primary-fixed": "#002114",
+                            "on-error-container": "#93000a",
+                            "inverse-primary": "#68dba9",
+                            "surface-variant": "#e0e3e5",
+                            "status-success": "#10b981",
+                            "tertiary-container": "#ba5551",
+                            "primary-fixed": "#85f8c4",
+                            "tertiary-fixed-dim": "#ffb3ae",
+                            "on-tertiary": "#ffffff",
+                            "text-heading": "#1e293b",
+                            "secondary": "#006b5f",
+                            "tertiary-fixed": "#ffdad7",
+                            "background": "#f7f9fb",
+                            "on-secondary-fixed-variant": "#005048",
+                            "on-background": "#191c1e",
+                            "surface-container-high": "#e6e8ea",
+                            "on-primary-container": "#f5fff7",
+                            "on-secondary-fixed": "#00201c",
+                            "surface-bright": "#f7f9fb",
+                            "primary-container": "#00855d",
+                            "on-tertiary-container": "#fffbff"
+                    },
+                    "borderRadius": {
+                            "DEFAULT": "0.25rem",
+                            "lg": "0.5rem",
+                            "xl": "0.75rem",
+                            "full": "9999px"
+                    },
+                    "spacing": {
+                            "sidebar-width": "280px",
+                            "container-padding": "32px",
+                            "gutter": "24px",
+                            "unit": "4px"
+                    },
+                    "fontFamily": {
+                            "headline-sm": ["Fraunces"],
+                            "body-md": ["\"Source Sans 3\""],
+                            "headline-lg": ["Fraunces"],
+                            "label-sm": ["\"Source Sans 3\""],
+                            "body-lg": ["\"Source Sans 3\""],
+                            "display-lg": ["Fraunces"],
+                            "headline-md": ["Fraunces"],
+                            "label-md": ["\"Source Sans 3\""],
+                            "body-sm": ["\"Source Sans 3\""]
+                    },
+                    "fontSize": {
+                            "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "500"}],
+                            "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                            "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                            "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "600"}],
+                            "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                            "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                            "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "500"}],
+                            "label-md": ["14px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                            "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Source Sans 3', sans-serif; background-color: #f7f9fb; }
+        .gradient-btn { background: linear-gradient(135deg, #059669 0%, #14b8a6 100%); }
+        .gradient-btn:hover { box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2); transform: translateY(-1px); }
+    </style>
+</head>
+<body class="bg-background text-on-background antialiased flex h-screen overflow-hidden">
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-full w-[280px] bg-surface border-r border-outline-variant flex flex-col py-8 z-50">
+<div class="px-6 mb-8 flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A small, elegant company logo graphic featuring abstract leaf motifs in soft slate and emerald tones, sitting on a pristine white background. The style is modern, corporate, and minimalist." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCcqyplZeVL8rG0VTXfieyS-QU9bUjoaXmWoyuXqHrx7kC-t-TDyHoX4ymvW63odkSycwTLXXM4nBH8PVqfrEcd5b2N8zubP1VFqPfTAjYp3l6uSx7MvneOa8SdE8faWeinNlMlV2fcOc4ikohyZZrauk329xzjl11ZX81DZnM4SJQg90XKcA6CBwzdkR4155QPhEylHnc_Q9DpByUBwjhhS23k666BOB-dcH_oWZp3BQKYzC7e_sIk"/>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">Greenn People</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">HR Intelligence</p>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto w-full">
+<ul class="space-y-1">
+<li>
+<a class="flex items-center gap-3 bg-primary/5 border-l-4 border-primary text-primary font-bold px-6 py-3 opacity-90 scale-[0.98] transition-transform" href="#">
+<span class="material-symbols-outlined" data-weight="fill" style="font-variation-settings: 'FILL' 1;">refresh</span>
+<span class="font-label-md text-label-md">Ciclos</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-on-surface-variant px-6 py-3 hover:bg-surface-container-low transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">handshake</span>
+<span class="font-label-md text-label-md">Aderência</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-on-surface-variant px-6 py-3 hover:bg-surface-container-low transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">admin_panel_settings</span>
+<span class="font-label-md text-label-md">Painel admin</span>
+</a>
+</li>
+</ul>
+</div>
+</nav>
+<!-- TopNavBar -->
+<header class="fixed top-0 right-0 w-[calc(100%-280px)] z-40 bg-surface/80 backdrop-blur-md border-b border-outline-variant shadow-sm flex justify-between items-center h-16 px-8 ml-[280px]">
+<div class="flex items-center">
+<h2 class="font-headline-sm text-headline-sm font-semibold text-on-surface">Ciclo de Desempenho 2024</h2>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:bg-surface-container-high/50 p-2 rounded-full transition-all">
+<span class="material-symbols-outlined">help</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-container-high/50 p-2 rounded-full transition-all">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a smiling person wearing business casual attire, well-lit with soft natural light against a neutral grey background. High-quality corporate portrait photography." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAZh9b4cOPJcPoQIFNxPdiLUtsnldHNtRIHqJEqeFNykjVEiSHWiZSuS9g8lmxSeG1Lp_KZM-qWA6mj1mblGK1Fr4Qi203HSpPztFe2XSM-tr0DRvFCt5ZLpKjtoLxZaADo4tAmJoBnP0xWsATPcr9GkDOk42ftn9L9flF3zmD9pTRnJvnNx5LwIUnElaD4wgA0I0uEQs5uGJQ03MhOM0zaoeX9XYiGFf03t-Ht8RuNthr-cWSa2-Ql"/>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="ml-[280px] mt-16 flex-1 h-[calc(100vh-64px)] overflow-y-auto bg-surface-bright">
+<div class="max-w-[1440px] mx-auto p-container-padding">
+<!-- Page Header -->
+<div class="flex justify-between items-start mb-8">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-text-heading mb-2">Objetivos estratégicos</h1>
+<p class="font-body-md text-body-md text-text-body max-w-2xl">Defina os objetivos do ciclo aos quais as metas dos colaboradores serão vinculadas.</p>
+</div>
+<button class="gradient-btn text-on-primary font-label-md text-label-md px-6 py-2.5 rounded-lg flex items-center gap-2 transition-all">
+<span class="material-symbols-outlined text-sm">add</span>
+                    Novo objetivo
+                </button>
+</div>
+<!-- Content Card -->
+<div class="bg-surface-container-lowest rounded-xl border border-border-subtle shadow-sm overflow-hidden flex flex-col">
+<!-- Filter Bar -->
+<div class="p-gutter border-b border-border-subtle flex flex-col sm:flex-row justify-between items-center gap-4 bg-surface-container-lowest">
+<div class="relative w-full sm:w-80">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container-lowest border border-border-subtle rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary font-body-sm text-body-sm text-on-surface transition-all placeholder:text-outline-variant" placeholder="Buscar objetivos..." type="text"/>
+</div>
+<div class="flex items-center gap-4 w-full sm:w-auto">
+<div class="flex bg-surface-container-low p-1 rounded-lg border border-border-subtle">
+<button class="px-4 py-1.5 rounded-md bg-surface-container-lowest shadow-sm font-label-sm text-label-sm text-primary">Todos</button>
+<button class="px-4 py-1.5 rounded-md text-on-surface-variant font-label-sm text-label-sm hover:text-on-surface">Ativo</button>
+<button class="px-4 py-1.5 rounded-md text-on-surface-variant font-label-sm text-label-sm hover:text-on-surface">Inativo</button>
+</div>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-lg transition-colors border border-transparent hover:border-border-subtle">
+<span class="material-symbols-outlined">tune</span>
+</button>
+</div>
+</div>
+<!-- Table -->
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface border-b border-border-subtle">
+<th class="py-4 px-6 font-label-sm text-label-sm text-text-body uppercase tracking-wider font-semibold">Descrição</th>
+<th class="py-4 px-6 font-label-sm text-label-sm text-text-body uppercase tracking-wider font-semibold w-32 text-center">Metas</th>
+<th class="py-4 px-6 font-label-sm text-label-sm text-text-body uppercase tracking-wider font-semibold w-24 text-right">Ações</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-subtle bg-surface-container-lowest">
+<tr class="hover:bg-surface/50 transition-colors group">
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="w-1.5 h-1.5 rounded-full bg-status-success"></div>
+<span class="font-body-md text-body-md text-on-surface font-medium">Liderança</span>
+</div>
+</td>
+<td class="py-4 px-6 text-center">
+<span class="inline-flex items-center justify-center bg-surface-container px-2.5 py-0.5 rounded-full font-label-sm text-label-sm text-on-surface-variant">1 meta</span>
+</td>
+<td class="py-4 px-6 text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 text-outline hover:text-primary hover:bg-primary/5 rounded-md transition-colors"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+<button class="p-1.5 text-outline hover:text-status-critical hover:bg-status-critical/5 rounded-md transition-colors"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface/50 transition-colors group">
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="w-1.5 h-1.5 rounded-full bg-status-success"></div>
+<span class="font-body-md text-body-md text-on-surface font-medium">Inovação e Tecnologia</span>
+</div>
+</td>
+<td class="py-4 px-6 text-center">
+<span class="inline-flex items-center justify-center bg-surface-container px-2.5 py-0.5 rounded-full font-label-sm text-label-sm text-on-surface-variant">3 metas</span>
+</td>
+<td class="py-4 px-6 text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 text-outline hover:text-primary hover:bg-primary/5 rounded-md transition-colors"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+<button class="p-1.5 text-outline hover:text-status-critical hover:bg-status-critical/5 rounded-md transition-colors"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="mt-8 relative h-64 rounded-xl overflow-hidden shadow-sm border border-border-subtle" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDhbjY0nOpnpo63ji_TEQQ7rhtQluRj1HYH_kuUuuajQCEA67CqySjUS-iIhCf-rAg_8MQwnidcknQy_AVc3pZJxneFMKGU1jk8d0YSxkH82QBFUxr9sJZCP0EKezcFIvBHAmV6VYcNgJ856rPvo_q6p-s96tgtT9XA5jcxqAtNfy20I858TI7vsoUKaxHr4xW9f5VqbJ6xKwFYpMHgLbtp0s_BIonkHm3wBnF1M8a4hMEJN8rcu645X1cWyFhbUGXSCg'); background-size: cover; background-position: center;">
+</div>
+</div>
+</main>
+</body></html>

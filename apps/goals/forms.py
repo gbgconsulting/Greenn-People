@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from decimal import Decimal
+
 from django import forms
 
 from apps.cycles.models import Ciclo
@@ -7,14 +9,18 @@ from apps.goals.models import Meta, ObjetivoEstrategico
 from apps.reviews.models import Avaliacao
 
 _INPUT = (
-    'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm '
-    'focus:outline-none focus:ring-2 focus:ring-emerald-500 '
-    'focus:border-transparent'
+    'w-full rounded-lg border border-transparent bg-slate-100 px-4 py-3 '
+    'font-ui text-sm text-slate-800 transition-all '
+    'placeholder:text-slate-400 hover:bg-slate-200/60 '
+    'focus:border-emerald-600 focus:bg-white focus:outline-none '
+    'focus:ring-1 focus:ring-emerald-600'
 )
 _TEXTAREA = (
-    'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm '
-    'focus:outline-none focus:ring-2 focus:ring-emerald-500 '
-    'focus:border-transparent min-h-[6rem]'
+    'w-full min-h-[7.5rem] resize-y rounded-lg border border-transparent '
+    'bg-slate-100 px-4 py-3 font-ui text-sm text-slate-800 transition-all '
+    'placeholder:text-slate-400 hover:bg-slate-200/60 '
+    'focus:border-emerald-600 focus:bg-white focus:outline-none '
+    'focus:ring-1 focus:ring-emerald-600'
 )
 
 
@@ -139,25 +145,34 @@ class MetaForm(forms.ModelForm):
         model = Meta
         fields = ('objetivo_estrategico', 'descricao')
         labels = {
-            'objetivo_estrategico': 'Objetivo estratégico',
-            'descricao': 'Descrição da meta',
+            'objetivo_estrategico': 'Objetivo Estratégico Relacionado',
+            'descricao': 'Título da Meta',
         }
         widgets = {
-            'descricao': forms.Textarea(attrs={'rows': 4}),
+            'descricao': forms.TextInput(),
         }
 
     def __init__(self, *args, user=None, **kwargs):
         self.user = user
         super().__init__(*args, **kwargs)
         self.fields['objetivo_estrategico'].widget.attrs.update({'class': _INPUT})
-        self.fields['descricao'].widget.attrs.update({'class': _TEXTAREA})
+        self.fields['descricao'].widget.attrs.update(
+            {
+                'class': _INPUT,
+                'placeholder': (
+                    'Ex: Reduzir tempo de resposta do suporte em 20%'
+                ),
+            },
+        )
 
         ciclo = get_open_ciclo()
         objetivos = ObjetivoEstrategico.objects.none()
         if ciclo is not None:
             objetivos = ObjetivoEstrategico.objects.filter(ciclo=ciclo).order_by('id')
         self.fields['objetivo_estrategico'].queryset = objetivos
-        self.fields['objetivo_estrategico'].empty_label = '— Selecione —'
+        self.fields['objetivo_estrategico'].empty_label = (
+            'Selecione um objetivo ativo do ciclo...'
+        )
 
     def clean(self):
         cleaned = super().clean()
@@ -196,27 +211,52 @@ class MetaForm(forms.ModelForm):
 
 
 class MetaProgressForm(forms.ModelForm):
-    """Atualização de progresso (0–100) na etapa resultados ou pós-reprovação."""
+    """Atualização de progresso binário (0 / 50 / 100) na etapa resultados."""
+
+    progresso = forms.TypedChoiceField(
+        choices=(
+            ('0', 'Não iniciada (0%)'),
+            ('50', 'Em andamento (50%)'),
+            ('100', 'Concluída (100%)'),
+        ),
+        coerce=lambda value: Decimal(str(value)),
+        label='Progresso',
+        error_messages={
+            'required': 'Selecione o estado do progresso.',
+            'invalid_choice': (
+                'Selecione um dos estados: Não iniciada (0%), '
+                'Em andamento (50%) ou Concluída (100%).'
+            ),
+        },
+    )
 
     class Meta:
         model = Meta
         fields = ('progresso',)
-        labels = {
-            'progresso': 'Progresso (%)',
-        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['progresso'].required = True
-        self.fields['progresso'].widget.attrs.update(
-            {
-                'class': _INPUT,
-                'min': '0',
-                'max': '100',
-                'step': '0.01',
-                'inputmode': 'decimal',
-            },
+        self.fields['progresso'].widget = forms.RadioSelect(
+            attrs={'class': 'sr-only peer'},
         )
+        # Valor inicial só pré-seleciona se já for um marco binário canônico.
+        instance = getattr(self, 'instance', None)
+        if instance is not None and instance.pk and not self.is_bound:
+            normalizado = instance.progresso_binario_normalizado()
+            if normalizado is not None:
+                self.initial['progresso'] = str(int(normalizado))
+            else:
+                self.initial.pop('progresso', None)
+
+    def clean_progresso(self):
+        progresso = self.cleaned_data['progresso']
+        if progresso not in Meta.PROGRESSO_BINARIO_VALORES:
+            raise forms.ValidationError(
+                'Selecione um dos estados: Não iniciada (0%), '
+                'Em andamento (50%) ou Concluída (100%).',
+            )
+        return progresso
 
     def clean(self):
         cleaned = super().clean()

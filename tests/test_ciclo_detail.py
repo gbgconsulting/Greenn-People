@@ -1,4 +1,4 @@
-"""AuthZ do GET ``cycles:ciclo_detail`` + T012 [US1] + T029 [US3].
+"""AuthZ do GET ``cycles:ciclo_detail`` + T012 [US1] + zoom operacional.
 
 Cobertura do contrato ``cycle-managerial-detail.md``:
 - Admin → 200
@@ -9,9 +9,9 @@ T012: cabeçalho ``concluida`` sem nota → empty ``sem_nota`` em
 desempenho/gap/aderência; pipeline de etapa MAY permanecer; copy não trata
 como desempenho 100% saudável; AuthZ ``AdminCyclesMixin`` intacta.
 
-T029: ``?visao=historico`` na URL existente ``cycles/<pk>/`` → barra 100%
-empilhada de status/conclusão cap ``HISTORY_DEFAULT_N``; empty local de
-desempenho; resto da página intacto; AuthZ intacta. Sem rota ``/historico/``.
+Zoom de um ciclo: só visão operacional do ``pk``. ``?visao=historico`` /
+``ciclos`` são ignorados (tendência vive no Painel admin / Time). Sem rota
+``/historico/``. AuthZ intacta.
 
 Só view GET. Não altera asserts de negócio open/close / ``cycle.py``.
 MUST NOT ``data/legado-solides/raw/``.
@@ -30,12 +30,10 @@ from apps.cycles.models import Ciclo
 from apps.cycles.views import AdminCyclesMixin, CicloDetailView
 from apps.dashboard.chart_payloads import (
     CHART_TYPE_AREA,
-    CHART_TYPE_BAR,
     CHART_TYPE_BAR_HORIZONTAL,
     EMPTY_KIND_COPY,
     EMPTY_KIND_SEM_DADO,
     EMPTY_KIND_SEM_NOTA,
-    HISTORY_DEFAULT_N,
 )
 from apps.reviews.models import Avaliacao
 
@@ -340,17 +338,14 @@ def test_ciclo_detail_concluida_sem_nota_lider_403(
     assert resp.status_code == 403
 
 
-# --- T029 [US3] / ``?visao=historico`` em ``cycles/<pk>/`` -------------------
+# --- Zoom operacional: sem tendência nesta tela -------------------------------
 
 _ARCHIVE_PREFIX = 'HIST-DETALHE-'
-_N_ARQUIVO = 12
-_N_ARQUIVO_CAP = 21
-_COPY_SEM_NOTA = EMPTY_KIND_COPY[EMPTY_KIND_SEM_NOTA]
 
 
 def _seed_arquivo_detalhe(
     *,
-    n: int = _N_ARQUIVO,
+    n: int = 3,
     usuario=None,
 ) -> list[Ciclo]:
     """Ciclos encerrados sintéticos — nunca dump ``legado-solides/raw``."""
@@ -374,23 +369,13 @@ def _seed_arquivo_detalhe(
     return ciclos
 
 
-def _assert_history_stacked(chart: dict | None, *, max_labels: int = HISTORY_DEFAULT_N) -> None:
-    assert chart is not None
-    assert chart.get('has_data') is True
-    assert chart.get('type') == CHART_TYPE_BAR
-    assert chart.get('stacked') is True
-    labels = list(chart.get('labels') or [])
-    assert 1 <= len(labels) <= max_labels
-    assert len(labels) <= HISTORY_DEFAULT_N
-
-
 @pytest.mark.django_db
-def test_ciclo_detail_sem_visao_permanece_operacional_nao_tendencia(
+def test_ciclo_detail_somente_operacional_sem_toggle_historico(
     admin,
     ciclo_aberto,
     colaborador,
 ):
-    """Sem ``visao=``: pipeline do ``pk``; sem série ``area`` de tendência."""
+    """Zoom do ciclo: pipeline do ``pk``; sem toggle / série de tendência."""
     _seed_arquivo_detalhe(usuario=colaborador)
     client = Client()
     client.force_login(admin)
@@ -404,123 +389,47 @@ def test_ciclo_detail_sem_visao_permanece_operacional_nao_tendencia(
     assert progresso['type'] != CHART_TYPE_AREA
     html = resp.content.decode()
     assert 'data-chart-payload="chart-stage-history"' not in html
+    assert 'data-component="visao-toggle"' not in html
+    assert 'visao=historico' not in html
     assert _detail_url(ciclo_aberto) == f'/cycles/{ciclo_aberto.pk}/'
     assert '/historico/' not in html
-    # T033: toggle GET na mesma URL; sem path /historico/.
-    assert 'data-component="visao-toggle"' in html
-    assert 'visao=historico' in html
 
 
 @pytest.mark.django_db
-def test_ciclo_detail_visao_historico_stacked_cap_n(
+def test_ciclo_detail_ignora_query_visao_historico(
     admin,
     colaborador,
 ):
-    """``?visao=historico`` em ``cycles/<pk>/``: barra empilhada ≤ ``HISTORY_DEFAULT_N``."""
-    arquivo = _seed_arquivo_detalhe(n=_N_ARQUIVO_CAP, usuario=colaborador)
-    assert len(arquivo) == _N_ARQUIVO_CAP
-    assert _N_ARQUIVO_CAP > HISTORY_DEFAULT_N
-    # Âncora = um ciclo do arquivo (pk já é escolha explícita).
+    """``?visao=historico`` / ``ciclos`` não ativam tendência neste zoom."""
+    arquivo = _seed_arquivo_detalhe(n=5, usuario=colaborador)
     ancora = arquivo[-1]
+    ciclos_param = ','.join(str(c.pk) for c in arquivo)
 
     client = Client()
     client.force_login(admin)
-    resp = client.get(_detail_url(ancora), {'visao': 'historico'})
+    resp = client.get(
+        _detail_url(ancora),
+        {'visao': 'historico', 'ciclos': ciclos_param},
+    )
 
     assert resp.status_code == 200
-    assert _detail_url(ancora) == f'/cycles/{ancora.pk}/'
-    assert resp.context.get('visao') == 'historico'
-    history = resp.context['chart_stage_history']
-    _assert_history_stacked(history)
-    labels = list(history['labels'])
-    assert len(labels) == HISTORY_DEFAULT_N
-    assert len(labels) < len(arquivo)
-    esperados = [c.nome for c in arquivo[-HISTORY_DEFAULT_N:]]
-    assert labels == esperados
-
-    html = resp.content.decode()
-    assert 'data-chart-payload="chart-stage-history"' in html
-    assert '/historico/' not in html
-
-
-@pytest.mark.django_db
-def test_ciclo_detail_visao_historico_empty_desempenho_local(
-    admin,
-    colaborador,
-):
-    """No modo histórico: empty ``sem_nota`` em desempenho/gap/aderência."""
-    arquivo = _seed_arquivo_detalhe(n=_N_ARQUIVO, usuario=colaborador)
-    ancora = arquivo[-1]
-
-    client = Client()
-    client.force_login(admin)
-    resp = client.get(_detail_url(ancora), {'visao': 'historico'})
-
-    assert resp.status_code == 200
-    history = resp.context['chart_stage_history']
-    _assert_history_stacked(history)
-
-    for key in _DESEMPENHO_CHART_KEYS:
-        chart = resp.context.get(key)
-        if chart is None:
-            continue
-        _assert_empty_sem_nota(chart)
-
-    html = resp.content.decode()
-    assert _COPY_SEM_NOTA in html
-    assert 'data-chart-payload="chart-aderencia-distribuicao"' not in html
-    assert 'data-chart-payload="chart-stage-history"' in html
-
-
-@pytest.mark.django_db
-def test_ciclo_detail_visao_historico_resto_da_pagina_intacto(
-    admin,
-    colaborador,
-):
-    """Histórico no visual principal; cobertura/checklist/pipeline do ``pk`` seguem."""
-    arquivo = _seed_arquivo_detalhe(n=_N_ARQUIVO, usuario=colaborador)
-    ancora = arquivo[-1]
-
-    client = Client()
-    client.force_login(admin)
-    resp = client.get(_detail_url(ancora), {'visao': 'historico'})
-
-    assert resp.status_code == 200
-    html = resp.content.decode()
-
-    for needle in (
-        'managerial-panel',
-        'Cobertura por área',
-        'Cobertura por cargo',
-        'Checklist operacional',
-        'chart.js@4.5.1',
-        'dashboard_charts.js',
-    ):
-        assert needle in html, needle
-
-    for key in (
-        'chart_stage_history',
-        'chart_ciclo_progresso',
-        'chart_cobertura_area',
-        'chart_cobertura_cargo',
-        'rh_pre_open_checklist',
-        'avaliacoes_resumo',
-        'cobertura_resumo',
-    ):
-        assert key in resp.context, key
-
-    # Pipeline do ``pk`` permanece no modo operacional (T032).
+    assert resp.context.get('visao') != 'historico'
+    assert resp.context.get('chart_stage_history') is None
     progresso = resp.context['chart_ciclo_progresso']
     assert progresso['type'] == CHART_TYPE_BAR_HORIZONTAL
     assert progresso.get('has_data') is True
-
-    checklist = resp.context['rh_pre_open_checklist']
-    assert checklist.advisory_only is True
-    assert 'data-advisory-only="true"' in html
+    # Aderência do ``pk`` permanece (não força empty ``sem_nota`` de histórico).
+    aderencia = resp.context['chart_aderencia_distribuicao']
+    assert aderencia is not None
+    html = resp.content.decode()
+    assert 'data-chart-payload="chart-stage-history"' not in html
+    assert 'data-component="visao-toggle"' not in html
+    assert 'managerial-panel' in html
+    assert 'Checklist operacional' in html
 
 
 @pytest.mark.django_db
-def test_ciclo_detail_visao_historico_authz_lider_403(
+def test_ciclo_detail_query_visao_historico_authz_lider_403(
     lider,
     colaborador,
 ):
@@ -531,32 +440,3 @@ def test_ciclo_detail_visao_historico_authz_lider_403(
     client.force_login(lider)
     resp = client.get(_detail_url(arquivo[-1]), {'visao': 'historico'})
     assert resp.status_code == 403
-
-
-@pytest.mark.django_db
-def test_ciclo_detail_visao_historico_ciclos_cap_n(
-    admin,
-    colaborador,
-):
-    """``?ciclos=`` na mesma URL: só ids pedidos; cap ``HISTORY_DEFAULT_N``."""
-    arquivo = _seed_arquivo_detalhe(n=_N_ARQUIVO_CAP, usuario=colaborador)
-    pedidos = arquivo[:10]
-    assert len(pedidos) > HISTORY_DEFAULT_N
-    ciclos_param = ','.join(str(c.pk) for c in pedidos)
-    ancora = arquivo[-1]
-
-    client = Client()
-    client.force_login(admin)
-    resp = client.get(
-        _detail_url(ancora),
-        {'visao': 'historico', 'ciclos': ciclos_param},
-    )
-
-    assert resp.status_code == 200
-    history = resp.context['chart_stage_history']
-    _assert_history_stacked(history)
-    labels = list(history['labels'])
-    assert len(labels) == HISTORY_DEFAULT_N
-    assert labels == [c.nome for c in pedidos[:HISTORY_DEFAULT_N]]
-    omitidos = {c.nome for c in pedidos[HISTORY_DEFAULT_N:]}
-    assert omitidos.isdisjoint(set(labels))

@@ -1,37 +1,140 @@
+{% load html_attrs %}
 {% comment %}
   Cartão de conteúdo / métrica (DS v2 — densidade/hierarquia KPI; chrome leve).
   Uso:
     {% include "components/card.html" with label="Aderência" value="86%" %}
     {% include "components/card.html" with title="Metas" body="Resumo do ciclo" %}
     {% include "components/card.html" with label="Status" badge_status="ativo" badge_label="Aberto" %}
+    {% include "components/card.html" with label="Avançaram" value=89 accent="success" icon="trending_up" value_size="lg" %}
+    {% include "components/card.html" with label="Nível" value=6 footer_label="Ver competências" footer_href="/expectations/" %}
 
   Anatomia: frame fino (borda + surface), sem sombra — preferir composição limpa
   a cardificar excessivamente. Valor KPI em display; label/body em UI.
 
   Parâmetros: label, title, value, body, badge_status, badge_label, extra_class, attrs
+  - accent: primary | warning | neutral | success — faixa superior opcional
+  - icon: trending_up | stable | hourglass | check — ícone decorativo opcional (canto superior)
+  - value_size: lg — valor em text-4xl (default text-2xl)
+  - value_suffix — texto auxiliar ao lado do valor (ex. "/ 141")
+  - footer_label + footer_href — link de ação no rodapé (opcional; mock painel pessoal)
+  - footer_scroll_to — id de elemento para scroll suave sem alterar a URL (alternativa a footer_href)
+  - footer_hint — texto auxiliar à esquerda no rodapé (ex. "% do quadro")
+  - footer_hint_icon — lock | (vazio) — ícone decorativo opcional ao lado do hint
+  - footer_secondary — ênfase à direita quando não há link (ex. "89 no ciclo")
   - Com value + badge_status: badge fica ao lado do label (KPI com origem/status).
   - Sem value + badge_status: badge é o conteúdo principal (ex.: status do PDI).
 {% endcomment %}
-<div class="rounded-xl border border-line bg-surface-card p-4 {{ extra_class }}"{% if attrs %} {{ attrs|safe }}{% endif %}>
+<div class="group relative flex h-full flex-col overflow-hidden rounded-xl border border-line bg-surface-card p-4 sm:p-5 {{ extra_class }}"{% if attrs %} {{ attrs|validated_attrs }}{% endif %}>
+  {% if accent %}
+  <div
+    class="absolute inset-x-0 top-0 h-1 transition-colors
+      {% if accent == 'primary' %}bg-emerald-600/20 group-hover:bg-emerald-600
+      {% elif accent == 'warning' %}bg-amber-500/20 group-hover:bg-amber-500
+      {% elif accent == 'success' %}bg-brand-gradient
+      {% else %}bg-slate-200 group-hover:bg-slate-400{% endif %}"
+    aria-hidden="true"
+  ></div>
+  {% endif %}
+
   {% if label %}
-  <div class="flex flex-wrap items-center justify-between gap-2">
-    <p class="text-xs uppercase tracking-wide text-slate-500">{{ label }}</p>
-    {% if badge_status and value != '' %}
-      {% include "components/badge_status.html" with status=badge_status label=badge_label %}
-    {% endif %}
+  <div class="flex flex-wrap items-start justify-between gap-2{% if accent %} mt-1{% endif %}">
+    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">{{ label }}</p>
+    <div class="flex items-center gap-2">
+      {% if badge_status and value != '' %}
+        {% include "components/badge_status.html" with status=badge_status label=badge_label %}
+      {% endif %}
+      {% if icon == 'trending_up' %}
+      <span class="inline-flex rounded-full border-0 bg-emerald-50 p-1.5 outline-none ring-0" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4 text-emerald-600">
+          <path fill-rule="evenodd" d="M12.577 4.878a.75.75 0 0 1 .919-.53l4.78 1.281a.75.75 0 0 1 .531.919l-1.28 4.784a.75.75 0 0 1-1.449-.387l.81-3.022a19.407 19.407 0 0 0-5.594 5.203l-2.873 2.872a.75.75 0 0 1-1.06-1.06l2.873-2.873a19.407 19.407 0 0 0-5.203-5.594l-3.022.81a.75.75 0 0 1-.387-1.45l4.784-1.281Z" clip-rule="evenodd" />
+        </svg>
+      </span>
+      {% elif icon == 'check' %}
+      <span class="inline-flex rounded-full border-0 bg-emerald-50 p-1.5 outline-none ring-0" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4 text-emerald-700">
+          <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd" />
+        </svg>
+      </span>
+      {% elif icon == 'stable' %}
+      <span class="inline-flex rounded-full border-0 bg-amber-50 p-1.5 outline-none ring-0" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4 text-amber-600">
+          <path fill-rule="evenodd" d="M4 10a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H4.75A.75.75 0 0 1 4 10Z" clip-rule="evenodd" />
+        </svg>
+      </span>
+      {% elif icon == 'hourglass' %}
+      <span class="inline-flex rounded-full border-0 bg-slate-100 p-1.5 outline-none ring-0" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4 text-slate-500">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-13a.75.75 0 0 0-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 0 0 0-1.5h-3.25V5Z" clip-rule="evenodd" />
+        </svg>
+      </span>
+      {% endif %}
+    </div>
   </div>
   {% endif %}
   {% if title %}
   <h3 class="font-display text-lg font-medium text-slate-800 {% if label %}mt-1{% endif %}">{{ title }}</h3>
   {% endif %}
   {% if value != '' %}
-  <p class="font-display text-2xl font-semibold tabular-nums tracking-tight text-slate-800 {% if label or title %}mt-1{% endif %}">{{ value }}</p>
+  <div class="flex items-end gap-2 {% if label or title %}mt-2{% endif %}">
+    <p class="font-display {% if value_size == 'lg' %}text-4xl{% else %}text-2xl{% endif %} font-semibold tabular-nums tracking-tight text-slate-800">{{ value }}</p>
+    {% if value_suffix %}
+    <span class="mb-1.5 text-base tabular-nums text-slate-500">{{ value_suffix }}</span>
+    {% endif %}
+  </div>
   {% elif badge_status %}
   <div class="{% if label or title %}mt-1.5{% endif %}">
     {% include "components/badge_status.html" with status=badge_status label=badge_label %}
   </div>
   {% endif %}
   {% if body %}
-  <p class="text-sm leading-snug text-slate-500 {% if label or title or value != '' or badge_status %}mt-1.5{% endif %}">{{ body }}</p>
+  <p class="text-sm leading-snug text-slate-500 {% if label or title or value != '' or badge_status %}mt-2{% endif %}">{{ body }}</p>
+  {% endif %}
+  {% if footer_hint or footer_secondary or footer_scroll_to %}
+  <div class="mt-auto flex items-center gap-2 border-t border-line pt-3 font-ui text-[11px] leading-snug text-slate-500 {% if footer_hint %}justify-between{% else %}justify-end{% endif %}">
+    {% if footer_hint %}
+    <span class="inline-flex items-center gap-1 {% if footer_hint_tone == 'warning' %}font-medium text-amber-700{% elif footer_hint_tone == 'success' %}font-semibold text-emerald-600{% endif %}">
+      {% if footer_hint_icon == 'lock' %}
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-3.5 shrink-0 text-slate-400" aria-hidden="true">
+        <path fill-rule="evenodd" d="M10 1a4.5 4.5 0 0 0-4.5 4.5V9H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-.5V5.5A4.5 4.5 0 0 0 10 1Zm3 8V5.5a3 3 0 1 0-6 0V9h6Z" clip-rule="evenodd" />
+      </svg>
+      {% endif %}
+      {{ footer_hint }}
+    </span>
+    {% endif %}
+    {% if footer_scroll_to and footer_label %}
+    <button
+      type="button"
+      data-scroll-to="{{ footer_scroll_to }}"
+      class="inline-flex shrink-0 cursor-pointer items-center gap-0.5 border-0 bg-transparent p-0 font-semibold text-emerald-700 transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+    >
+      {{ footer_label }}
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-3.5 shrink-0" aria-hidden="true">
+        <path fill-rule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638l-3.96-3.96a.75.75 0 1 1 1.06-1.06l5.25 5.25a.75.75 0 0 1 0 1.06l-5.25 5.25a.75.75 0 1 1-1.06-1.06l3.96-3.96H3.75A.75.75 0 0 1 3 10Z" clip-rule="evenodd" />
+      </svg>
+    </button>
+    {% elif footer_href and footer_label %}
+    <a
+      href="{{ footer_href }}"
+      class="inline-flex shrink-0 items-center gap-0.5 font-semibold text-emerald-700 transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+    >
+      {{ footer_label }}
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-3.5 shrink-0" aria-hidden="true">
+        <path fill-rule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638l-3.96-3.96a.75.75 0 1 1 1.06-1.06l5.25 5.25a.75.75 0 0 1 0 1.06l-5.25 5.25a.75.75 0 1 1-1.06-1.06l3.96-3.96H3.75A.75.75 0 0 1 3 10Z" clip-rule="evenodd" />
+      </svg>
+    </a>
+    {% elif footer_secondary %}
+    <span class="shrink-0 font-semibold text-emerald-600">{{ footer_secondary }}</span>
+    {% endif %}
+  </div>
+  {% elif footer_href and footer_label %}
+  <a
+    href="{{ footer_href }}"
+    class="mt-auto inline-flex items-center gap-1 pt-6 font-ui text-sm font-semibold tracking-tight text-emerald-700 transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+  >
+    {{ footer_label }}
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-4 shrink-0" aria-hidden="true">
+      <path fill-rule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638l-3.96-3.96a.75.75 0 1 1 1.06-1.06l5.25 5.25a.75.75 0 0 1 0 1.06l-5.25 5.25a.75.75 0 1 1-1.06-1.06l3.96-3.96H3.75A.75.75 0 0 1 3 10Z" clip-rule="evenodd" />
+    </svg>
+  </a>
   {% endif %}
 </div>

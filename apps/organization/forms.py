@@ -5,6 +5,7 @@ from django.db import transaction
 from apps.accounts.models import CustomUser
 from apps.core.forms import active_choices_queryset
 from apps.organization.models import Area, Cargo
+from apps.organization.services.display import CARGO_NIVEL_LABELS
 from apps.reviews.services.enrollment import ensure_avaliacao_for_user
 
 _INPUT = (
@@ -76,8 +77,40 @@ class CargoForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['nome'].widget.attrs.update({'class': _INPUT})
-        self.fields['nivel'].widget.attrs.update({'class': _INPUT, 'min': '1'})
         self.fields['is_active'].widget.attrs.update({'class': _CHECKBOX})
+
+        nivel_choices = [
+            (nivel, label)
+            for nivel, label in sorted(CARGO_NIVEL_LABELS.items())
+        ]
+        if self.instance.pk and self.instance.nivel not in CARGO_NIVEL_LABELS:
+            nivel_choices.insert(
+                0,
+                (self.instance.nivel, str(self.instance.nivel)),
+            )
+
+        empty_label = None if self.instance.pk else 'Selecione um nível'
+        self.fields['nivel'] = forms.TypedChoiceField(
+            choices=nivel_choices,
+            coerce=int,
+            empty_value=None,
+            label='Nível',
+            required=True,
+            widget=forms.Select(attrs={'class': _INPUT}),
+        )
+        if empty_label is not None:
+            self.fields['nivel'].choices = [
+                ('', empty_label),
+                *nivel_choices,
+            ]
+
+    def clean_nivel(self):
+        nivel = self.cleaned_data.get('nivel')
+        if nivel is None:
+            raise ValidationError('Selecione um nível.')
+        if nivel not in CARGO_NIVEL_LABELS:
+            raise ValidationError('Selecione um nível válido (1 a 6).')
+        return nivel
 
 
 class UserUpdateForm(forms.ModelForm):

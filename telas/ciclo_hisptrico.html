@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Histórico - Greenn People</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&amp;family=Source+Sans+3:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary": "#ffffff",
+                        "on-secondary-fixed": "#00201c",
+                        "primary-fixed-dim": "#68dba9",
+                        "primary": "#006948",
+                        "text-heading": "#1e293b",
+                        "on-surface-variant": "#3d4a42",
+                        "surface-container-high": "#e6e8ea",
+                        "tertiary-fixed": "#ffdad7",
+                        "status-warning": "#f59e0b",
+                        "surface-tint": "#006c4a",
+                        "on-secondary-fixed-variant": "#005048",
+                        "on-surface": "#191c1e",
+                        "outline": "#6d7a72",
+                        "surface-container-highest": "#e0e3e5",
+                        "secondary-fixed": "#71f8e4",
+                        "inverse-surface": "#2d3133",
+                        "surface-container": "#eceef0",
+                        "inverse-on-surface": "#eff1f3",
+                        "text-body": "#64748b",
+                        "inverse-primary": "#68dba9",
+                        "error-container": "#ffdad6",
+                        "on-error": "#ffffff",
+                        "primary-fixed": "#85f8c4",
+                        "on-secondary-container": "#006f64",
+                        "tertiary-container": "#ba5551",
+                        "on-primary-fixed-variant": "#005137",
+                        "on-tertiary": "#ffffff",
+                        "surface-bright": "#f7f9fb",
+                        "surface-container-low": "#f2f4f6",
+                        "background": "#f7f9fb",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed": "#002114",
+                        "secondary-container": "#6df5e1",
+                        "border-subtle": "#e2e8f0",
+                        "surface-dim": "#d8dadc",
+                        "status-critical": "#f43f5e",
+                        "primary-container": "#00855d",
+                        "secondary": "#006b5f",
+                        "surface": "#f7f9fb",
+                        "on-primary-container": "#f5fff7",
+                        "on-tertiary-fixed": "#410004",
+                        "tertiary": "#9b3e3b",
+                        "on-background": "#191c1e",
+                        "error": "#ba1a1a",
+                        "brand-gradient": "linear-gradient(135deg, #059669 0%, #14b8a6 100%)",
+                        "secondary-fixed-dim": "#4fdbc8",
+                        "surface-variant": "#e0e3e5",
+                        "on-tertiary-container": "#fffbff",
+                        "on-tertiary-fixed-variant": "#7f2928",
+                        "status-success": "#10b981",
+                        "tertiary-fixed-dim": "#ffb3ae",
+                        "surface-container-lowest": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "outline-variant": "#bccac0"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "container-padding": "32px",
+                        "gutter": "24px",
+                        "unit": "4px",
+                        "sidebar-width": "280px"
+                    },
+                    "fontFamily": {
+                        "headline-sm": ["Fraunces"],
+                        "headline-lg": ["Fraunces"],
+                        "body-sm": ["\"Source Sans 3\""],
+                        "body-lg": ["\"Source Sans 3\""],
+                        "label-sm": ["\"Source Sans 3\""],
+                        "body-md": ["\"Source Sans 3\""],
+                        "display-lg": ["Fraunces"],
+                        "headline-md": ["Fraunces"],
+                        "label-md": ["\"Source Sans 3\""]
+                    },
+                    "fontSize": {
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "500" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "500" }],
+                        "label-md": ["14px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md antialiased min-h-screen flex">
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 h-screen w-[280px] bg-surface-container-lowest border-r border-border-subtle flex flex-col z-20 md:flex hidden">
+<div class="p-6">
+<h1 class="font-headline-md text-headline-md font-bold text-primary mb-1">Greenn People</h1>
+<p class="font-label-md text-label-md text-on-surface-variant">Performance Management</p>
+</div>
+<nav class="flex-1 overflow-y-auto mt-4 px-2 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant rounded-lg hover:bg-surface-container-low transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">refresh</span>
+<span class="font-label-md text-label-md">Ciclos</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant rounded-lg hover:bg-surface-container-low transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">task_alt</span>
+<span class="font-label-md text-label-md">Aderência</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 bg-primary/5 text-primary rounded-lg border-l-4 border-primary" href="#">
+<span class="material-symbols-outlined fill text-primary">admin_panel_settings</span>
+<span class="font-label-md text-label-md font-bold">Painel admin</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant rounded-lg hover:bg-surface-container-low transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">account_tree</span>
+<span class="font-label-md text-label-md">Estrutura/Matriz</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant rounded-lg hover:bg-surface-container-low transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">domain</span>
+<span class="font-label-md text-label-md">Áreas</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant rounded-lg hover:bg-surface-container-low transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">badge</span>
+<span class="font-label-md text-label-md">Cargos</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant rounded-lg hover:bg-surface-container-low transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-md text-label-md">Usuários</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant rounded-lg hover:bg-surface-container-low transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">psychology</span>
+<span class="font-label-md text-label-md">Competências</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant rounded-lg hover:bg-surface-container-low transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">history_edu</span>
+<span class="font-label-md text-label-md">Auditoria</span>
+</a>
+</nav>
+<div class="p-4 border-t border-border-subtle mt-auto space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant rounded-lg hover:bg-surface-container-low transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">notifications</span>
+<span class="font-label-md text-label-md">Notificações</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant rounded-lg hover:bg-surface-container-low transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-label-md text-label-md">Sair</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 ml-[280px] min-w-0">
+<!-- TopNavBar -->
+<header class="flex justify-between items-center h-16 px-8 bg-surface border-b border-border-subtle sticky top-0 z-10 w-full">
+<div class="flex items-center gap-6">
+<span class="font-headline-sm text-headline-sm font-bold bg-brand-gradient bg-clip-text text-transparent">Greenn People</span>
+<nav class="flex gap-4 ml-8">
+<a class="text-on-surface-variant font-label-md text-label-md py-5 border-b-2 border-transparent hover:text-primary transition-colors" href="#">Ciclo de Performance 2024</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex bg-surface-container-low rounded-lg p-1 border border-border-subtle">
+<button class="px-4 py-1.5 font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors rounded-md">Neste ciclo</button>
+<button class="px-4 py-1.5 font-label-md text-label-md bg-primary text-on-primary rounded-md shadow-sm">Histórico</button>
+</div>
+<button class="w-10 h-10 rounded-full hover:bg-surface-container-low flex items-center justify-center text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="w-10 h-10 rounded-full bg-surface-container-high border border-border-subtle overflow-hidden">
+<img alt="User Profile Avatar" class="w-full h-full object-cover" data-alt="A professional headshot of a corporate employee smiling subtly in a modern office environment. Soft, natural light illuminating the face with a shallow depth of field. A sophisticated B2B SaaS context." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBgBWX_v6_SCLvy_UyUQwPLDnwPnulB7ficnKQW3EzSttWUzew5oYx6dMNLOU2qvTk-iLXOnWNI71-z38w37qeT_oaWQVM4K9QaOB5LOafMGvJXKTzBcaFq_ufCQhMzLLbqWvBm_yggqHZRUrHvdaWt5f0g-CwLQiUVMyS4pOFt1HBSWPYDiHQSQlYvRBp30Jv-kcRyAriYo8gn7gYWb7jocdqwiUjTSy4rSDc8M_vLQ0Re4yLp6glS"/>
+</button>
+</div>
+</header>
+<!-- Canvas -->
+<div class="max-w-[1440px] mx-auto p-container-padding space-y-8">
+<!-- Section Header -->
+<div class="space-y-2">
+<h2 class="font-headline-lg text-headline-lg text-text-heading">Como as pessoas avançaram</h2>
+<p class="font-body-lg text-body-lg text-text-body">Quem avançou, quem ficou no mesmo ponto e quem ainda não entrou.</p>
+</div>
+<!-- KPI Row -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+<!-- KPI Card 1 -->
+<div class="bg-surface-container-lowest rounded-xl border border-border-subtle p-6 shadow-sm hover:-translate-y-1 transition-transform duration-200">
+<div class="h-1 w-full bg-status-success rounded-t-sm absolute top-0 left-0"></div>
+<div class="relative">
+<div class="flex justify-between items-start mb-4">
+<h3 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Avançaram</h3>
+<div class="bg-status-success/10 p-2 rounded-full">
+<span class="material-symbols-outlined text-status-success text-sm">trending_up</span>
+</div>
+</div>
+<div class="font-display-lg text-display-lg text-text-heading mb-2">89</div>
+<p class="font-body-sm text-body-sm text-text-body">Pessoas que avançaram de etapa ou concluíram.</p>
+</div>
+</div>
+<!-- KPI Card 2 -->
+<div class="bg-surface-container-lowest rounded-xl border border-border-subtle p-6 shadow-sm hover:-translate-y-1 transition-transform duration-200 relative overflow-hidden">
+<div class="h-1 w-full bg-status-warning rounded-t-sm absolute top-0 left-0"></div>
+<div class="relative">
+<div class="flex justify-between items-start mb-4">
+<h3 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">No mesmo ponto</h3>
+<div class="bg-status-warning/10 p-2 rounded-full">
+<span class="material-symbols-outlined text-status-warning text-sm">horizontal_rule</span>
+</div>
+</div>
+<div class="font-display-lg text-display-lg text-text-heading mb-2">34</div>
+<p class="font-body-sm text-body-sm text-text-body">Pessoas que não mudaram de etapa nesses ciclos.</p>
+</div>
+</div>
+<!-- KPI Card 3 -->
+<div class="bg-surface-container-lowest rounded-xl border border-border-subtle p-6 shadow-sm hover:-translate-y-1 transition-transform duration-200 relative overflow-hidden">
+<div class="h-1 w-full bg-outline-variant rounded-t-sm absolute top-0 left-0"></div>
+<div class="relative">
+<div class="flex justify-between items-start mb-4">
+<h3 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Sem registro</h3>
+<div class="bg-outline-variant/20 p-2 rounded-full">
+<span class="material-symbols-outlined text-outline text-sm">hourglass_empty</span>
+</div>
+</div>
+<div class="font-display-lg text-display-lg text-text-heading mb-2">21</div>
+<p class="font-body-sm text-body-sm text-text-body">Pessoas que não chegaram a entrar nesses ciclos.</p>
+</div>
+</div>
+</div>
+<!-- Charts Section -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
+<!-- Main Chart -->
+<div class="lg:col-span-2 bg-surface-container-lowest rounded-xl border border-border-subtle p-6 shadow-sm">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-headline-sm text-headline-sm text-text-heading">Andamento ao longo dos ciclos</h3>
+<button class="text-primary hover:bg-surface-container-low px-3 py-1.5 rounded-md transition-colors flex items-center gap-2">
+<span class="font-label-sm text-label-sm">Ver Detalhes</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+<div class="w-full h-[300px] relative">
+<canvas id="stackedBarChart"></canvas>
+</div>
+</div>
+<!-- Secondary Chart -->
+<div class="lg:col-span-1 bg-surface-container-lowest rounded-xl border border-border-subtle p-6 shadow-sm flex flex-col">
+<h3 class="font-headline-sm text-headline-sm text-text-heading mb-6">Distribuição de aderência</h3>
+<div class="flex-1 flex items-center justify-center relative w-full min-h-[250px]">
+<canvas id="doughnutChart"></canvas>
+<!-- Center Text overlay for Doughnut -->
+<div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+<span class="font-display-lg text-display-lg text-text-heading">62%</span>
+<span class="font-label-sm text-label-sm text-text-body uppercase tracking-widest mt-1">Concluído</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Chart.js global defaults
+            Chart.defaults.font.family = '"Source Sans 3", sans-serif';
+            Chart.defaults.color = '#64748b'; // text-body
+            Chart.defaults.scale.grid.color = '#e2e8f0'; // border-subtle
+            
+            // Stacked Bar Chart with Trend Line
+            const barCtx = document.getElementById('stackedBarChart').getContext('2d');
+            new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Ciclo 2024', 'Ciclo 2025', 'Ciclo 2026'],
+                    datasets: [
+                        {
+                            label: 'Concluídas',
+                            data: [45, 60, 89],
+                            backgroundColor: '#10b981', // status-success
+                            stack: 'Stack 0',
+                            barThickness: 40,
+                            borderRadius: { topLeft: 0, topRight: 0, bottomLeft: 4, bottomRight: 4 }
+                        },
+                        {
+                            label: 'Em andamento',
+                            data: [35, 25, 34],
+                            backgroundColor: '#f59e0b', // status-warning
+                            stack: 'Stack 0',
+                            barThickness: 40
+                        },
+                        {
+                            label: 'Sem avaliação',
+                            data: [20, 15, 21],
+                            backgroundColor: '#e2e8f0', // border-subtle
+                            stack: 'Stack 0',
+                            barThickness: 40,
+                            borderRadius: { topLeft: 4, topRight: 4, bottomLeft: 0, bottomRight: 0 }
+                        },
+                        {
+                            type: 'line',
+                            label: 'Taxa de Conclusão (%)',
+                            data: [45, 60, 61.8], // (45/100)*100, (60/100)*100, (89/144)*100 approx
+                            borderColor: '#006948', // primary
+                            backgroundColor: '#006948',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: false,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20,
+                                font: {
+                                    size: 12,
+                                    weight: 600
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            titleFont: { family: '"Source Sans 3"', size: 14 },
+                            bodyFont: { family: '"Source Sans 3"', size: 13 },
+                            padding: 12,
+                            cornerRadius: 8
+                        }
+                    },
+                    scales: {
+                        x: {
+                            stacked: true,
+                            grid: { display: false }
+                        },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true,
+                            max: 150,
+                            grid: { borderDash: [4, 4] }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            grid: { drawOnChartArea: false },
+                            min: 0,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) { return value + '%' }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Doughnut Chart
+            const doughnutCtx = document.getElementById('doughnutChart').getContext('2d');
+            new Chart(doughnutCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Aderentes', 'Parciais', 'Baixa Aderência'],
+                    datasets: [{
+                        data: [62, 25, 13],
+                        backgroundColor: [
+                            '#006948', // primary
+                            '#68dba9', // primary-fixed-dim
+                            '#e2e8f0'  // border-subtle
+                        ],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '75%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 16,
+                                font: {
+                                    size: 12,
+                                    weight: 600
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': ' + context.parsed + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body></html>

@@ -1,0 +1,346 @@
+<!DOCTYPE html><html class="light" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Usuários - Greenn People</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&amp;family=Source+Sans+3:wght@400;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#ffdad7",
+                        "tertiary-container": "#ba5551",
+                        "on-background": "#191c1e",
+                        "primary": "#006948",
+                        "text-heading": "#1e293b",
+                        "error-container": "#ffdad6",
+                        "on-error-container": "#93000a",
+                        "secondary-fixed-dim": "#4fdbc8",
+                        "outline-variant": "#bccac0",
+                        "status-critical": "#f43f5e",
+                        "surface-bright": "#f7f9fb",
+                        "on-surface": "#191c1e",
+                        "tertiary": "#9b3e3b",
+                        "on-primary": "#ffffff",
+                        "inverse-surface": "#2d3133",
+                        "surface-container": "#eceef0",
+                        "on-tertiary-fixed": "#410004",
+                        "on-secondary-container": "#006f64",
+                        "on-secondary-fixed-variant": "#005048",
+                        "primary-fixed": "#85f8c4",
+                        "on-error": "#ffffff",
+                        "on-secondary-fixed": "#00201c",
+                        "on-tertiary-container": "#fffbff",
+                        "secondary-fixed": "#71f8e4",
+                        "on-secondary": "#ffffff",
+                        "on-primary-container": "#f5fff7",
+                        "surface": "#f7f9fb",
+                        "primary-fixed-dim": "#68dba9",
+                        "status-success": "#10b981",
+                        "error": "#ba1a1a",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed-dim": "#ffb3ae",
+                        "outline": "#6d7a72",
+                        "text-body": "#64748b",
+                        "background": "#f7f9fb",
+                        "brand-gradient": "linear-gradient(135deg, #059669 0%, #14b8a6 100%)",
+                        "surface-container-highest": "#e0e3e5",
+                        "surface-container-high": "#e6e8ea",
+                        "on-primary-fixed-variant": "#005137",
+                        "on-primary-fixed": "#002114",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface-variant": "#3d4a42",
+                        "status-warning": "#f59e0b",
+                        "on-tertiary-fixed-variant": "#7f2928",
+                        "secondary": "#006b5f",
+                        "inverse-on-surface": "#eff1f3",
+                        "inverse-primary": "#68dba9",
+                        "surface-variant": "#e0e3e5",
+                        "surface-dim": "#d8dadc",
+                        "surface-container-low": "#f2f4f6",
+                        "border-subtle": "#e2e8f0",
+                        "surface-tint": "#006c4a",
+                        "primary-container": "#00855d",
+                        "secondary-container": "#6df5e1"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "container-padding": "32px",
+                        "sidebar-width": "280px",
+                        "gutter": "24px",
+                        "unit": "4px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Fraunces"],
+                        "body-lg": ["\"Source Sans 3\""],
+                        "label-sm": ["\"Source Sans 3\""],
+                        "body-sm": ["\"Source Sans 3\""],
+                        "headline-lg": ["Fraunces"],
+                        "headline-sm": ["Fraunces"],
+                        "label-md": ["\"Source Sans 3\""],
+                        "display-lg": ["Fraunces"],
+                        "body-md": ["\"Source Sans 3\""]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "500" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "600" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "500" }],
+                        "label-md": ["14px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #f7f9fb; }
+        .brand-btn-primary {
+            background: linear-gradient(135deg, #059669 0%, #14b8a6 100%);
+            color: white;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .brand-btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .table-row-hover:hover { background-color: #f8fafc; }
+    </style>
+</head>
+<body class="font-body-md text-on-surface antialiased overflow-x-hidden">
+<!-- SideNavBar -->
+<nav class="bg-surface-container-lowest dark:bg-surface-container-lowest fixed left-0 top-0 h-full w-sidebar-width border-r border-border-subtle dark:border-outline-variant z-40 hidden md:flex flex-col py-6">
+<div class="px-gutter mb-8">
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim">Greenn People</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Governança</p>
+</div>
+<div class="flex-1 overflow-y-auto w-full">
+<ul class="space-y-1 w-full px-4">
+<li class=""><a class="flex items-center px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors duration-200 ease-in-out font-label-md text-label-md" href="#"><span class="material-symbols-outlined mr-3">refresh</span>Ciclos</a></li>
+<li class=""><a class="flex items-center px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors duration-200 ease-in-out font-label-md text-label-md" href="#"><span class="material-symbols-outlined mr-3">check_circle</span>Aderência</a></li>
+<li class=""><a class="flex items-center px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors duration-200 ease-in-out font-label-md text-label-md" href="#"><span class="material-symbols-outlined mr-3">dashboard</span>Painel admin</a></li>
+<li class=""><a class="flex items-center px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors duration-200 ease-in-out font-label-md text-label-md" href="#"><span class="material-symbols-outlined mr-3">grid_view</span>Estrutura/Matriz</a></li>
+<li class=""><a class="flex items-center px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors duration-200 ease-in-out font-label-md text-label-md" href="#"><span class="material-symbols-outlined mr-3">domain</span>Áreas</a></li>
+<li class=""><a class="flex items-center px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors duration-200 ease-in-out font-label-md text-label-md" href="#"><span class="material-symbols-outlined mr-3">work</span>Cargos</a></li>
+<li class=""><a class="flex items-center px-4 py-3 rounded-lg text-primary font-bold bg-secondary-container/10 border-l-4 border-primary transition-all duration-200 ease-in-out font-label-md text-label-md" href="#"><span class="material-symbols-outlined mr-3" style="font-variation-settings: 'FILL' 1;">group</span>Usuários</a></li>
+<li class=""><a class="flex items-center px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors duration-200 ease-in-out font-label-md text-label-md" href="#"><span class="material-symbols-outlined mr-3">star</span>Competências</a></li>
+<li class=""><a class="flex items-center px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors duration-200 ease-in-out font-label-md text-label-md" href="#"><span class="material-symbols-outlined mr-3">security</span>Auditoria</a></li>
+<li class=""><a class="flex items-center px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors duration-200 ease-in-out font-label-md text-label-md" href="#"><span class="material-symbols-outlined mr-3">notifications</span>Notificações</a></li>
+</ul>
+</div>
+<div class="mt-auto px-4 w-full">
+<a class="flex items-center px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors duration-200 ease-in-out font-label-md text-label-md" href="#"><span class="material-symbols-outlined mr-3">logout</span>Sair</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="md:ml-sidebar-width min-h-screen flex flex-col">
+<!-- TopNavBar -->
+<header class="bg-surface-bright dark:bg-surface-bright docked full-width top-0 border-b border-border-subtle flex justify-between items-center h-16 px-gutter z-30 sticky w-full">
+<div class="flex items-center">
+<!-- Mobile Menu Button (hidden on md) -->
+<button class="md:hidden mr-4 text-on-surface-variant hover:text-primary transition-colors scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<div class="hidden md:flex gap-6">
+<a class="text-primary font-bold border-b-2 border-primary pb-1 font-label-md text-label-md" href="#">Ciclo de Performance 2024</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<a class="text-on-surface-variant hover:text-primary transition-colors scale-95 active:scale-90 transition-transform font-label-md text-label-md flex items-center" href="#"><span class="material-symbols-outlined mr-2">logout</span>Logout</a>
+<div class="h-8 w-8 rounded-full bg-surface-container-highest overflow-hidden border border-border-subtle">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="A small, circular avatar image of a professional person in a light mode corporate setting. Neutral background, soft lighting, business casual attire." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBaXn2AFc4a2N55RnnoLiC4x23y08z-dT1uzS5Z9GJIdx1xozZvKo6V8cWb_GiaHtqj0MrFqS6uQyRMFa7H_SjK_ndvgqW9K4L6ZwfS0eNBvhvDFy7notYg8y7NtbXlm5d9OO4Uvfyon2IsIH85NpzxDBxDGd-WynCwnn8aCt28bnAK45uC519a4rWRLnOi5oT6TVAOC0Wn85SD-5YMipoqMrSh1m3UKZhTu7U7Qil-N6Pc4fUDZLTg">
+</div>
+</div>
+</header>
+<!-- Canvas -->
+<main class="flex-1 p-container-padding max-w-[1440px] w-full mx-auto">
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-text-heading mb-1">Usuários</h2>
+<p class="font-body-lg text-body-lg text-text-body">Gestão de vínculos organizacionais e flags administrativas.</p>
+</div>
+<button class="brand-btn-primary px-6 py-2.5 rounded-lg font-label-md text-label-md flex items-center">
+                    Pendentes de vínculo
+                </button>
+</div>
+<!-- Reference Image Context (Hidden conceptually, but displaying as requested to include it) -->
+<div class="mb-8 rounded-xl overflow-hidden shadow-sm border border-border-subtle">
+<img class="w-full h-auto object-cover opacity-50" data-alt="A high-fidelity data table UI screen showing a list of users with columns for name, email, area, role, manager, join date, status, and actions. The design is modern, clean, with a white background and subtle green accents." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB45r44od0ApGXr_hv8oMbXqGAP8wiB1ZSOWDgAqfAmy-CmsQvf_CCPHmrn1VBvJrq4sOyRBmseZXdjNv9NmwdHsfuUgaifqOVUBVmp-ruHEkPEmkuOhkdU5fXwC8BupVAj01TKlh3IkFFcDU2M9aw7PuwEW6EjonALbT51EXAWJv35wK7Wdhft1kP7hwrgi1Yh6W4cocZ1kiITonfqkaqNbCvzxUKlzGdEo3JeYN6-UEB7dsxEY8t8jhEmuFM1E9S6QA" style="max-height: 200px;">
+</div>
+<!-- Data Table Card -->
+<div class="flex flex-col md:flex-row items-center justify-between gap-4 mb-6 bg-surface-container-lowest p-4 rounded-xl border border-border-subtle shadow-sm">
+  <div class="flex flex-wrap items-center gap-4 flex-1">
+    <!-- Search Input -->
+    <div class="relative w-full md:w-64">
+      <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+      <input type="text" placeholder="Buscar colaborador..." class="w-full pl-10 pr-4 py-2 bg-surface-bright border border-border-subtle rounded-lg text-body-sm focus:outline-none focus:border-primary transition-colors">
+    </div>
+    
+    <!-- Segmented Control -->
+    <div class="flex bg-surface-container p-1 rounded-lg">
+      <button class="px-4 py-1.5 rounded-md text-label-sm bg-primary text-on-primary shadow-sm transition-all">Todos</button>
+      <button class="px-4 py-1.5 rounded-md text-label-sm text-on-surface-variant hover:text-primary transition-colors">Ativo</button>
+      <button class="px-4 py-1.5 rounded-md text-label-sm text-on-surface-variant hover:text-primary transition-colors">Inativo</button>
+    </div>
+
+    <!-- Dropdown Filters -->
+    
+  </div>
+  
+  <!-- Secondary Action (Optional/Contextual) -->
+  <div class="flex items-center gap-2">
+    <button class="p-2 text-on-surface-variant hover:text-primary transition-colors">
+      <span class="material-symbols-outlined">filter_list</span>
+    </button>
+    <button class="p-2 text-on-surface-variant hover:text-primary transition-colors">
+      <span class="material-symbols-outlined">download</span>
+    </button>
+  </div>
+</div><div class="bg-surface-container-lowest rounded-xl border border-border-subtle shadow-sm overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container border-b border-border-subtle">
+<th class="py-4 px-6 font-label-sm text-label-sm text-on-surface-variant font-semibold uppercase tracking-wider">Nome</th>
+<th class="py-4 px-6 font-label-sm text-label-sm text-on-surface-variant font-semibold uppercase tracking-wider">E-mail</th>
+<th class="py-4 px-6 font-label-sm text-label-sm text-on-surface-variant font-semibold uppercase tracking-wider">Área</th>
+<th class="py-4 px-6 font-label-sm text-label-sm text-on-surface-variant font-semibold uppercase tracking-wider">Cargo</th>
+<th class="py-4 px-6 font-label-sm text-label-sm text-on-surface-variant font-semibold uppercase tracking-wider">Gestor</th>
+<th class="py-4 px-6 font-label-sm text-label-sm text-on-surface-variant font-semibold uppercase tracking-wider">Entrada</th>
+<th class="py-4 px-6 font-label-sm text-label-sm text-on-surface-variant font-semibold uppercase tracking-wider">Status</th>
+<th class="py-4 px-6 font-label-sm text-label-sm text-on-surface-variant font-semibold uppercase tracking-wider text-right">Ações</th>
+</tr>
+</thead>
+<tbody class="font-body-sm text-body-sm text-text-heading">
+<!-- Row 1 -->
+<tr class="border-b border-border-subtle table-row-hover transition-colors">
+<td class="py-4 px-6 font-semibold">Adrian Furlan</td>
+<td class="py-4 px-6 text-text-body">adrian.furlan@example.com</td>
+<td class="py-4 px-6">Diretoria</td>
+<td class="py-4 px-6">Diretor(a)</td>
+<td class="py-4 px-6">-</td>
+<td class="py-4 px-6">01/01/2020</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-status-success/10 text-status-success">
+                                        Ativo
+                                    </span>
+</td>
+<td class="py-4 px-6 text-right">
+<div class="flex justify-end gap-3 font-label-sm text-label-sm">
+<a class="text-primary hover:text-primary-container transition-colors" href="#">Classificar</a>
+<a class="text-primary hover:text-primary-container transition-colors" href="#">Editar</a>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="border-b border-border-subtle table-row-hover transition-colors">
+<td class="py-4 px-6 font-semibold">Alvaro Baptista</td>
+<td class="py-4 px-6 text-text-body">alvaro.baptista@example.com</td>
+<td class="py-4 px-6">Tecnologia</td>
+<td class="py-4 px-6">Gerente</td>
+<td class="py-4 px-6">Adrian Furlan</td>
+<td class="py-4 px-6">15/03/2021</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-status-success/10 text-status-success">
+                                        Ativo
+                                    </span>
+</td>
+<td class="py-4 px-6 text-right">
+<div class="flex justify-end gap-3 font-label-sm text-label-sm">
+<a class="text-primary hover:text-primary-container transition-colors" href="#">Classificar</a>
+<a class="text-primary hover:text-primary-container transition-colors" href="#">Editar</a>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="border-b border-border-subtle table-row-hover transition-colors">
+<td class="py-4 px-6 font-semibold">Adilson Dias</td>
+<td class="py-4 px-6 text-text-body">adilson.dias@example.com</td>
+<td class="py-4 px-6">Operações</td>
+<td class="py-4 px-6">Coordenador(a)</td>
+<td class="py-4 px-6">Adrian Furlan</td>
+<td class="py-4 px-6">10/06/2022</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-surface-variant text-on-surface-variant">
+                                        Inativo
+                                    </span>
+</td>
+<td class="py-4 px-6 text-right">
+<div class="flex justify-end gap-3 font-label-sm text-label-sm">
+<a class="text-primary hover:text-primary-container transition-colors" href="#">Classificar</a>
+<a class="text-primary hover:text-primary-container transition-colors" href="#">Editar</a>
+</div>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="border-b border-border-subtle table-row-hover transition-colors">
+<td class="py-4 px-6 font-semibold">Ana Silva</td>
+<td class="py-4 px-6 text-text-body">ana.silva@example.com</td>
+<td class="py-4 px-6">Recursos Humanos</td>
+<td class="py-4 px-6">Analista Senior</td>
+<td class="py-4 px-6">Alvaro Baptista</td>
+<td class="py-4 px-6">05/09/2023</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-status-success/10 text-status-success">
+                                        Ativo
+                                    </span>
+</td>
+<td class="py-4 px-6 text-right">
+<div class="flex justify-end gap-3 font-label-sm text-label-sm">
+<a class="text-primary hover:text-primary-container transition-colors" href="#">Classificar</a>
+<a class="text-primary hover:text-primary-container transition-colors" href="#">Editar</a>
+</div>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="table-row-hover transition-colors">
+<td class="py-4 px-6 font-semibold">Bruno Costa</td>
+<td class="py-4 px-6 text-text-body">bruno.costa@example.com</td>
+<td class="py-4 px-6">Financeiro</td>
+<td class="py-4 px-6">Assistente</td>
+<td class="py-4 px-6">Adilson Dias</td>
+<td class="py-4 px-6">20/11/2023</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-status-success/10 text-status-success">
+                                        Ativo
+                                    </span>
+</td>
+<td class="py-4 px-6 text-right">
+<div class="flex justify-end gap-3 font-label-sm text-label-sm">
+<a class="text-primary hover:text-primary-container transition-colors" href="#">Classificar</a>
+<a class="text-primary hover:text-primary-container transition-colors" href="#">Editar</a>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination Footer (Implied) -->
+<div class="bg-surface-container px-6 py-3 border-t border-border-subtle flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-text-body">Mostrando 1 a 5 de 150 registros</span>
+<div class="flex gap-2">
+<button class="p-1 rounded text-on-surface-variant hover:bg-surface-variant transition-colors disabled:opacity-50"><span class="material-symbols-outlined text-sm">chevron_left</span></button>
+<button class="p-1 rounded text-on-surface-variant hover:bg-surface-variant transition-colors"><span class="material-symbols-outlined text-sm">chevron_right</span></button>
+</div>
+</div>
+</div>
+</main>
+</div>
+
+
+</body></html>

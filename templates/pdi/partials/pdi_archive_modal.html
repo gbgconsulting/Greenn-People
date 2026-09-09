@@ -1,0 +1,31 @@
+{% extends "components/modal.html" %}
+
+{% block modal_title %}Arquivar plano{% endblock %}
+
+{% block modal_body %}
+<div class="space-y-5">
+  <p class="font-ui text-sm leading-relaxed text-slate-600">
+    Arquivar <span class="font-semibold text-slate-800">{{ pdi.titulo }}</span>?
+    O plano sai da lista principal e fica disponível no filtro
+    <span class="font-semibold text-slate-800">Arquivados</span>.
+    As ações existentes entram em modo somente leitura.
+  </p>
+
+  <form
+    method="post"
+    action="{% url 'pdi:archive' pdi.pk %}"
+    hx-post="{% url 'pdi:archive' pdi.pk %}"
+    hx-indicator="#htmx-indicator"
+    class="flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4"
+  >
+    {% csrf_token %}
+    {% include "components/button.html" with label="Cancelar" type="button" variant="secondary" attrs='onclick="closeModal()"' %}
+    <button
+      type="submit"
+      class="inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-5 font-ui text-sm font-semibold tracking-tight text-rose-700 transition-colors hover:bg-rose-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+    >
+      Arquivar plano
+    </button>
+  </form>
+</div>
+{% endblock %}

@@ -1,25 +1,59 @@
 """Aggregações de estrutura, cobertura e lacunas (FR-019 / RF-29 / FR-006).
 
-Cobertura = composição de Counts sobre ``visible`` já resolvido + presença de
-``Avaliacao`` no ciclo (mesma regra “tem avaliação” do team chart). O caller
-passa o QS; este módulo **nunca** chama ``get_visible_users``.
+Cobertura = composição de Counts sobre o recorte do ciclo (elegíveis ∪
+matriculados) ∩ ``visible`` já resolvido + presença de ``Avaliacao``.
+O caller passa o QS; este módulo **nunca** chama ``get_visible_users``.
 """
 
 from __future__ import annotations
 
+from datetime import date
 from decimal import Decimal
 from typing import Literal
 
 from django.db.models import Avg, Count, DecimalField, ExpressionWrapper, F, Q, QuerySet
+from django.utils import timezone
 
 from apps.accounts.models import CustomUser
 from apps.cycles.models import Ciclo
+from apps.cycles.services.eligibility import filter_coverage_universe
 from apps.dashboard.models import AderenciaSnapshot
+from apps.dashboard.services.eligible_leaders import eligible_leader_queryset
 from apps.reviews.models import AvaliacaoCompetencia
 
 _QUANT = Decimal('0.01')
 
 CoverageDimension = Literal['area', 'cargo']
+
+
+def ciclo_timeline(
+    ciclo: Ciclo | None,
+    *,
+    today: date | None = None,
+) -> dict | None:
+    """Barra calendário do ciclo (datas informativas — encerramento é manual).
+
+    Composição read-only de ``data_inicio`` / ``data_fim``; não altera status.
+    """
+    if ciclo is None:
+        return None
+    ref = today or timezone.localdate()
+    inicio = ciclo.data_inicio
+    fim = ciclo.data_fim
+    span = (fim - inicio).days
+    if span <= 0:
+        progresso = 100 if ref >= fim else 0
+    else:
+        elapsed = (ref - inicio).days
+        progresso = max(0, min(100, int(round(elapsed * 100 / span))))
+    return {
+        'data_inicio': inicio,
+        'data_fim': fim,
+        'progresso_percentual': progresso,
+        'dias_restantes': (fim - ref).days,
+        'encerrado_calendario': ref > fim,
+        'nao_iniciado': ref < inicio,
+    }
 
 
 def _apply_structure_filters(
@@ -68,18 +102,21 @@ def _coverage_row(
 
 
 def leaders_in_scope(visible: QuerySet[CustomUser]) -> QuerySet[CustomUser]:
-    """Usuários visíveis que são gestores diretos de alguém no mesmo escopo."""
+    """Gestores elegíveis visíveis com pelo menos um liderado ativo no escopo."""
     visible_ids = visible.values('pk')
     lider_ids = (
         CustomUser.objects.filter(
             line_manager_id__isnull=False,
             pk__in=visible_ids,
+            is_active=True,
         )
         .values_list('line_manager_id', flat=True)
         .distinct()
     )
     return (
-        visible.filter(pk__in=lider_ids)
+        eligible_leader_queryset()
+        .filter(pk__in=lider_ids)
+        .filter(pk__in=visible.values('pk'))
         .select_related('area', 'cargo')
         .order_by('nome', 'email')
     )
@@ -92,12 +129,26 @@ def leaders_with_adherence(
     area_id: int | None = None,
     cargo_id: int | None = None,
 ) -> list[dict]:
-    """Líderes da estrutura com snapshot de aderência do ciclo (se houver)."""
+    """Líderes da estrutura com snapshot de aderência do ciclo (se houver).
+
+    ``colaboradores`` = diretos no mesmo ``visible`` (escopo AuthZ já resolvido).
+    Ordena por % ASC (pior primeiro); sem snapshot vem antes de qualquer %.
+    """
     lideres = leaders_in_scope(visible)
     if area_id is not None:
         lideres = lideres.filter(area_id=area_id)
     if cargo_id is not None:
         lideres = lideres.filter(cargo_id=cargo_id)
+
+    lider_pks = list(lideres.values_list('pk', flat=True))
+    colaborador_counts: dict[int, int] = {
+        row['line_manager_id']: int(row['n'])
+        for row in (
+            visible.filter(line_manager_id__in=lider_pks)
+            .values('line_manager_id')
+            .annotate(n=Count('pk'))
+        )
+    }
 
     snapshots: dict[int, AderenciaSnapshot] = {}
     if ciclo is not None:
@@ -105,17 +156,49 @@ def leaders_with_adherence(
             snap.lider_id: snap
             for snap in AderenciaSnapshot.objects.filter(
                 ciclo=ciclo,
-                lider_id__in=lideres.values('pk'),
+                lider_id__in=lider_pks,
             ).select_related('lider')
         }
 
-    return [
+    rows = [
         {
             'lider': lider,
             'snapshot': snapshots.get(lider.pk),
+            'colaboradores': colaborador_counts.get(lider.pk, 0),
         }
         for lider in lideres
     ]
+    def _snapshot_sort_key(item: dict) -> tuple:
+        snap = item.get('snapshot')
+        if snap is None:
+            percentual_sort = Decimal('-1')
+        elif snap.percentual is None:
+            percentual_sort = Decimal('101')
+        else:
+            percentual_sort = snap.percentual
+        lider = item['lider']
+        return (
+            percentual_sort,
+            (lider.nome or lider.email or '').lower(),
+        )
+
+    rows.sort(key=_snapshot_sort_key)
+    return rows
+
+
+def partition_gap_rows(
+    rows: list[dict],
+) -> tuple[list[dict], list[dict]]:
+    """Separa lacunas acionáveis (média > 0) das demais (ocultas no toggle)."""
+    prioritarias: list[dict] = []
+    restantes: list[dict] = []
+    for row in rows:
+        lacuna = row.get('media_lacuna')
+        if lacuna is not None and lacuna > 0:
+            prioritarias.append(row)
+        else:
+            restantes.append(row)
+    return prioritarias, restantes
 
 
 def _competency_lines_qs(
@@ -148,6 +231,21 @@ def _quantize_avg(value) -> Decimal | None:
     return Decimal(value).quantize(_QUANT)
 
 
+def distinct_cargo_count(
+    visible: QuerySet[CustomUser],
+    *,
+    area_id: int | None = None,
+    cargo_id: int | None = None,
+) -> int:
+    """Quantidade de cargos distintos no escopo filtrado (inclui ``NULL`` como um)."""
+    qs = _apply_structure_filters(
+        visible,
+        area_id=area_id,
+        cargo_id=cargo_id,
+    )
+    return qs.values('cargo_id').distinct().count()
+
+
 def coverage_summary(
     visible: QuerySet[CustomUser],
     ciclo: Ciclo | None,
@@ -157,16 +255,16 @@ def coverage_summary(
 ) -> dict:
     """KPI de cobertura no escopo filtrado (FR-006 / FR-013).
 
-    Conta usuários em ``visible`` vs presença de ``Avaliacao`` no ciclo —
-    sem recalcular fórmula de nota/aderência.
+    Denominador = recorte do ciclo (elegíveis ∪ já matriculados) ∩
+    ``visible`` filtrado — não o quadro inteiro fora do corte.
     """
     qs = _apply_structure_filters(
         visible,
         area_id=area_id,
         cargo_id=cargo_id,
     )
-    total = qs.count()
     if ciclo is None:
+        total = qs.count()
         return {
             'total': total,
             'com_avaliacao': None,
@@ -175,6 +273,8 @@ def coverage_summary(
             'has_ciclo': False,
         }
 
+    qs = filter_coverage_universe(qs, ciclo)
+    total = qs.count()
     agg = qs.aggregate(
         com_avaliacao=Count(
             'avaliacoes',
@@ -200,14 +300,17 @@ def _coverage_by_dimension(
     area_id: int | None = None,
     cargo_id: int | None = None,
 ) -> list[dict]:
-    """Agrupa cobertura por área ou cargo sobre ``visible`` + ciclo."""
+    """Agrupa cobertura por área ou cargo sobre o recorte do ciclo."""
     if ciclo is None:
         return []
 
-    qs = _apply_structure_filters(
-        visible,
-        area_id=area_id,
-        cargo_id=cargo_id,
+    qs = filter_coverage_universe(
+        _apply_structure_filters(
+            visible,
+            area_id=area_id,
+            cargo_id=cargo_id,
+        ),
+        ciclo,
     )
     if not qs.exists():
         return []

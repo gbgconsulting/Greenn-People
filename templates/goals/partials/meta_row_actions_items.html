@@ -1,0 +1,47 @@
+{% comment %}
+  Itens do menu ⋮ da linha de meta.
+  Aprovar/Reprovar: POST + HTMX (mesma regra de backend das views).
+  Editar/Excluir: links GET, como nas demais tabelas.
+{% endcomment %}
+{% if pode_aprovar %}
+<form
+  method="post"
+  action="{% url 'goals:meta_approve' meta.pk %}"
+  hx-post="{% url 'goals:meta_approve' meta.pk %}"
+  hx-target="#meta-row-{{ meta.pk }}"
+  hx-swap="outerHTML"
+  hx-indicator="#htmx-indicator"
+  class="block"
+>
+  {% csrf_token %}
+  <button
+    type="submit"
+    class="block w-full px-3 py-2 text-left font-ui text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-50 hover:text-emerald-800"
+    role="menuitem"
+  >{{ rotulo_aprovar|default:"Aprovar" }}</button>
+</form>
+<form
+  method="post"
+  action="{% url 'goals:meta_reject' meta.pk %}"
+  hx-post="{% url 'goals:meta_reject' meta.pk %}"
+  hx-target="#meta-row-{{ meta.pk }}"
+  hx-swap="outerHTML"
+  hx-indicator="#htmx-indicator"
+  class="block"
+>
+  {% csrf_token %}
+  <button
+    type="submit"
+    class="block w-full px-3 py-2 text-left font-ui text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50 hover:text-rose-700"
+    role="menuitem"
+  >Reprovar</button>
+</form>
+{% endif %}
+{% if pode_editar_conteudo and meta.status != 'aprovada' and mostrar_link_editar|default:True %}
+{% url 'goals:meta_update' meta.pk as edit_href %}
+{% include "components/row_actions_menu_item.html" with href=edit_href label=rotulo_editar|default:"Editar" %}
+{% endif %}
+{% if pode_editar_conteudo and meta.status == 'pendente' %}
+{% url 'goals:meta_delete' meta.pk as delete_href %}
+{% include "components/row_actions_menu_item.html" with href=delete_href label="Excluir" danger=True %}
+{% endif %}

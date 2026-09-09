@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Any
 from django.db.models import Count, Q
 
 from apps.cycles.models import Ciclo
+from apps.cycles.services.eligibility import filter_coverage_universe
 from apps.dashboard.chart_payloads import (
     CHART_TYPE_BAR,
     EMPTY_KIND_ESCOPO,
@@ -149,11 +150,21 @@ def resolve_history_ciclos(
     *,
     limit: int = HISTORY_DEFAULT_N,
 ) -> list[Ciclo]:
-    """Janela US3: ``?ciclos=`` explícito (cap N) ou default últimos N."""
+    """Janela US3: ``?ciclos=`` explícito (cap N), ``?ciclo=`` único ou default últimos N."""
     parsed = parse_history_ciclos(request.GET.get('ciclos'), limit=limit)
     if parsed is not None:
         return parsed
+    # Seletor agrupado na visão histórica envia ``?ciclo=`` (singular).
+    single = parse_history_ciclos(request.GET.get('ciclo'), limit=1)
+    if single:
+        return single
     return default_history_ciclos(limit=limit)
+
+
+def resolve_history_ciclo_selecionado(request: HttpRequest) -> Ciclo | None:
+    """Ciclo explicitamente escolhido via ``?ciclo=`` (reflete o seletor na URL)."""
+    single = parse_history_ciclos(request.GET.get('ciclo'), limit=1)
+    return single[0] if single else None
 
 
 def is_history_mode(request: HttpRequest) -> bool:
@@ -202,16 +213,16 @@ def build_stage_history(
     Retorno
         Payload canônico 009 via ``grouped_series_payload`` com ``type: bar``
         empilhado. Três séries de status (percentual do escopo) + overlay de
-        linha com ``concluida_pct``. Ciclo sem cabeçalho no escopo = 100%
-        ``sem_avaliacao`` (pessoas paradas), não 0 de nota. ``has_data=false``
+        linha com ``concluida_pct``. Por ciclo, o denominador é o recorte de
+        cobertura (elegíveis ∪ matriculados; sem corte = QS intacto). Ciclo
+        sem cabeçalho no universo = 100% ``sem_avaliacao``. ``has_data=false``
         se a janela no escopo não tem cabeçalhos úteis.
         **MUST NOT** chamar ``compute_adherence`` nem inventar nota.
     """
     window = list(ciclos)[:HISTORY_DEFAULT_N]
-    membro_ids = list(visible.values_list('pk', flat=True))
-    visible_total = len(membro_ids)
+    base_membro_ids = list(visible.values_list('pk', flat=True))
 
-    if visible_total == 0:
+    if not base_membro_ids:
         return empty_kind_payload(
             kind=EMPTY_KIND_ESCOPO,
             chart_id=_CHART_ID,
@@ -236,7 +247,7 @@ def build_stage_history(
     rows = (
         Avaliacao.objects.filter(
             ciclo_id__in=ciclo_ids,
-            usuario_id__in=membro_ids,
+            usuario_id__in=base_membro_ids,
         )
         .values('ciclo_id', 'etapa')
         .annotate(
@@ -266,18 +277,37 @@ def build_stage_history(
 
     for ciclo in window:
         cid = ciclo.pk
-        headers = int(by_ciclo_headers.get(cid, 0))
+        universe_ids = list(
+            filter_coverage_universe(visible, ciclo).values_list('pk', flat=True),
+        )
+        visible_total = len(universe_ids)
+        if visible_total == 0:
+            # Sem ninguém no recorte deste ciclo no escopo — fatia vazia.
+            headers = 0
+            concluida_count = 0
+            andamento_count = 0
+            sem_count = 0
+        else:
+            headers = int(by_ciclo_headers.get(cid, 0))
+            # Headers só contam se o usuário ainda está no universo do ciclo.
+            # by_ciclo_headers já foi filtrado por base_membro_ids; com corte,
+            # pode haver Avaliacao de alguém fora do universo atual? Enrolled
+            # sempre entra no universo, então headers ⊆ universe.
+            concluida_count = int(by_ciclo_concluidas.get(cid, 0))
+            andamento_count = max(0, headers - concluida_count)
+            sem_count = max(0, visible_total - headers)
         if headers > 0:
             any_header = True
-        concluida_count = int(by_ciclo_concluidas.get(cid, 0))
-        andamento_count = max(0, headers - concluida_count)
-        sem_count = max(0, visible_total - headers)
         totais = {
             _STATUS_SEM: sem_count,
             _STATUS_ANDAMENTO: andamento_count,
             _STATUS_CONCLUIDA: concluida_count,
         }
-        pcts = _distribute_int_percents(totais, visible_total)
+        pcts = (
+            _distribute_int_percents(totais, visible_total)
+            if visible_total > 0
+            else {key: 0 for key in totais}
+        )
         etapa_counts = {
             etapa: int(by_ciclo_etapa.get(cid, {}).get(etapa, 0))
             for etapa in etapa_keys
@@ -378,13 +408,25 @@ def build_history_kpis(
 ) -> dict[str, int | bool]:
     """Resumo 1–3 da janela: evoluiu / estável / sem dado (US3 / SC-003).
 
-    Por pessoa no escopo ``visible``, compara o primeiro e o último ponto
-    útil na janela (etapa + ``concluida``). Sem cabeçalho → ``sem_dado``;
-    score final > inicial → ``evoluiu``; caso contrário → ``estavel``.
+    Por pessoa no universo de cobertura da janela (união dos recortes por
+    ciclo), compara o primeiro e o último ponto útil (etapa + ``concluida``).
+    Sem cabeçalho → ``sem_dado``; score final > inicial → ``evoluiu``;
+    caso contrário → ``estavel``.
     **MUST NOT** inventar nota nem chamar ``compute_adherence``.
     """
     window = list(ciclos)[:HISTORY_DEFAULT_N]
-    membro_ids = list(visible.values_list('pk', flat=True))
+    if window:
+        universe_pks: set[int] = set()
+        for ciclo in window:
+            universe_pks.update(
+                filter_coverage_universe(visible, ciclo).values_list(
+                    'pk',
+                    flat=True,
+                ),
+            )
+        membro_ids = list(universe_pks)
+    else:
+        membro_ids = list(visible.values_list('pk', flat=True))
     empty = {
         'evoluiu': 0,
         'estavel': 0,

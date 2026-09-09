@@ -1,0 +1,159 @@
+{% comment %}
+  Card de ciclo na listagem (visual grade · mock CONFIGURAR CICLOS).
+  Uso: {% include "cycles/_ciclo_card.html" with ciclo=ciclo group="operacional" %}
+
+  group: operacional | arquivo — define accent, badge e ações.
+  Preserva id="ciclo-row-{{ pk }}" e data-ciclo-group para contratos de teste.
+{% endcomment %}
+<article
+  id="ciclo-row-{{ ciclo.pk }}"
+  data-ciclo-group="{{ group }}"
+  class="group relative flex h-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-colors
+    {% if group == 'operacional' %}
+      hover:border-emerald-300
+    {% else %}
+      opacity-90 hover:border-slate-300 hover:opacity-100
+    {% endif %}"
+>
+  <div
+    class="h-1 w-full {% if group == 'operacional' %}bg-emerald-500{% else %}bg-slate-300{% endif %}"
+    aria-hidden="true"
+  ></div>
+
+  <div class="flex flex-1 flex-col p-5 sm:p-6">
+    <div class="mb-4">
+      {% if group == 'operacional' %}
+        {% include "components/badge_status.html" with status="ativo" label="Aberto" extra_class="mb-2" %}
+      {% else %}
+        {% include "components/badge_status.html" with status="arquivado" label="Encerrado" extra_class="mb-2" %}
+      {% endif %}
+      <h3 class="font-display text-lg font-medium tracking-tight text-slate-800">
+        <a
+          href="{% url 'cycles:ciclo_detail' ciclo.pk %}"
+          class="text-slate-800 hover:text-slate-900"
+        >{{ ciclo.nome }}</a>
+      </h3>
+    </div>
+
+    <ul class="mb-6 flex-1 space-y-2.5 font-ui text-sm text-slate-600">
+      <li class="flex items-center gap-2">
+        <svg class="h-4 w-4 shrink-0 text-slate-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path fill-rule="evenodd" d="M5.75 2a.75.75 0 0 1 .75.75V4h7V2.75a.75.75 0 0 1 1.5 0V4h.25A2.75 2.75 0 0 1 18 6.75v8.5A2.75 2.75 0 0 1 15.25 18H4.75A2.75 2.75 0 0 1 2 15.25v-8.5A2.75 2.75 0 0 1 4.75 4H5V2.75A.75.75 0 0 1 5.75 2Zm-1 5.5c0-.69.56-1.25 1.25-1.25h10.5c.69 0 1.25.56 1.25 1.25v8.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-8.5Z" clip-rule="evenodd" />
+        </svg>
+        <span class="tabular-nums">
+          {{ ciclo.data_inicio|date:"d M" }} – {{ ciclo.data_fim|date:"d M, Y" }}
+        </span>
+      </li>
+      <li class="flex items-center gap-2">
+        <svg class="h-4 w-4 shrink-0 text-slate-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path d="M7 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM14.5 9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM1.615 16.05A.75.75 0 0 1 2 15.25V15a4 4 0 0 1 4-4h2a4 4 0 0 1 4 4v.25a.75.75 0 0 1-.385.65A9.985 9.985 0 0 1 7 17.5a9.985 9.985 0 0 1-5.385-1.45ZM12.25 15.25a.75.75 0 0 1 .75-.75h.01a5.5 5.5 0 0 1 4.615 2.45.75.75 0 0 1-.615 1.15 8.984 8.984 0 0 0-4.76-1.35H13a.75.75 0 0 1-.75-.75Z" />
+        </svg>
+        <span class="tabular-nums">{{ ciclo.avaliacoes_count }} avaliação{{ ciclo.avaliacoes_count|pluralize }}</span>
+      </li>
+    </ul>
+
+    <div class="mt-auto">
+      {% if ciclo.avaliacoes_count %}
+      {% widthratio ciclo.avaliacoes_concluidas ciclo.avaliacoes_count 100 as progresso_pct %}
+      <div class="mb-2 flex items-end justify-between gap-2">
+        <span class="font-ui text-xs font-medium uppercase tracking-wide text-slate-500">
+          {% if group == 'operacional' %}Progresso geral{% else %}Progresso final{% endif %}
+        </span>
+        <span class="font-display text-lg font-semibold tabular-nums {% if group == 'operacional' %}text-emerald-700{% else %}text-slate-700{% endif %}">
+          {{ progresso_pct }}%
+        </span>
+      </div>
+      <div class="h-2 w-full overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-valuenow="{{ progresso_pct }}" aria-valuemin="0" aria-valuemax="100" aria-label="Progresso das avaliações">
+        <div
+          class="h-full rounded-full {% if group == 'operacional' %}bg-emerald-500{% else %}bg-slate-400{% endif %}"
+          style="width: {{ progresso_pct }}%;"
+        ></div>
+      </div>
+      <div class="mt-3 flex justify-between gap-4">
+        <div class="min-w-0 flex-1 text-center">
+          <div class="font-ui text-sm font-semibold tabular-nums text-slate-800">{{ ciclo.avaliacoes_concluidas }}</div>
+          <div class="font-ui text-xs text-slate-500">Concluídas</div>
+        </div>
+        <div class="min-w-0 flex-1 border-l border-line pl-4 text-center">
+          <div class="font-ui text-sm font-semibold tabular-nums text-slate-800">{{ ciclo.avaliacoes_pendentes }}</div>
+          <div class="font-ui text-xs text-slate-500">Pendentes</div>
+        </div>
+      </div>
+      {% else %}
+      <div class="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-3">
+        <p class="font-ui text-xs font-medium text-slate-700">Sem avaliações matriculadas</p>
+        <p class="mt-0.5 font-ui text-xs leading-relaxed text-slate-500">
+          {% if group == 'operacional' %}
+            O progresso aparece após a matrícula de elegíveis.
+          {% else %}
+            Abra o ciclo com «Admitidos até» para matricular elegíveis.
+          {% endif %}
+        </p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="border-t border-slate-200 bg-white px-4 py-3 sm:px-5">
+    {% if group == 'operacional' %}
+    <nav class="flex flex-wrap items-center justify-end gap-2" aria-label="Ações do ciclo">
+      <a
+        href="{% url 'cycles:ciclo_detail' ciclo.pk %}"
+        class="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-line bg-white px-3 font-ui text-xs font-medium text-slate-700 transition-colors hover:bg-slate-100"
+      >Visão gerencial</a>
+      <form method="post" action="{% url 'cycles:ciclo_close' ciclo.pk %}" class="inline-flex shrink-0">
+        {% csrf_token %}
+        <button
+          type="submit"
+          class="inline-flex h-9 items-center justify-center rounded-lg border border-amber-200 bg-white px-3 font-ui text-xs font-semibold text-amber-700 transition-colors hover:bg-amber-50"
+        >Encerrar</button>
+      </form>
+      <a
+        href="{% url 'cycles:objetivo_list' ciclo.pk %}"
+        class="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-emerald-600 bg-white px-3 font-ui text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-50"
+      >Objetivos</a>
+      <a
+        href="{% url 'cycles:ciclo_update' ciclo.pk %}"
+        class="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-line bg-white px-3 font-ui text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100"
+      >Editar</a>
+      <a
+        href="{% url 'cycles:ciclo_delete' ciclo.pk %}"
+        class="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 font-ui text-xs font-medium text-rose-600 transition-colors hover:bg-rose-50"
+      >Excluir</a>
+    </nav>
+    {% else %}
+    <nav class="flex flex-wrap items-center justify-end gap-x-3 gap-y-2" aria-label="Ações do ciclo">
+      <a
+        href="{% url 'cycles:ciclo_detail' ciclo.pk %}"
+        class="shrink-0 whitespace-nowrap font-ui text-sm font-medium text-emerald-700 hover:underline"
+      >Visão gerencial</a>
+      <form
+        method="post"
+        action="{% url 'cycles:ciclo_open' ciclo.pk %}"
+        class="inline-flex shrink-0"
+        data-ciclo-open-form
+      >
+        {% csrf_token %}
+        <button
+          type="submit"
+          class="whitespace-nowrap font-ui text-sm font-semibold text-emerald-700 hover:underline"
+          title="{% if ciclo.admitidos_ate %}Admitidos até {{ ciclo.admitidos_ate|date:'d/m/Y' }}{% else %}Defina Admitidos até em Editar antes de abrir{% endif %}"
+          {% if rh_pre_open_checklist %}aria-describedby="rh-pre-open-checklist"{% endif %}
+        >Abrir</button>
+      </form>
+      <a
+        href="{% url 'cycles:objetivo_list' ciclo.pk %}"
+        class="shrink-0 whitespace-nowrap font-ui text-sm font-medium text-emerald-700 hover:underline"
+      >Objetivos</a>
+      <a
+        href="{% url 'cycles:ciclo_update' ciclo.pk %}"
+        class="shrink-0 whitespace-nowrap font-ui text-sm font-medium text-slate-600 hover:underline"
+      >Editar</a>
+      <a
+        href="{% url 'cycles:ciclo_delete' ciclo.pk %}"
+        class="shrink-0 whitespace-nowrap font-ui text-sm font-medium text-rose-600 hover:underline"
+      >Excluir</a>
+    </nav>
+    {% endif %}
+  </div>
+</article>

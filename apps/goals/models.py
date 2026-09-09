@@ -44,6 +44,23 @@ class Meta(TimeStampedModel):
         APROVADO = 'aprovado', 'Aprovado'
         REPROVADO = 'reprovado', 'Reprovado'
 
+    # Progresso estruturado (marco binário): único conjunto aceito na gravação.
+    PROGRESSO_NAO_INICIADA = Decimal('0')
+    PROGRESSO_EM_ANDAMENTO = Decimal('50')
+    PROGRESSO_CONCLUIDA = Decimal('100')
+    PROGRESSO_BINARIO_VALORES = frozenset(
+        {
+            PROGRESSO_NAO_INICIADA,
+            PROGRESSO_EM_ANDAMENTO,
+            PROGRESSO_CONCLUIDA,
+        },
+    )
+    PROGRESSO_BINARIO_CHOICES = (
+        (PROGRESSO_NAO_INICIADA, 'Não iniciada (0%)'),
+        (PROGRESSO_EM_ANDAMENTO, 'Em andamento (50%)'),
+        (PROGRESSO_CONCLUIDA, 'Concluída (100%)'),
+    )
+
     usuario = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
@@ -67,7 +84,10 @@ class Meta(TimeStampedModel):
             MinValueValidator(Decimal('0')),
             MaxValueValidator(Decimal('100')),
         ],
-        help_text='Percentual 0–100; editável apenas na etapa resultados.',
+        help_text=(
+            'Marco binário persistido como 0, 50 ou 100; '
+            'editável apenas na etapa resultados.'
+        ),
     )
     status = models.CharField(
         'status',
@@ -111,6 +131,51 @@ class Meta(TimeStampedModel):
             raise ValidationError(
                 {'progresso': 'O progresso deve estar entre 0 e 100.'},
             )
+
+    def progresso_binario_normalizado(self) -> Decimal | None:
+        """Retorna 0/50/100 se ``progresso`` for um marco binário válido."""
+        if self.progresso is None:
+            return None
+        for permitido in (
+            self.PROGRESSO_NAO_INICIADA,
+            self.PROGRESSO_EM_ANDAMENTO,
+            self.PROGRESSO_CONCLUIDA,
+        ):
+            if self.progresso == permitido:
+                return permitido
+        return None
+
+    def get_progresso_binario_label(self) -> str:
+        """Rótulo de exibição do marco (sem lógica na UI)."""
+        normalizado = self.progresso_binario_normalizado()
+        if normalizado is None:
+            if self.progresso is None:
+                return '—'
+            # Legado fora do conjunto binário: agrupa por faixa só para leitura.
+            if self.progresso <= Decimal('0'):
+                return 'Não iniciada'
+            if self.progresso >= Decimal('100'):
+                return 'Concluída'
+            return 'Em andamento'
+        labels = {
+            self.PROGRESSO_NAO_INICIADA: 'Não iniciada',
+            self.PROGRESSO_EM_ANDAMENTO: 'Em andamento',
+            self.PROGRESSO_CONCLUIDA: 'Concluída',
+        }
+        return labels[normalizado]
+
+    def get_progresso_binario_badge_status(self) -> str:
+        """Status compatível com ``badge_status`` para o marco de progresso."""
+        normalizado = self.progresso_binario_normalizado()
+        if normalizado == self.PROGRESSO_CONCLUIDA or (
+            self.progresso is not None and self.progresso >= Decimal('100')
+        ):
+            return 'concluida'
+        if normalizado == self.PROGRESSO_EM_ANDAMENTO or (
+            self.progresso is not None and self.progresso > Decimal('0')
+        ):
+            return 'em_andamento'
+        return 'neutro'
 
     def mark_reprovada(self) -> None:
         """Marca a meta como reprovada (aprovação de metas)."""

@@ -9,6 +9,7 @@ class NotificacaoLog(models.Model):
     class Tipo(models.TextChoices):
         LEMBRETE_ETAPA = 'lembrete_etapa', 'Lembrete de etapa'
         LEMBRETE_PDI = 'lembrete_pdi', 'Lembrete de ação PDI'
+        FEEDBACK_CONTINUO = 'feedback_continuo', 'Feedback contínuo'
 
     class Status(models.TextChoices):
         ENVIADO = 'enviado', 'Enviado'

@@ -2,17 +2,29 @@
   Link de navegação do shell (sidebar / drawer).
   Uso:
     {% url 'cycles:ciclo_list' as u %}
-    {% include "components/nav_link.html" with href=u label="Ciclos" is_active=active_flag emphasis="1" %}
+    {% include "components/nav_link.html" with href=u label="Ciclos" icon="cycle" is_active="1" emphasis="1" %}
 
   Parâmetros:
     href        — URL (obrigatório)
     label       — texto (obrigatório)
+    icon        — nome do ícone em nav_icon.html
     is_active   — truthy → aria-current + estilo ativo
-    emphasis    — truthy → destaque P1 (Ciclos / Aderência)
+    emphasis    — truthy → peso tipográfico P1 (Ciclos / Aderência); sem borda permanente
     badge_count — opcional; total numérico (omitido se vazio/zero; FR-006)
 {% endcomment %}
 <a
   href="{{ href }}"
   class="nav-link{% if emphasis %} nav-link--emphasis{% endif %}"
+  title="{{ label }}"
   {% if is_active %}aria-current="page"{% endif %}
->{% if badge_count %}<span class="flex items-center justify-between gap-2"><span>{{ label }}</span><span class="inline-flex shrink-0 items-center justify-center rounded-md bg-amber-50 px-1.5 py-0.5 font-ui text-xs font-medium leading-none tabular-nums tracking-tight text-amber-700" aria-label="{{ badge_count }} pendência{{ badge_count|pluralize:"s" }}">{{ badge_count }}</span></span>{% else %}{{ label }}{% endif %}</a>
+>
+  {% include "components/nav_icon.html" with icon=icon only %}
+  {% if badge_count %}
+  <span class="nav-link__text">
+    <span class="nav-link__label">{{ label }}</span>
+    <span class="nav-link__badge inline-flex shrink-0 items-center justify-center rounded-md bg-amber-50 px-1.5 py-0.5 font-ui text-xs font-medium leading-none tabular-nums tracking-tight text-amber-700" aria-label="{{ badge_count }} pendência{{ badge_count|pluralize:"s" }}">{{ badge_count }}</span>
+  </span>
+  {% else %}
+  <span class="nav-link__label">{{ label }}</span>
+  {% endif %}
+</a>

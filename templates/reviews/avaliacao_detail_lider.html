@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% load review_display %}
+
+{% block title %}Avaliação Detalhada — Greenn People{% endblock %}
+
+{% block content %}
+<div class="mx-auto w-full max-w-[1440px]">
+  <header class="mb-8 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="font-display text-2xl font-semibold text-slate-800">
+      Avaliação Detalhada
+    </h1>
+    {% include "components/button.html" with label="Voltar à lista" href=list_return_url variant="secondary" %}
+  </header>
+
+  <section
+    class="mb-8 rounded-xl border border-line bg-surface-card p-4 sm:p-6"
+    aria-labelledby="colaborador-heading"
+  >
+    <h2 id="colaborador-heading" class="sr-only">Colaborador avaliado</h2>
+    <div class="flex flex-col items-start gap-6 md:flex-row md:items-center">
+      <div
+        class="relative h-20 w-20 shrink-0 overflow-hidden rounded-full border border-line bg-slate-100 sm:h-24 sm:w-24"
+        aria-hidden="true"
+      >
+        <span class="absolute inset-0 flex items-center justify-center font-ui text-[1.625rem] font-semibold leading-none text-emerald-800 sm:text-[2rem]">
+          {{ colaborador.nome|default:colaborador.email|slice:":1"|upper }}
+        </span>
+      </div>
+      <div class="min-w-0 flex-1">
+        <p class="font-display text-xl font-medium tracking-tight text-slate-800">
+          {{ colaborador.nome|default:colaborador.email }}
+        </p>
+        {% if avaliacao.ciclo %}
+        <p class="mt-1 font-ui text-sm text-slate-500">
+          Ciclo {{ avaliacao.ciclo.nome }}
+        </p>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-8 min-w-0" aria-labelledby="orientacao-heading">
+    <h2 id="orientacao-heading" class="sr-only">Orientação do ciclo</h2>
+
+    <div class="rounded-xl border border-line bg-surface-card p-4 sm:p-6" aria-labelledby="timeline-heading">
+      <h3 id="timeline-heading" class="mb-6 font-display text-lg font-medium tracking-tight text-slate-800">
+        Linha do Tempo do Ciclo
+      </h3>
+      {% include "components/stage_stepper.html" with stage_stepper=stage_stepper %}
+    </div>
+  </section>
+
+  <section class="mb-8 min-w-0" aria-labelledby="desempenho-heading">
+    <h2 id="desempenho-heading" class="sr-only">Desempenho da avaliação</h2>
+    <div class="grid grid-cols-1 items-stretch gap-6 sm:grid-cols-2">
+      {% if avaliacao.nota_final_lider is not None %}
+        {% include "components/card.html" with label="Nota líder" value=avaliacao.nota_final_lider|nota_percentual badge_status="concluida" badge_label="Oficial" body="Nota atribuída pelo líder neste ciclo." accent="success" value_size="lg" %}
+      {% else %}
+        {% include "components/card.html" with label="Nota líder" value="—" badge_status="pendente" badge_label="Pendente" body="A nota do líder aparecerá após a avaliação." accent="success" value_size="lg" %}
+      {% endif %}
+
+      {% if avaliacao.nota_final_autoavaliacao is not None %}
+        {% include "components/card.html" with label="Nota autoavaliação" value=avaliacao.nota_final_autoavaliacao|nota_percentual badge_status="concluida" badge_label="Enviada" body="Referência da autoavaliação do colaborador." accent="warning" value_size="lg" %}
+      {% else %}
+        {% include "components/card.html" with label="Nota autoavaliação" value="—" badge_status="arquivado" badge_label="Indisponível" body="Autoavaliação ainda não enviada ou indisponível." accent="warning" value_size="lg" %}
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="mb-8 min-w-0" aria-labelledby="hub-acoes-heading">
+    <h2 id="hub-acoes-heading" class="sr-only">Ações desta avaliação</h2>
+    <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap" data-hub-actions>
+      {% if pode_autoavaliar %}
+        {% url 'reviews:self_assessment' avaliacao.pk as self_url %}
+        {% include "components/button.html" with label="Autoavaliar" href=self_url variant="secondary" extra_class="w-full sm:w-auto" %}
+      {% elif pode_ver_autoavaliacao %}
+        {% url 'reviews:self_assessment' avaliacao.pk as self_url %}
+        {% include "components/button.html" with label="Ver autoavaliação" href=self_url variant="secondary" extra_class="w-full sm:w-auto" %}
+      {% endif %}
+      {% if pode_avaliar_lider %}
+        {% url 'reviews:leader_assessment' avaliacao.pk as leader_url %}
+        {% include "components/button.html" with label="Avaliar" href=leader_url variant="secondary" extra_class="w-full sm:w-auto" %}
+      {% endif %}
+      {% url 'reviews:feedback_list' avaliacao.pk as feedback_url %}
+      {% include "components/button.html" with label="Feedbacks" href=feedback_url variant="secondary" extra_class="w-full sm:w-auto" %}
+      {% if pode_criar_feedback %}
+        {% url 'reviews:feedback_create' avaliacao.pk as feedback_create_url %}
+        {% include "components/button.html" with label="Ir ao feedback" href=feedback_create_url variant="secondary" extra_class="w-full sm:w-auto" %}
+      {% endif %}
+      {% if rotulo_avanco %}
+      <form method="post" action="{% url 'reviews:advance' avaliacao.pk %}" class="w-full sm:w-auto sm:inline">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{% url 'reviews:detail' avaliacao.pk %}">
+        {% include "components/button.html" with label=rotulo_avanco type="submit" variant="primary" disabled=avanco_desabilitado extra_class="w-full sm:w-auto" %}
+      </form>
+      {% endif %}
+    </div>
+    {% if rotulo_avanco and not pode_avancar and motivo_bloqueio_avanco %}
+    <p class="mt-3 font-ui text-sm text-amber-700" role="status">{{ motivo_bloqueio_avanco }}</p>
+    {% endif %}
+  </section>
+
+  {% include "reviews/partials/avaliacao_detail_competencias_table.html" %}
+</div>
+{% endblock %}

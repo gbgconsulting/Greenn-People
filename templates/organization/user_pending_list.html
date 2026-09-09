@@ -1,58 +1,55 @@
 {% extends "base.html" %}
 
-{% block title %}Usuários pendentes — Greenn People{% endblock %}
+{% block title %}Pendentes de vínculo — Greenn People{% endblock %}
 
 {% block content %}
-<div class="mx-auto w-full max-w-6xl">
-<header class="mb-6 flex flex-wrap items-start justify-between gap-3">
-  <div>
-    <h1 class="font-display text-2xl font-semibold text-slate-800">Usuários pendentes de vínculo</h1>
-    <p class="mt-1 font-ui text-sm text-slate-500">
-      Colaboradores ativos sem área e/ou cargo — item do checklist operacional pré-abertura.
-    </p>
-  </div>
-  <div class="flex flex-wrap items-center gap-2">
-    {% url 'cycles:ciclo_list' as ciclos_url %}
-    {% include "components/button.html" with label="Voltar aos ciclos" href=ciclos_url variant="secondary" %}
-    {% url 'organization:user_list' as list_url %}
-    {% include "components/button.html" with label="Todos os usuários" href=list_url variant="secondary" %}
-  </div>
-</header>
+<div class="mx-auto w-full max-w-[1440px]">
+  <header class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div>
+      <h1 class="font-display text-2xl font-semibold tracking-tight text-slate-800">Pendentes de vínculo</h1>
+      <p class="mt-1 font-ui text-sm text-slate-500">
+        Colaboradores ativos que ainda precisam de área e/ou cargo definidos.
+      </p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      {% url 'organization:user_list' as list_url %}
+      {% include "components/button.html" with label="Todos os usuários" href=list_url variant="secondary" extra_class="!h-10 !px-6" %}
+    </div>
+  </header>
 
-<section
-  id="rh-pending-guidance"
-  class="mb-5 rounded-xl border {% if users %}border-amber-200 bg-amber-50{% else %}border-emerald-200 bg-emerald-50/60{% endif %} px-4 py-4"
-  aria-labelledby="rh-pending-guidance-title"
-  data-component="rh-pending-guidance"
-  data-advisory-only="true"
->
-  <h2
-    id="rh-pending-guidance-title"
-    class="font-display text-base font-medium tracking-tight text-slate-800"
+  <section
+    id="rh-pending-guidance"
+    class="mb-5 rounded-xl border {% if users %}border-amber-200 bg-amber-50{% else %}border-emerald-200 bg-emerald-50/60{% endif %} px-4 py-4"
+    aria-labelledby="rh-pending-guidance-title"
+    data-component="rh-pending-guidance"
+    data-advisory-only="true"
   >
-    Correção de vínculos (pré-abertura)
-  </h2>
-  {% if users %}
-  <p class="mt-1 font-ui text-sm leading-relaxed text-slate-600">
-    Vincule área e cargo de cada colaborador abaixo. Isto é aviso operacional —
-    não altera nem bloqueia a abertura de ciclo; a regra vigente permanece.
-  </p>
-  {% else %}
-  <p class="mt-1 font-ui text-sm leading-relaxed text-emerald-900" role="status">
-    Nenhum usuário ativo sem área/cargo neste escopo.
-  </p>
-  {% endif %}
-
-  <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
-    {% url 'cycles:ciclo_list' as ciclos_guidance_url %}
-    {% include "components/button.html" with label="Ver checklist nos ciclos" href=ciclos_guidance_url variant="secondary" %}
-    {% if rh_has_cargo_blockers %}
-      {% url 'organization:cargo_list' as cargo_guidance_url %}
-      {% include "components/button.html" with label="Revisar cargos sem competências/pesos" href=cargo_guidance_url variant="secondary" attrs='data-blocker-kind="cargo_missing_competencies"' %}
+    <h2
+      id="rh-pending-guidance-title"
+      class="font-display text-base font-medium tracking-tight text-slate-800"
+    >
+      Complete os vínculos
+    </h2>
+    {% if users %}
+    <p class="mt-1 font-ui text-sm leading-relaxed text-slate-600">
+      Defina área e cargo para cada colaborador listado abaixo.
+    </p>
+    {% else %}
+    <p class="mt-1 font-ui text-sm leading-relaxed text-emerald-900" role="status">
+      Todos os colaboradores ativos já têm área e cargo definidos.
+    </p>
     {% endif %}
-  </div>
-</section>
 
-{% include "organization/user_pending_list_partial.html" %}
+    <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
+      {% url 'cycles:ciclo_list' as ciclos_guidance_url %}
+      {% include "components/button.html" with label="Ir para ciclos" href=ciclos_guidance_url variant="secondary" extra_class="!h-10" %}
+      {% if rh_has_cargo_blockers %}
+        {% url 'organization:cargo_list' as cargo_guidance_url %}
+        {% include "components/button.html" with label="Revisar cargos" href=cargo_guidance_url variant="secondary" extra_class="!h-10" attrs='data-blocker-kind="cargo_missing_competencies"' %}
+      {% endif %}
+    </div>
+  </section>
+
+  {% include "organization/user_pending_list_partial.html" %}
 </div>
 {% endblock %}

@@ -339,15 +339,22 @@ def _resolve_special(
         kwargs = _pk_kwargs(avaliacao_pk)
         if avaliacao_pk is not None:
             return _guidance(
-                'Ciclo concluído para você',
-                'Não há próxima ação de etapa nesta avaliação.',
+                'Sua parte neste ciclo está concluída',
+                (
+                    'Você já cumpriu todas as etapas desta avaliação. '
+                    'Revise seus resultados abaixo ou abra o histórico '
+                    'quando quiser.'
+                ),
                 cta_label='Ver avaliação',
                 cta_url_name='reviews:detail',
                 cta_kwargs=kwargs,
             )
         return _guidance(
-            'Ciclo concluído para você',
-            'Não há próxima ação de etapa nesta avaliação.',
+            'Sua parte neste ciclo está concluída',
+            (
+                'Não há pendências suas neste momento. '
+                'Quando um novo ciclo abrir, as próximas ações aparecem aqui.'
+            ),
             blocked_reason='Avaliação concluída; sem próxima ação de etapa.',
         )
 
@@ -411,6 +418,7 @@ def _resolve_etapa_colaborador(
     *,
     avaliacao_pk: int | None,
     feedback_pk: int | None,
+    self_assessment_submitted: bool | None = None,
 ) -> NextStepGuidance | None:
     if etapa == ETAPA_INPUT_METAS:
         return _guidance(
@@ -455,31 +463,44 @@ def _resolve_etapa_colaborador(
         kwargs = _pk_kwargs(avaliacao_pk)
         if avaliacao_pk is None:
             return _guidance(
-                'Faça a autoavaliação',
-                'Preencha as notas das competências na sua avaliação.',
+                'Sua autoavaliação está aguardando você',
+                (
+                    'A etapa de Avaliação está aberta. Preencha suas notas '
+                    'para permitir que seu líder avance para o feedback final.'
+                ),
                 blocked_reason='Avaliação ainda sem identificador para o CTA.',
             )
+        if self_assessment_submitted is True:
+            return _guidance(
+                'Autoavaliação enviada — agora é a vez do líder',
+                (
+                    'Sua autoavaliação já está registrada. '
+                    'Acompanhe aqui; a nota oficial e o feedback '
+                    'aparecem quando o líder concluir a etapa.'
+                ),
+                cta_label='Ver autoavaliação',
+                cta_url_name='reviews:self_assessment',
+                cta_kwargs=kwargs,
+            )
         return _guidance(
-            'Faça a autoavaliação',
-            'Preencha as notas das competências na sua avaliação.',
-            cta_label='Autoavaliar',
+            'Sua autoavaliação está aguardando você',
+            (
+                'A etapa de Avaliação está aberta. Preencha suas notas '
+                'para permitir que seu líder avance para o feedback final.'
+            ),
+            cta_label='Preencher autoavaliação',
             cta_url_name='reviews:self_assessment',
             cta_kwargs=kwargs,
         )
     if etapa == ETAPA_FEEDBACK:
-        if feedback_pk is not None:
-            return _guidance(
-                'Confirme ciência do feedback',
-                (
-                    'Leia o feedback e registre ciência quando a regra '
-                    'atual permitir.'
-                ),
-                cta_label='Dar ciência',
-                cta_url_name='reviews:feedback_acknowledge',
-                cta_kwargs={'pk': feedback_pk},
-            )
         kwargs = _pk_kwargs(avaliacao_pk)
         if avaliacao_pk is not None:
+            blocked = None
+            if feedback_pk is None:
+                blocked = (
+                    'Feedback específico ainda não informado; '
+                    'abra a lista da avaliação.'
+                )
             return _guidance(
                 'Confirme ciência do feedback',
                 (
@@ -489,10 +510,7 @@ def _resolve_etapa_colaborador(
                 cta_label='Dar ciência',
                 cta_url_name='reviews:feedback_list',
                 cta_kwargs=kwargs,
-                blocked_reason=(
-                    'Feedback específico ainda não informado; '
-                    'abra a lista da avaliação.'
-                ),
+                blocked_reason=blocked,
             )
         return _guidance(
             'Confirme ciência do feedback',
@@ -509,6 +527,7 @@ def _resolve_etapa_lider(
     etapa: str,
     *,
     avaliacao_pk: int | None,
+    self_assessment_submitted: bool | None = None,
 ) -> NextStepGuidance | None:
     if etapa == ETAPA_INPUT_METAS:
         return _guidance(
@@ -545,6 +564,21 @@ def _resolve_etapa_lider(
         )
     if etapa == ETAPA_AVALIACAO:
         kwargs = _pk_kwargs(avaliacao_pk)
+        if (
+            self_assessment_submitted is False
+            and avaliacao_pk is not None
+        ):
+            return _guidance(
+                'Aguardando autoavaliação',
+                (
+                    'O colaborador precisa enviar a autoavaliação '
+                    'antes da sua avaliação.'
+                ),
+                cta_label='Ver avaliação',
+                cta_url_name='reviews:detail',
+                cta_kwargs=kwargs,
+                blocked_reason='Autoavaliação do colaborador ainda não enviada.',
+            )
         if avaliacao_pk is None:
             return _guidance(
                 'Avalie o colaborador',
@@ -616,6 +650,7 @@ def resolve_next_step(
     vinculo_pendente: bool = False,
     concluida: bool = False,
     owner_correction_kind: OwnerCorrectionKind | str | None = None,
+    self_assessment_submitted: bool | None = None,
 ) -> NextStepGuidance:
     """Deriva ``NextStepGuidance`` do estado já existente (somente leitura).
 
@@ -668,9 +703,14 @@ def resolve_next_step(
             etapa,
             avaliacao_pk=avaliacao_pk,
             feedback_pk=feedback_pk,
+            self_assessment_submitted=self_assessment_submitted,
         )
     elif role_norm == 'lider':
-        resolved = _resolve_etapa_lider(etapa, avaliacao_pk=avaliacao_pk)
+        resolved = _resolve_etapa_lider(
+            etapa,
+            avaliacao_pk=avaliacao_pk,
+            self_assessment_submitted=self_assessment_submitted,
+        )
     else:
         resolved = _resolve_etapa_rh(etapa, avaliacao_pk=avaliacao_pk)
 

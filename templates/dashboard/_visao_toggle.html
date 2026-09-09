@@ -4,6 +4,7 @@
   GET completo na mesma URL — sem HTMX no canvas (FR-017 / Freeze D).
   Preserva query vigente (ciclo, ciclos, q…), troca só `visao`.
 
+  Estado ativo = primary (preenchido); inativo = texto muted.
   Uso:
     {% include "dashboard/_visao_toggle.html" %}
 
@@ -11,22 +12,33 @@
     request — QueryDict da página
     visao  — 'historico' ou None/outro (default operacional)
 {% endcomment %}
-{% querystring visao=None as operacional_url %}
-{% querystring visao='historico' as historico_url %}
+{% querystring visao=None ciclo=None q=None as operacional_url %}
+{% querystring visao='historico' ciclo=None as historico_url %}
 <nav
-  class="inline-flex flex-wrap gap-2"
+  class="inline-flex rounded-lg border border-line bg-slate-100 p-1"
   role="navigation"
   aria-label="Neste ciclo ou histórico"
   data-component="visao-toggle"
 >
   {% if visao != 'historico' %}
-  {% include "components/button.html" with label="Neste ciclo" variant="outlined" href=operacional_url extra_class="!h-auto px-3 py-1.5 text-sm" attrs='aria-current="page"' %}
+  <a
+    href="{{ operacional_url }}"
+    class="rounded-md bg-brand-gradient px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
+    aria-current="page"
+  >Neste ciclo</a>
+  <a
+    href="{{ historico_url }}"
+    class="rounded-md px-4 py-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-slate-800"
+  >Histórico</a>
   {% else %}
-  {% include "components/button.html" with label="Neste ciclo" variant="secondary" href=operacional_url extra_class="!h-auto px-3 py-1.5 text-sm" %}
-  {% endif %}
-  {% if visao == 'historico' %}
-  {% include "components/button.html" with label="Histórico" variant="outlined" href=historico_url extra_class="!h-auto px-3 py-1.5 text-sm" attrs='aria-current="page"' %}
-  {% else %}
-  {% include "components/button.html" with label="Histórico" variant="secondary" href=historico_url extra_class="!h-auto px-3 py-1.5 text-sm" %}
+  <a
+    href="{{ operacional_url }}"
+    class="rounded-md px-4 py-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-slate-800"
+  >Neste ciclo</a>
+  <a
+    href="{{ historico_url }}"
+    class="rounded-md bg-brand-gradient px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
+    aria-current="page"
+  >Histórico</a>
   {% endif %}
 </nav>

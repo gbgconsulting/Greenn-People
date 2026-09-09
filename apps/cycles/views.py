@@ -23,6 +23,11 @@ from apps.cycles.forms import CicloForm
 from apps.cycles.models import Ciclo
 from apps.cycles.services.cycle import close_cycle, open_cycle
 from apps.cycles.services.eligibility import preview_admission_counts
+from apps.cycles.services.objetivo_list import (
+    apply_objetivo_list_filters,
+    get_base_objetivo_list_queryset,
+    parse_search_filter,
+)
 from apps.dashboard.chart_payloads import (
     CHART_TYPE_BAR_GROUPED,
     CHART_TYPE_BAR_HORIZONTAL,
@@ -36,11 +41,7 @@ from apps.dashboard.chart_payloads import (
     grouped_series_payload,
 )
 from apps.dashboard.models import AderenciaSnapshot
-from apps.dashboard.services.history import (
-    build_stage_history,
-    is_history_mode,
-    resolve_history_ciclos,
-)
+from apps.dashboard.services.eligible_leaders import filter_adherence_snapshots
 from apps.dashboard.services.structure import build_structure_coverage
 from apps.dashboard.views import aderencia_status
 from apps.goals.forms import ObjetivoEstrategicoForm, get_open_ciclo
@@ -93,7 +94,18 @@ class CicloNestedMixin(AdminCyclesMixin):
 
 
 def _annotated_ciclos():
-    return Ciclo.objects.annotate(avaliacoes_count=Count('avaliacoes'))
+    """Contagens de avaliações para lista/cards (progresso honesto)."""
+    return Ciclo.objects.annotate(
+        avaliacoes_count=Count('avaliacoes'),
+        avaliacoes_concluidas=Count(
+            'avaliacoes',
+            filter=Q(avaliacoes__concluida=True),
+        ),
+        avaliacoes_pendentes=Count(
+            'avaliacoes',
+            filter=Q(avaliacoes__concluida=False),
+        ),
+    )
 
 
 class CicloListView(AdminCyclesMixin, HtmxPaginatedListMixin, ListView):
@@ -101,7 +113,8 @@ class CicloListView(AdminCyclesMixin, HtmxPaginatedListMixin, ListView):
     template_name = 'cycles/ciclo_list.html'
     partial_template_name = 'cycles/ciclo_list_partial.html'
     context_object_name = 'ciclos'
-    # paginate_by = 20 vem de HtmxPaginatedListMixin — não redefinir.
+    # Grade de cards: página menor que o default do mixin (20).
+    paginate_by = 5
 
     def get_queryset(self):
         """Arquivo paginado; o aberto vai para ``ciclo_operacional``."""
@@ -195,12 +208,15 @@ class CicloDeleteView(AdminCyclesMixin, DeleteView):
 
 
 class CicloDetailView(AdminCyclesMixin, DetailView):
-    """Painel gerencial read-only do ciclo (US1 T019 / US3 T032).
+    """Painel gerencial read-only de um ciclo (US1 T019 / US3).
 
     AuthZ = ``AdminCyclesMixin`` (LoginRequired + RequiresAdmin). Sem
     ``ScopedObjectMixin`` — Ciclo não tem dono; precedente admin-only.
-    Não toca ``CicloOpenView`` / ``close`` / ``cycle.py``. Sem rota nova
-    (``apps/cycles/urls.py`` intocável): histórico só via ``?visao=historico``.
+    Não toca ``CicloOpenView`` / ``close`` / ``cycle.py``.
+
+    Zoom de um ``pk``: só visão operacional deste ciclo. Tendência /
+    ``visao=historico`` vive no Painel admin / Time — não nesta tela.
+    Query ``visao`` / ``ciclos`` é ignorada (sem bypass de AuthZ).
     """
 
     model = Ciclo
@@ -208,15 +224,11 @@ class CicloDetailView(AdminCyclesMixin, DetailView):
     context_object_name = 'ciclo'
 
     def get_context_data(self, **kwargs):
-        """KPI → pipeline do ``pk`` → cobertura → empty desempenho.
+        """KPI → pipeline do ``pk`` → cobertura → aderência → checklist.
 
         Checklist = reuse T026 de ``build_rh_pre_open_checklist`` (008 / FR-008);
         avisório — não condiciona Abrir ciclo / ``open_cycle``.
         Cobertura já corta Top-N via ``coverage_bar_payload`` (T005).
-
-        US3 / T032: com ``?visao=historico``, tendência org (``area``, cap N)
-        no visual principal; pipeline do ``pk`` permanece; aderência/gap
-        ficam empty ``sem_nota`` (MUST NOT inventar nota).
         """
         context = super().get_context_data(**kwargs)
         ciclo = self.object
@@ -226,9 +238,6 @@ class CicloDetailView(AdminCyclesMixin, DetailView):
         cobertura = build_structure_coverage(visible, ciclo)
         sem_desempenho = self._cabecalhos_sem_desempenho(ciclo)
 
-        context['visao'] = None
-        context['chart_stage_history'] = None
-        # Pipeline do ``pk`` sempre (modo operacional e histórico).
         # Presentation only (US1 / T010): gargalo_label do pico estrito — mesmos
         # counts; sem mutar etapa/QS. Espelho de admin ``ciclo_kpis.gargalo_label``.
         chart_progresso = self._chart_ciclo_progresso(ciclo)
@@ -244,33 +253,6 @@ class CicloDetailView(AdminCyclesMixin, DetailView):
         context['chart_cobertura_area'] = cobertura['chart_por_area']
         context['chart_cobertura_cargo'] = cobertura['chart_por_cargo']
         context['aderencia_resumo'] = self._aderencia_resumo(ciclo)
-
-        if is_history_mode(self.request):
-            janela = resolve_history_ciclos(self.request)
-            context['visao'] = 'historico'
-            context['chart_stage_history'] = build_stage_history(
-                visible,
-                janela,
-            )
-            # Séries de nota/gap/aderência: empty até haver dado (clarification).
-            context['chart_aderencia_distribuicao'] = empty_kind_payload(
-                kind=EMPTY_KIND_SEM_NOTA,
-                chart_id='chart-aderencia-distribuicao',
-                chart_type=CHART_TYPE_DOUGHNUT,
-                title='Distribuição de aderência',
-            )
-            context['chart_gaps_competencia'] = grouped_series_payload(
-                chart_id='chart-gaps-competencia',
-                chart_type=CHART_TYPE_BAR_GROUPED,
-                title='Esperado × nota por competência',
-                labels=[],
-                series=[],
-                empty_message=empty_kind_message(EMPTY_KIND_SEM_NOTA),
-                has_data=False,
-            )
-            context.update(_rh_pre_open_checklist_context())
-            return context
-
         context['chart_aderencia_distribuicao'] = (
             self._chart_aderencia_distribuicao(
                 ciclo,
@@ -320,7 +302,10 @@ class CicloDetailView(AdminCyclesMixin, DetailView):
         }
 
     def _aderencia_resumo(self, ciclo: Ciclo) -> dict:
-        agg = AderenciaSnapshot.objects.filter(ciclo=ciclo).aggregate(
+        agg = filter_adherence_snapshots(
+            AderenciaSnapshot.objects.filter(ciclo=ciclo),
+            ciclo=ciclo,
+        ).aggregate(
             media=Avg('percentual'),
             total_lideres=Count('pk'),
         )
@@ -402,7 +387,12 @@ class CicloDetailView(AdminCyclesMixin, DetailView):
         chart_type = CHART_TYPE_DOUGHNUT
         title = 'Distribuição de aderência'
         percentuais = list(
-            AderenciaSnapshot.objects.filter(ciclo=ciclo).values_list(
+            filter_adherence_snapshots(
+                AderenciaSnapshot.objects.filter(ciclo=ciclo),
+                ciclo=ciclo,
+            )
+            .exclude(percentual__isnull=True)
+            .values_list(
                 'percentual',
                 flat=True,
             )
@@ -544,12 +534,29 @@ class ObjetivoEstrategicoListView(CicloNestedMixin, HtmxPaginatedListMixin, List
     partial_template_name = 'cycles/objetivo_list_partial.html'
     context_object_name = 'objetivos'
 
+    def _parsed_filters(self):
+        base_qs = get_base_objetivo_list_queryset(self.ciclo)
+        busca = parse_search_filter(self.request.GET.get('busca'))
+        return base_qs, busca
+
     def get_queryset(self):
-        return (
-            ObjetivoEstrategico.objects.filter(ciclo=self.ciclo)
-            .annotate(metas_count=Count('metas'))
-            .order_by('id')
+        base_qs, busca = self._parsed_filters()
+        return apply_objetivo_list_filters(base_qs, busca=busca)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        _, busca = self._parsed_filters()
+        context.update(
+            {
+                'list_url': reverse(
+                    'cycles:objetivo_list',
+                    kwargs={self.ciclo_url_kwarg: self.ciclo.pk},
+                ),
+                'filtro_busca': busca,
+                'filtro_ativo': bool(busca),
+            },
         )
+        return context
 
 
 class ObjetivoEstrategicoCreateView(CicloNestedMixin, CreateView):

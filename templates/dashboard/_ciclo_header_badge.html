@@ -1,0 +1,26 @@
+{% comment %}
+  Badge do ciclo no header (estrutura / aderência).
+
+  Segue ``ciclo_filtro`` (ciclo resolvido para a tela), não só a existência
+  de ciclo aberto — evita "Sem ciclo aberto" quando ``?ciclo=`` aponta para
+  arquivo ou quando o filtro já resolveu um ciclo.
+
+  Contexto:
+    ciclo_filtro — ciclo atualmente exibido (pode ser None)
+    ciclo_aberto — ciclo aberto no sistema (pode ser None)
+
+  Parâmetros:
+    extra_class — classes extras no badge (opcional)
+{% endcomment %}
+{% if ciclo_filtro %}
+  {% if ciclo_aberto and ciclo_filtro.pk == ciclo_aberto.pk %}
+    <span class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-700 {{ extra_class }}">
+      <span class="h-2 w-2 animate-pulse rounded-full bg-emerald-500" aria-hidden="true"></span>
+      Ativo · {{ ciclo_filtro.nome }}
+    </span>
+  {% else %}
+    {% include "components/badge_status.html" with status="arquivado" label=ciclo_filtro.nome extra_class=extra_class %}
+  {% endif %}
+{% else %}
+  {% include "components/badge_status.html" with status="arquivado" label="Sem ciclo aberto" extra_class=extra_class %}
+{% endif %}
