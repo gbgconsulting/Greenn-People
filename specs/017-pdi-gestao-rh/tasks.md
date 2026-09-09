@@ -102,12 +102,12 @@ Monólito Django na raiz: `apps/pdi/`, `apps/notifications/`, `apps/dashboard/`,
 
 ### Implementation for User Story 3
 
-- [ ] T017 [US3] Em `apps/pdi/views.py`, aceitar `modo=cards|tabela` e filtros `gestor` / `area` / `faixa_atraso`; se `not can_view_team_ownership_list`, **forçar** cards e ignorar filtros gerenciais no backend ([contracts/backend-scope-authz.md](./contracts/backend-scope-authz.md)); opções de select limitadas ao escopo
-- [ ] T018 [P] [US3] Se necessário, Form leve em `apps/pdi/forms.py` para filtros gerenciais (gestor/área/faixa) — validação server-side; IDs fora do escopo ignorados/seguros
-- [ ] T019 [P] [US3] Criar `templates/pdi/partials/pdi_table.html` no envelope registry / classes `leader-team-table` (colunas: colaborador, gestor, área, progresso, nº atrasadas, dias max, próximo prazo); zero/empty claro quando sem atraso ([contracts/ui-visual-consistency.md](./contracts/ui-visual-consistency.md))
-- [ ] T020 [US3] Em `templates/pdi/pdi_list.html` + `pdi_list_partial.html`, toggle Cards|Tabela (DNA de `ownership_visao_toggle`: segment `bg-slate-100` + ativo `bg-brand-gradient`) **só** quando visão equipe permitida; incluir parcial de tabela; filtros profundos em `<details>` “Filtros” (padrão `user_list_filters` / avaliações) — **não** empilhar como chips no hub
-- [ ] T021 [US3] Estender `_pdi_list_row` / context em `apps/pdi/views.py` com `dias_atraso_max`, `proximo_prazo`, gestor/área do dono para linhas da tabela
-- [ ] T022 [US3] Estender `tests/test_pdi_overdue_list_filters.py` (ou arquivo dedicado) com casos tabela: colunas, `faixa_atraso`, colaborador sem toggle/leak, `modo=tabela` forçado a cards sem permissão
+- [X] T017 [US3] Em `apps/pdi/views.py`, aceitar `modo=cards|tabela` e filtros `gestor` / `area` / `faixa_atraso`; se `not can_view_team_ownership_list`, **forçar** cards e ignorar filtros gerenciais no backend ([contracts/backend-scope-authz.md](./contracts/backend-scope-authz.md)); opções de select limitadas ao escopo
+- [X] T018 [P] [US3] Se necessário, Form leve em `apps/pdi/forms.py` para filtros gerenciais (gestor/área/faixa) — validação server-side; IDs fora do escopo ignorados/seguros
+- [X] T019 [P] [US3] Criar `templates/pdi/partials/pdi_table.html` no envelope registry / classes `leader-team-table` (colunas: colaborador, gestor, área, progresso, nº atrasadas, dias max, próximo prazo); zero/empty claro quando sem atraso ([contracts/ui-visual-consistency.md](./contracts/ui-visual-consistency.md))
+- [X] T020 [US3] Em `templates/pdi/pdi_list.html` + `pdi_list_partial.html`, toggle Cards|Tabela (DNA de `ownership_visao_toggle`: segment `bg-slate-100` + ativo `bg-brand-gradient`) **só** quando visão equipe permitida; incluir parcial de tabela; filtros profundos em `<details>` “Filtros” (padrão `user_list_filters` / avaliações) — **não** empilhar como chips no hub
+- [X] T021 [US3] Estender `_pdi_list_row` / context em `apps/pdi/views.py` com `dias_atraso_max`, `proximo_prazo`, gestor/área do dono para linhas da tabela
+- [X] T022 [US3] Estender `tests/test_pdi_overdue_list_filters.py` (ou arquivo dedicado) com casos tabela: colunas, `faixa_atraso`, colaborador sem toggle/leak, `modo=tabela` forçado a cards sem permissão
 
 **Checkpoint**: US3 independentemente testável sobre a base de métricas da US1
 

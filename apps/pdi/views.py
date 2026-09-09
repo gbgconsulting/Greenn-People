@@ -20,6 +20,7 @@ from apps.accounts.services.scope import (
     VISAO_PROPRIAS,
     apply_ownership_visao,
     can_view_team_ownership_list,
+    get_visible_users,
     ownership_visao_equipe_label,
     resolve_ownership_visao,
     user_in_scope,
@@ -27,7 +28,16 @@ from apps.accounts.services.scope import (
 from apps.audit.services import log_scope_denied
 from apps.core.htmx import is_htmx
 from apps.core.mixins import HtmxPaginatedListMixin, ScopedObjectMixin
-from apps.pdi.forms import AcaoPDIForm, PDIForm
+from apps.organization.services.user_list import (
+    get_area_filter_options,
+    get_manager_filter_options,
+)
+from apps.pdi.forms import (
+    FAIXA_ATRASO_FILTER_CHOICES,
+    AcaoPDIForm,
+    PDIForm,
+    PDIListManagerialFiltersForm,
+)
 from apps.pdi.models import AcaoPDI, PDI
 from apps.pdi.services.lifecycle import (
     PDINotArchivableError,
@@ -37,6 +47,7 @@ from apps.pdi.services.lifecycle import (
 from apps.pdi.services.overdue_metrics import (
     annotate_overdue_metrics,
     filter_com_atrasadas,
+    filter_faixa_atraso,
 )
 from apps.pdi.services.progress import _PROGRESS_QUANT, calculate_pdi_progress
 
@@ -46,6 +57,21 @@ _HUB_FILTER_CHOICES = (
     (PDI.Status.CONCLUIDO, 'Concluídos'),
     (PDI.Status.ARQUIVADO, 'Arquivados'),
 )
+
+MODO_CARDS = 'cards'
+MODO_TABELA = 'tabela'
+
+
+def _resolve_list_modo(*, can_team: bool, visao: str, raw: str | None) -> str:
+    """Resolve ``?modo=`` — tabela só com visão equipe; senão força cards.
+
+    UI pode pedir ``modo=tabela``; AuthZ decide no backend (backend-scope-authz).
+    """
+    if not can_team or visao != VISAO_EQUIPE:
+        return MODO_CARDS
+    if (raw or '').strip() == MODO_TABELA:
+        return MODO_TABELA
+    return MODO_CARDS
 
 
 def _user_display_name(user) -> str:
@@ -130,6 +156,11 @@ def _pdi_list_row(pdi: PDI, *, viewer_id: int) -> dict:
     concluidas = int(getattr(pdi, 'acoes_concluidas', 0) or 0)
     # Annotate de ``annotate_overdue_metrics`` (T003/T005); default 0 se ausente.
     acoes_atrasadas_count = int(getattr(pdi, 'acoes_atrasadas_count', 0) or 0)
+    # Métricas de tabela (US3 / T021): None quando sem atraso elegível / sem prazo.
+    raw_dias = getattr(pdi, 'dias_atraso_max', None)
+    dias_atraso_max = int(raw_dias) if raw_dias is not None else None
+    proximo_prazo = getattr(pdi, 'proximo_prazo', None)
+    dono = pdi.usuario
     progresso = _progress_from_counts(concluidas, total_acoes)
     is_self = pdi.usuario_id == viewer_id
     variant = _hub_card_variant(pdi, total_acoes)
@@ -144,6 +175,11 @@ def _pdi_list_row(pdi: PDI, *, viewer_id: int) -> dict:
         'acoes_concluidas': concluidas,
         'acoes_atrasadas_count': acoes_atrasadas_count,
         'acoes_atrasadas_label': _acoes_atrasadas_label(acoes_atrasadas_count),
+        'dias_atraso_max': dias_atraso_max,
+        'proximo_prazo': proximo_prazo,
+        'colaborador': _user_display_name(dono),
+        'gestor': getattr(dono, 'line_manager', None),
+        'area': getattr(dono, 'area', None),
         'hub_variant': variant,
         'hub_status_label': _hub_status_label(variant),
         'hub_cta_label': _hub_cta_label(variant),
@@ -320,6 +356,48 @@ class PDIListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin,
             self.request.GET.get('visao'),
         )
 
+    def _can_team(self) -> bool:
+        return can_view_team_ownership_list(self.request.user)
+
+    def _managerial_filters_allowed(self) -> bool:
+        """Filtros gestor/área/faixa só na fatia equipe com permissão de time."""
+        return self._can_team() and self._ownership_visao() == VISAO_EQUIPE
+
+    def _resolved_modo(self) -> str:
+        return _resolve_list_modo(
+            can_team=self._can_team(),
+            visao=self._ownership_visao(),
+            raw=self.request.GET.get('modo'),
+        )
+
+    def _managerial_filters_form(self) -> PDIListManagerialFiltersForm | None:
+        """Form leve de filtros gerenciais; ``None`` se AuthZ não permitir."""
+        if hasattr(self, '_cached_managerial_filters_form'):
+            return self._cached_managerial_filters_form
+        if not self._managerial_filters_allowed():
+            self._cached_managerial_filters_form = None
+            return None
+        self._cached_managerial_filters_form = (
+            PDIListManagerialFiltersForm.from_request_get(
+                self.request.GET,
+                visible_users=get_visible_users(self.request.user),
+            )
+        )
+        return self._cached_managerial_filters_form
+
+    def _resolve_gestor_area_filters(self) -> tuple[int | None, int | None]:
+        """IDs de gestor/área limitados ao escopo; fora → ignorados (None)."""
+        form = self._managerial_filters_form()
+        if form is None:
+            return None, None
+        return form.gestor_id, form.area_id
+
+    def _resolve_faixa_atraso(self) -> str:
+        form = self._managerial_filters_form()
+        if form is None:
+            return ''
+        return form.faixa
+
     def get_queryset(self):
         qs = (
             super()
@@ -366,6 +444,16 @@ class PDIListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin,
             qs = filter_com_atrasadas(qs)
             if status != PDI.Status.ARQUIVADO:
                 qs = qs.exclude(status=PDI.Status.ARQUIVADO)
+
+        # Filtros gerenciais (US3): Form valida escopo; IDs fora ignorados.
+        form = self._managerial_filters_form()
+        if form is not None:
+            if form.gestor_id is not None:
+                qs = qs.filter(usuario__line_manager_id=form.gestor_id)
+            if form.area_id is not None:
+                qs = qs.filter(usuario__area_id=form.area_id)
+            if form.faixa:
+                qs = filter_faixa_atraso(qs, form.faixa)
         return qs
 
     def get_context_data(self, **kwargs):
@@ -377,7 +465,8 @@ class PDIListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin,
         busca = self.request.GET.get('q', '').strip()
         atrasadas_filtro = self.request.GET.get('atrasadas', '').strip() == '1'
         visao = self._ownership_visao()
-        mostrar_toggle_visao = can_view_team_ownership_list(viewer)
+        mostrar_toggle_visao = self._can_team()
+        modo = self._resolved_modo()
         # Porta vazia só para colaborador puro sem PDIs (líder/admin veem o hub
         # com toggle mesmo sem PDI próprio).
         mostrar_empty_porta = (
@@ -403,8 +492,28 @@ class PDIListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin,
                 'visao_equipe_label': ownership_visao_equipe_label(viewer),
                 'visao_proprias': VISAO_PROPRIAS,
                 'visao_equipe': VISAO_EQUIPE,
+                'modo': modo,
+                'modo_cards': MODO_CARDS,
+                'modo_tabela': MODO_TABELA,
+                'mostrar_toggle_modo': mostrar_toggle_visao and visao == VISAO_EQUIPE,
             },
         )
+        # Opções e valores de filtros gerenciais: só quem pode ver equipe.
+        # Colaborador puro não recebe chaves (contrato AuthZ / T011).
+        if mostrar_toggle_visao:
+            visible = get_visible_users(viewer)
+            gestor_id, area_id = self._resolve_gestor_area_filters()
+            faixa = self._resolve_faixa_atraso()
+            context.update(
+                {
+                    'gestor_filtro': gestor_id,
+                    'area_filtro': area_id,
+                    'faixa_atraso_filtro': faixa,
+                    'filtro_gestores': get_manager_filter_options(visible),
+                    'filtro_areas': get_area_filter_options(visible),
+                    'filtro_faixas_atraso': FAIXA_ATRASO_FILTER_CHOICES,
+                },
+            )
         return context
 
 

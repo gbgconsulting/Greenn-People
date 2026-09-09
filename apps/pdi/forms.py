@@ -1,10 +1,31 @@
 from __future__ import annotations
 
 from django import forms
+from django.db.models import QuerySet
 from django.utils import timezone
 
+from apps.accounts.models import CustomUser
 from apps.accounts.services.scope import get_visible_users, user_in_scope
+from apps.organization.services.user_list import (
+    get_allowed_area_ids,
+    get_allowed_manager_ids,
+    parse_int_filter,
+    resolve_id_filter,
+)
 from apps.pdi.models import AcaoPDI, PDI
+from apps.pdi.services.overdue_metrics import (
+    FAIXA_1_7,
+    FAIXA_30_PLUS,
+    FAIXA_8_30,
+    FAIXAS_ATRASO,
+)
+
+FAIXA_ATRASO_FILTER_CHOICES = (
+    ('', 'Todas'),
+    (FAIXA_1_7, '1–7 dias'),
+    (FAIXA_8_30, '8–30 dias'),
+    (FAIXA_30_PLUS, 'Mais de 30 dias'),
+)
 
 _INPUT = (
     'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm '
@@ -204,3 +225,65 @@ class AcaoPDIForm(forms.ModelForm):
                 'Você não tem permissão para atribuir este responsável.',
             )
         return responsavel
+
+
+class PDIListManagerialFiltersForm(forms.Form):
+    """Filtros GET gerenciais do hub (gestor / área / faixa).
+
+    Validação server-side: IDs fora do escopo ou inválidos → ``None`` / ``''``
+    (ignorados com segurança). Não levanta erro de formulário na listagem —
+    query string maliciosa não quebra a página nem amplia o escopo.
+    """
+
+    gestor = forms.CharField(required=False)
+    area = forms.CharField(required=False)
+    faixa_atraso = forms.CharField(required=False)
+
+    def __init__(
+        self,
+        *args,
+        visible_users: QuerySet[CustomUser] | None = None,
+        **kwargs,
+    ):
+        self.visible_users = visible_users
+        super().__init__(*args, **kwargs)
+
+    def clean_gestor(self) -> int | None:
+        raw = parse_int_filter(self.cleaned_data.get('gestor'))
+        if self.visible_users is None:
+            return None
+        return resolve_id_filter(raw, get_allowed_manager_ids(self.visible_users))
+
+    def clean_area(self) -> int | None:
+        raw = parse_int_filter(self.cleaned_data.get('area'))
+        if self.visible_users is None:
+            return None
+        return resolve_id_filter(raw, get_allowed_area_ids(self.visible_users))
+
+    def clean_faixa_atraso(self) -> str:
+        value = (self.cleaned_data.get('faixa_atraso') or '').strip()
+        return value if value in FAIXAS_ATRASO else ''
+
+    @classmethod
+    def from_request_get(
+        cls,
+        data,
+        *,
+        visible_users: QuerySet[CustomUser],
+    ) -> PDIListManagerialFiltersForm:
+        """Instancia e valida; sempre retorna form com ``cleaned_data`` seguro."""
+        form = cls(data, visible_users=visible_users)
+        form.is_valid()
+        return form
+
+    @property
+    def gestor_id(self) -> int | None:
+        return getattr(self, 'cleaned_data', {}).get('gestor')
+
+    @property
+    def area_id(self) -> int | None:
+        return getattr(self, 'cleaned_data', {}).get('area')
+
+    @property
+    def faixa(self) -> str:
+        return getattr(self, 'cleaned_data', {}).get('faixa_atraso', '')

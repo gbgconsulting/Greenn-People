@@ -1,0 +1,101 @@
+{% comment %}
+  Vista tabela operacional do hub PDI (US3).
+  Envelope registry + classes leader-team-table (ui-visual-consistency).
+  Colunas: colaborador, gestor, área, progresso, nº atrasadas, dias max, próximo prazo.
+  Zero/ausência de atraso: slate neutro ("0" / "—"), nunca rose de erro.
+  Contexto de linha: pdi_rows (_pdi_list_row + dias_atraso_max / proximo_prazo / gestor / area).
+{% endcomment %}
+<div class="overflow-hidden rounded-xl border border-line bg-surface-card shadow-sm">
+  <div class="registry-table-scroll min-w-0 overflow-x-auto">
+    <table class="leader-team-table">
+      <thead>
+        <tr>
+          <th scope="col" class="col-colaborador">Colaborador</th>
+          <th scope="col" class="col-cargo">Gestor</th>
+          <th scope="col" class="col-area">Área</th>
+          <th scope="col" class="text-center">Progresso</th>
+          <th scope="col" class="text-center">Atrasadas</th>
+          <th scope="col" class="text-center">Dias máx.</th>
+          <th scope="col" class="whitespace-nowrap">Próximo prazo</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in pdi_rows %}
+        {% url 'pdi:detail' row.pdi.pk as detail_url %}
+        <tr class="group border-b border-slate-100 hover:bg-slate-50/80">
+          <td class="col-colaborador">
+            <div class="min-w-0">
+              <a
+                href="{{ detail_url }}"
+                class="block truncate font-ui text-sm font-semibold text-slate-800 transition-colors hover:text-emerald-700"
+                title="{% firstof row.colaborador row.pdi.usuario.nome row.pdi.usuario.email %}"
+              >
+                {% firstof row.colaborador row.pdi.usuario.nome row.pdi.usuario.email %}
+              </a>
+              <p class="truncate font-ui text-xs text-slate-500" title="{{ row.pdi.titulo }}">
+                {{ row.pdi.titulo }}
+              </p>
+            </div>
+          </td>
+          <td class="col-cargo font-ui text-sm text-slate-600">
+            {% if row.gestor %}
+              <span class="block truncate" title="{{ row.gestor.nome|default:row.gestor }}">
+                {{ row.gestor.nome|default:row.gestor }}
+              </span>
+            {% else %}
+              <span class="text-slate-400">—</span>
+            {% endif %}
+          </td>
+          <td class="col-area font-ui text-sm text-slate-600">
+            {% if row.area %}
+              <span class="block truncate" title="{{ row.area.nome|default:row.area }}">
+                {{ row.area.nome|default:row.area }}
+              </span>
+            {% else %}
+              <span class="text-slate-400">—</span>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            <span class="font-ui text-sm font-semibold tabular-nums text-slate-700">
+              {{ row.progresso }}%
+            </span>
+          </td>
+          <td class="text-center">
+            {% if row.acoes_atrasadas_count > 0 %}
+              {% include "components/badge_status.html" with status="atrasada" label=row.acoes_atrasadas_label|default:row.acoes_atrasadas_count %}
+            {% else %}
+              <span class="font-ui text-sm tabular-nums text-slate-400">0</span>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            {% if row.dias_atraso_max %}
+              <span class="font-ui text-sm font-semibold tabular-nums text-rose-700">
+                {{ row.dias_atraso_max }}
+              </span>
+            {% else %}
+              <span class="font-ui text-sm text-slate-400">—</span>
+            {% endif %}
+          </td>
+          <td class="whitespace-nowrap font-ui text-sm tabular-nums text-slate-600">
+            {% if row.proximo_prazo %}
+              {{ row.proximo_prazo|date:"d/m/Y" }}
+            {% else %}
+              <span class="text-slate-400">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="!py-10">
+            {% if busca or status_filtro or atrasadas_filtro or gestor_filtro or area_filtro or faixa_atraso_filtro %}
+              {% include "components/empty_state.html" with title="Nenhum PDI neste filtro" message="Nenhum plano corresponde à busca ou aos filtros selecionados. Tente ajustar os filtros." %}
+            {% else %}
+              {% include "components/empty_state.html" with title="Nenhum PDI da equipe" message="Nenhum PDI cadastrado no seu escopo (exceto o seu)." %}
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
