@@ -1,8 +1,9 @@
-"""Contrato listagem PDI com atraso + AuthZ de escopo (US1 / T011 + US3 / T022).
+"""Contrato listagem PDI com atraso + AuthZ de escopo (US1 / T011 + US3 / T022 + US5 / T030).
 
 Cobre [contracts/pdi-overdue-list.md] + [contracts/backend-scope-authz.md]:
 atrasadas=1, contagem no card, colaborador sem leak, arquivado fora do operacional;
-vista tabela (colunas, faixa_atraso, modo forçado a cards sem permissão).
+vista tabela (colunas, faixa_atraso, modo forçado a cards sem permissão);
+widget KPI no dashboard time/admin (contagem scoped; link sem ampliar AuthZ).
 """
 
 from __future__ import annotations
@@ -420,3 +421,243 @@ def test_colaborador_modo_tabela_forcado_a_cards_sem_permissao(
     assert b'leader-team-table' not in response.content
     assert b'data-component="pdi-modo-toggle"' not in response.content
     # Filtro gerencial ignorado: PDI sem atraso permanece listado.
+
+
+# --- US5 / T030: widget KPI dashboard (superfície + escopo) ----------------
+
+
+@pytest.mark.django_db
+def test_team_dashboard_widget_contagem_scoped_sem_leak(
+    client,
+    lider,
+    colaborador,
+    outsider,
+):
+    """Quickstart §E / SC-005: KPI do time conta só o escopo; outsider fora."""
+    no_time = PDI.objects.create(
+        usuario=colaborador,
+        titulo='PDI time com atraso',
+        status=PDI.Status.ATIVO,
+    )
+    _criar_acao(
+        no_time,
+        responsavel=colaborador,
+        status=AcaoPDI.Status.ATRASADA,
+        prazo=_prazo_atrasado(dias=4),
+        descricao='Atrasada no time',
+    )
+    _criar_acao(
+        no_time,
+        responsavel=colaborador,
+        status=AcaoPDI.Status.ATRASADA,
+        prazo=_prazo_atrasado(dias=10),
+        descricao='Segunda atrasada no time',
+    )
+
+    # Próprio do líder: fatia equipe exclui self — não entra no widget.
+    proprio_lider = PDI.objects.create(
+        usuario=lider,
+        titulo='PDI próprio do líder',
+        status=PDI.Status.ATIVO,
+    )
+    _criar_acao(
+        proprio_lider,
+        responsavel=lider,
+        status=AcaoPDI.Status.ATRASADA,
+        prazo=_prazo_atrasado(),
+    )
+
+    fora = PDI.objects.create(
+        usuario=outsider,
+        titulo='PDI outsider',
+        status=PDI.Status.ATIVO,
+    )
+    _criar_acao(
+        fora,
+        responsavel=outsider,
+        status=AcaoPDI.Status.ATRASADA,
+        prazo=_prazo_atrasado(),
+    )
+
+    arquivado = PDI.objects.create(
+        usuario=colaborador,
+        titulo='PDI arquivado atrasado',
+        status=PDI.Status.ARQUIVADO,
+    )
+    _criar_acao(
+        arquivado,
+        responsavel=colaborador,
+        status=AcaoPDI.Status.ATRASADA,
+        prazo=_prazo_atrasado(),
+    )
+
+    client.force_login(lider)
+    response = client.get(reverse('dashboard:team'))
+    assert response.status_code == 200
+
+    metrics = response.context['pdi_atrasos']
+    assert metrics.pdis_com_atraso == 1
+    assert metrics.acoes_atrasadas == 2
+    assert metrics.has_atrasos is True
+    assert 'atrasadas=1' in metrics.list_href
+    assert f'visao={VISAO_EQUIPE}' in metrics.list_href
+
+    html = response.content.decode()
+    assert 'Ações atrasadas' in html
+    assert 'Ver PDIs atrasados' in html
+    # DTL escapa ``&`` → ``&amp;`` no href.
+    assert 'atrasadas=1' in html
+    assert f'visao={VISAO_EQUIPE}' in html
+    assert 'bg-amber-500/20' in html  # accent warning com atraso
+    assert 'Nenhuma ação atrasada no escopo.' not in html
+
+
+@pytest.mark.django_db
+def test_admin_dashboard_widget_contagem_org(
+    client,
+    admin,
+    colaborador,
+    outsider,
+):
+    """Admin vê atrasos da org no KPI (outsider incluso; arquivado fora)."""
+    pdi_colab = PDI.objects.create(
+        usuario=colaborador,
+        titulo='PDI colab org',
+        status=PDI.Status.ATIVO,
+    )
+    _criar_acao(
+        pdi_colab,
+        responsavel=colaborador,
+        status=AcaoPDI.Status.ATRASADA,
+        prazo=_prazo_atrasado(),
+    )
+    pdi_out = PDI.objects.create(
+        usuario=outsider,
+        titulo='PDI outsider org',
+        status=PDI.Status.ATIVO,
+    )
+    _criar_acao(
+        pdi_out,
+        responsavel=outsider,
+        status=AcaoPDI.Status.ATRASADA,
+        prazo=_prazo_atrasado(),
+    )
+    pdi_arq = PDI.objects.create(
+        usuario=colaborador,
+        titulo='PDI arquivado org',
+        status=PDI.Status.ARQUIVADO,
+    )
+    _criar_acao(
+        pdi_arq,
+        responsavel=colaborador,
+        status=AcaoPDI.Status.ATRASADA,
+        prazo=_prazo_atrasado(),
+    )
+
+    client.force_login(admin)
+    response = client.get(reverse('dashboard:admin'))
+    assert response.status_code == 200
+
+    metrics = response.context['pdi_atrasos']
+    assert metrics.pdis_com_atraso == 2
+    assert metrics.acoes_atrasadas == 2
+    assert 'atrasadas=1' in metrics.list_href
+    html = response.content.decode()
+    assert 'atrasadas=1' in html
+    assert 'Ver PDIs atrasados' in html
+
+
+@pytest.mark.django_db
+def test_team_dashboard_widget_zero_atrasos_neutro(client, lider, colaborador):
+    """Quickstart §E.2: zero no escopo → valor 0 + accent neutro (não warning)."""
+    pdi = PDI.objects.create(
+        usuario=colaborador,
+        titulo='PDI sem atraso',
+        status=PDI.Status.ATIVO,
+    )
+    _criar_acao(
+        pdi,
+        responsavel=colaborador,
+        status=AcaoPDI.Status.PENDENTE,
+        prazo=_prazo_futuro(),
+    )
+
+    client.force_login(lider)
+    response = client.get(reverse('dashboard:team'))
+    assert response.status_code == 200
+
+    metrics = response.context['pdi_atrasos']
+    assert metrics.pdis_com_atraso == 0
+    assert metrics.acoes_atrasadas == 0
+    assert metrics.has_atrasos is False
+
+    html = response.content.decode()
+    assert 'Nenhuma ação atrasada no escopo.' in html
+    assert 'Ver PDIs atrasados' in html
+    # Zero = accent neutral no KPI (sem faixa warning amber).
+    assert 'bg-amber-500/20' not in html
+
+
+@pytest.mark.django_db
+def test_colaborador_sem_acesso_dashboard_team_widget(client, colaborador):
+    """US5 AC3: colaborador sem dashboard gerencial → 403 (sem bloco de terceiros)."""
+    client.force_login(colaborador)
+    response = client.get(reverse('dashboard:team'))
+    assert response.status_code == 403
+
+
+@pytest.mark.django_db
+def test_widget_link_atrasadas_colaborador_sem_dados_terceiros(
+    client,
+    colaborador,
+    lider,
+    outsider,
+):
+    """SC-005: link do widget (visao=equipe&atrasadas=1) não amplia escopo."""
+    proprio = PDI.objects.create(
+        usuario=colaborador,
+        titulo='PDI próprio via link widget',
+        status=PDI.Status.ATIVO,
+    )
+    _criar_acao(
+        proprio,
+        responsavel=colaborador,
+        status=AcaoPDI.Status.ATRASADA,
+        prazo=_prazo_atrasado(),
+    )
+    do_lider = PDI.objects.create(
+        usuario=lider,
+        titulo='PDI líder via link widget',
+        status=PDI.Status.ATIVO,
+    )
+    _criar_acao(
+        do_lider,
+        responsavel=lider,
+        status=AcaoPDI.Status.ATRASADA,
+        prazo=_prazo_atrasado(),
+    )
+    do_out = PDI.objects.create(
+        usuario=outsider,
+        titulo='PDI outsider via link widget',
+        status=PDI.Status.ATIVO,
+    )
+    _criar_acao(
+        do_out,
+        responsavel=outsider,
+        status=AcaoPDI.Status.ATRASADA,
+        prazo=_prazo_atrasado(),
+    )
+
+    client.force_login(colaborador)
+    # Mesmo href que o KPI monta para líder/admin.
+    response = client.get(
+        reverse('pdi:list'),
+        {'visao': VISAO_EQUIPE, 'atrasadas': '1'},
+    )
+    assert response.status_code == 200
+    assert response.context['visao'] == VISAO_PROPRIAS
+    assert response.context['atrasadas_filtro'] is True
+    ids = _pdi_ids(response)
+    assert proprio.pk in ids
+    assert do_lider.pk not in ids
+    assert do_out.pk not in ids

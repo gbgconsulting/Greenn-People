@@ -13,19 +13,36 @@ Agregação org (digest US4 / research §5):
 
 - Totais e top áreas/gestores só sobre PDIs **não arquivados**
 - Ranking de foco por nº de ações ``atrasada`` (desc)
+
+Widget dashboard (US5 / research §6):
+
+- Contagem scoped via ``get_visible_users`` + fatia próprias/equipe
+- Arquivados fora; AuthZ só no backend (template só renderiza números)
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
+from urllib.parse import urlencode
 
 from django.db.models import Count, Func, IntegerField, Min, Q, QuerySet, Value
 from django.db.models.functions import Coalesce
+from django.urls import reverse
 from django.utils import timezone
 
+from apps.accounts.services.scope import (
+    VISAO_EQUIPE,
+    OwnershipVisao,
+    apply_ownership_visao,
+    get_visible_users,
+    resolve_ownership_visao,
+)
 from apps.pdi.models import AcaoPDI, PDI
+
+if TYPE_CHECKING:
+    from apps.accounts.models import CustomUser
 
 FAIXA_1_7 = '1-7'
 FAIXA_8_30 = '8-30'
@@ -59,6 +76,19 @@ class OrgOverdueAggregation:
     @property
     def has_atrasos(self) -> bool:
         return self.acoes_atrasadas > 0
+
+
+@dataclass(frozen=True, slots=True)
+class ScopedOverdueCounts:
+    """Contagem de atrasos no escopo do viewer (widget dashboard US5)."""
+
+    pdis_com_atraso: int
+    acoes_atrasadas: int
+    list_href: str
+
+    @property
+    def has_atrasos(self) -> bool:
+        return self.acoes_atrasadas > 0 or self.pdis_com_atraso > 0
 
 _FILTER_ATRASADA_COM_PRAZO = Q(
     acoes__status=AcaoPDI.Status.ATRASADA,
@@ -242,4 +272,52 @@ def aggregate_org_overdue_metrics(
         acoes_atrasadas=acoes_atrasadas,
         top_areas=top_areas,
         top_gestores=top_gestores,
+    )
+
+
+def overdue_filtered_list_href(*, visao: OwnershipVisao = VISAO_EQUIPE) -> str:
+    """Href relativo da listagem PDI com ``atrasadas=1`` (CTA do widget)."""
+    query = urlencode({'visao': visao, 'atrasadas': '1'})
+    return f'{reverse("pdi:list")}?{query}'
+
+
+def _acoes_atrasadas_scoped_qs(
+    viewer: CustomUser,
+    *,
+    visao: OwnershipVisao,
+) -> QuerySet:
+    """Ações ``atrasada`` em PDI não arquivado, donos no escopo + fatia."""
+    qs = (
+        AcaoPDI.objects.filter(status=AcaoPDI.Status.ATRASADA)
+        .exclude(pdi__status=PDI.Status.ARQUIVADO)
+        .filter(pdi__usuario__in=get_visible_users(viewer))
+    )
+    return apply_ownership_visao(qs, viewer, visao, user_field='pdi__usuario')
+
+
+def count_scoped_overdue_metrics(
+    viewer: CustomUser,
+    *,
+    visao: str | OwnershipVisao | None = VISAO_EQUIPE,
+) -> ScopedOverdueCounts:
+    """Conta PDIs/ações atrasadas no escopo do ``viewer`` (US5).
+
+    AuthZ: ``get_visible_users`` + ``resolve_ownership_visao`` (query string
+    não autoriza). Arquivados fora. ``list_href`` aponta para a listagem
+    filtrada; a view de listagem revalida o escopo.
+    """
+    resolved = resolve_ownership_visao(viewer, visao)
+    base = _acoes_atrasadas_scoped_qs(viewer, visao=resolved)
+    acoes_atrasadas = base.count()
+    if acoes_atrasadas == 0:
+        return ScopedOverdueCounts(
+            pdis_com_atraso=0,
+            acoes_atrasadas=0,
+            list_href=overdue_filtered_list_href(visao=resolved),
+        )
+    pdis_com_atraso = base.values('pdi_id').distinct().count()
+    return ScopedOverdueCounts(
+        pdis_com_atraso=pdis_com_atraso,
+        acoes_atrasadas=acoes_atrasadas,
+        list_href=overdue_filtered_list_href(visao=resolved),
     )

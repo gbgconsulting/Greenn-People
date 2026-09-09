@@ -137,9 +137,9 @@ Monólito Django na raiz: `apps/pdi/`, `apps/notifications/`, `apps/dashboard/`,
 
 ### Implementation for User Story 5
 
-- [ ] T028 [US5] Expor contagem scoped de atrasos (PDIs e/ou ações) via serviço em `apps/pdi/services/overdue_metrics.py` consumida por `apps/dashboard/views.py` (`TeamDashboardView` / `AdminDashboardView`) — AuthZ no backend; template só renderiza flags/números
-- [ ] T029 [P] [US5] Adicionar bloco KPI em `templates/dashboard/team.html` e `templates/dashboard/admin.html` via `templates/components/card.html` (accent atenção crítica conforme DS do card; link para `/pdi/?…&atrasadas=1`); zero = estado neutro, **não** erro vermelho ([contracts/ui-visual-consistency.md](./contracts/ui-visual-consistency.md))
-- [ ] T030 [US5] Teste de superfície/escopo do widget (estender teste dashboard existente ou `tests/test_pdi_overdue_list_filters.py`): contagem scoped; colaborador sem dados de terceiros via link
+- [X] T028 [US5] Expor contagem scoped de atrasos (PDIs e/ou ações) via serviço em `apps/pdi/services/overdue_metrics.py` consumida por `apps/dashboard/views.py` (`TeamDashboardView` / `AdminDashboardView`) — AuthZ no backend; template só renderiza flags/números
+- [X] T029 [P] [US5] Adicionar bloco KPI em `templates/dashboard/team.html` e `templates/dashboard/admin.html` via `templates/components/card.html` (accent atenção crítica conforme DS do card; link para `/pdi/?…&atrasadas=1`); zero = estado neutro, **não** erro vermelho ([contracts/ui-visual-consistency.md](./contracts/ui-visual-consistency.md))
+- [X] T030 [US5] Teste de superfície/escopo do widget (estender teste dashboard existente ou `tests/test_pdi_overdue_list_filters.py`): contagem scoped; colaborador sem dados de terceiros via link
 
 **Checkpoint**: Awareness no dashboard sem substituir a tabela US3
 
