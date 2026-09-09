@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from django.urls import reverse
 
+from apps.accounts.models import CustomUser
 from apps.core.emails import absolute_url, send_templated_email
 from apps.cycles.models import Ciclo
 from apps.pdi.models import AcaoPDI
@@ -17,6 +18,11 @@ def referencia_lembrete_etapa(avaliacao: Avaliacao) -> str:
 
 def referencia_lembrete_pdi(acao: AcaoPDI) -> str:
     """Stable pending key for PDI action deadline reminders."""
+    return f'acao_pdi:{acao.pk}'
+
+
+def referencia_atraso_pdi(acao: AcaoPDI) -> str:
+    """Stable key for overdue PDI-action alerts (dono + gestor)."""
     return f'acao_pdi:{acao.pk}'
 
 
@@ -69,6 +75,27 @@ def send_lembrete_pdi_email(acao: AcaoPDI) -> None:
         to=user.email,
         text_template='notifications/email/lembrete_pdi_body.txt',
         html_template='notifications/email/lembrete_pdi_body.html',
+        context=context,
+    )
+
+
+def send_atraso_pdi_email(acao: AcaoPDI, destinatario: CustomUser) -> None:
+    """Send overdue PDI-action alert to one recipient (owner or line manager)."""
+    cta_url = absolute_url(reverse('pdi:detail', kwargs={'pk': acao.pdi_id}))
+    context = {
+        'user': destinatario,
+        'acao': acao,
+        'pdi': acao.pdi,
+        'prazo': acao.prazo,
+        'cta_url': cta_url,
+        'cta_label': 'Abrir PDI',
+    }
+    subject = _subject('notifications/email/atraso_pdi_subject.txt', context)
+    send_templated_email(
+        subject=subject,
+        to=destinatario.email,
+        text_template='notifications/email/atraso_pdi_body.txt',
+        html_template='notifications/email/atraso_pdi_body.html',
         context=context,
     )
 

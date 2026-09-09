@@ -1,0 +1,17 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Ação PDI atrasada — Greenn People{% endblock %}
+
+{% block content %}
+<p style="margin:0 0 12px 0;">Olá {{ user.nome }},</p>
+<p style="margin:0 0 12px 0;">
+  Uma ação do PDI &ldquo;{{ pdi.titulo }}&rdquo; está atrasada
+  (prazo: <strong>{{ prazo|date:"d/m/Y" }}</strong>):
+</p>
+<p style="margin:0 0 12px 0;padding:12px 14px;background-color:#f8fafc;border-radius:8px;color:#334155;">
+  {{ acao.descricao }}
+</p>
+<p style="margin:0;">
+  Revise e atualize a ação no Greenn People.
+</p>
+{% endblock %}

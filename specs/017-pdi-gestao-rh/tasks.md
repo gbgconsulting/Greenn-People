@@ -84,11 +84,11 @@ Monólito Django na raiz: `apps/pdi/`, `apps/notifications/`, `apps/dashboard/`,
 
 ### Implementation for User Story 2
 
-- [ ] T012 [P] [US2] Implementar `send_*` / `referencia_*` de atraso em `apps/notifications/emails.py` espelhando o pipeline de `lembrete_pdi` (assunto/corpo mínimos: ação/PDI, prazo, link detalhe)
-- [ ] T013 [P] [US2] Criar templates `templates/notifications/email/atraso_pdi_{subject,body}.{txt,html}` reusando `templates/emails/base.html` (marca emerald; sem rose de “erro de sistema”)
-- [ ] T014 [US2] Criar task `enviar_alerta_acao_pdi_atrasada` (ou nome equivalente) em `apps/notifications/tasks.py`: destinatários = dono ∪ `line_manager(dono)` se ativo e ≠ dono; skip inativo/arquivado/concluída; dedupe `already_sent(tipo=atraso_pdi, referencia=acao_pdi:{id}, janela=ISO do dia)`; `_log_send` append-only ([contracts/pdi-overdue-notifications.md](./contracts/pdi-overdue-notifications.md))
-- [ ] T015 [US2] Integrar disparo no fluxo de `apps/pdi/tasks.py` (`mark_overdue_pdi_actions`) e/ou `apps/pdi/services/overdue.py` **após** marcar `atrasada` — sem alterar `enviar_lembrete_acao_pdi_vencendo` / tipo `lembrete_pdi`
-- [ ] T016 [US2] Cobrir contrato de alerta em `tests/test_pdi_overdue_notifications.py` (dono+gestor, só dono, dedupe, arquivado=0, `lembrete_pdi` independente)
+- [X] T012 [P] [US2] Implementar `send_*` / `referencia_*` de atraso em `apps/notifications/emails.py` espelhando o pipeline de `lembrete_pdi` (assunto/corpo mínimos: ação/PDI, prazo, link detalhe)
+- [X] T013 [P] [US2] Criar templates `templates/notifications/email/atraso_pdi_{subject,body}.{txt,html}` reusando `templates/emails/base.html` (marca emerald; sem rose de “erro de sistema”)
+- [X] T014 [US2] Criar task `enviar_alerta_acao_pdi_atrasada` (ou nome equivalente) em `apps/notifications/tasks.py`: destinatários = dono ∪ `line_manager(dono)` se ativo e ≠ dono; skip inativo/arquivado/concluída; dedupe `already_sent(tipo=atraso_pdi, referencia=acao_pdi:{id}, janela=ISO do dia)`; `_log_send` append-only ([contracts/pdi-overdue-notifications.md](./contracts/pdi-overdue-notifications.md))
+- [X] T015 [US2] Integrar disparo no fluxo de `apps/pdi/tasks.py` (`mark_overdue_pdi_actions`) e/ou `apps/pdi/services/overdue.py` **após** marcar `atrasada` — sem alterar `enviar_lembrete_acao_pdi_vencendo` / tipo `lembrete_pdi`
+- [X] T016 [US2] Cobrir contrato de alerta em `tests/test_pdi_overdue_notifications.py` (dono+gestor, só dono, dedupe, arquivado=0, `lembrete_pdi` independente)
 
 **Checkpoint**: US1+US2 = MVP gerencial (visibilidade + alerta); pronto para demo
 
