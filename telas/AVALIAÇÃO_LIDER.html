@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+
+<html class="light" lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Avaliação de Desempenho - Greenn People</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&amp;family=Source+Sans+3:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "border-subtle": "#e2e8f0",
+                    "secondary-container": "#6df5e1",
+                    "primary": "#006948",
+                    "error-container": "#ffdad6",
+                    "status-success": "#10b981",
+                    "primary-fixed-dim": "#68dba9",
+                    "outline": "#6d7a72",
+                    "status-warning": "#f59e0b",
+                    "surface-tint": "#006c4a",
+                    "surface-bright": "#f7f9fb",
+                    "text-body": "#64748b",
+                    "error": "#ba1a1a",
+                    "secondary-fixed": "#71f8e4",
+                    "primary-container": "#00855d",
+                    "surface-dim": "#d8dadc",
+                    "inverse-primary": "#68dba9",
+                    "on-secondary-fixed": "#00201c",
+                    "surface-variant": "#e0e3e5",
+                    "inverse-on-surface": "#eff1f3",
+                    "tertiary-container": "#ba5551",
+                    "brand-gradient": "linear-gradient(135deg, #059669 0%, #14b8a6 100%)",
+                    "on-surface": "#191c1e",
+                    "primary-fixed": "#85f8c4",
+                    "on-secondary-container": "#006f64",
+                    "on-primary-fixed-variant": "#005137",
+                    "secondary": "#006b5f",
+                    "tertiary-fixed": "#ffdad7",
+                    "surface": "#f7f9fb",
+                    "surface-container": "#eceef0",
+                    "on-tertiary": "#ffffff",
+                    "secondary-fixed-dim": "#4fdbc8",
+                    "surface-container-low": "#f2f4f6",
+                    "on-tertiary-container": "#fffbff",
+                    "on-primary-container": "#f5fff7",
+                    "on-error-container": "#93000a",
+                    "on-primary-fixed": "#002114",
+                    "inverse-surface": "#2d3133",
+                    "surface-container-lowest": "#ffffff",
+                    "outline-variant": "#bccac0",
+                    "on-tertiary-fixed": "#410004",
+                    "background": "#f7f9fb",
+                    "tertiary": "#9b3e3b",
+                    "surface-container-highest": "#e0e3e5",
+                    "status-critical": "#f43f5e",
+                    "surface-container-high": "#e6e8ea",
+                    "on-error": "#ffffff",
+                    "on-secondary-fixed-variant": "#005048",
+                    "tertiary-fixed-dim": "#ffb3ae",
+                    "on-primary": "#ffffff",
+                    "on-surface-variant": "#3d4a42",
+                    "on-tertiary-fixed-variant": "#7f2928",
+                    "on-background": "#191c1e",
+                    "on-secondary": "#ffffff",
+                    "text-heading": "#1e293b"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "gutter": "24px",
+                    "container-padding": "32px",
+                    "sidebar-width": "280px",
+                    "unit": "4px"
+            },
+            "fontFamily": {
+                    "label-sm": [
+                            "\"Source Sans 3\""
+                    ],
+                    "headline-lg": [
+                            "Fraunces"
+                    ],
+                    "display-lg": [
+                            "Fraunces"
+                    ],
+                    "label-md": [
+                            "\"Source Sans 3\""
+                    ],
+                    "body-md": [
+                            "\"Source Sans 3\""
+                    ],
+                    "body-lg": [
+                            "\"Source Sans 3\""
+                    ],
+                    "headline-md": [
+                            "Fraunces"
+                    ],
+                    "body-sm": [
+                            "\"Source Sans 3\""
+                    ],
+                    "headline-sm": [
+                            "Fraunces"
+                    ]
+            },
+            "fontSize": {
+                    "label-sm": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "headline-lg": [
+                            "32px",
+                            {
+                                    "lineHeight": "40px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "display-lg": [
+                            "48px",
+                            {
+                                    "lineHeight": "56px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "label-md": [
+                            "14px",
+                            {
+                                    "lineHeight": "16px",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-md": [
+                            "16px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "body-lg": [
+                            "18px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-md": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "body-sm": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-sm": [
+                            "20px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "500"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+<style>
+        .brand-bg-gradient {
+            background-image: linear-gradient(135deg, #059669 0%, #14b8a6 100%);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined[data-weight="fill"] {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background min-h-screen text-on-surface font-body-md text-body-md overflow-x-hidden">
+<!-- App Shell -->
+<div class="flex h-screen w-full relative">
+<!-- SideNavBar Component -->
+<nav class="bg-surface-container-lowest dark:bg-surface-container-lowest fixed left-0 top-0 h-full w-sidebar-width border-r border-border-subtle dark:border-outline-variant flat no shadows flex flex-col py-6 z-20">
+<!-- Header/Logo Area -->
+<div class="px-6 mb-8">
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim">Greenn People</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Governança</p>
+</div>
+<!-- Navigation Links -->
+<ul class="flex-1 flex flex-col gap-1 overflow-y-auto w-full">
+<!-- Ciclos (Active) -->
+<li>
+<a class="flex items-center gap-4 px-6 py-3 w-full transition-all duration-200 ease-in-out text-primary font-bold bg-secondary-container/10 border-l-4 border-primary" href="#">
+<span class="material-symbols-outlined">refresh</span>
+<span class="font-label-md text-label-md">Ciclos</span>
+</a>
+</li>
+<!-- Outros Links (Inactive) -->
+<li>
+<a class="flex items-center gap-4 px-6 py-3 w-full transition-all duration-200 ease-in-out text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low dark:hover:bg-surface-container-high border-l-4 border-transparent" href="#">
+<span class="material-symbols-outlined">check_circle</span>
+<span class="font-label-md text-label-md">Aderência</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 px-6 py-3 w-full transition-all duration-200 ease-in-out text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low dark:hover:bg-surface-container-high border-l-4 border-transparent" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Painel admin</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 px-6 py-3 w-full transition-all duration-200 ease-in-out text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low dark:hover:bg-surface-container-high border-l-4 border-transparent" href="#">
+<span class="material-symbols-outlined">grid_view</span>
+<span class="font-label-md text-label-md">Estrutura/Matriz</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 px-6 py-3 w-full transition-all duration-200 ease-in-out text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low dark:hover:bg-surface-container-high border-l-4 border-transparent" href="#">
+<span class="material-symbols-outlined">domain</span>
+<span class="font-label-md text-label-md">Áreas</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 px-6 py-3 w-full transition-all duration-200 ease-in-out text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low dark:hover:bg-surface-container-high border-l-4 border-transparent" href="#">
+<span class="material-symbols-outlined">work</span>
+<span class="font-label-md text-label-md">Cargos</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 px-6 py-3 w-full transition-all duration-200 ease-in-out text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low dark:hover:bg-surface-container-high border-l-4 border-transparent" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-md text-label-md">Usuários</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 px-6 py-3 w-full transition-all duration-200 ease-in-out text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low dark:hover:bg-surface-container-high border-l-4 border-transparent" href="#">
+<span class="material-symbols-outlined">star</span>
+<span class="font-label-md text-label-md">Competências</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 px-6 py-3 w-full transition-all duration-200 ease-in-out text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low dark:hover:bg-surface-container-high border-l-4 border-transparent" href="#">
+<span class="material-symbols-outlined">security</span>
+<span class="font-label-md text-label-md">Auditoria</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 px-6 py-3 w-full transition-all duration-200 ease-in-out text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low dark:hover:bg-surface-container-high border-l-4 border-transparent" href="#">
+<span class="material-symbols-outlined">notifications</span>
+<span class="font-label-md text-label-md">Notificações</span>
+</a>
+</li>
+</ul>
+<!-- Footer Action -->
+<div class="px-6 mt-auto">
+<a class="flex items-center gap-4 py-3 w-full transition-all duration-200 ease-in-out text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low dark:hover:bg-surface-container-high rounded-lg px-4" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-label-md text-label-md">Sair</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area (Offset by sidebar width) -->
+<main class="flex-1 flex flex-col h-full ml-sidebar-width w-[calc(100%-280px)]">
+<!-- TopNavBar Component -->
+<header class="bg-surface-bright dark:bg-surface-bright docked full-width top-0 border-b border-border-subtle flat no shadows flex justify-between items-center h-16 px-gutter w-full shrink-0 z-10">
+<div class="flex items-center gap-4">
+<span class="font-headline-sm text-headline-sm font-semibold text-primary">Greenn People</span>
+<div class="h-6 w-px bg-border-subtle mx-2"></div>
+<nav class="flex gap-4">
+<a class="font-label-md text-label-md text-primary font-bold border-b-2 border-primary pb-1" href="#">Ciclo de Performance 2024</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors scale-95 active:scale-90 transition-transform">Logout</button>
+<div class="w-8 h-8 rounded-full bg-surface-variant overflow-hidden border border-border-subtle">
+<img class="w-full h-full object-cover" data-alt="A small, professional headshot of an HR manager, clean lighting, corporate setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQpYjhdYOa6AfEtlvzTWY2R3kIwRvZTThhHzGngERNXaNyUiBox1gUm6FJuoUQMIus_UhNlLAjX-cnnLkBk575cT8n3XLwBSdSW6oBFNMoTO4CG46i4E8eyU7VUv5PLSd7Iaas4qNuJwENI2BGyZjRlgHQXFYZ5xH2H_wAuQ_auN8XobuTHUPGqnUOFUggRWXLZvsvQ23YO6q84MYXkeXEBrJmFeLJm3NGASTmOdpvYIXhqA8uIHvE"/>
+</div>
+</div>
+</header>
+<!-- Scrollable Page Content -->
+<div class="flex-1 overflow-y-auto bg-background w-full">
+<div class="max-w-[1200px] mx-auto p-container-padding flex flex-col gap-8 pb-24">
+<!-- Page Breadcrumb & Title -->
+<div>
+<a class="font-label-sm text-label-sm text-text-body hover:text-primary flex items-center gap-1 mb-2" href="#">
+<span class="material-symbols-outlined text-sm">arrow_back</span>
+                            Voltar para listagem
+                        </a>
+<h2 class="font-headline-lg text-headline-lg text-text-heading">Avaliação de Desempenho</h2>
+<p class="font-body-md text-body-md text-text-body mt-1">Etapa: Calibração Gestor-Colaborador</p>
+</div>
+<!-- Collaborator Info Card -->
+<section class="bg-surface-container-lowest border border-border-subtle rounded-xl p-6 shadow-sm flex items-center gap-6">
+<div class="w-20 h-20 rounded-full overflow-hidden border-2 border-surface-variant shrink-0">
+<img class="w-full h-full object-cover" data-alt="Professional headshot of a software developer, confident expression, brightly lit modern office background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSFRHLD5tRF0GGicvmCsYuCS7hiGMMn0tjj4KmMeOUrGRVQzI75Jxa4jB91WBhuahTvM-b8HXGcOVSHzdQ8Sx1RbglbCzS-9zHV4-9Zc0ASCMZrPwRsyWunjG6Yz-6Pz30UrfRgmrp0g3owZy7UgGcn_V6760CAu2bdKMc2BQ3AZ3acSUcT2xRJsP52j3sPJOSMrta8qOaD8n3WSWS4Pu_f6lSElB4YmGrfZAjYy2ta8bTSMnOwllN"/>
+</div>
+<div class="flex-1">
+<h3 class="font-headline-md text-headline-md text-on-surface mb-1">Carlos Eduardo Silva</h3>
+<div class="flex items-center gap-4 text-text-body font-body-sm text-body-sm">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">work</span> Desenvolvedor Front-end Sênior</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">domain</span> Engenharia de Produto</span>
+</div>
+</div>
+<div class="text-right">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary-container text-on-primary-container mb-2">
+                                Autoavaliação Concluída
+                            </span>
+<p class="font-label-sm text-label-sm text-text-body">Em 24/10/2024</p>
+</div>
+</section>
+<!-- Evaluation Section (Side-by-Side) -->
+<section class="flex flex-col gap-6">
+<h3 class="font-headline-sm text-headline-sm text-on-surface border-b border-border-subtle pb-2">Competências Comportamentais</h3>
+<!-- Competency 1 -->
+<div class="bg-surface-container-lowest border border-border-subtle rounded-xl overflow-hidden shadow-sm">
+<div class="p-6 border-b border-border-subtle bg-surface-bright">
+<h4 class="font-label-md text-label-md text-on-surface mb-2">1. Foco em Resultado</h4>
+<p class="font-body-sm text-body-sm text-text-body">Capacidade de direcionar esforços para o cumprimento de metas e entregas com qualidade, superando obstáculos e buscando a melhoria contínua dos processos.</p>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-2">
+<!-- Colaborador (Read Only) -->
+<div class="p-6 border-r border-border-subtle bg-surface-container-low flex flex-col gap-4">
+<h5 class="font-label-sm text-label-sm text-text-body uppercase tracking-wider flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">person</span> Autoavaliação
+                                    </h5>
+<div>
+<p class="font-label-sm text-label-sm text-on-surface mb-2">Nota atribuída:</p>
+<div class="flex gap-2">
+<div class="w-8 h-8 rounded bg-surface-variant flex items-center justify-center font-label-md text-label-md text-text-body opacity-50">1</div>
+<div class="w-8 h-8 rounded bg-surface-variant flex items-center justify-center font-label-md text-label-md text-text-body opacity-50">2</div>
+<div class="w-8 h-8 rounded bg-surface-variant flex items-center justify-center font-label-md text-label-md text-text-body opacity-50">3</div>
+<div class="w-8 h-8 rounded brand-bg-gradient text-on-primary flex items-center justify-center font-label-md text-label-md shadow-sm">4</div>
+<div class="w-8 h-8 rounded bg-surface-variant flex items-center justify-center font-label-md text-label-md text-text-body opacity-50">5</div>
+</div>
+<p class="font-body-sm text-body-sm text-primary mt-1 font-semibold">Excede o Esperado</p>
+</div>
+<div class="flex-1">
+<label class="font-label-sm text-label-sm text-on-surface mb-2 block">Comentário do Colaborador:</label>
+<div class="bg-surface-container-lowest border border-border-subtle rounded-lg p-3 font-body-sm text-body-sm text-text-body min-h-[100px]">
+                                            Neste trimestre, assumi a frente na reestruturação da arquitetura do projeto principal, o que resultou em uma redução de 30% no tempo de carregamento da aplicação. Acredito que meu foco na entrega de valor contínuo foi fundamental para o atingimento das metas do squad.
+                                        </div>
+</div>
+</div>
+<!-- Gestor (Input) -->
+<div class="p-6 bg-surface-container-lowest flex flex-col gap-4">
+<h5 class="font-label-sm text-label-sm text-primary uppercase tracking-wider flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" data-weight="fill">edit_document</span> Sua Avaliação
+                                    </h5>
+<div>
+<p class="font-label-sm text-label-sm text-on-surface mb-2">Selecione a nota:</p>
+<div class="flex gap-2">
+<button class="w-8 h-8 rounded border border-border-subtle hover:border-primary hover:bg-surface-container flex items-center justify-center font-label-md text-label-md text-on-surface transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">1</button>
+<button class="w-8 h-8 rounded border border-border-subtle hover:border-primary hover:bg-surface-container flex items-center justify-center font-label-md text-label-md text-on-surface transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">2</button>
+<button class="w-8 h-8 rounded border border-border-subtle hover:border-primary hover:bg-surface-container flex items-center justify-center font-label-md text-label-md text-on-surface transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">3</button>
+<button class="w-8 h-8 rounded brand-bg-gradient border-transparent text-on-primary flex items-center justify-center font-label-md text-label-md shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">4</button>
+<button class="w-8 h-8 rounded border border-border-subtle hover:border-primary hover:bg-surface-container flex items-center justify-center font-label-md text-label-md text-on-surface transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">5</button>
+</div>
+<p class="font-body-sm text-body-sm text-primary mt-1 font-semibold">Excede o Esperado</p>
+</div>
+<div class="flex-1 flex flex-col">
+<label class="font-label-sm text-label-sm text-on-surface mb-2 block" for="comment-1">Seu comentário (obrigatório para nota 4 ou 5):</label>
+<textarea class="w-full bg-surface-bright border border-border-subtle rounded-lg p-3 font-body-sm text-body-sm text-on-surface focus:ring-2 focus:ring-primary focus:border-primary transition-colors flex-1 resize-y min-h-[100px]" id="comment-1" placeholder="Justifique sua avaliação baseado em exemplos concretos..."></textarea>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Goals Summary Section -->
+<section class="bg-surface-container-lowest border border-border-subtle rounded-xl p-6 shadow-sm">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-4">Resumo de Metas (OKRs)</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Goal 1 -->
+<div class="border border-border-subtle rounded-lg p-4 bg-surface-bright">
+<h4 class="font-label-md text-label-md text-on-surface mb-1">Aumentar a cobertura de testes</h4>
+<p class="font-body-sm text-body-sm text-text-body mb-3">Meta: 80% | Atingido: 85%</p>
+<div class="w-full bg-surface-variant rounded-full h-2 mb-1">
+<div class="bg-status-success h-2 rounded-full" style="width: 100%"></div>
+</div>
+<span class="font-label-sm text-label-sm text-status-success">106% da meta atingida</span>
+</div>
+<!-- Goal 2 -->
+<div class="border border-border-subtle rounded-lg p-4 bg-surface-bright">
+<h4 class="font-label-md text-label-md text-on-surface mb-1">Lançar novo portal do cliente</h4>
+<p class="font-body-sm text-body-sm text-text-body mb-3">Prazo: Q3 | Status: Entregue com ressalvas</p>
+<div class="w-full bg-surface-variant rounded-full h-2 mb-1">
+<div class="bg-status-warning h-2 rounded-full" style="width: 80%"></div>
+</div>
+<span class="font-label-sm text-label-sm text-status-warning">80% da meta atingida</span>
+</div>
+</div>
+</section>
+<!-- Final Consensus Section -->
+<section class="bg-surface-container-lowest border border-border-subtle rounded-xl p-6 shadow-sm">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-4">Parecer Final e Consenso</h3>
+<div class="flex flex-col gap-4">
+<div>
+<label class="font-label-sm text-label-sm text-on-surface mb-2 block" for="final-comment">Resumo da Avaliação e Plano de Ação Próximo Ciclo:</label>
+<textarea class="w-full bg-surface-bright border border-border-subtle rounded-lg p-4 font-body-sm text-body-sm text-on-surface focus:ring-2 focus:ring-primary focus:border-primary transition-colors min-h-[150px]" id="final-comment" placeholder="Insira o resumo da conversa de feedback e os principais pontos acordados..."></textarea>
+</div>
+</div>
+</section>
+<!-- Action Bar -->
+<div class="flex justify-end gap-4 mt-4 border-t border-border-subtle pt-6">
+<button class="px-6 py-3 rounded-lg border border-border-subtle bg-surface-container-lowest text-on-surface font-label-md text-label-md hover:bg-surface-container-low transition-colors shadow-sm">
+                            Salvar Rascunho
+                        </button>
+<button class="px-6 py-3 rounded-lg brand-bg-gradient text-on-primary font-label-md text-label-md hover:opacity-90 transition-opacity shadow-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">check</span>
+                            Finalizar Avaliação
+                        </button>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

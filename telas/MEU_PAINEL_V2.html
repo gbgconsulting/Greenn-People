@@ -1,0 +1,683 @@
+<!DOCTYPE html><html class="h-full bg-[#f7f9fb]" lang="pt-BR"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Meu Painel — Greenn People</title>
+<!-- Google Fonts: Fraunces & Source Sans 3 -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&amp;family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;display=swap" rel="stylesheet">
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<!-- Tailwind CSS v3 with Plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              200: '#a7f3d0',
+              300: '#6ee7b7',
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              800: '#065f46',
+              900: '#064e3b',
+            },
+            surface: {
+              background: '#f7f9fb',
+              card: '#ffffff',
+              subtle: '#f1f5f9',
+              border: '#e2e8f0',
+            }
+          },
+          fontFamily: {
+            display: ['Fraunces', 'serif'],
+            body: ['"Source Sans 3"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+<!-- BEGIN: Custom CSS Stylesheets -->
+<style data-purpose="custom-typography">
+    .font-display {
+      font-family: 'Fraunces', serif;
+      font-variation-settings: 'SOFT' 50, 'WONK' 0;
+    }
+    .font-body {
+      font-family: 'Source Sans 3', sans-serif;
+    }
+  </style>
+<style data-purpose="skeleton-patterns">
+    /* Ghost striped pattern for the performance chart preview */
+    .bg-skeleton-striped {
+      background-image: repeating-linear-gradient(
+        -45deg,
+        rgba(226, 232, 240, 0.45),
+        rgba(226, 232, 240, 0.45) 8px,
+        rgba(241, 245, 249, 0.45) 8px,
+        rgba(241, 245, 249, 0.45) 16px
+      );
+    }
+  </style>
+<!-- END: Custom CSS Stylesheets -->
+</head>
+<body class="h-full text-slate-800 font-body antialiased flex overflow-hidden">
+<!-- BEGIN: Sidebar -->
+<aside class="w-64 flex-shrink-0 bg-white border-r border-slate-200 flex flex-col justify-between h-screen select-none">
+<div class="flex flex-col flex-1 overflow-y-auto">
+<!-- Logo Header -->
+<div class="h-16 flex items-center px-6 border-b border-slate-100 gap-2.5">
+<div class="w-9 h-9 rounded-xl bg-emerald-600 flex items-center justify-center text-white shadow-md shadow-emerald-700/20">
+<span class="material-symbols-outlined text-[22px]">spa</span>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-lg text-slate-900 tracking-tight leading-tight">greenn</span>
+<span class="text-[10px] font-semibold uppercase tracking-widest text-emerald-700 -mt-1">people</span>
+</div>
+</div>
+<!-- Navigation Links -->
+<nav aria-label="Navegação Lateral" class="p-3 space-y-6 text-sm">
+<!-- Section: Colaborador -->
+<div>
+<div class="px-3 mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">Colaborador</div>
+<ul class="space-y-1">
+<li class="">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg bg-emerald-50 text-emerald-800 font-semibold border-l-4 border-emerald-600 transition-all shadow-sm" href="#">
+<span class="material-symbols-outlined text-emerald-700 text-[20px]">grid_view</span>
+<span class="">Meu painel</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors" href="#">
+<span class="material-symbols-outlined text-slate-400 text-[20px]">visibility</span>
+<span class="">Expectativas</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors" href="#">
+<span class="material-symbols-outlined text-slate-400 text-[20px]">track_changes</span>
+<span class="">Metas</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors" href="#">
+<span class="material-symbols-outlined text-slate-400 text-[20px]">assignment_turned_in</span>
+<span class="">Avaliações</span>
+<span class="ml-auto w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors" href="#">
+<span class="material-symbols-outlined text-slate-400 text-[20px]">rocket_launch</span>
+<span class="">Meu PDI</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors" href="#">
+<span class="material-symbols-outlined text-slate-400 text-[20px]">military_tech</span>
+<span class="">Minha classificação</span>
+</a>
+</li>
+</ul>
+</div>
+<!-- Section: Líder -->
+<div>
+<div class="px-3 mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">Líder</div>
+<ul class="space-y-1">
+<li class="">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors" href="#">
+<span class="material-symbols-outlined text-slate-400 text-[20px]">group</span>
+<span class="">Painel do time</span>
+</a>
+</li>
+</ul>
+</div>
+<!-- Section: Gerente -->
+<div>
+<div class="px-3 mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">Gerente</div>
+<ul class="space-y-1">
+<li class="">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors" href="#">
+<span class="material-symbols-outlined text-slate-400 text-[20px]">account_tree</span>
+<span class="">Estrutura</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors" href="#">
+<span class="material-symbols-outlined text-slate-400 text-[20px]">checklist_rtl</span>
+<span class="">Aderência</span>
+</a>
+</li>
+</ul>
+</div>
+</nav>
+</div>
+<!-- Sidebar Footer with Collapse / User Meta -->
+<div class="p-3 border-t border-slate-100 bg-slate-50/50">
+<div class="flex items-center gap-2 text-xs text-slate-500 px-2 py-1.5">
+<span class="material-symbols-outlined text-[18px] text-slate-400">verified_user</span>
+<span class="">Acesso Individual Seguro</span>
+</div>
+</div>
+</aside>
+<!-- END: Sidebar -->
+<!-- BEGIN: Main View Wrapper -->
+<div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+<!-- BEGIN: TopBar -->
+<header class="h-16 bg-white border-b border-slate-200 px-8 flex items-center justify-between sticky top-0 z-20 shadow-xs">
+<div class="flex items-center gap-3 text-slate-400 text-xs">
+<span class="material-symbols-outlined text-[18px]">home</span>
+<span class="">/</span>
+<span class="text-slate-700 font-medium">Dashboard do Colaborador</span>
+</div>
+<!-- Right User Controls -->
+<div class="flex items-center gap-4">
+<!-- Notification Pill -->
+<button aria-label="Notificações" class="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 relative" type="button">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-emerald-600 rounded-full"></span>
+</button>
+<div class="h-6 w-px bg-slate-200"></div>
+<!-- User Quick Card -->
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-full ring-2 ring-emerald-600 ring-offset-2 overflow-hidden bg-slate-100 flex items-center justify-center font-semibold text-emerald-800 text-sm">
+            GB
+          </div>
+<div class="flex flex-col text-left text-xs">
+<span class="font-semibold text-slate-800">Gabriel B. Giroto</span>
+<span class="text-slate-500 text-[11px]">gabgiroto@gmail.com</span>
+</div>
+<span class="material-symbols-outlined text-slate-400 text-[18px]">expand_more</span>
+</div>
+</div>
+</header>
+<!-- END: TopBar -->
+<!-- BEGIN: Content Container -->
+<main class="p-8 max-w-7xl w-full mx-auto space-y-6">
+<!-- BEGIN: Section 1 & 2 - Humanized Greeting & Unified Cycle Selector -->
+<section class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-1" data-purpose="greeting-and-cycle-selector"><!-- Humanized Greeting Block with Corporate Trajectory Identity -->
+<div class="flex items-start md:items-center gap-4.5">
+<div class="relative flex-shrink-0">
+<div class="w-14 h-14 rounded-full ring-4 ring-emerald-500/20 ring-offset-2 bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-900 font-bold text-xl">
+      GB
+    </div>
+<span class="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white" title="Status: Colaborador Ativo"></span>
+</div>
+<div>
+<div class="flex flex-wrap items-baseline gap-x-3 gap-y-1.5">
+<h1 class="text-2xl md:text-3xl font-bold font-display text-slate-900 tracking-tight">
+        Olá, Gabriel <span class="inline-block animate-bounce text-xl">👋</span>
+</h1>
+<span class="text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+        Analista de Departamento Pessoal JR · Gente e Gestão
+      </span>
+</div>
+<div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-slate-500">
+<span class="inline-flex items-center gap-1 font-medium text-slate-600">
+<span class="material-symbols-outlined text-[14px] text-slate-400">schedule</span>
+        1 ano e 8 meses de empresa
+      </span>
+<span class="text-slate-300">•</span>
+<span class="inline-flex items-center gap-1 font-medium text-slate-600">
+<span class="material-symbols-outlined text-[14px] text-slate-400">badge</span>
+        No cargo desde Março/2023
+      </span>
+<span class="text-slate-300">•</span>
+<span class="inline-flex items-center gap-1 font-medium text-emerald-800 bg-emerald-50/80 px-2 py-0.5 rounded border border-emerald-200/60">
+<span class="material-symbols-outlined text-[14px] text-emerald-600">trending_up</span>
+        Ponto alto: Ciclo 2023-Q4 (Nota 4.4 · Consistente)
+      </span>
+</div>
+</div>
+</div>
+<!-- Unified Cycle Selector & Status -->
+<div class="flex flex-col sm:items-end gap-1 flex-shrink-0">
+<div class="relative inline-flex">
+<button class="inline-flex items-center gap-2.5 px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-200 shadow-sm rounded-lg text-xs font-medium text-slate-700 transition" type="button">
+<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+<span class="font-semibold text-slate-900">Teste_metas</span>
+<span class="text-slate-400">·</span>
+<span class="text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded text-[11px]">Em andamento</span>
+<span class="material-symbols-outlined text-[16px] text-slate-400 ml-1">unfold_more</span>
+</button>
+</div>
+<span class="text-[11px] text-slate-400">10 ciclos anteriores disponíveis</span>
+</div></section>
+<!-- END: Section 1 & 2 -->
+<!-- BEGIN: Section 3 - Hero Action Banner -->
+<!-- BEGIN: Section - Career Trajectory & Multi-cycle Consistency -->
+<section class="bg-white rounded-xl border border-slate-200 px-5 py-3 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs" data-purpose="career-trajectory-card">
+  <div class="flex items-center gap-2.5 flex-wrap">
+    <div class="w-7 h-7 rounded-lg bg-emerald-50 border border-emerald-200/80 flex items-center justify-center text-emerald-700 flex-shrink-0">
+      <span class="material-symbols-outlined text-[16px]">trending_up</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="font-bold font-display text-slate-900">Trajetória recente (3 ciclos)</span>
+      <span class="text-slate-300">·</span>
+      <span class="inline-flex items-center gap-1 font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full text-[11px]">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+        4,13 média consistente
+      </span>
+    </div>
+  </div>
+  <div class="flex items-center gap-2 flex-wrap text-[11px]">
+    <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-600">
+      <span class="font-medium text-slate-500">2023-Q2:</span>
+      <span class="font-bold text-slate-800">3,80</span>
+    </div>
+    <span class="material-symbols-outlined text-[14px] text-slate-300">arrow_forward</span>
+    <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-300 text-emerald-900 font-medium">
+      <span class="text-emerald-700">2023-Q4:</span>
+      <span class="font-bold text-emerald-900">4,40</span>
+      <span class="text-[10px] text-emerald-700 bg-emerald-100 px-1 py-0.2 rounded font-bold">+0.6</span>
+      <span class="text-emerald-600 text-xs">★</span>
+    </div>
+    <span class="material-symbols-outlined text-[14px] text-slate-300">arrow_forward</span>
+    <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-600">
+      <span class="font-medium text-slate-500">2024-Q2:</span>
+      <span class="font-bold text-slate-800">4,20</span>
+      <span class="text-[10px] text-slate-500 bg-slate-200 px-1 py-0.2 rounded font-semibold">-0.2</span>
+    </div>
+    <span class="material-symbols-outlined text-[14px] text-slate-300">arrow_forward</span>
+    <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-300 border-dashed text-amber-900 font-semibold">
+      <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+      <span class="text-amber-800">Atual:</span>
+      <span class="">Em avaliação</span>
+    </div>
+  </div>
+</section>
+<!-- END: Section - Career Trajectory --><section class="relative overflow-hidden bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900 rounded-2xl p-6 text-white shadow-lg shadow-emerald-950/10 border border-emerald-700/50" data-purpose="hero-action-banner">
+<!-- Background organic shape -->
+<div class="absolute -right-8 -bottom-10 w-64 h-64 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
+<div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+<div class="flex items-start gap-4">
+<div class="w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center flex-shrink-0 text-emerald-300 shadow-inner">
+<span class="material-symbols-outlined text-[28px]">edit_note</span>
+</div>
+<div class="space-y-1 max-w-2xl">
+<div class="inline-flex items-center gap-2 px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 text-[11px] font-semibold uppercase tracking-wider mb-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
+                Ação Pendente
+              </div>
+<h2 class="text-lg md:text-xl font-bold font-display text-white tracking-tight">
+                Sua autoavaliação está aguardando você
+              </h2>
+<p class="text-xs md:text-sm text-emerald-100/90 leading-relaxed">
+                A etapa de Avaliação está aberta no ciclo <span class="font-semibold text-white underline decoration-emerald-400/50 underline-offset-2">Teste_metas</span>. Preencha suas notas para permitir que seu líder avance para o feedback final.
+              </p>
+</div>
+</div>
+<div class="flex flex-col sm:flex-row md:flex-col lg:flex-row items-stretch sm:items-center gap-3 flex-shrink-0">
+<a class="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs uppercase tracking-wider rounded-lg shadow-md transition transform active:scale-95" href="#">
+<span class="">Preencher autoavaliação</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</a>
+<a class="inline-flex items-center justify-center text-xs text-emerald-200 hover:text-white underline underline-offset-4 py-2 transition" href="#">
+              Ver resumo do ciclo
+            </a>
+</div>
+</div>
+</section>
+<!-- END: Section 3 -->
+<!-- BEGIN: Section 4 - Communicative Timeline -->
+<section class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm" data-purpose="timeline-card">
+<div class="flex items-center justify-between mb-8">
+<div>
+<h3 class="text-base font-bold font-display text-slate-900">Linha do Tempo do Ciclo</h3>
+<p class="text-xs text-slate-500">6 etapas sequenciais para encerramento e consolidação de desempenho</p>
+</div>
+<span class="text-xs font-medium px-2.5 py-1 bg-slate-100 text-slate-600 rounded-md border border-slate-200">
+            Fase 5 de 6
+          </span>
+</div>
+<!-- Horizontal Stepper -->
+<div class="relative px-2">
+<!-- Step Connectors Container -->
+<div class="absolute top-4 left-6 right-6 h-0.5 bg-slate-200 -z-0">
+<!-- Completed progress bar overlay: 80% to stage 5 -->
+<div class="h-full bg-emerald-500 transition-all duration-500" style="width: 80%;"></div>
+</div>
+<ol class="grid grid-cols-6 gap-2 text-center relative z-10">
+<!-- Stage 1: Done -->
+<li class="flex flex-col items-center">
+<div class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs shadow-sm ring-4 ring-white">
+<span class="material-symbols-outlined text-[16px]">check</span>
+</div>
+<span class="mt-3 text-xs font-semibold text-slate-800">Metas</span>
+<span class="text-[11px] text-emerald-700 font-medium mt-0.5">✓ Concluído em 12/08</span>
+</li>
+<!-- Stage 2: Done -->
+<li class="flex flex-col items-center">
+<div class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs shadow-sm ring-4 ring-white">
+<span class="material-symbols-outlined text-[16px]">check</span>
+</div>
+<span class="mt-3 text-xs font-semibold text-slate-800">Aprovação de metas</span>
+<span class="text-[11px] text-emerald-700 font-medium mt-0.5">✓ Aprovado em 14/08</span>
+</li>
+<!-- Stage 3: Done -->
+<li class="flex flex-col items-center">
+<div class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs shadow-sm ring-4 ring-white">
+<span class="material-symbols-outlined text-[16px]">check</span>
+</div>
+<span class="mt-3 text-xs font-semibold text-slate-800">Resultados</span>
+<span class="text-[11px] text-emerald-700 font-medium mt-0.5">✓ Concluído em 25/08</span>
+</li>
+<!-- Stage 4: Done -->
+<li class="flex flex-col items-center">
+<div class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs shadow-sm ring-4 ring-white">
+<span class="material-symbols-outlined text-[16px]">check</span>
+</div>
+<span class="mt-3 text-xs font-semibold text-slate-800">Aprovação resultados</span>
+<span class="text-[11px] text-emerald-700 font-medium mt-0.5">✓ Aprovado em 28/08</span>
+</li>
+<!-- Stage 5: Active (Avaliação) -->
+<li class="flex flex-col items-center relative">
+<!-- "Você está aqui" Badge Floating -->
+<span class="absolute -top-7 px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold tracking-tight shadow-sm whitespace-nowrap">
+                Você está aqui
+              </span>
+<div class="w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs font-bold ring-4 ring-amber-100 shadow-md animate-pulse">
+                5
+              </div>
+<span class="mt-3 text-xs font-bold text-amber-900">Avaliação</span>
+<span class="text-[11px] text-amber-700 font-semibold mt-0.5">Prazo: até 20/09</span>
+</li>
+<!-- Stage 6: Future (Feedback) -->
+<li class="flex flex-col items-center opacity-60">
+<div class="w-8 h-8 rounded-full bg-slate-100 border-2 border-dashed border-slate-300 text-slate-400 flex items-center justify-center text-xs font-medium ring-4 ring-white">
+                6
+              </div>
+<span class="mt-3 text-xs font-medium text-slate-500">Feedback</span>
+<span class="text-[11px] text-slate-400 mt-0.5">Aguardando etapa</span>
+</li>
+</ol>
+</div>
+</section>
+<!-- END: Section 4 -->
+<!-- BEGIN: Section 5 - Status Cards Grid -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-6" data-purpose="status-cards-grid">
+<!-- Card 1: Autoavaliação (Ação Ativa) -->
+<div class="bg-emerald-50/40 rounded-2xl border-2 border-emerald-500/60 p-6 shadow-sm hover:shadow-md transition flex flex-col justify-between relative overflow-hidden">
+<div class="absolute top-0 right-0 transform translate-x-3 -translate-y-3 w-16 h-16 bg-emerald-500/10 rounded-full"></div>
+<div>
+<div class="flex items-center justify-between mb-4">
+<span class="text-xs font-bold tracking-wider uppercase text-emerald-800">Autoavaliação</span>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                Pendente (Sua vez)
+              </span>
+</div>
+<div class="text-3xl font-display font-bold text-slate-800 tracking-wide my-2">—</div>
+<p class="text-xs text-slate-600 mt-2 leading-relaxed">
+              Preencha e envie sua autoavaliação nesta etapa para sincronizar com a nota do gestor.
+            </p>
+</div>
+<div class="pt-5 mt-4 border-t border-emerald-100">
+<a class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-900 group" href="#">
+<span class="">Ir para autoavaliação</span>
+<span class="material-symbols-outlined text-[16px] transition-transform group-hover:translate-x-1">arrow_forward</span>
+</a>
+</div>
+</div>
+<!-- Card 2: Nota do Líder (Aguardando Terceiros) -->
+<div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-4">
+<span class="text-xs font-bold tracking-wider uppercase text-slate-500">Nota do Líder</span>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+<span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                Aguardando líder
+              </span>
+</div>
+<div class="text-3xl font-display font-bold text-slate-300 tracking-wide my-2">—</div>
+<p class="text-xs text-slate-500 mt-2 leading-relaxed">
+              Sua nota oficial será liberada após o término da etapa de avaliação mútua e reunião de alinhamento.
+            </p>
+</div>
+<div class="pt-5 mt-4 border-t border-slate-100">
+<span class="text-[11px] text-slate-400 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">lock</span>
+              Confidencial até o feedback
+            </span>
+</div>
+</div>
+<!-- Card 3: Nível Esperado do Cargo -->
+<!-- Card 3: Medidor de Maturidade & Nível de Cargo -->
+<div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-3">
+<span class="text-xs font-bold tracking-wider uppercase text-slate-500">Maturidade no Cargo</span>
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200/60">
+        Nível JR → PL
+      </span>
+</div>
+<!-- Metric display -->
+<div class="flex items-baseline justify-between my-2">
+<div class="flex items-baseline gap-1.5">
+<span class="text-3xl font-display font-bold text-slate-900">3,4</span>
+<span class="text-xs text-slate-400 font-medium">/ 4,0 esperado</span>
+</div>
+<span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/80">
+        85% de prontidão
+      </span>
+</div>
+<!-- Progress Bar with milestone ticks -->
+<div class="mt-2 space-y-1.5">
+<div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden relative">
+<div class="bg-emerald-600 h-full rounded-full transition-all duration-500" style="width: 85%;"></div>
+</div>
+<div class="flex justify-between text-[10px] text-slate-400 font-medium px-0.5">
+<span class="">Básico (1.0)</span>
+<span class="">Atual (3.4)</span>
+<span class="font-semibold text-slate-700">Referência Pleno (4.0)</span>
+</div>
+</div>
+<p class="text-xs text-slate-600 mt-3 leading-relaxed">
+      Você atingiu <strong class="text-slate-800 font-semibold">85%</strong> dos critérios de maturidade e proficiência mapeados para progressão ao próximo patamar.
+    </p>
+</div>
+<div class="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between">
+<a class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-900 group" href="#">
+<span class="">Ver matriz de maturidade</span>
+<span class="material-symbols-outlined text-[16px] transition-transform group-hover:translate-x-1">arrow_forward</span>
+</a>
+</div>
+</div>
+</section>
+<!-- END: Section 5 -->
+<!-- BEGIN: Section 6 - Smart Empty State / Skeleton Preview -->
+<section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden" data-purpose="competency-comparison-section"><!-- Section Header -->
+<div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3"><div class="flex flex-col gap-3">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div>
+      <div class="flex items-center gap-2">
+        <h3 class="text-base font-bold font-display text-slate-900">Competências &amp; Proficiência do Cargo</h3>
+        <span class="text-xs font-semibold px-2 py-0.5 bg-emerald-50 text-emerald-800 rounded border border-emerald-200">Referência Oficial 2024</span>
+      </div>
+      <p class="text-xs text-slate-500 mt-0.5">Parâmetros de maturidade esperados para Analista de Departamento Pessoal JR (Escala 1,00 a 5,00)</p>
+    </div>
+    <span class="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 bg-slate-50 border border-slate-200 px-3 py-1 rounded-full">
+      <span class="material-symbols-outlined text-[16px] text-slate-400">info</span>
+      Etapa 5 de 6: Aguardando encerramento mútuo
+    </span>
+  </div>
+  <div class="p-3.5 bg-emerald-50/60 border border-emerald-200/80 rounded-xl flex items-start gap-3 text-xs leading-relaxed">
+    <div class="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-800 flex-shrink-0 mt-0.5">
+      <span class="material-symbols-outlined text-[18px]">visibility</span>
+    </div>
+    <div class="space-y-0.5">
+      <p class="text-sm font-semibold text-emerald-950">
+        💡 Como funciona a visualização do ciclo:
+      </p>
+      <p class="text-emerald-900/90 text-xs">
+        O polígono verde e os valores de referência já demonstram o <strong class="font-bold text-emerald-950">Nível Esperado (2,00)</strong> para o seu cargo atual. Suas notas de autoavaliação e a avaliação do seu líder aparecerão aqui sobrepostas lado a lado durante a etapa de feedback mútuo, garantindo total transparência e alinhamento de desenvolvimento.
+      </p>
+    </div>
+  </div>
+</div></div>
+<!-- Split View: Interactive High-Density Radar Plot (Left) + Detailed Matrix (Right) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
+<!-- Left Column: High Precision SVG Radar Chart (7 cols) -->
+<div class="lg:col-span-7 p-6 flex flex-col justify-between">
+<div class="flex items-center justify-between mb-4">
+<span class="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-emerald-700">radar</span>
+        Mapeamento Radar do Cargo
+      </span>
+<!-- Legend -->
+<div class="flex items-center gap-3 text-xs">
+<div class="flex items-center gap-1.5">
+<span class="w-3 h-3 rounded bg-emerald-600 border border-emerald-700"></span>
+<span class="text-slate-700 font-semibold">Esperado (2,00)</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-3 h-3 rounded border border-dashed border-amber-500 bg-amber-50"></span>
+<span class="text-slate-400 font-medium">Sua Nota (Aguardando)</span>
+</div>
+</div>
+</div>
+<!-- Vector Radar Visual -->
+<div class="relative flex items-center justify-center py-2">
+<svg class="w-full max-w-sm h-64 overflow-visible select-none" viewBox="0 0 320 300">
+<!-- Circular/Polygonal Grid Rings -->
+<!-- Ring 1 (1.0) -->
+<polygon fill="none" points="160,110 210,150 160,190 110,150" stroke="#e2e8f0" stroke-width="1"></polygon>
+<!-- Ring 2 (2.0 - Target Level) -->
+<polygon fill="none" points="160,75 235,150 160,225 85,150" stroke="#cbd5e1" stroke-dasharray="3,3" stroke-width="1.5"></polygon>
+<!-- Ring 3 (3.0) -->
+<polygon fill="none" points="160,45 265,150 160,255 55,150" stroke="#f1f5f9" stroke-width="1"></polygon>
+<!-- Ring 4 (4.0) -->
+<polygon fill="none" points="160,20 290,150 160,280 30,150" stroke="#f1f5f9" stroke-width="1"></polygon>
+<!-- Axis Cross Lines -->
+<line stroke="#e2e8f0" stroke-width="1" x1="160" x2="160" y1="20" y2="280"></line>
+<line stroke="#e2e8f0" stroke-width="1" x1="30" x2="290" y1="150" y2="150"></line>
+<!-- Expected Level Polygon (Emerald filled polygon at level 2.0) -->
+<polygon fill="#059669" fill-opacity="0.18" points="160,75 235,150 160,225 85,150" stroke="#047857" stroke-width="2.5"></polygon>
+<!-- Anchors / Nodes -->
+<circle cx="160" cy="75" fill="#047857" r="4" stroke="#ffffff" stroke-width="2"></circle>
+<circle cx="235" cy="150" fill="#047857" r="4" stroke="#ffffff" stroke-width="2"></circle>
+<circle cx="160" cy="225" fill="#047857" r="4" stroke="#ffffff" stroke-width="2"></circle>
+<circle cx="85" cy="150" fill="#047857" r="4" stroke="#ffffff" stroke-width="2"></circle>
+<!-- Value indicators -->
+<text fill="#047857" font-family="Source Sans 3" font-size="10" font-weight="bold" text-anchor="middle" x="160" y="68">2,00</text>
+<text fill="#047857" font-family="Source Sans 3" font-size="10" font-weight="bold" text-anchor="start" x="245" y="145">2,00</text>
+<text fill="#047857" font-family="Source Sans 3" font-size="10" font-weight="bold" text-anchor="middle" x="160" y="240">2,00</text>
+<text fill="#047857" font-family="Source Sans 3" font-size="10" font-weight="bold" text-anchor="end" x="75" y="145">2,00</text>
+<!-- Axis Labels -->
+<text fill="#1e293b" font-family="Source Sans 3" font-size="11" font-weight="600" text-anchor="middle" x="160" y="10">Aprendizado Contínuo</text>
+<text fill="#1e293b" font-family="Source Sans 3" font-size="11" font-weight="600" text-anchor="start" x="300" y="154">Comunicação Eficiente</text>
+<text fill="#1e293b" font-family="Source Sans 3" font-size="11" font-weight="600" text-anchor="middle" x="160" y="296">Confiabilidade &amp; Prazos</text>
+<text fill="#1e293b" font-family="Source Sans 3" font-size="11" font-weight="600" text-anchor="end" x="20" y="154">Autonomia &amp; Ownership</text>
+</svg>
+</div>
+<!-- Sub-radar contextual badge -->
+<div class="pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+<span class="inline-flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-emerald-600">verified</span>
+        Polígono de calibração ativa para o ciclo 2024
+      </span>
+<span class="text-[11px] font-medium text-slate-400">Homologado por Gente &amp; Gestão</span>
+</div>
+</div>
+<!-- Right Column: Expectations List Table (5 cols) -->
+<div class="lg:col-span-5 p-6 flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-3">
+<div>
+<h4 class="text-sm font-bold text-slate-900">Critérios de Maturidade</h4>
+<p class="text-[11px] text-slate-500">Cargo: <strong class="text-slate-700 font-semibold">Analista de Departamento Pessoal JR</strong></p>
+</div>
+<a class="text-xs font-semibold text-emerald-700 hover:text-emerald-800 border border-emerald-200 hover:border-emerald-300 rounded-md px-2.5 py-1 bg-emerald-50/50 transition" href="#">
+          Ver rubricas
+        </a>
+</div>
+<!-- Expectations Table -->
+<div class="mt-3 divide-y divide-slate-100 text-xs">
+<div class="py-3 flex items-center justify-between gap-2">
+<div>
+<span class="text-slate-800 font-semibold block">Aprendizado Contínuo e Curiosidade</span>
+<span class="text-[11px] text-slate-400">Domínio de rotinas de admissão e normas trabalhistas</span>
+</div>
+<span class="font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded text-[11px] flex-shrink-0">2,00</span>
+</div>
+<div class="py-3 flex items-center justify-between gap-2">
+<div>
+<span class="text-slate-800 font-semibold block">Autonomia &amp; Ownership</span>
+<span class="text-[11px] text-slate-400">Condução autônoma de apontamentos e ponto eletrônico</span>
+</div>
+<span class="font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded text-[11px] flex-shrink-0">2,00</span>
+</div>
+<div class="py-3 flex items-center justify-between gap-2">
+<div>
+<span class="text-slate-800 font-semibold block">Comunicação Eficiente</span>
+<span class="text-[11px] text-slate-400">Clareza no atendimento aos chamados de colaboradores</span>
+</div>
+<span class="font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded text-[11px] flex-shrink-0">2,00</span>
+</div>
+<div class="py-3 flex items-center justify-between gap-2">
+<div>
+<span class="text-slate-800 font-semibold block">Confiabilidade e Responsabilidade</span>
+<span class="text-[11px] text-slate-400">Aderência estrita a cronogramas fiscais e previdenciários</span>
+</div>
+<span class="font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded text-[11px] flex-shrink-0">2,00</span>
+</div>
+</div>
+</div>
+<div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+  <span class="inline-flex items-center gap-1 font-medium text-emerald-800">
+    <span class="material-symbols-outlined text-[15px] text-emerald-600">verified_user</span>
+    Critérios calibrados para progressão a Pleno
+  </span>
+  <span class="text-slate-400 font-medium">Homologado por Gente &amp; Gestão</span>
+</div>
+</div>
+</div></section>
+<!-- END: Section 6 -->
+<!-- BEGIN: Section 7 - Humanized "Seus dados" Card in Footer -->
+<footer class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm" data-purpose="user-details-card">
+<div class="flex items-center justify-between mb-5 border-b border-slate-100 pb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-emerald-700 text-[20px]">badge</span>
+<h3 class="text-sm font-bold font-display text-slate-900">Seus dados</h3>
+</div>
+<span class="text-[11px] text-slate-400 font-normal">Identificação cadastral no ecossistema Greenn</span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 text-xs">
+<!-- Item 1: Email -->
+<div class="space-y-1">
+<span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">E-mail</span>
+<p class="font-semibold text-slate-800 text-sm break-all">gabgiroto@gmail.com</p>
+</div>
+<!-- Item 2: Área -->
+<div class="space-y-1">
+<span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Área</span>
+<p class="font-semibold text-slate-800 text-sm">Gente e Gestão</p>
+</div>
+<!-- Item 3: Cargo -->
+<div class="space-y-1">
+<span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Cargo</span>
+<p class="font-semibold text-slate-800 text-sm">Analista de Departamento Pessoal JR</p>
+</div>
+<!-- Item 4: Gestor -->
+<div class="space-y-1">
+<span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Gestor</span>
+<p class="font-semibold text-slate-800 text-sm flex items-center gap-1.5">
+<span class="">Gestor Direto</span>
+<span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+</p>
+</div>
+</div>
+</footer>
+<!-- END: Section 7 -->
+</main>
+<!-- END: Content Container -->
+</div>
+<!-- END: Main View Wrapper -->
+
+
+</body></html>

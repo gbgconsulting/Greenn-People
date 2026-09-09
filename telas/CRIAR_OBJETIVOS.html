@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+
+<html class="light" lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Novo Objetivo - Greenn People</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts: Fraunces & Source Sans 3 -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&amp;family=Source+Sans+3:ital,wght@0,200..900;1,200..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary-fixed-variant": "#005137",
+                    "on-surface-variant": "#3d4a42",
+                    "on-tertiary-fixed-variant": "#7f2928",
+                    "on-secondary-container": "#006f64",
+                    "primary": "#006948",
+                    "surface-container-lowest": "#ffffff",
+                    "border-subtle": "#e2e8f0",
+                    "status-warning": "#f59e0b",
+                    "secondary-fixed": "#71f8e4",
+                    "on-primary": "#ffffff",
+                    "surface-tint": "#006c4a",
+                    "inverse-surface": "#2d3133",
+                    "tertiary": "#9b3e3b",
+                    "brand-gradient": "linear-gradient(135deg, #059669 0%, #14b8a6 100%)",
+                    "on-surface": "#191c1e",
+                    "surface-container-low": "#f2f4f6",
+                    "secondary-container": "#6df5e1",
+                    "error": "#ba1a1a",
+                    "on-error": "#ffffff",
+                    "surface-container-highest": "#e0e3e5",
+                    "surface-container": "#eceef0",
+                    "status-critical": "#f43f5e",
+                    "on-tertiary-fixed": "#410004",
+                    "outline-variant": "#bccac0",
+                    "inverse-on-surface": "#eff1f3",
+                    "surface-dim": "#d8dadc",
+                    "error-container": "#ffdad6",
+                    "surface": "#f7f9fb",
+                    "primary-fixed-dim": "#68dba9",
+                    "outline": "#6d7a72",
+                    "on-secondary": "#ffffff",
+                    "text-body": "#64748b",
+                    "secondary-fixed-dim": "#4fdbc8",
+                    "on-primary-fixed": "#002114",
+                    "on-error-container": "#93000a",
+                    "inverse-primary": "#68dba9",
+                    "surface-variant": "#e0e3e5",
+                    "status-success": "#10b981",
+                    "tertiary-container": "#ba5551",
+                    "primary-fixed": "#85f8c4",
+                    "tertiary-fixed-dim": "#ffb3ae",
+                    "on-tertiary": "#ffffff",
+                    "text-heading": "#1e293b",
+                    "secondary": "#006b5f",
+                    "tertiary-fixed": "#ffdad7",
+                    "background": "#f7f9fb",
+                    "on-secondary-fixed-variant": "#005048",
+                    "on-background": "#191c1e",
+                    "surface-container-high": "#e6e8ea",
+                    "on-primary-container": "#f5fff7",
+                    "on-secondary-fixed": "#00201c",
+                    "surface-bright": "#f7f9fb",
+                    "primary-container": "#00855d",
+                    "on-tertiary-container": "#fffbff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "sidebar-width": "280px",
+                    "container-padding": "32px",
+                    "gutter": "24px",
+                    "unit": "4px"
+            },
+            "fontFamily": {
+                    "headline-sm": ["Fraunces"],
+                    "body-md": ["\"Source Sans 3\""],
+                    "headline-lg": ["Fraunces"],
+                    "label-sm": ["\"Source Sans 3\""],
+                    "body-lg": ["\"Source Sans 3\""],
+                    "display-lg": ["Fraunces"],
+                    "headline-md": ["Fraunces"],
+                    "label-md": ["\"Source Sans 3\""],
+                    "body-sm": ["\"Source Sans 3\""]
+            },
+            "fontSize": {
+                    "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "500" }],
+                    "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                    "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                    "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "600" }],
+                    "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                    "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                    "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "500" }],
+                    "label-md": ["14px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                    "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .brand-gradient-bg { background-image: linear-gradient(135deg, #059669 0%, #14b8a6 100%); }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen font-body-md text-body-md antialiased overflow-x-hidden flex">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col h-screen py-8 bg-surface border-r border-outline-variant fixed left-0 top-0 w-sidebar-width z-50">
+<div class="px-6 mb-12">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">Greenn People</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-1 uppercase tracking-wider">HR Intelligence</p>
+</div>
+<nav class="flex-1 overflow-y-auto">
+<ul class="space-y-1">
+<!-- Active Item -->
+<li>
+<a class="flex items-center gap-3 bg-primary/5 border-l-4 border-primary text-primary font-bold px-6 py-3 transition-transform duration-200 hover:opacity-90 active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">refresh</span>
+<span class="font-label-md text-label-md">Ciclos</span>
+</a>
+</li>
+<!-- Inactive Items -->
+<li>
+<a class="flex items-center gap-3 text-on-surface-variant px-6 py-3 hover:bg-surface-container-low transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">handshake</span>
+<span class="font-label-md text-label-md">Aderência</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-on-surface-variant px-6 py-3 hover:bg-surface-container-low transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">admin_panel_settings</span>
+<span class="font-label-md text-label-md">Painel admin</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-on-surface-variant px-6 py-3 hover:bg-surface-container-low transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">account_tree</span>
+<span class="font-label-md text-label-md">Estrutura/Matriz</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-on-surface-variant px-6 py-3 hover:bg-surface-container-low transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">domain</span>
+<span class="font-label-md text-label-md">Áreas</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-on-surface-variant px-6 py-3 hover:bg-surface-container-low transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">badge</span>
+<span class="font-label-md text-label-md">Cargos</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-on-surface-variant px-6 py-3 hover:bg-surface-container-low transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-md text-label-md">Usuários</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-on-surface-variant px-6 py-3 hover:bg-surface-container-low transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">psychology</span>
+<span class="font-label-md text-label-md">Competências</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-on-surface-variant px-6 py-3 hover:bg-surface-container-low transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">history_edu</span>
+<span class="font-label-md text-label-md">Auditoria</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-on-surface-variant px-6 py-3 hover:bg-surface-container-low transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">notifications</span>
+<span class="font-label-md text-label-md">Notificações</span>
+</a>
+</li>
+</ul>
+</nav>
+</aside>
+<!-- Main Content Wrapper -->
+<div class="flex-1 md:ml-sidebar-width flex flex-col min-h-screen">
+<!-- TopNavBar -->
+<header class="flex justify-between items-center h-16 px-8 bg-surface/80 backdrop-blur-md sticky top-0 z-40 border-b border-outline-variant shadow-sm w-full">
+<div class="flex items-center gap-4">
+<h2 class="font-headline-sm text-headline-sm font-semibold text-on-surface">Ciclo de Desempenho 2024</h2>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-full text-on-surface-variant hover:bg-surface-container-high/50 transition-all active:scale-95">
+<span class="material-symbols-outlined">help</span>
+</button>
+<button class="p-2 rounded-full text-on-surface-variant hover:bg-surface-container-high/50 transition-all active:scale-95">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center overflow-hidden border border-outline-variant">
+<img alt="User Profile Avatar" class="w-full h-full object-cover" data-alt="A professional headshot of a corporate HR executive with warm lighting, modern office background, soft focus, conveying empathy and authority." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLMetTfGAFsMhMSbdfUBIvJg_5pXPQ2S4SggrMUAbFVw8M5WKioFcRVGlynEZA0DNFTXznlYl2p-8IG3Q7APgVsE8fyopSzq1vADZTwjium2dHt-w_PNOzlBrHXUkqJ7jMh4x2zYlfjbNkbvAyODBR47t52aMaSGfG1lbzLyk_n9DWA69MXpQj96hUFccPt5LbYe13JnqECMQnviDMO2mTFg5dFY7EopnDmvhnHlXUGw2aGMp_ss0k"/>
+</div>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-1 p-8 lg:p-container-padding max-w-[1440px] w-full mx-auto">
+<!-- Breadcrumbs & Header -->
+<div class="mb-8">
+<nav aria-label="Breadcrumb" class="flex text-sm text-on-surface-variant mb-4 font-body-sm text-body-sm">
+<ol class="inline-flex items-center space-x-1 md:space-x-3">
+<li class="inline-flex items-center">
+<a class="inline-flex items-center hover:text-primary transition-colors" href="#">
+                                Ciclos
+                            </a>
+</li>
+<li>
+<div class="flex items-center">
+<span class="material-symbols-outlined text-[16px] mx-1">chevron_right</span>
+<a class="hover:text-primary transition-colors" href="#">Avaliação_lider</a>
+</div>
+</li>
+<li aria-current="page">
+<div class="flex items-center">
+<span class="material-symbols-outlined text-[16px] mx-1">chevron_right</span>
+<span class="text-on-surface font-medium">Novo objetivo</span>
+</div>
+</li>
+</ol>
+</nav>
+<h1 class="font-headline-lg text-headline-lg text-text-heading mb-2">Novo objetivo</h1>
+<p class="font-body-lg text-body-lg text-text-body">Descreva o objetivo estratégico do ciclo. As metas dos colaboradores serão vinculadas a ele.</p>
+</div>
+<!-- Form Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
+<!-- Main Form Area -->
+<div class="lg:col-span-2 space-y-6">
+<!-- Form Card -->
+<div class="bg-surface-container-lowest rounded-lg border border-border-subtle p-6 shadow-[0_2px_4px_rgba(0,0,0,0.04)]">
+<form action="#" class="space-y-6" method="POST">
+<!-- Descrição Textarea -->
+<div>
+<label class="block font-label-md text-label-md text-text-body mb-2" for="descricao">Descrição</label>
+<textarea class="block w-full rounded-md border-0 py-3 px-4 text-on-surface bg-surface-container-low shadow-sm ring-1 ring-inset ring-outline-variant placeholder:text-text-body/50 focus:ring-2 focus:ring-inset focus:ring-primary focus:bg-surface-container-lowest sm:text-sm sm:leading-6 transition-colors duration-200 font-body-md text-body-md resize-none" id="descricao" name="descricao" placeholder="Digite a descrição do objetivo estratégico aqui..." rows="6"></textarea>
+<p class="mt-2 text-sm text-text-body/70 font-body-sm text-body-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">info</span>
+                                    Seja claro e específico para orientar as metas individuais.
+                                </p>
+</div>
+<!-- Actions -->
+<div class="pt-6 border-t border-border-subtle flex items-center justify-end gap-4">
+<button class="px-6 py-2.5 rounded-md font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200" type="button">
+                                    Cancelar
+                                </button>
+<button class="brand-gradient-bg text-on-primary px-6 py-2.5 rounded-md font-label-md text-label-md shadow-sm hover:-translate-y-[1px] transition-transform duration-200" type="submit">
+                                    Salvar
+                                </button>
+</div>
+</form>
+</div>
+</div>
+<!-- Sidebar / Reference Image (Bento style integration) -->
+<div class="lg:col-span-1 hidden lg:block">
+<div class="bg-surface-container-lowest rounded-lg border border-border-subtle p-1 shadow-[0_2px_4px_rgba(0,0,0,0.04)] overflow-hidden h-full">
+<div class="h-full w-full rounded-md overflow-hidden relative group">
+<!-- Overlay for reference context -->
+<div class="absolute inset-0 bg-inverse-surface/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center p-6 text-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+<span class="material-symbols-outlined text-on-primary text-4xl mb-2">schema</span>
+<h3 class="font-headline-sm text-headline-sm text-on-primary mb-1">Referência Visual</h3>
+<p class="font-body-sm text-body-sm text-on-primary/80">Estrutura baseada no wireframe fornecido.</p>
+</div>
+<img alt="Wireframe Reference" class="w-full h-full object-cover grayscale opacity-50 group-hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBaORmtY569Tl3IAYS1FqmhDiQ010oaGX_RdUKmO74_cfSYLTetAXCN1T3JzxiWVAGx276WYVF9Se5j-M94bkOK_N8JxSHXyODc-8uYLMzrMUsxft8g573vbk7jTaxtMxKgZKitDa6MQepHrt-Xxq5S2SDKMhAuY2WbQrOVZ9l3nhiLqr35PP3RtOOu7UsjQV4lnCiAS6YehI8idU0pTehO7eDLkr7leerfc_mPBbWj6sN3w_Unbk0EHUOnLkYSlyxKHw"/>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

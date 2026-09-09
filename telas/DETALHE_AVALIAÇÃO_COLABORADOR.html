@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Minha Avaliação - Gabriel</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "primary-container": "#00855d",
+                      "tertiary": "#9b3e3b",
+                      "surface-container-high": "#e6e8ea",
+                      "text-body": "#64748b",
+                      "surface-container": "#eceef0",
+                      "outline-variant": "#bccac0",
+                      "on-tertiary-fixed-variant": "#7f2928",
+                      "secondary": "#006b5f",
+                      "status-warning": "#f59e0b",
+                      "on-tertiary-container": "#fffbff",
+                      "on-primary-fixed": "#002114",
+                      "surface-bright": "#f7f9fb",
+                      "tertiary-fixed-dim": "#ffb3ae",
+                      "text-heading": "#1e293b",
+                      "on-secondary-fixed-variant": "#005048",
+                      "surface-container-low": "#f2f4f6",
+                      "outline": "#6d7a72",
+                      "on-error-container": "#93000a",
+                      "on-secondary-fixed": "#00201c",
+                      "on-secondary": "#ffffff",
+                      "tertiary-container": "#ba5551",
+                      "primary": "#006948",
+                      "status-success": "#10b981",
+                      "surface-tint": "#006c4a",
+                      "surface-container-highest": "#e0e3e5",
+                      "surface-container-lowest": "#ffffff",
+                      "tertiary-fixed": "#ffdad7",
+                      "background": "#f7f9fb",
+                      "surface-variant": "#e0e3e5",
+                      "on-background": "#191c1e",
+                      "on-tertiary": "#ffffff",
+                      "on-primary": "#ffffff",
+                      "on-tertiary-fixed": "#410004",
+                      "inverse-on-surface": "#eff1f3",
+                      "on-surface-variant": "#3d4a42",
+                      "surface": "#f7f9fb",
+                      "secondary-fixed": "#71f8e4",
+                      "primary-fixed": "#85f8c4",
+                      "surface-dim": "#d8dadc",
+                      "secondary-container": "#6df5e1",
+                      "secondary-fixed-dim": "#4fdbc8",
+                      "inverse-primary": "#68dba9",
+                      "error-container": "#ffdad6",
+                      "border-subtle": "#e2e8f0",
+                      "brand-gradient": "linear-gradient(135deg, #059669 0%, #14b8a6 100%)",
+                      "primary-fixed-dim": "#68dba9",
+                      "on-primary-container": "#f5fff7",
+                      "on-error": "#ffffff",
+                      "status-critical": "#f43f5e",
+                      "on-primary-fixed-variant": "#005137",
+                      "on-secondary-container": "#006f64",
+                      "on-surface": "#191c1e",
+                      "inverse-surface": "#2d3133",
+                      "error": "#ba1a1a"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "unit": "4px",
+                      "sidebar-width": "280px",
+                      "gutter": "24px",
+                      "container-padding": "32px"
+              },
+              "fontFamily": {
+                      "headline-md": [
+                              "Fraunces"
+                      ],
+                      "body-sm": [
+                              "\"Source Sans 3\""
+                      ],
+                      "body-lg": [
+                              "\"Source Sans 3\""
+                      ],
+                      "display-lg": [
+                              "Fraunces"
+                      ],
+                      "body-md": [
+                              "\"Source Sans 3\""
+                      ],
+                      "headline-lg": [
+                              "Fraunces"
+                      ],
+                      "label-md": [
+                              "\"Source Sans 3\""
+                      ],
+                      "label-sm": [
+                              "\"Source Sans 3\""
+                      ],
+                      "headline-sm": [
+                              "Fraunces"
+                      ]
+              },
+              "fontSize": {
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-sm": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-sm": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "500"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Source+Sans+3:wght@400;600&display=swap');
+        
+        .ambient-shadow {
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+        }
+        
+        .hover-lift {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .hover-lift:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.06);
+        }
+
+        .status-top-bar-success {
+            border-top: 4px solid #10b981;
+        }
+        .status-top-bar-warning {
+            border-top: 4px solid #f59e0b;
+        }
+        .status-top-bar-primary {
+            border-top: 4px solid #00855d;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md min-h-screen flex text-body-md">
+<!-- TopNavBar (Rendered via JSON schema due to conflict protocol - but this is a details page so nav shell is SUPPRESSED based on Semantic Shell Mandate) -->
+<!-- SUPPRESSED NAV SHELLS (SideNav and TopNav) because intent is transactional/details focused (Back button present). Canvas priority. -->
+<!-- Main Content Canvas -->
+<main class="flex-1 max-w-[1440px] mx-auto w-full px-container-padding py-8">
+<!-- Header Actions -->
+<div class="flex justify-between items-center mb-8">
+<h1 class="font-headline-lg text-headline-lg text-text-heading">Minha Avaliação</h1>
+</div>
+<!-- Employee Info Card -->
+<div class="bg-surface-container-lowest border border-border-subtle rounded-xl p-6 mb-8 ambient-shadow flex flex-col md:flex-row gap-6 items-start md:items-center">
+<div class="w-24 h-24 rounded-full overflow-hidden flex-shrink-0 bg-surface-container-high border border-border-subtle">
+<img alt="Gabriel Profile" class="w-full h-full object-cover" data-alt="A professional headshot of a corporate employee in a bright, modern office setting. The lighting is soft and natural, reflecting a clean, high-end professional environment. The employee has a confident, warm expression." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBBrfdL9aD9jTbpacZjxUKT-e0umSn9xAr745Gy-IDc0J2E11ilBzWs1jS7w21RaqS_BUZZGffiWAxf2djvtU0Ih_R2HGGBQOQGZvw7aCPtAynAw675a0QlT1M8XHx_-vgTIPlGZDDvlDFQ3OhmiaqpDS7dkSHO7-OZ7RTUifht56N5aALYD2v85bri1NcIblMPQk_YeTptFHGTnfG_cWbW88ibPnR2asdZv5K0GtrlRcd245AkH73z"/>
+</div>
+<div class="flex-1">
+<h2 class="font-headline-md text-headline-md text-text-heading mb-2">Gabriel</h2>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div>
+<p class="font-label-sm text-label-sm text-text-body mb-1 uppercase tracking-wider">Ciclo</p>
+<p class="font-body-lg text-body-lg text-on-surface">Ciclo Avaliação_lider</p>
+</div>
+<div>
+<p class="font-label-sm text-label-sm text-text-body mb-1 uppercase tracking-wider">Etapa Atual</p>
+<div class="inline-flex items-center gap-1.5 bg-secondary-container text-on-secondary-container px-2.5 py-1 rounded-full font-label-sm text-label-sm">
+<span class="material-symbols-outlined" style="font-size: 16px;">forum</span>
+                            Feedback
+                        </div>
+</div>
+</div>
+</div>
+<div class="hidden md:block w-48 h-32 rounded-lg overflow-hidden flex-shrink-0 border border-border-subtle">
+<img alt="Evaluation Zoom Image" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAgITFOTBcR3YK2itnK41eaLjam4dViJt2uTCnyVvD3TUibO10iVhntEvvnW9MGK8GLrpA8ADA8AK5dVP4IaCl4nGSooKthvaJUw_saQLRUag7NkZYh9bzLEKaOiRMGhjRjhiGOhr8Wd_RaFac3RBWRDEmaUS8rp34J7Qz6x9fjI75IrAbFnnhw4twu9IwcoQ3_Hw0O32iWEPjbejUPUz1JM1b85jijuIZR5aUNzUj8HAT0QNQ9BqMOzNSWJrG-uYlXgA"/>
+</div>
+</div>
+<!-- Stepper / Timeline -->
+<div class="bg-surface-container-lowest border border-border-subtle rounded-xl p-8 mb-8 ambient-shadow">
+<h3 class="font-headline-sm text-headline-sm text-text-heading mb-6">Progresso do Ciclo</h3>
+<div class="relative flex justify-between items-center w-full">
+<!-- Connecting Line Base -->
+<div class="absolute left-[10%] right-[10%] top-1/2 -translate-y-1/2 h-1 bg-surface-container-high -z-10"></div>
+<!-- Connecting Line Progress -->
+<div class="absolute left-[10%] right-[30%] top-1/2 -translate-y-1/2 h-1 bg-primary -z-10"></div>
+<!-- Step 1 -->
+<div class="flex flex-col items-center gap-2 w-1/5 relative z-10">
+<div class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined" style="font-size: 18px; font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<span class="font-label-sm text-label-sm text-text-heading text-center">Metas</span>
+</div>
+<!-- Step 2 -->
+<div class="flex flex-col items-center gap-2 w-1/5 relative z-10">
+<div class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined" style="font-size: 18px; font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<span class="font-label-sm text-label-sm text-text-heading text-center">Autoavaliação</span>
+</div>
+<!-- Step 3 -->
+<div class="flex flex-col items-center gap-2 w-1/5 relative z-10">
+<div class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined" style="font-size: 18px; font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<span class="font-label-sm text-label-sm text-text-heading text-center">Aval. Líder</span>
+</div>
+<!-- Step 4 (Current) -->
+<div class="flex flex-col items-center gap-2 w-1/5 relative z-10">
+<div class="w-8 h-8 rounded-full bg-surface-container-lowest border-2 border-primary text-primary flex items-center justify-center shadow-sm ring-4 ring-primary/10">
+<div class="w-3 h-3 rounded-full bg-primary"></div>
+</div>
+<span class="font-label-sm text-label-sm text-primary text-center">Feedback</span>
+</div>
+<!-- Step 5 (Pending) -->
+<div class="flex flex-col items-center gap-2 w-1/5 relative z-10">
+<div class="w-8 h-8 rounded-full bg-surface-container-lowest border-2 border-border-subtle text-text-body flex items-center justify-center shadow-sm">
+</div>
+<span class="font-label-sm text-label-sm text-text-body text-center">Conclusão</span>
+</div>
+</div>
+</div>
+<!-- Summary Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+<!-- Leader Score -->
+<div class="bg-surface-container-lowest border border-border-subtle rounded-xl p-6 ambient-shadow status-top-bar-success flex items-center justify-between">
+<div>
+<h4 class="font-label-md text-label-md text-text-body uppercase tracking-wide mb-1">Nota Líder</h4>
+<p class="font-display-lg text-display-lg text-status-success">83%</p>
+</div>
+<div class="w-16 h-16 rounded-full bg-status-success/10 flex items-center justify-center text-status-success">
+<span class="material-symbols-outlined" style="font-size: 32px;">star</span>
+</div>
+</div>
+<!-- Self Score -->
+<div class="bg-surface-container-lowest border border-border-subtle rounded-xl p-6 ambient-shadow status-top-bar-warning flex items-center justify-between">
+<div>
+<h4 class="font-label-md text-label-md text-text-body uppercase tracking-wide mb-1">Nota Autoavaliação</h4>
+<p class="font-display-lg text-display-lg text-status-warning">71%</p>
+</div>
+<div class="w-16 h-16 rounded-full bg-status-warning/10 flex items-center justify-center text-status-warning">
+<span class="material-symbols-outlined" style="font-size: 32px;">person</span>
+</div>
+</div>
+</div>
+<!-- Competencies Table -->
+<div class="bg-surface-container-lowest border border-border-subtle rounded-xl overflow-hidden ambient-shadow">
+<div class="px-6 py-4 border-b border-border-subtle bg-surface-bright flex justify-between items-center">
+<h3 class="font-headline-sm text-headline-sm text-text-heading">Competências</h3>
+<button class="text-primary font-label-sm text-label-sm hover:underline flex items-center gap-1">
+<span class="material-symbols-outlined" style="font-size: 16px;">download</span> Exportar
+                </button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-lowest border-b border-border-subtle">
+<th class="px-6 py-4 font-label-sm text-label-sm text-text-body uppercase tracking-wider">Competência</th>
+<th class="px-6 py-4 font-label-sm text-label-sm text-text-body uppercase tracking-wider">Nível Esperado</th>
+<th class="px-6 py-4 font-label-sm text-label-sm text-text-body uppercase tracking-wider">Peso</th>
+<th class="px-6 py-4 font-label-sm text-label-sm text-text-body uppercase tracking-wider">Autoavaliação</th>
+<th class="px-6 py-4 font-label-sm text-label-sm text-text-body uppercase tracking-wider">Nota Líder</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-subtle font-body-sm text-body-sm text-on-surface">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="px-6 py-4 font-medium text-text-heading">Comunicação Assertiva</td>
+<td class="px-6 py-4">3</td>
+<td class="px-6 py-4 text-text-body">20%</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded bg-surface-container text-center leading-6 text-text-body">2</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded bg-status-success/20 text-status-success text-center leading-6 font-semibold">3</span>
+<span class="material-symbols-outlined text-status-success" style="font-size: 16px;">arrow_upward</span>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="px-6 py-4 font-medium text-text-heading">Resolução de Problemas</td>
+<td class="px-6 py-4">4</td>
+<td class="px-6 py-4 text-text-body">30%</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded bg-surface-container text-center leading-6 text-text-body">3</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded bg-status-warning/20 text-status-warning text-center leading-6 font-semibold">3</span>
+<span class="material-symbols-outlined text-status-warning" style="font-size: 16px;">remove</span>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="px-6 py-4 font-medium text-text-heading">Trabalho em Equipe</td>
+<td class="px-6 py-4">3</td>
+<td class="px-6 py-4 text-text-body">25%</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded bg-surface-container text-center leading-6 text-text-body">4</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded bg-status-success/20 text-status-success text-center leading-6 font-semibold">4</span>
+</div>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="px-6 py-4 font-medium text-text-heading">Liderança Indireta</td>
+<td class="px-6 py-4">2</td>
+<td class="px-6 py-4 text-text-body">25%</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded bg-surface-container text-center leading-6 text-text-body">2</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded bg-status-success/20 text-status-success text-center leading-6 font-semibold">3</span>
+<span class="material-symbols-outlined text-status-success" style="font-size: 16px;">arrow_upward</span>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</main>
+</body></html>

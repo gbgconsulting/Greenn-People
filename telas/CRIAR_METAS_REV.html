@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Nova Meta — Greenn People</title>
+<!-- Tailwind CSS v3 with Plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Inter & Fraunces -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;600;700&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Lucide Icons -->
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              DEFAULT: '#00a86b',
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#10b981',
+              600: '#00a86b',
+              700: '#047857',
+              hover: '#00925d'
+            },
+            slate: {
+              850: '#182234'
+            }
+          },
+          fontFamily: {
+            serif: ['Fraunces', 'serif'],
+            sans: ['Inter', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+<!-- BEGIN: Custom Styling -->
+<style data-purpose="typography">
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .font-fraunces {
+      font-family: 'Fraunces', serif;
+    }
+  </style>
+<style data-purpose="custom-scrollbars">
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #e2e8f0;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #cbd5e1;
+    }
+  </style>
+<!-- END: Custom Styling -->
+</head>
+<body class="bg-[#f8fafc] text-slate-700 min-h-screen flex flex-col antialiased">
+<div class="flex flex-1 min-h-screen">
+<!-- BEGIN: MainSidebar -->
+<aside class="w-64 bg-white border-r border-slate-200 flex flex-col justify-between flex-shrink-0 select-none">
+<div>
+<!-- Brand Logo Header -->
+<div class="h-16 px-6 flex items-center gap-3 border-b border-slate-100">
+<div class="w-9 h-9 rounded-lg bg-[#00a86b] flex items-center justify-center text-white font-bold text-lg shadow-sm">
+            G
+          </div>
+<span class="font-semibold text-lg text-slate-800 tracking-tight">Greenn People</span>
+</div>
+<!-- Navigation Section Links -->
+<nav aria-label="Navegação Lateral" class="p-3 space-y-6 text-sm">
+<!-- Grupo: Colaborador -->
+<div>
+<div class="px-3 py-1 text-[11px] font-semibold tracking-wider text-slate-400 uppercase flex items-center gap-1">
+<i class="w-3.5 h-3.5" data-lucide="chevron-down"></i>
+<span>Colaborador</span>
+</div>
+<div class="mt-1 space-y-0.5">
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors font-medium" href="#">
+<i class="w-4 h-4 text-slate-400" data-lucide="home"></i>
+<span>Meu painel</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors font-medium" href="#">
+<i class="w-4 h-4 text-slate-400" data-lucide="flag"></i>
+<span>Expectativas</span>
+</a>
+<!-- Item Ativo: Metas -->
+<a class="flex items-center gap-3 px-3 py-2 text-[#00a86b] bg-[#e8f7f0] rounded-lg font-semibold" href="#">
+<i class="w-4 h-4 text-[#00a86b]" data-lucide="target"></i>
+<span>Metas</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors font-medium" href="#">
+<i class="w-4 h-4 text-slate-400" data-lucide="clipboard-check"></i>
+<span>Avaliações</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors font-medium" href="#">
+<i class="w-4 h-4 text-slate-400" data-lucide="graduation-cap"></i>
+<span>Meu PDI</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors font-medium" href="#">
+<i class="w-4 h-4 text-slate-400" data-lucide="user"></i>
+<span>Minha classificação</span>
+</a>
+</div>
+</div>
+<!-- Outros Grupos Retraídos -->
+<div class="space-y-3 pt-1 border-t border-slate-100">
+<div class="px-3 py-1 text-slate-500 font-medium text-xs flex items-center justify-between hover:text-slate-800 cursor-pointer">
+<div class="flex items-center gap-2">
+<i class="w-3.5 h-3.5 text-slate-400" data-lucide="chevron-right"></i>
+<span>LÍDER</span>
+</div>
+</div>
+<div class="px-3 py-1 text-slate-500 font-medium text-xs flex items-center justify-between hover:text-slate-800 cursor-pointer">
+<div class="flex items-center gap-2">
+<i class="w-3.5 h-3.5 text-slate-400" data-lucide="chevron-right"></i>
+<span>GERENTE</span>
+</div>
+</div>
+<div class="px-3 py-1 text-slate-500 font-medium text-xs flex items-center justify-between hover:text-slate-800 cursor-pointer">
+<div class="flex items-center gap-2">
+<i class="w-3.5 h-3.5 text-slate-400" data-lucide="chevron-right"></i>
+<span>GOVERNANÇA</span>
+</div>
+</div>
+<div class="px-3 py-1 text-slate-500 font-medium text-xs flex items-center justify-between hover:text-slate-800 cursor-pointer">
+<div class="flex items-center gap-2">
+<i class="w-3.5 h-3.5 text-slate-400" data-lucide="chevron-right"></i>
+<span>CADASTROS</span>
+</div>
+</div>
+<div class="px-3 py-1 text-slate-500 font-medium text-xs flex items-center justify-between hover:text-slate-800 cursor-pointer">
+<div class="flex items-center gap-2">
+<i class="w-3.5 h-3.5 text-slate-400" data-lucide="chevron-right"></i>
+<span>SISTEMA</span>
+</div>
+</div>
+</div>
+</nav>
+</div>
+<!-- Rodapé da Barra Lateral: Recolher -->
+<div class="p-4 border-t border-slate-100">
+<button class="w-full flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-slate-800 py-1 px-2 rounded hover:bg-slate-50 transition-colors" type="button">
+<i class="w-4 h-4" data-lucide="chevrons-left"></i>
+<span>Recolher</span>
+</button>
+</div>
+</aside>
+<!-- END: MainSidebar -->
+<!-- BEGIN: MainContentWrapper -->
+<div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+<!-- BEGIN: TopBar -->
+<header class="h-16 bg-white border-b border-slate-200 px-8 flex items-center justify-between sticky top-0 z-10">
+<!-- Indicador de Ciclo Ativo -->
+<div class="flex items-center gap-3">
+<div class="inline-flex items-center gap-2 px-3 py-1 bg-slate-50 border border-slate-200 rounded-full text-xs font-medium text-slate-600">
+<span class="text-[10px] uppercase font-bold tracking-wider text-slate-400">Ciclo</span>
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+<span class="text-slate-800 font-semibold">Avaliação_lider (Teste_metas)</span>
+</div>
+</div>
+<!-- Perfil e Logout -->
+<div class="flex items-center gap-4">
+<span class="text-sm font-medium text-slate-600">gabgiroto@gmail.com</span>
+<button class="px-3.5 py-1.5 text-xs font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors" type="button">
+            Sair
+          </button>
+</div>
+</header>
+<!-- END: TopBar -->
+<!-- BEGIN: PageContent -->
+<main class="flex-1 px-8 py-8 max-w-5xl w-full mx-auto">
+<!-- Breadcrumbs -->
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs font-medium text-slate-400 mb-4">
+<a class="hover:text-slate-600 transition-colors" href="#">Metas</a>
+<i class="w-3.5 h-3.5" data-lucide="chevron-right"></i>
+<a class="hover:text-slate-600 transition-colors" href="#">Ciclo Teste_metas</a>
+<i class="w-3.5 h-3.5" data-lucide="chevron-right"></i>
+<span class="text-emerald-700 font-semibold">Nova Meta</span>
+</nav>
+<!-- Header Section -->
+<div class="mb-8">
+<h1 class="font-fraunces text-3xl font-semibold text-slate-900 tracking-tight">Nova Meta</h1>
+<p class="text-sm text-slate-500 mt-1.5 leading-relaxed">
+            Defina o objetivo, descrição e o método de medição que o colaborador utilizará para reportar progresso.
+          </p>
+</div>
+<!-- BEGIN: MetaFormCard -->
+<form class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden p-8 space-y-7" id="goal-form">
+<!-- Campo 1: Objetivo Estratégico -->
+<div class="space-y-1.5">
+<label class="block text-sm font-semibold text-slate-800" for="strategic-goal">
+              Objetivo Estratégico <span class="text-rose-500">*</span>
+</label>
+<p class="text-xs text-slate-400">Vincule esta meta aos pilares globais da organização para este ciclo.</p>
+<div class="relative">
+<select class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 focus:border-[#00a86b] focus:ring-2 focus:ring-[#00a86b]/20 transition-all outline-none appearance-none" id="strategic-goal">
+<option selected="">MELHORAR SKILLS TÉCNICAS</option>
+<option>EFICIÊNCIA OPERACIONAL &amp; QUALIDADE</option>
+<option>EXPANSÃO E RETENÇÃO DE CLIENTES</option>
+<option>DESENVOLVIMENTO DE LIDERANÇAS</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+<i class="w-4 h-4" data-lucide="chevron-down"></i>
+</div>
+</div>
+</div>
+<!-- Campo 2: Título da Meta -->
+<div class="space-y-1.5">
+<label class="block text-sm font-semibold text-slate-800" for="goal-title">
+              Título da Meta <span class="text-rose-500">*</span>
+</label>
+<input class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:border-[#00a86b] focus:ring-2 focus:ring-[#00a86b]/20 transition-all outline-none" id="goal-title" placeholder="Ex: Concluir refatoração dos serviços de autenticação" type="text"/>
+</div>
+<!-- Campo 3: Descrição Detalhada -->
+<div class="space-y-1.5">
+<label class="block text-sm font-semibold text-slate-800" for="goal-desc">
+              Descrição Detalhada &amp; Escopo
+            </label>
+<textarea class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:border-[#00a86b] focus:ring-2 focus:ring-[#00a86b]/20 transition-all outline-none resize-none" id="goal-desc" placeholder="Descreva o contexto, critérios de aceitação e entregáveis esperados ao longo dos check-ins..." rows="3"></textarea>
+</div>
+<!-- SEÇÃO DESTAQUE: Como será medido o progresso? -->
+<div class="pt-3 border-t border-slate-100">
+<div class="flex items-center justify-between mb-1.5">
+<label class="block text-sm font-bold text-slate-900 tracking-tight">
+                Como será medido o progresso? <span class="text-rose-500">*</span>
+</label>
+<span class="text-xs font-medium text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full">
+                Elimina fricções no reporte
+              </span>
+</div>
+<p class="text-xs text-slate-400 mb-4">Selecione o modelo mais adequado à natureza desta entrega para simplificar a apuração do resultado.</p>
+<!-- Measurement Cards Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4" data-purpose="measurement-selector">
+<!-- Card 1: Alvo Numérico (Selecionado) -->
+<div class="relative border-2 border-[#00a86b] bg-emerald-50/20 rounded-xl p-4 cursor-pointer transition-all hover:border-[#00a86b] flex flex-col justify-between group shadow-sm" id="card-numeric" onclick="selectModel('numeric')">
+<div>
+<div class="flex items-center justify-between mb-2.5">
+<div class="w-8 h-8 rounded-lg bg-emerald-100 text-[#00a86b] flex items-center justify-center font-bold">
+<i class="w-4 h-4" data-lucide="hash"></i>
+</div>
+<div class="w-5 h-5 rounded-full bg-[#00a86b] text-white flex items-center justify-center" id="check-numeric">
+<i class="w-3.5 h-3.5 stroke-[3]" data-lucide="check"></i>
+</div>
+</div>
+<h3 class="text-sm font-semibold text-slate-900 mb-1.5">Alvo Numérico</h3>
+<p class="text-xs text-slate-500 leading-relaxed">
+                    O progresso é calculado a partir de números absolutos (ex: tickets, PRs, clientes, horas). O colaborador informa quanto realizou e o sistema calcula a porcentagem automaticamente.
+                  </p>
+</div>
+<div class="mt-4 pt-2.5 border-t border-emerald-100 text-[11px] font-semibold text-[#00a86b] flex items-center gap-1">
+<span>Recomendado p/ métricas diretas</span>
+</div>
+</div>
+<!-- Card 2: Binária -->
+<div class="relative border border-slate-200 bg-white rounded-xl p-4 cursor-pointer transition-all hover:border-slate-300 hover:bg-slate-50/50 flex flex-col justify-between group" id="card-binary" onclick="selectModel('binary')">
+<div>
+<div class="flex items-center justify-between mb-2.5">
+<div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center font-bold group-hover:bg-slate-200 transition-colors">
+<i class="w-4 h-4" data-lucide="check-circle-2"></i>
+</div>
+<div class="w-5 h-5 rounded-full border border-slate-300 hidden items-center justify-center" id="check-binary">
+<i class="w-3.5 h-3.5 stroke-[3] text-transparent" data-lucide="check"></i>
+</div>
+</div>
+<h3 class="text-sm font-semibold text-slate-900 mb-1.5">Binária (Marco / Projeto)</h3>
+<p class="text-xs text-slate-500 leading-relaxed">
+                    A meta é considerada por marcos claros de entrega (Não iniciada, Em andamento ou Concluída). Sem necessidade de cálculo percentual.
+                  </p>
+</div>
+<div class="mt-4 pt-2.5 border-t border-slate-100 text-[11px] font-medium text-slate-400">
+                  Ideal para projetos booleanos
+                </div>
+</div>
+<!-- Card 3: Qualitativa Orientada -->
+<div class="relative border border-slate-200 bg-white rounded-xl p-4 cursor-pointer transition-all hover:border-slate-300 hover:bg-slate-50/50 flex flex-col justify-between group" id="card-qualitative" onclick="selectModel('qualitative')">
+<div>
+<div class="flex items-center justify-between mb-2.5">
+<div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center font-bold group-hover:bg-slate-200 transition-colors">
+<i class="w-4 h-4" data-lucide="sparkles"></i>
+</div>
+<div class="w-5 h-5 rounded-full border border-slate-300 hidden items-center justify-center" id="check-qualitative">
+<i class="w-3.5 h-3.5 stroke-[3] text-transparent" data-lucide="check"></i>
+</div>
+</div>
+<h3 class="text-sm font-semibold text-slate-900 mb-1.5">Qualitativa Orientada</h3>
+<p class="text-xs text-slate-500 leading-relaxed">
+                    Para metas comportamentais ou subjetivas. Permite input percentual livre, exigindo um critério de alinhamento prévio com o gestor.
+                  </p>
+</div>
+<div class="mt-4 pt-2.5 border-t border-slate-100 text-[11px] font-medium text-slate-400">
+                  Requer rubrica de avaliação
+                </div>
+</div>
+</div>
+<!-- Dynamic Subfields Container -->
+<div class="mt-5 p-5 bg-slate-50/80 rounded-xl border border-slate-200/80 transition-all" id="dynamic-subfields">
+<!-- Subcampos para Alvo Numérico (Default) -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="subfields-numeric">
+<div class="space-y-1.5">
+<label class="block text-xs font-semibold text-slate-700" for="unit-field">
+                    Unidade de Medida <span class="text-rose-500">*</span>
+</label>
+<input class="w-full bg-white rounded-lg border border-slate-200 px-3.5 py-2 text-sm text-slate-800 placeholder-slate-400 focus:border-[#00a86b] focus:ring-2 focus:ring-[#00a86b]/20 outline-none" id="unit-field" placeholder="Ex: PRs, Vendas, Clientes, Horas" type="text" value="PRs revisadas"/>
+</div>
+<div class="space-y-1.5">
+<label class="block text-xs font-semibold text-slate-700" for="target-field">
+                    Meta / Alvo Numérico <span class="text-rose-500">*</span>
+</label>
+<div class="relative">
+<input class="w-full bg-white rounded-lg border border-slate-200 px-3.5 py-2 text-sm text-slate-800 placeholder-slate-400 focus:border-[#00a86b] focus:ring-2 focus:ring-[#00a86b]/20 outline-none" id="target-field" placeholder="Ex: 10" type="number" value="10"/>
+<span class="absolute right-3.5 top-2 text-xs font-medium text-slate-400">total final</span>
+</div>
+</div>
+</div>
+<!-- Subcampos para Binária (Inicialmente oculto) -->
+<div class="hidden text-xs text-slate-600 space-y-2" id="subfields-binary">
+<div class="flex items-center gap-2 text-slate-700 font-semibold">
+<i class="w-4 h-4 text-emerald-600" data-lucide="info"></i>
+<span>Critério de conclusão automática:</span>
+</div>
+<p class="leading-relaxed text-slate-500">
+                  O colaborador atualizará o status escolhendo entre <strong>"Não iniciado (0%)"</strong>, <strong>"Em desenvolvimento (50%)"</strong> ou <strong>"Concluído (100%)"</strong> com evidências comprobatórias anexas.
+                </p>
+</div>
+<!-- Subcampos para Qualitativa Orientada (Inicialmente oculto) -->
+<div class="hidden space-y-2" id="subfields-qualitative">
+<label class="block text-xs font-semibold text-slate-700" for="criteria-field">
+                  Critério combinado com o líder (texto orientador para o momento do reporte) <span class="text-rose-500">*</span>
+</label>
+<textarea class="w-full bg-white rounded-lg border border-slate-200 px-3.5 py-2 text-sm text-slate-800 placeholder-slate-400 focus:border-[#00a86b] focus:ring-2 focus:ring-[#00a86b]/20 outline-none resize-none" id="criteria-field" placeholder="Ex: O reporte de 100% exige aprovação final do comitê e homologação técnica pelo Tech Lead..." rows="2"></textarea>
+<p class="text-[11px] text-slate-400">Esta instrução ficará visível para o colaborador ao preencher o progresso no ciclo.</p>
+</div>
+</div>
+</div>
+<!-- Rodapé do Formulário: Botões de Ação -->
+<div class="pt-5 border-t border-slate-100 flex items-center justify-between">
+<button class="px-5 py-2.5 text-sm font-medium text-slate-600 hover:text-slate-900 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors" type="button">
+              Cancelar
+            </button>
+<div class="flex items-center gap-3">
+<button class="px-5 py-2.5 text-sm font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-xl transition-colors" type="button">
+                Salvar como rascunho
+              </button>
+<button class="px-7 py-2.5 text-sm font-semibold text-white bg-[#00a86b] hover:bg-[#00925d] rounded-xl shadow-sm transition-all flex items-center gap-2 focus:ring-4 focus:ring-[#00a86b]/30" type="submit">
+<i class="w-4 h-4" data-lucide="check"></i>
+<span>Salvar Meta</span>
+</button>
+</div>
+</div>
+</form>
+<!-- END: MetaFormCard -->
+</main>
+<!-- END: PageContent -->
+</div>
+<!-- END: MainContentWrapper -->
+</div>
+<!-- BEGIN: Interactive Behavior Script -->
+<script data-purpose="measurement-toggle">
+    function selectModel(type) {
+      const cards = {
+        numeric: document.getElementById('card-numeric'),
+        binary: document.getElementById('card-binary'),
+        qualitative: document.getElementById('card-qualitative')
+      };
+
+      const checks = {
+        numeric: document.getElementById('check-numeric'),
+        binary: document.getElementById('check-binary'),
+        qualitative: document.getElementById('check-qualitative')
+      };
+
+      const subfields = {
+        numeric: document.getElementById('subfields-numeric'),
+        binary: document.getElementById('subfields-binary'),
+        qualitative: document.getElementById('subfields-qualitative')
+      };
+
+      // Reset all cards styling
+      Object.keys(cards).forEach((key) => {
+        cards[key].classList.remove('border-2', 'border-[#00a86b]', 'bg-emerald-50/20', 'shadow-sm');
+        cards[key].classList.add('border', 'border-slate-200', 'bg-white');
+
+        checks[key].className = 'w-5 h-5 rounded-full border border-slate-300 hidden items-center justify-center';
+        checks[key].innerHTML = '<i data-lucide="check" class="w-3.5 h-3.5 stroke-[3] text-transparent"></i>';
+
+        subfields[key].classList.add('hidden');
+      });
+
+      // Apply selected style
+      cards[type].classList.remove('border', 'border-slate-200', 'bg-white');
+      cards[type].classList.add('border-2', 'border-[#00a86b]', 'bg-emerald-50/20', 'shadow-sm');
+
+      checks[type].className = 'w-5 h-5 rounded-full bg-[#00a86b] text-white flex items-center justify-center';
+      checks[type].innerHTML = '<i data-lucide="check" class="w-3.5 h-3.5 stroke-[3]"></i>';
+
+      subfields[type].classList.remove('hidden');
+
+      // Re-initialize Lucide Icons for dynamic content
+      lucide.createIcons();
+    }
+
+    // Initialize Lucide Icons on document load
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+    });
+  </script>
+<!-- END: Interactive Behavior Script -->
+</body></html>

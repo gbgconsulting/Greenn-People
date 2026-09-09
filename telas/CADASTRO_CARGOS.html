@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Gestão de Cargos - Greenn People</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@100..900&family=Source+Sans+3:wght@100..900&display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Theme Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-container": "#006f64",
+                    "error": "#ba1a1a",
+                    "on-tertiary-container": "#fffbff",
+                    "primary": "#006948",
+                    "on-error": "#ffffff",
+                    "outline-variant": "#bccac0",
+                    "on-tertiary": "#ffffff",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-fixed-dim": "#68dba9",
+                    "status-warning": "#f59e0b",
+                    "on-surface-variant": "#3d4a42",
+                    "inverse-on-surface": "#eff1f3",
+                    "status-success": "#10b981",
+                    "on-background": "#191c1e",
+                    "on-error-container": "#93000a",
+                    "on-primary-fixed-variant": "#005137",
+                    "status-critical": "#f43f5e",
+                    "text-heading": "#1e293b",
+                    "on-tertiary-fixed": "#410004",
+                    "primary-container": "#00855d",
+                    "outline": "#6d7a72",
+                    "inverse-surface": "#2d3133",
+                    "surface-container-highest": "#e0e3e5",
+                    "brand-gradient": "linear-gradient(135deg, #059669 0%, #14b8a6 100%)",
+                    "text-body": "#64748b",
+                    "on-primary": "#ffffff",
+                    "on-secondary": "#ffffff",
+                    "on-secondary-fixed-variant": "#005048",
+                    "background": "#f7f9fb",
+                    "on-primary-container": "#f5fff7",
+                    "on-primary-fixed": "#002114",
+                    "secondary": "#006b5f",
+                    "surface-container-low": "#f2f4f6",
+                    "border-subtle": "#e2e8f0",
+                    "tertiary": "#9b3e3b",
+                    "surface-variant": "#e0e3e5",
+                    "error-container": "#ffdad6",
+                    "secondary-container": "#6df5e1",
+                    "surface-bright": "#f7f9fb",
+                    "primary-fixed": "#85f8c4",
+                    "surface-container-high": "#e6e8ea",
+                    "surface": "#f7f9fb",
+                    "tertiary-container": "#ba5551",
+                    "surface-dim": "#d8dadc",
+                    "inverse-primary": "#68dba9",
+                    "surface-container": "#eceef0",
+                    "on-tertiary-fixed-variant": "#7f2928",
+                    "tertiary-fixed": "#ffdad7",
+                    "secondary-fixed": "#71f8e4",
+                    "secondary-fixed-dim": "#4fdbc8",
+                    "on-secondary-fixed": "#00201c",
+                    "tertiary-fixed-dim": "#ffb3ae",
+                    "surface-tint": "#006c4a",
+                    "on-surface": "#191c1e"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "sidebar-width": "280px",
+                    "unit": "4px",
+                    "container-padding": "32px",
+                    "gutter": "24px"
+            },
+            "fontFamily": {
+                    "label-md": ["\"Source Sans 3\""],
+                    "body-md": ["\"Source Sans 3\""],
+                    "label-sm": ["\"Source Sans 3\""],
+                    "headline-sm": ["Fraunces"],
+                    "body-lg": ["\"Source Sans 3\""],
+                    "headline-lg": ["Fraunces"],
+                    "body-sm": ["\"Source Sans 3\""],
+                    "headline-md": ["Fraunces"],
+                    "display-lg": ["Fraunces"]
+            },
+            "fontSize": {
+                    "label-md": ["14px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "600"}],
+                    "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "500"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "500"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "600"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        /* Custom styles for elements not directly supported by standard Tailwind utilities based on config */
+        .bg-brand-gradient {
+            background-image: linear-gradient(135deg, #059669 0%, #14b8a6 100%);
+        }
+        .text-brand-gradient {
+            background-image: linear-gradient(135deg, #059669 0%, #14b8a6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+<body class="bg-surface-bright text-on-surface font-body-md antialiased flex">
+<!-- SideNavBar (Shared Component) -->
+<aside class="fixed left-0 top-0 h-full w-sidebar-width bg-surface border-r border-outline-variant flex flex-col z-50">
+<!-- Header -->
+<div class="px-6 py-8 flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-brand-gradient flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-on-primary" style="font-variation-settings: 'FILL' 1;">spa</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">Greenn People</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant">HR Performance</p>
+</div>
+</div>
+<!-- Navigation Tabs -->
+<nav class="flex-1 overflow-y-auto py-4 flex flex-col gap-1">
+<a class="flex items-center gap-3 px-6 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-6 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">trending_up</span>
+<span class="font-label-md text-label-md">Performance</span>
+</a>
+<a class="flex items-center gap-3 px-6 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">groups</span>
+<span class="font-label-md text-label-md">Employees</span>
+</a>
+<a class="flex items-center gap-3 px-6 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">person_add</span>
+<span class="font-label-md text-label-md">Recruitment</span>
+</a>
+<a class="flex items-center gap-3 px-6 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">school</span>
+<span class="font-label-md text-label-md">Learning</span>
+</a>
+<!-- Active State Navigation -->
+<a class="relative flex items-center gap-3 px-6 py-3 text-primary bg-primary-container/5 before:absolute before:left-0 before:top-0 before:h-full before:w-1 before:bg-brand-gradient scale-[0.98] transition-transform" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</nav>
+<!-- CTA & Footer -->
+<div class="px-6 py-6 border-t border-outline-variant/50 flex flex-col gap-4">
+<button class="w-full py-3 px-4 rounded-lg bg-surface-container-low border border-outline-variant text-on-surface font-label-md text-label-md hover:bg-surface-container-highest transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-primary">add_circle</span>
+                New Review
+            </button>
+<div class="flex flex-col gap-1 mt-2">
+<a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-container-low rounded-lg transition-colors duration-200" href="#">
+<span class="material-symbols-outlined text-sm">help</span>
+<span class="font-label-sm text-label-sm">Help Center</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-container-low rounded-lg transition-colors duration-200" href="#">
+<span class="material-symbols-outlined text-sm">logout</span>
+<span class="font-label-sm text-label-sm">Logout</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-sidebar-width w-[calc(100%-280px)] min-h-screen flex flex-col bg-surface-bright">
+<!-- TopNavBar (Shared Component) -->
+<header class="fixed top-0 right-0 h-16 w-[calc(100%-280px)] bg-surface/80 backdrop-blur-md border-b border-outline-variant shadow-sm flex justify-between items-center px-8 z-40">
+<!-- Left: Search placeholder space -->
+<div class="flex-1 flex items-center gap-6">
+<!-- Navigation Links from JSON (Settings/Admin context usually suppresses these, but keeping as per Shared Component definition if forced, otherwise just visual balance) -->
+<nav class="hidden lg:flex items-center gap-6">
+<a class="text-on-surface-variant font-medium text-label-md hover:text-primary transition-all" href="#">Directory</a>
+<a class="text-on-surface-variant font-medium text-label-md hover:text-primary transition-all" href="#">Reports</a>
+<a class="text-on-surface-variant font-medium text-label-md hover:text-primary transition-all" href="#">Feedback</a>
+</nav>
+</div>
+<!-- Right: Actions & Profile -->
+<div class="flex items-center gap-4">
+<button class="text-primary font-label-md text-label-md hover:bg-primary-container/10 px-3 py-1.5 rounded-lg transition-colors">Add Member</button>
+<div class="flex items-center gap-2 border-l border-outline-variant/50 pl-4">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors focus-within:ring-2 focus-within:ring-primary/20">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors focus-within:ring-2 focus-within:ring-primary/20">
+<span class="material-symbols-outlined">chat_bubble</span>
+</button>
+<button class="p-1 rounded-full border-2 border-transparent hover:border-primary transition-colors focus-within:ring-2 focus-within:ring-primary/20">
+<img class="w-8 h-8 rounded-full object-cover" data-alt="A professional headshot of a corporate employee on a neutral background, serving as a user profile avatar. Soft lighting, modern aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC_Ynn8G-87pcUJPHDHk_U1mtUENAvsJuhSYB0naXCw2A7wc_fVIgWAxgus0enQvC94g85h-GmIWzu9j0U-sThi1d1uXBwRSYh2ijjwYkKwqAAozZ33hh4aeopUUFc-jQe-33NKhZwVefznWf8WPOmKqgS6KH5fKm4SsHW1MElo0enG1hSSCa2TRhMWZX4bzaGl3K0icRpMQcajjAxyRhQ_SrF9X138Ke0VAVnJEcgH6kcbmCG91dbK"/>
+</button>
+</div>
+</div>
+</header>
+<!-- Page Content Canvas -->
+<div class="pt-24 px-8 pb-12 flex-1 flex flex-col max-w-[1440px] mx-auto w-full gap-8">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h2 class="font-display-lg text-display-lg text-on-surface mb-2">Cargos</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">Configuração de níveis hierárquicos e requisitos de cargo.</p>
+</div>
+<div>
+<button class="bg-brand-gradient text-on-primary px-6 py-3 rounded-lg shadow-[0_2px_4px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_8px_rgba(0,0,0,0.08)] hover:-translate-y-0.5 transition-all duration-200 font-label-md text-label-md flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                        Novo Cargo
+                    </button>
+</div>
+</div>
+<!-- Data Card -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-[0_2px_4px_rgba(0,0,0,0.02)] flex flex-col overflow-hidden">
+<!-- Action / Filter Bar -->
+<div class="p-4 border-b border-outline-variant/50 bg-surface flex flex-col md:flex-row items-center justify-between gap-4">
+<!-- Search Input -->
+<div class="relative w-full md:w-80 group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-primary transition-colors">search</span>
+<input class="w-full pl-10 pr-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg font-body-sm text-body-sm text-on-surface placeholder-on-surface-variant focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all" placeholder="Buscar cargos..." type="text"/>
+</div>
+<!-- Status Segmented Control -->
+<div class="bg-surface-container-low p-1 rounded-lg flex items-center self-stretch md:self-auto w-full md:w-auto">
+<button class="flex-1 md:flex-none px-4 py-1.5 rounded-md bg-surface-container-lowest shadow-sm border border-outline-variant/20 font-label-sm text-label-sm text-primary transition-all">
+                            Todos
+                        </button>
+<button class="flex-1 md:flex-none px-4 py-1.5 rounded-md font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-lowest/50 transition-all">
+                            Ativo
+                        </button>
+<button class="flex-1 md:flex-none px-4 py-1.5 rounded-md font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-lowest/50 transition-all">
+                            Inativo
+                        </button>
+</div>
+<!-- Filter Icon -->
+<button class="p-2 border border-outline-variant bg-surface-container-lowest rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors flex items-center justify-center shrink-0 w-full md:w-auto">
+<span class="material-symbols-outlined">tune</span>
+<span class="md:hidden ml-2 font-label-sm">Filtros Avançados</span>
+</button>
+</div>
+<!-- Data Table -->
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low/50 border-b border-outline-variant/60">
+<th class="py-4 px-6 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Nome do Cargo</th>
+<th class="py-4 px-6 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Nível</th>
+<th class="py-4 px-6 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Competências Vinculadas</th>
+<th class="py-4 px-6 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Status</th>
+<th class="py-4 px-6 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider text-right">Ações</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/30 bg-surface-container-lowest">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-low/30 transition-colors group">
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-primary/10 flex items-center justify-center text-primary font-headline-sm">D</div>
+<span class="font-label-md text-label-md text-on-surface">Desenvolvedor Frontend</span>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Sênior</span>
+</td>
+<td class="py-4 px-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-primary">psychology</span>
+<span class="font-body-md text-body-md text-on-surface">12</span>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2 py-1 rounded-md bg-status-success/10 text-status-success font-label-sm text-label-sm gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-status-success"></span>
+                                        Ativo
+                                    </span>
+</td>
+<td class="py-4 px-6 text-right">
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-primary/5 rounded opacity-0 group-hover:opacity-100 transition-all">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low/30 transition-colors group">
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-primary/10 flex items-center justify-center text-primary font-headline-sm">D</div>
+<span class="font-label-md text-label-md text-on-surface">Desenvolvedor Backend</span>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Pleno</span>
+</td>
+<td class="py-4 px-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-primary">psychology</span>
+<span class="font-body-md text-body-md text-on-surface">8</span>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2 py-1 rounded-md bg-status-success/10 text-status-success font-label-sm text-label-sm gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-status-success"></span>
+                                        Ativo
+                                    </span>
+</td>
+<td class="py-4 px-6 text-right">
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-primary/5 rounded opacity-0 group-hover:opacity-100 transition-all">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low/30 transition-colors group">
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-variant/30 flex items-center justify-center text-on-surface-variant font-headline-sm">D</div>
+<span class="font-label-md text-label-md text-on-surface">Designer UI/UX</span>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Junior</span>
+</td>
+<td class="py-4 px-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">psychology</span>
+<span class="font-body-md text-body-md text-on-surface">5</span>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2 py-1 rounded-md bg-surface-variant/30 text-on-surface-variant font-label-sm text-label-sm gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-outline"></span>
+                                        Inativo
+                                    </span>
+</td>
+<td class="py-4 px-6 text-right">
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-primary/5 rounded opacity-0 group-hover:opacity-100 transition-all">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-low/30 transition-colors group">
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-primary/10 flex items-center justify-center text-primary font-headline-sm">G</div>
+<span class="font-label-md text-label-md text-on-surface">Gerente de Projetos</span>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Sênior</span>
+</td>
+<td class="py-4 px-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-primary">psychology</span>
+<span class="font-body-md text-body-md text-on-surface">15</span>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2 py-1 rounded-md bg-status-success/10 text-status-success font-label-sm text-label-sm gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-status-success"></span>
+                                        Ativo
+                                    </span>
+</td>
+<td class="py-4 px-6 text-right">
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-primary/5 rounded opacity-0 group-hover:opacity-100 transition-all">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination Footer (Decorative) -->
+<div class="p-4 border-t border-outline-variant/50 bg-surface flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Mostrando 1 a 4 de 24 cargos</span>
+<div class="flex items-center gap-2">
+<button class="p-1.5 border border-outline-variant rounded text-on-surface-variant hover:bg-surface-container-low disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined text-sm">chevron_left</span>
+</button>
+<button class="p-1.5 border border-outline-variant rounded text-on-surface-variant hover:bg-surface-container-low">
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>
