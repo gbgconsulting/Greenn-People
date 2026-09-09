@@ -34,7 +34,10 @@ from apps.pdi.services.lifecycle import (
     archive_pdi,
     pdi_allows_action_mutations,
 )
-from apps.pdi.services.overdue_metrics import annotate_overdue_metrics
+from apps.pdi.services.overdue_metrics import (
+    annotate_overdue_metrics,
+    filter_com_atrasadas,
+)
 from apps.pdi.services.progress import _PROGRESS_QUANT, calculate_pdi_progress
 
 _HUB_FILTER_CHOICES = (
@@ -113,9 +116,20 @@ def _hub_footer(pdi: PDI, *, is_self: bool) -> dict:
     }
 
 
+def _acoes_atrasadas_label(count: int) -> str:
+    """Label do badge rose no card — pluralização no backend, UI só renderiza."""
+    if count <= 0:
+        return ''
+    if count == 1:
+        return '1 atrasada'
+    return f'{count} atrasadas'
+
+
 def _pdi_list_row(pdi: PDI, *, viewer_id: int) -> dict:
     total_acoes = int(getattr(pdi, 'total_acoes', 0) or 0)
     concluidas = int(getattr(pdi, 'acoes_concluidas', 0) or 0)
+    # Annotate de ``annotate_overdue_metrics`` (T003/T005); default 0 se ausente.
+    acoes_atrasadas_count = int(getattr(pdi, 'acoes_atrasadas_count', 0) or 0)
     progresso = _progress_from_counts(concluidas, total_acoes)
     is_self = pdi.usuario_id == viewer_id
     variant = _hub_card_variant(pdi, total_acoes)
@@ -128,6 +142,8 @@ def _pdi_list_row(pdi: PDI, *, viewer_id: int) -> dict:
         'is_self': is_self,
         'total_acoes': total_acoes,
         'acoes_concluidas': concluidas,
+        'acoes_atrasadas_count': acoes_atrasadas_count,
+        'acoes_atrasadas_label': _acoes_atrasadas_label(acoes_atrasadas_count),
         'hub_variant': variant,
         'hub_status_label': _hub_status_label(variant),
         'hub_cta_label': _hub_cta_label(variant),
@@ -345,6 +361,11 @@ class PDIListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin,
                 | Q(usuario__nome__icontains=busca)
                 | Q(usuario__email__icontains=busca),
             )
+        # ``atrasadas=1``: ≥1 ação atrasada; arquivados só com status=arquivado.
+        if self.request.GET.get('atrasadas', '').strip() == '1':
+            qs = filter_com_atrasadas(qs)
+            if status != PDI.Status.ARQUIVADO:
+                qs = qs.exclude(status=PDI.Status.ARQUIVADO)
         return qs
 
     def get_context_data(self, **kwargs):
@@ -354,6 +375,7 @@ class PDIListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin,
         rows = [_pdi_list_row(pdi, viewer_id=viewer_id) for pdi in context['pdis']]
         status_filtro = self.request.GET.get('status', '').strip()
         busca = self.request.GET.get('q', '').strip()
+        atrasadas_filtro = self.request.GET.get('atrasadas', '').strip() == '1'
         visao = self._ownership_visao()
         mostrar_toggle_visao = can_view_team_ownership_list(viewer)
         # Porta vazia só para colaborador puro sem PDIs (líder/admin veem o hub
@@ -362,6 +384,7 @@ class PDIListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin,
             not rows
             and not status_filtro
             and not busca
+            and not atrasadas_filtro
             and not mostrar_toggle_visao
             and visao == VISAO_PROPRIAS
         )
@@ -372,6 +395,7 @@ class PDIListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin,
                 'status_choices': PDI.Status.choices,
                 'hub_filter_choices': _HUB_FILTER_CHOICES,
                 'busca': busca,
+                'atrasadas_filtro': atrasadas_filtro,
                 'pode_criar': True,
                 'mostrar_empty_porta': mostrar_empty_porta,
                 'visao': visao,

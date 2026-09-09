@@ -1,4 +1,6 @@
 {% url 'pdi:list' as pdi_list_url %}
+{# Busca HTMX: base via querystring (preserva atrasadas/status/visao/etc.), q e page resetados. #}
+{% querystring q=None page=None as pdi_search_url %}
 <div id="list-container" class="space-y-6">
   <div class="rounded-xl border border-line bg-surface-card p-4 shadow-[0_2px_4px_rgba(0,0,0,0.04)]">
     <div class="flex flex-col items-center justify-between gap-4 md:flex-row">
@@ -17,19 +19,19 @@
           autocomplete="off"
           aria-label="Buscar planos de desenvolvimento"
           class="form-control !w-full !pl-10"
-          hx-get="{{ pdi_list_url }}{% if visao == visao_equipe %}?visao={{ visao_equipe }}{% endif %}"
+          hx-get="{{ pdi_search_url }}"
           hx-trigger="keyup changed delay:300ms, search"
           hx-target="#list-container"
           hx-swap="outerHTML"
           hx-push-url="true"
-          hx-include="[name='status']"
+          hx-include="[data-pdi-filter]"
         >
       </div>
 
       <nav
         class="flex w-full gap-2 overflow-x-auto pb-1 md:w-auto md:pb-0"
         role="navigation"
-        aria-label="Filtro por status"
+        aria-label="Filtros da listagem"
       >
         {% for value, label in hub_filter_choices %}
           {% if value %}
@@ -54,10 +56,38 @@
             class="inline-flex shrink-0 items-center rounded-lg border px-4 py-2 font-ui text-sm font-semibold transition-colors {% if status_filtro == value %}border-emerald-200 bg-emerald-50 text-emerald-700{% else %}border-line bg-surface text-slate-600 hover:bg-slate-50{% endif %}"
           >{{ label }}</a>
         {% endfor %}
+        {% if atrasadas_filtro %}
+          {% if visao == visao_equipe %}
+            {% querystring visao=visao_equipe atrasadas=None page=None as atrasadas_url %}
+          {% else %}
+            {% querystring visao=None atrasadas=None page=None as atrasadas_url %}
+          {% endif %}
+        {% else %}
+          {% if visao == visao_equipe %}
+            {% querystring visao=visao_equipe atrasadas="1" page=None as atrasadas_url %}
+          {% else %}
+            {% querystring visao=None atrasadas="1" page=None as atrasadas_url %}
+          {% endif %}
+        {% endif %}
+        <a
+          href="{{ atrasadas_url }}"
+          hx-get="{{ atrasadas_url }}"
+          hx-target="#list-container"
+          hx-swap="outerHTML"
+          hx-push-url="true"
+          aria-pressed="{% if atrasadas_filtro %}true{% else %}false{% endif %}"
+          class="inline-flex shrink-0 items-center rounded-lg border px-4 py-2 font-ui text-sm font-semibold transition-colors {% if atrasadas_filtro %}border-emerald-200 bg-emerald-50 text-emerald-700{% else %}border-line bg-surface text-slate-600 hover:bg-slate-50{% endif %}"
+        >Com atrasadas</a>
       </nav>
     </div>
+    {% if visao == visao_equipe %}
+      <input type="hidden" name="visao" value="{{ visao_equipe }}" data-pdi-filter>
+    {% endif %}
     {% if status_filtro %}
-      <input type="hidden" name="status" value="{{ status_filtro }}">
+      <input type="hidden" name="status" value="{{ status_filtro }}" data-pdi-filter>
+    {% endif %}
+    {% if atrasadas_filtro %}
+      <input type="hidden" name="atrasadas" value="1" data-pdi-filter>
     {% endif %}
   </div>
 
@@ -69,8 +99,8 @@
   </div>
   {% else %}
   <div class="rounded-xl border border-line bg-surface-card p-8 shadow-[0_2px_4px_rgba(0,0,0,0.04)]">
-    {% if busca or status_filtro %}
-      {% include "components/empty_state.html" with title="Nenhum PDI neste filtro" message="Nenhum plano corresponde à busca ou ao status selecionado. Tente ajustar os filtros." %}
+    {% if busca or status_filtro or atrasadas_filtro %}
+      {% include "components/empty_state.html" with title="Nenhum PDI neste filtro" message="Nenhum plano corresponde à busca ou aos filtros selecionados. Tente ajustar os filtros." %}
     {% elif visao == visao_equipe %}
       {% include "components/empty_state.html" with title="Nenhum PDI da equipe" message="Nenhum PDI cadastrado no seu escopo (exceto o seu)." %}
     {% elif pode_criar %}

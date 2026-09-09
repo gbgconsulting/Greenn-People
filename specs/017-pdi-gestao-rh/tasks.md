@@ -66,12 +66,12 @@ Monólito Django na raiz: `apps/pdi/`, `apps/notifications/`, `apps/dashboard/`,
 
 ### Implementation for User Story 1
 
-- [ ] T006 [US1] Em `apps/pdi/views.py`, aplicar filtro query param `atrasadas=1` no `PDIListView` (e partial HTMX) sobre annotate de T003/T005 — só PDIs do escopo com ≥1 ação `atrasada`; combinar com `status`/`q`/`visao` vigentes; arquivados só se `status=arquivados` explícito ([contracts/pdi-overdue-list.md](./contracts/pdi-overdue-list.md))
-- [ ] T007 [US1] Estender `_pdi_list_row` em `apps/pdi/views.py` para expor `acoes_atrasadas_count` (e campos derivados necessários ao card) a partir do annotate — UI não recalcula
-- [ ] T008 [P] [US1] Adicionar chip “Com atrasadas” em `templates/pdi/pdi_list.html` no **mesmo estilo emerald** dos chips de status existentes (param `atrasadas=1`); preservar CTA primário “+ Novo PDI” soberano ([contracts/ui-visual-consistency.md](./contracts/ui-visual-consistency.md))
-- [ ] T009 [P] [US1] Em `templates/pdi/partials/pdi_hub_card.html`, exibir `badge_status` `atrasada` (rose) com “N atrasada(s)” **somente** se N>0 — sem substituir variante do plano (`em_andamento` etc.)
-- [ ] T010 [US1] Garantir swap HTMX em `templates/pdi/pdi_list_partial.html` preserva `atrasadas` e demais query params no `#list-container`
-- [ ] T011 [US1] Cobrir contrato de listagem/escopo em `tests/test_pdi_overdue_list_filters.py` (casos: `atrasadas=1`, contagem no card, colaborador sem leak, arquivado fora) conforme [contracts/pdi-overdue-list.md](./contracts/pdi-overdue-list.md) + [contracts/backend-scope-authz.md](./contracts/backend-scope-authz.md)
+- [X] T006 [US1] Em `apps/pdi/views.py`, aplicar filtro query param `atrasadas=1` no `PDIListView` (e partial HTMX) sobre annotate de T003/T005 — só PDIs do escopo com ≥1 ação `atrasada`; combinar com `status`/`q`/`visao` vigentes; arquivados só se `status=arquivados` explícito ([contracts/pdi-overdue-list.md](./contracts/pdi-overdue-list.md))
+- [X] T007 [US1] Estender `_pdi_list_row` em `apps/pdi/views.py` para expor `acoes_atrasadas_count` (e campos derivados necessários ao card) a partir do annotate — UI não recalcula
+- [X] T008 [P] [US1] Adicionar chip “Com atrasadas” em `templates/pdi/pdi_list.html` no **mesmo estilo emerald** dos chips de status existentes (param `atrasadas=1`); preservar CTA primário “+ Novo PDI” soberano ([contracts/ui-visual-consistency.md](./contracts/ui-visual-consistency.md))
+- [X] T009 [P] [US1] Em `templates/pdi/partials/pdi_hub_card.html`, exibir `badge_status` `atrasada` (rose) com “N atrasada(s)” **somente** se N>0 — sem substituir variante do plano (`em_andamento` etc.)
+- [X] T010 [US1] Garantir swap HTMX em `templates/pdi/pdi_list_partial.html` preserva `atrasadas` e demais query params no `#list-container`
+- [X] T011 [US1] Cobrir contrato de listagem/escopo em `tests/test_pdi_overdue_list_filters.py` (casos: `atrasadas=1`, contagem no card, colaborador sem leak, arquivado fora) conforme [contracts/pdi-overdue-list.md](./contracts/pdi-overdue-list.md) + [contracts/backend-scope-authz.md](./contracts/backend-scope-authz.md)
 
 **Checkpoint**: US1 independentemente testável; MVP de visibilidade no hub pronto
 
