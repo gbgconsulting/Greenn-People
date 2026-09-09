@@ -152,12 +152,12 @@ Monólito Django na raiz: `apps/pdi/`, `apps/notifications/`, `apps/dashboard/`,
 
 ### Implementation for User Story 6
 
-- [ ] T031 [US6] Estender `_group_acoes` em `apps/pdi/views.py` com bucket `atrasadas` (`status == atrasada`) separado de em andamento ([contracts/pdi-complete-lifecycle.md](./contracts/pdi-complete-lifecycle.md))
-- [ ] T032 [P] [US6] Atualizar `templates/pdi/acao_list_partial.html` (+ partials de card se necessário) para renderizar coluna **Atrasadas** com `badge_status` rose
-- [ ] T033 [US6] Implementar `complete_pdi` em `apps/pdi/services/lifecycle.py`: exige `ativo` + ≥1 ação + todas `concluida`; senão raise com mensagem clara; arquivado/concluído rejeitados
-- [ ] T034 [US6] Adicionar view/rota POST de conclusão em `apps/pdi/views.py` + `apps/pdi/urls.py` com `ScopedObjectMixin` / `_get_scoped_pdi`; revalidar no serviço; feedback HTMX/messages
-- [ ] T035 [P] [US6] CTA “Concluir plano” em `templates/pdi/pdi_detail.html` (secundário/outline via `button.html`) **só** quando context flag `can_complete` vier do backend; **não** roubar CTA primário de criar ação
-- [ ] T036 [US6] Cobrir lifecycle + board em `tests/test_pdi_complete.py` (100% → concluído; pendente rejeita; arquivado rejeita; coluna Atrasadas; POST fora de escopo 403/404)
+- [X] T031 [US6] Estender `_group_acoes` em `apps/pdi/views.py` com bucket `atrasadas` (`status == atrasada`) separado de em andamento ([contracts/pdi-complete-lifecycle.md](./contracts/pdi-complete-lifecycle.md))
+- [X] T032 [P] [US6] Atualizar `templates/pdi/acao_list_partial.html` (+ partials de card se necessário) para renderizar coluna **Atrasadas** com `badge_status` rose
+- [X] T033 [US6] Implementar `complete_pdi` em `apps/pdi/services/lifecycle.py`: exige `ativo` + ≥1 ação + todas `concluida`; senão raise com mensagem clara; arquivado/concluído rejeitados
+- [X] T034 [US6] Adicionar view/rota POST de conclusão em `apps/pdi/views.py` + `apps/pdi/urls.py` com `ScopedObjectMixin` / `_get_scoped_pdi`; revalidar no serviço; feedback HTMX/messages
+- [X] T035 [P] [US6] CTA “Concluir plano” em `templates/pdi/pdi_detail.html` (secundário/outline via `button.html`) **só** quando context flag `can_complete` vier do backend; **não** roubar CTA primário de criar ação
+- [X] T036 [US6] Cobrir lifecycle + board em `tests/test_pdi_complete.py` (100% → concluído; pendente rejeita; arquivado rejeita; coluna Atrasadas; POST fora de escopo 403/404)
 
 **Checkpoint**: Todas as user stories independentemente funcionais
 
@@ -167,10 +167,10 @@ Monólito Django na raiz: `apps/pdi/`, `apps/notifications/`, `apps/dashboard/`,
 
 **Purpose**: Validação E2E, regressão visual/AuthZ e limpeza
 
-- [ ] T037 [P] Rodar validação guiada de `specs/017-pdi-gestao-rh/quickstart.md` (cenários A–F) + checklist visual de [contracts/ui-visual-consistency.md](./contracts/ui-visual-consistency.md)
-- [ ] T038 [P] Suite smoke: `pytest tests/test_pdi_overdue_list_filters.py tests/test_pdi_overdue_notifications.py tests/test_pdi_digest.py tests/test_pdi_complete.py` (+ regressão hub/board existente se aplicável) -q
-- [ ] T039 Revisar anti-padrões AuthZ de [contracts/backend-scope-authz.md](./contracts/backend-scope-authz.md) (query string não autoriza; filtros gestor/área scoped; digest só admin; concluir no serviço)
-- [ ] T040 [P] Confirmar non-goals: zero papel RH, zero DRF/SPA, `lembrete_pdi` preventivo intacto, um CTA primário no hub, rose só para atraso real
+- [X] T037 [P] Rodar validação guiada de `specs/017-pdi-gestao-rh/quickstart.md` (cenários A–F) + checklist visual de [contracts/ui-visual-consistency.md](./contracts/ui-visual-consistency.md) — evidência: `scripts/validate_quickstart_017_pdi.py` (16/16) + pytest smoke 30 passed + gate visual marcado em `contracts/ui-visual-consistency.md`
+- [X] T038 [P] Suite smoke: `pytest tests/test_pdi_overdue_list_filters.py tests/test_pdi_overdue_notifications.py tests/test_pdi_digest.py tests/test_pdi_complete.py` (+ regressão hub/board existente se aplicável) -q — evidência: 37 passed (`test_pdi_hub_variant` incluído)
+- [X] T039 Revisar anti-padrões AuthZ de [contracts/backend-scope-authz.md](./contracts/backend-scope-authz.md) (query string não autoriza; filtros gestor/área scoped; digest só admin; concluir no serviço) — evidência: §Evidência T039 em `contracts/backend-scope-authz.md` + `test_lider_gestor_e_area_fora_do_escopo_ignorados_sem_leak` (5 AuthZ checks passed)
+- [X] T040 [P] Confirmar non-goals: zero papel RH, zero DRF/SPA, `lembrete_pdi` preventivo intacto, um CTA primário no hub, rose só para atraso real — evidência: §Evidência T040 em `plan.md` + pytest `test_lembrete_pdi_permanece_independente_do_atraso` / `test_lembrete_pdi_duas_vezes_mesma_janela_um_envio` (2 passed)
 
 ---
 

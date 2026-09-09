@@ -66,15 +66,19 @@
 
 ## Checklist de aceite visual (gate de PR)
 
-- [ ] `h1` Fraunces / `font-display`
-- [ ] Corpo/tabela Source Sans 3
-- [ ] Emerald brand sem azul genérico / roxo / glow
-- [ ] `rounded-lg` em botões/inputs/badges
-- [ ] Um CTA primário dominante no hub
-- [ ] Atraso = rose; pendência ≠ rose
-- [ ] Filtros avançados em menu discreto (`<details>`)
-- [ ] Tabela alinhada a listagens admin/avaliações (não inventar grid)
-- [ ] Empty/zero neutros (slate), não “erro”
+- [x] `h1` Fraunces / `font-display`
+- [x] Corpo/tabela Source Sans 3
+- [x] Emerald brand sem azul genérico / roxo / glow
+- [x] `rounded-lg` em botões/inputs/badges
+- [x] Um CTA primário dominante no hub
+- [x] Atraso = rose; pendência ≠ rose
+- [x] Filtros avançados em menu discreto (`<details>`)
+- [x] Tabela alinhada a listagens admin/avaliações (não inventar grid)
+- [x] Empty/zero neutros (slate), não “erro”
+
+**Validado em T037** (2026-09-09): `scripts/validate_quickstart_017_pdi.py` gate visual + revisão templates hub/tabela/board/KPI/e-mail.
+
+**Reconfirmado em T040** (2026-09-09): CTA primário único no hub + rose só para atraso real — ver §Evidência T040 em [plan.md](../plan.md).
 
 ## Denylist visual
 

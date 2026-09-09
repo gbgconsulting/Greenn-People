@@ -1,36 +1,56 @@
 {% comment %}
   Board de ações do PDI — visual alinhado a telas/TELA_PDI.html.
-  Agrupamento (em andamento / próximas / concluídas) vem do backend.
+  Agrupamento (atrasadas / em andamento / próximas / concluídas) vem do backend.
 {% endcomment %}
 <div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
-  <section class="flex flex-col gap-4 lg:col-span-8" aria-labelledby="acoes-andamento-heading">
-    <div class="mb-1 flex items-center gap-2">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5 text-emerald-700" aria-hidden="true">
-        <path fill-rule="evenodd" d="M6 2a1 1 0 0 0-1 1v1H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1V3a1 1 0 1 0-2 0v1H7V3a1 1 0 0 0-1-1Zm0 5a1 1 0 0 0 0 2h8a1 1 0 1 0 0-2H6Z" clip-rule="evenodd" />
-      </svg>
-      <h2 id="acoes-andamento-heading" class="font-display text-lg font-medium text-slate-800">Em andamento</h2>
-      <span class="ml-1 rounded-full bg-slate-100 px-2 py-0.5 font-ui text-xs font-semibold text-slate-600">{{ total_em_andamento }}</span>
-    </div>
-
-    {% if total_acoes == 0 %}
-      <div class="rounded-xl border border-line bg-surface-card p-8 shadow-[0_2px_4px_rgba(0,0,0,0.04)]">
-        {% if pode_editar_acoes %}
-          {% url 'pdi:action_create_modal' pdi.pk as acao_create_modal_url %}
-          {% include "components/empty_state.html" with title="Nenhuma ação cadastrada" message="Crie a primeira ação de desenvolvimento para acompanhar o progresso deste PDI." cta_label="Nova ação" cta_hx_get=acao_create_modal_url cta_hx_target="#modal-container" %}
-        {% else %}
-          {% include "components/empty_state.html" with title="Nenhuma ação cadastrada" message="Este plano arquivado não possui ações." %}
-        {% endif %}
+  <div class="flex flex-col gap-8 lg:col-span-8">
+    <section class="flex flex-col gap-4" aria-labelledby="acoes-atrasadas-heading">
+      <div class="mb-1 flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5 text-rose-600" aria-hidden="true">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-13a.75.75 0 0 0-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 0 0 0-1.5h-3.25V5Z" clip-rule="evenodd" />
+        </svg>
+        <h2 id="acoes-atrasadas-heading" class="font-display text-lg font-medium text-slate-800">Atrasadas</h2>
+        <span class="ml-1 rounded-full bg-rose-50 px-2 py-0.5 font-ui text-xs font-semibold text-rose-700">{{ total_atrasadas }}</span>
       </div>
-    {% else %}
-      {% for row in acoes_em_andamento %}
-        {% include "pdi/partials/acao_card_andamento.html" with acao=row.acao progresso_pct=row.progresso_pct responsavel_nome=row.responsavel_nome %}
+
+      {% for row in acoes_atrasadas %}
+        {% include "pdi/partials/acao_card_atrasada.html" with acao=row.acao progresso_pct=row.progresso_pct responsavel_nome=row.responsavel_nome %}
       {% empty %}
         <div class="rounded-xl border border-dashed border-line bg-slate-50/80 px-5 py-8 text-center font-ui text-sm text-slate-500">
-          Nenhuma ação em andamento no momento.
+          Nenhuma ação atrasada.
         </div>
       {% endfor %}
-    {% endif %}
-  </section>
+    </section>
+
+    <section class="flex flex-col gap-4" aria-labelledby="acoes-andamento-heading">
+      <div class="mb-1 flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5 text-emerald-700" aria-hidden="true">
+          <path fill-rule="evenodd" d="M6 2a1 1 0 0 0-1 1v1H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1V3a1 1 0 1 0-2 0v1H7V3a1 1 0 0 0-1-1Zm0 5a1 1 0 0 0 0 2h8a1 1 0 1 0 0-2H6Z" clip-rule="evenodd" />
+        </svg>
+        <h2 id="acoes-andamento-heading" class="font-display text-lg font-medium text-slate-800">Em andamento</h2>
+        <span class="ml-1 rounded-full bg-slate-100 px-2 py-0.5 font-ui text-xs font-semibold text-slate-600">{{ total_em_andamento }}</span>
+      </div>
+
+      {% if total_acoes == 0 %}
+        <div class="rounded-xl border border-line bg-surface-card p-8 shadow-[0_2px_4px_rgba(0,0,0,0.04)]">
+          {% if pode_editar_acoes %}
+            {% url 'pdi:action_create_modal' pdi.pk as acao_create_modal_url %}
+            {% include "components/empty_state.html" with title="Nenhuma ação cadastrada" message="Crie a primeira ação de desenvolvimento para acompanhar o progresso deste PDI." cta_label="Nova ação" cta_hx_get=acao_create_modal_url cta_hx_target="#modal-container" %}
+          {% else %}
+            {% include "components/empty_state.html" with title="Nenhuma ação cadastrada" message="Este plano arquivado não possui ações." %}
+          {% endif %}
+        </div>
+      {% else %}
+        {% for row in acoes_em_andamento %}
+          {% include "pdi/partials/acao_card_andamento.html" with acao=row.acao progresso_pct=row.progresso_pct responsavel_nome=row.responsavel_nome %}
+        {% empty %}
+          <div class="rounded-xl border border-dashed border-line bg-slate-50/80 px-5 py-8 text-center font-ui text-sm text-slate-500">
+            Nenhuma ação em andamento no momento.
+          </div>
+        {% endfor %}
+      {% endif %}
+    </section>
+  </div>
 
   <aside class="flex flex-col gap-8 lg:col-span-4">
     <section aria-labelledby="acoes-proximas-heading">

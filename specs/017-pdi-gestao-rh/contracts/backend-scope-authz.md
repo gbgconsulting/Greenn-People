@@ -62,3 +62,18 @@ Template pode espelhar flags **já calculadas no context** (`can_complete`, `sho
 - Notificações: [pdi-overdue-notifications.md](./pdi-overdue-notifications.md)  
 - Lifecycle: [pdi-complete-lifecycle.md](./pdi-complete-lifecycle.md) §AuthZ  
 - Visual: [ui-visual-consistency.md](./ui-visual-consistency.md) — ocultar ≠ autorizar
+
+## Evidência T039 (review anti-padrões)
+
+Revisão 2026-09-09 contra os 6 anti-padrões + testes mínimos deste contrato:
+
+| # | Anti-padrão | Resultado | Evidência |
+|---|-------------|-----------|-----------|
+| 1 | Filtrar cards/tabela só com Alpine/JS | **OK** | Templates `templates/pdi/` sem `x-for`/filtro cliente; listagem server-side |
+| 2 | Confiar em `visao=equipe` sem `can_view_team` | **OK** | `resolve_ownership_visao` + `_resolve_list_modo` forçam próprias/cards |
+| 3 | CTA concluir só escondido; POST sem serviço | **OK** | `PDICompleteView` + `complete_pdi` / `PDINotCompletableError` |
+| 4 | Filtros gestor/área com todos os users | **OK** | `PDIListManagerialFiltersForm` + `get_allowed_*_ids(visible)` |
+| 5 | KPI no template sem escopo | **OK** | `count_scoped_overdue_metrics` no dashboard |
+| 6 | Digest sem `is_admin` | **OK** | `enviar_digest_pdi_atrasos` filtra `is_admin=True, is_active=True` |
+
+Testes mínimos: `tests/test_pdi_overdue_list_filters.py` (colaborador query-string; líder gestor/área fora do escopo; widget link), `tests/test_pdi_complete.py` (POST fora → 404), `tests/test_pdi_digest.py` (não-admin excluído), `tests/test_pdi_overdue_notifications.py` (dedupe diário).

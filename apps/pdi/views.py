@@ -41,8 +41,11 @@ from apps.pdi.forms import (
 from apps.pdi.models import AcaoPDI, PDI
 from apps.pdi.services.lifecycle import (
     PDINotArchivableError,
+    PDINotCompletableError,
     archive_pdi,
+    complete_pdi,
     pdi_allows_action_mutations,
+    pdi_can_complete,
 )
 from apps.pdi.services.overdue_metrics import (
     annotate_overdue_metrics,
@@ -268,6 +271,7 @@ def _acao_card_row(acao: AcaoPDI) -> dict:
 
 def _group_acoes(acoes) -> dict:
     """Agrupa ações por coluna do board — regra de negócio no backend."""
+    atrasadas: list[dict] = []
     em_andamento: list[dict] = []
     proximas: list[dict] = []
     concluidas: list[dict] = []
@@ -277,14 +281,20 @@ def _group_acoes(acoes) -> dict:
             concluidas.append(row)
         elif acao.status == AcaoPDI.Status.PENDENTE:
             proximas.append(row)
+        elif acao.status == AcaoPDI.Status.ATRASADA:
+            atrasadas.append(row)
         else:
             em_andamento.append(row)
     return {
+        'acoes_atrasadas': atrasadas,
         'acoes_em_andamento': em_andamento,
         'acoes_proximas': proximas,
         'acoes_concluidas': concluidas,
+        'total_atrasadas': len(atrasadas),
         'total_em_andamento': len(em_andamento),
-        'total_acoes': len(em_andamento) + len(proximas) + len(concluidas),
+        'total_acoes': (
+            len(atrasadas) + len(em_andamento) + len(proximas) + len(concluidas)
+        ),
     }
 
 
@@ -617,6 +627,46 @@ class PDIArchiveView(LoginRequiredMixin, ScopedObjectMixin, SingleObjectMixin, V
         return HttpResponseRedirect(list_url)
 
 
+class PDICompleteView(LoginRequiredMixin, ScopedObjectMixin, SingleObjectMixin, View):
+    """Conclui PDI no escopo quando 100% das ações estão concluídas. POST only.
+
+    Pré-condições revalidadas em ``complete_pdi`` (UI não autoriza).
+    """
+
+    model = PDI
+    scope_user_field = 'usuario'
+    queryset = PDI.objects.select_related('usuario')
+    http_method_names = ['post', 'options']
+
+    def post(self, request, *args, **kwargs):
+        pdi = self.get_object()
+        detail_url = reverse('pdi:detail', kwargs={'pk': pdi.pk})
+        list_url = f"{reverse('pdi:list')}?status={PDI.Status.CONCLUIDO}"
+        try:
+            complete_pdi(pdi)
+        except PDINotCompletableError as exc:
+            if is_htmx(request):
+                response = HttpResponse('')
+                response['HX-Trigger'] = json.dumps(
+                    {
+                        'showMessage': {'message': str(exc), 'level': 'error'},
+                    },
+                )
+                return response
+            messages.error(request, str(exc))
+            return HttpResponseRedirect(detail_url)
+
+        messages.success(
+            request,
+            'PDI concluído. Você pode encontrá-lo no filtro Concluídos.',
+        )
+        if is_htmx(request):
+            response = HttpResponse('')
+            response['HX-Redirect'] = list_url
+            return response
+        return HttpResponseRedirect(list_url)
+
+
 class PDIDetailView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
     """Detalhe do PDI no escopo; IDOR → Http404 + ``log_scope_denied``."""
 
@@ -642,6 +692,7 @@ class PDIDetailView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
                 'progresso': calculate_pdi_progress(pdi),
                 'status_choices': AcaoPDI.Status.choices,
                 'pode_editar_acoes': pdi_allows_action_mutations(pdi),
+                'can_complete': pdi_can_complete(pdi, acoes=acoes),
                 **_group_acoes(acoes),
             },
         )

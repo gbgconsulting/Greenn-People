@@ -67,14 +67,15 @@ celery -A config beat -l info
 ## Automated smoke (após implement)
 
 ```bash
-pytest tests/test_pdi_overdue_list_filters.py \
+# Validação guiada A–F + gate visual (rollback; send mockado)
+PYTHONPATH=. .venv/bin/python scripts/validate_quickstart_017_pdi.py
+
+# Suite de contrato
+.venv/bin/pytest tests/test_pdi_overdue_list_filters.py \
        tests/test_pdi_overdue_notifications.py \
        tests/test_pdi_digest.py \
-       tests/test_pdi_complete.py \
-       tests/test_pdi_hub_variant.py -q
+       tests/test_pdi_complete.py -q
 ```
-
-(Nomes finais alinhados em `/speckit-tasks`.)
 
 ## Gate visual rápido
 

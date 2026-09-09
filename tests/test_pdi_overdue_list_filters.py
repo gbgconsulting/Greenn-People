@@ -423,6 +423,86 @@ def test_colaborador_modo_tabela_forcado_a_cards_sem_permissao(
     # Filtro gerencial ignorado: PDI sem atraso permanece listado.
 
 
+@pytest.mark.django_db
+def test_lider_gestor_e_area_fora_do_escopo_ignorados_sem_leak(
+    client,
+    lider,
+    colaborador,
+    outsider,
+    cargo_colab,
+):
+    """Contrato AuthZ §Testes: gestor/área fora do escopo → ignore; sem leak.
+
+    Query string maliciosa não amplia escopo nem remove do time o que é visível.
+    """
+    from apps.organization.models import Area
+
+    no_time = PDI.objects.create(
+        usuario=colaborador,
+        titulo='PDI do time com atraso',
+        status=PDI.Status.ATIVO,
+    )
+    _criar_acao(
+        no_time,
+        responsavel=colaborador,
+        status=AcaoPDI.Status.ATRASADA,
+        prazo=_prazo_atrasado(),
+    )
+
+    area_fora = Area.objects.create(nome='Área Fora Escopo PDI AuthZ')
+    outsider.area = area_fora
+    # Gestor “fantasma” fora da hierarquia do líder (não é LM de ninguém no escopo).
+    gestor_fora = CustomUser.objects.create_user(
+        email='gestor-fora-pdi-authz@test.greenn.com.br',
+        password=DEFAULT_PASSWORD,
+        nome='Gestor Fora Escopo',
+        area=area_fora,
+        cargo=cargo_colab,
+        data_entrada=FIXTURE_DATA_ENTRADA,
+        email_confirmado_em=timezone.now(),
+    )
+    outsider.line_manager = gestor_fora
+    outsider.save(update_fields=['area', 'line_manager'])
+
+    fora = PDI.objects.create(
+        usuario=outsider,
+        titulo='PDI outsider com atraso',
+        status=PDI.Status.ATIVO,
+    )
+    _criar_acao(
+        fora,
+        responsavel=outsider,
+        status=AcaoPDI.Status.ATRASADA,
+        prazo=_prazo_atrasado(),
+    )
+
+    client.force_login(lider)
+    response = client.get(
+        reverse('pdi:list'),
+        {
+            'visao': VISAO_EQUIPE,
+            'modo': 'tabela',
+            'atrasadas': '1',
+            'gestor': str(gestor_fora.pk),
+            'area': str(area_fora.pk),
+        },
+    )
+    assert response.status_code == 200
+    assert response.context['visao'] == VISAO_EQUIPE
+    assert response.context['modo'] == 'tabela'
+    # IDs fora do escopo ignorados (não aplicam predicado; não vazam).
+    assert response.context['gestor_filtro'] is None
+    assert response.context['area_filtro'] is None
+    gestor_opts = {opt['pk'] for opt in response.context['filtro_gestores']}
+    area_opts = {opt['pk'] for opt in response.context['filtro_areas']}
+    assert gestor_fora.pk not in gestor_opts
+    assert area_fora.pk not in area_opts
+
+    ids = _pdi_ids(response)
+    assert no_time.pk in ids
+    assert fora.pk not in ids
+
+
 # --- US5 / T030: widget KPI dashboard (superfície + escopo) ----------------
 
 

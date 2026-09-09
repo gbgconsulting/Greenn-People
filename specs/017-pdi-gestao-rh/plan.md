@@ -50,6 +50,18 @@ US1 e US2 são o MVP gerencial. US3 depende do annotate/métricas de US1. US4/US
 - Redesign do hub PDI ou nova tipografia/paleta.
 - CTA primário extra competindo no hub (mantém “+ Novo PDI” soberano).
 
+### Evidência T040 (confirmação non-goals)
+
+Revisão 2026-09-09 — varredura estática + testes focados de `lembrete_pdi`:
+
+| Non-goal | Resultado | Evidência |
+|---|---|---|
+| Zero papel RH | **OK** | Sem `is_rh` em `apps/accounts`; digest usa `CustomUser.objects.filter(is_admin=True)` (`enviar_digest_pdi_atrasos`); “RH” = admin existente |
+| Zero DRF/SPA | **OK** | Sem `rest_framework` / `djangorestframework` em deps; `INSTALLED_APPS` só apps de domínio; `apps/pdi/urls.py` = CBVs Django (list/create/detail/archive/complete) |
+| `lembrete_pdi` preventivo intacto | **OK** | Tipo `LEMBRETE_PDI` inalterado; task Beat `enviar_lembrete_acao_pdi_vencendo` intacta; atraso usa tipo separado `atraso_pdi`; `test_lembrete_pdi_permanece_independente_do_atraso` + `test_lembrete_pdi_duas_vezes_mesma_janela_um_envio` → **2 passed** |
+| Um CTA primário no hub | **OK** | Único `variant="primary"` em `templates/pdi/pdi_list.html` = “Novo plano”; toggle/chips/filtros sem primário concorrente |
+| Rose só para atraso real | **OK** | Badge rose no hub só se `acoes_atrasadas_count > 0`; chip “Com atrasadas” emerald; KPI zero com `accent="neutral"`; `badge_status` Status Triad (`atrasada`/`reprov*` = rose; pendência = amber/slate) |
+
 ## Technical Context
 
 **Language/Version**: Python 3.x / Django (monólito vigente; constituição cita 5.x — sem novo desvio de stack)
