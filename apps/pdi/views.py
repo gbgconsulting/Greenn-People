@@ -34,6 +34,7 @@ from apps.pdi.services.lifecycle import (
     archive_pdi,
     pdi_allows_action_mutations,
 )
+from apps.pdi.services.overdue_metrics import annotate_overdue_metrics
 from apps.pdi.services.progress import _PROGRESS_QUANT, calculate_pdi_progress
 
 _HUB_FILTER_CHOICES = (
@@ -323,8 +324,9 @@ class PDIListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin,
                 prazo_min=Min('acoes__prazo'),
                 prazo_max=Max('acoes__prazo'),
             )
-            .order_by('usuario__nome', 'usuario__email', '-created_at', 'id')
         )
+        qs = annotate_overdue_metrics(qs)
+        qs = qs.order_by('usuario__nome', 'usuario__email', '-created_at', 'id')
         qs = apply_ownership_visao(
             qs,
             self.request.user,
