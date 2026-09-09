@@ -120,11 +120,11 @@ Monólito Django na raiz: `apps/pdi/`, `apps/notifications/`, `apps/dashboard/`,
 
 ### Implementation for User Story 4
 
-- [ ] T023 [P] [US4] Implementar agregação org de atrasos (totais PDIs/ações + top áreas/gestores) em `apps/pdi/services/overdue_metrics.py` (ou helper dedicado no mesmo módulo) — só PDIs não arquivados
-- [ ] T024 [P] [US4] Criar templates `templates/notifications/email/digest_pdi_atrasos_{subject,body}.{txt,html}` com totais, focos e CTA para `/pdi/?visao=equipe&atrasadas=1` (modo tabela opcional)
-- [ ] T025 [US4] Implementar task Beat `enviar_digest_pdi_atrasos` em `apps/notifications/tasks.py`: se contagem org == 0 → exit silencioso; senão loop `is_admin` ativos + dedupe `digest_pdi_atrasos` / `referencia=org:pdi_atrasos` / `janela=YYYY-Www`; reusar `_log_send` + send em `apps/notifications/emails.py`
-- [ ] T026 [US4] Registrar schedule semanal em `config/celery.py` alinhado ao horário operacional dos lembretes existentes — **sem** remover jobs diários de overdue/lembrete
-- [ ] T027 [US4] Cobrir digest em `tests/test_pdi_digest.py` (com atrasos, silêncio zero, não-admin excluído, dedupe semanal)
+- [X] T023 [P] [US4] Implementar agregação org de atrasos (totais PDIs/ações + top áreas/gestores) em `apps/pdi/services/overdue_metrics.py` (ou helper dedicado no mesmo módulo) — só PDIs não arquivados
+- [X] T024 [P] [US4] Criar templates `templates/notifications/email/digest_pdi_atrasos_{subject,body}.{txt,html}` com totais, focos e CTA para `/pdi/?visao=equipe&atrasadas=1` (modo tabela opcional)
+- [X] T025 [US4] Implementar task Beat `enviar_digest_pdi_atrasos` em `apps/notifications/tasks.py`: se contagem org == 0 → exit silencioso; senão loop `is_admin` ativos + dedupe `digest_pdi_atrasos` / `referencia=org:pdi_atrasos` / `janela=YYYY-Www`; reusar `_log_send` + send em `apps/notifications/emails.py`
+- [X] T026 [US4] Registrar schedule semanal em `config/celery.py` alinhado ao horário operacional dos lembretes existentes — **sem** remover jobs diários de overdue/lembrete
+- [X] T027 [US4] Cobrir digest em `tests/test_pdi_digest.py` (com atrasos, silêncio zero, não-admin excluído, dedupe semanal)
 
 **Checkpoint**: Oversight RH sem ruído por ação; US2 permanece o canal pontual
 

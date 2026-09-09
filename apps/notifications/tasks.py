@@ -12,16 +12,19 @@ from apps.accounts.models import CustomUser
 from apps.cycles.models import Ciclo
 from apps.notifications.emails import (
     referencia_atraso_pdi,
+    referencia_digest_pdi_atrasos,
     referencia_feedback_continuo,
     referencia_lembrete_etapa,
     referencia_lembrete_pdi,
     send_atraso_pdi_email,
+    send_digest_pdi_atrasos_email,
     send_feedback_continuo_email,
     send_lembrete_etapa_email,
     send_lembrete_pdi_email,
 )
 from apps.notifications.models import NotificacaoLog, already_sent
 from apps.pdi.models import AcaoPDI, PDI
+from apps.pdi.services.overdue_metrics import aggregate_org_overdue_metrics
 from apps.reviews.models import Avaliacao, FeedbackContinuo
 
 
@@ -35,6 +38,14 @@ def _target_date() -> date:
 
 def _janela(target: date) -> str:
     return target.isoformat()
+
+
+def _janela_semana_iso(today: date | None = None) -> str:
+    """ISO week key ``YYYY-Www`` for digest dedupe (contract US4)."""
+    if today is None:
+        today = timezone.localdate()
+    iso = today.isocalendar()
+    return f'{iso.year}-W{iso.week:02d}'
 
 
 def _is_etapa_eligible(avaliacao: Avaliacao, target: date) -> bool:
@@ -301,6 +312,66 @@ def enviar_alerta_acao_pdi_atrasada(acao_id: int) -> dict:
         'acao_id': acao_id,
         'janela': janela,
         'resultado': 'ok',
+    }
+
+
+@shared_task(name='apps.notifications.tasks.enviar_digest_pdi_atrasos')
+def enviar_digest_pdi_atrasos() -> dict:
+    """Weekly org digest of overdue PDIs for active admins (US4).
+
+    Silent exit when org overdue count is zero. Otherwise loops active
+    ``is_admin`` users with weekly dedupe
+    ``already_sent(tipo=digest_pdi_atrasos, referencia=org:pdi_atrasos,
+    janela=YYYY-Www)``. Append-only ``NotificacaoLog`` via ``_log_send``.
+    """
+    aggregation = aggregate_org_overdue_metrics()
+    if not aggregation.has_atrasos:
+        return {
+            'enviados': 0,
+            'falhas': 0,
+            'pulados': 0,
+            'resultado': 'silencio',
+            'pdis_com_atraso': 0,
+            'acoes_atrasadas': 0,
+        }
+
+    janela = _janela_semana_iso()
+    referencia = referencia_digest_pdi_atrasos()
+    tipo = NotificacaoLog.Tipo.DIGEST_PDI_ATRASOS
+    destinatarios = (
+        CustomUser.objects.filter(is_admin=True, is_active=True)
+        .order_by('pk')
+    )
+
+    enviados = 0
+    falhas = 0
+    pulados = 0
+    for destinatario in destinatarios.iterator():
+        if already_sent(destinatario.pk, tipo, referencia, janela):
+            pulados += 1
+            continue
+        result = _log_send(
+            destinatario_id=destinatario.pk,
+            tipo=tipo,
+            referencia=referencia,
+            janela=janela,
+            send_fn=lambda d=destinatario, a=aggregation: (
+                send_digest_pdi_atrasos_email(d, a)
+            ),
+        )
+        if result == 'enviado':
+            enviados += 1
+        else:
+            falhas += 1
+
+    return {
+        'enviados': enviados,
+        'falhas': falhas,
+        'pulados': pulados,
+        'resultado': 'ok',
+        'janela': janela,
+        'pdis_com_atraso': aggregation.pdis_com_atraso,
+        'acoes_atrasadas': aggregation.acoes_atrasadas,
     }
 
 

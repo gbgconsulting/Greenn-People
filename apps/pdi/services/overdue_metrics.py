@@ -7,11 +7,17 @@ Definições (data-model + research §4 / contracts/pdi-overdue-list):
   ``None`` se zero atrasadas elegíveis
 - ``proximo_prazo``: ``min(prazo)`` entre ações não concluídas com prazo
 - Faixas de ``dias_atraso_max``: ``1-7`` e ``8-30`` inclusivas nos
-  extremos; ``30+`` aberto (``> 30``). Ação sem prazo fica fora.
+    extremos; ``30+`` aberto (``> 30``). Ação sem prazo fica fora.
+
+Agregação org (digest US4 / research §5):
+
+- Totais e top áreas/gestores só sobre PDIs **não arquivados**
+- Ranking de foco por nº de ações ``atrasada`` (desc)
 """
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import date
 from typing import Literal
 
@@ -19,7 +25,7 @@ from django.db.models import Count, Func, IntegerField, Min, Q, QuerySet, Value
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 
-from apps.pdi.models import AcaoPDI
+from apps.pdi.models import AcaoPDI, PDI
 
 FAIXA_1_7 = '1-7'
 FAIXA_8_30 = '8-30'
@@ -27,6 +33,32 @@ FAIXA_30_PLUS = '30+'
 FAIXAS_ATRASO = frozenset({FAIXA_1_7, FAIXA_8_30, FAIXA_30_PLUS})
 
 FaixaAtraso = Literal['1-7', '8-30', '30+']
+
+# Top focos do digest RH (e-mail); charts usam DENSITY_TOP_N aparte.
+DEFAULT_DIGEST_TOP_N = 5
+
+
+@dataclass(frozen=True, slots=True)
+class OverdueFocusItem:
+    """Área ou gestor com concentração de ações atrasadas."""
+
+    id: int
+    nome: str
+    acoes_atrasadas: int
+
+
+@dataclass(frozen=True, slots=True)
+class OrgOverdueAggregation:
+    """Snapshot org de atrasos para digest (FR-009/010)."""
+
+    pdis_com_atraso: int
+    acoes_atrasadas: int
+    top_areas: tuple[OverdueFocusItem, ...]
+    top_gestores: tuple[OverdueFocusItem, ...]
+
+    @property
+    def has_atrasos(self) -> bool:
+        return self.acoes_atrasadas > 0
 
 _FILTER_ATRASADA_COM_PRAZO = Q(
     acoes__status=AcaoPDI.Status.ATRASADA,
@@ -137,3 +169,77 @@ def filter_faixa_atraso(
     if faixa == FAIXA_8_30:
         return queryset.filter(dias_atraso_max__gte=8, dias_atraso_max__lte=30)
     return queryset.filter(dias_atraso_max__gt=30)
+
+
+def _acoes_atrasadas_org_qs() -> QuerySet:
+    """Ações ``atrasada`` em PDI não arquivado (base do digest org)."""
+    return AcaoPDI.objects.filter(
+        status=AcaoPDI.Status.ATRASADA,
+    ).exclude(pdi__status=PDI.Status.ARQUIVADO)
+
+
+def _top_focos(
+    queryset: QuerySet,
+    *,
+    group_id: str,
+    group_nome: str,
+    top_n: int,
+) -> tuple[OverdueFocusItem, ...]:
+    if top_n <= 0:
+        return ()
+
+    rows = (
+        queryset.values(group_id, group_nome)
+        .annotate(acoes_atrasadas=Count('id'))
+        .order_by('-acoes_atrasadas', group_nome)[:top_n]
+    )
+    return tuple(
+        OverdueFocusItem(
+            id=int(row[group_id]),
+            nome=str(row[group_nome] or ''),
+            acoes_atrasadas=int(row['acoes_atrasadas']),
+        )
+        for row in rows
+        if row[group_id] is not None
+    )
+
+
+def aggregate_org_overdue_metrics(
+    *,
+    top_n: int = DEFAULT_DIGEST_TOP_N,
+) -> OrgOverdueAggregation:
+    """Agrega atrasos da organização para o digest RH (US4).
+
+    Inclui apenas PDIs não arquivados. Top áreas/gestores ordenados por
+    nº de ações atrasadas (desc); donos sem área ou sem gestor ficam de
+    fora dos rankings, mas entram nos totais.
+    """
+    base = _acoes_atrasadas_org_qs()
+    acoes_atrasadas = base.count()
+    if acoes_atrasadas == 0:
+        return OrgOverdueAggregation(
+            pdis_com_atraso=0,
+            acoes_atrasadas=0,
+            top_areas=(),
+            top_gestores=(),
+        )
+
+    pdis_com_atraso = base.values('pdi_id').distinct().count()
+    top_areas = _top_focos(
+        base.filter(pdi__usuario__area_id__isnull=False),
+        group_id='pdi__usuario__area_id',
+        group_nome='pdi__usuario__area__nome',
+        top_n=top_n,
+    )
+    top_gestores = _top_focos(
+        base.filter(pdi__usuario__line_manager_id__isnull=False),
+        group_id='pdi__usuario__line_manager_id',
+        group_nome='pdi__usuario__line_manager__nome',
+        top_n=top_n,
+    )
+    return OrgOverdueAggregation(
+        pdis_com_atraso=pdis_com_atraso,
+        acoes_atrasadas=acoes_atrasadas,
+        top_areas=top_areas,
+        top_gestores=top_gestores,
+    )

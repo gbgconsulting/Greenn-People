@@ -1,0 +1,37 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Digest PDIs com atraso — Greenn People{% endblock %}
+
+{% block content %}
+<p style="margin:0 0 12px 0;">Olá {{ user.nome }},</p>
+<p style="margin:0 0 16px 0;">
+  Resumo semanal de atrasos em PDIs da organização:
+</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 16px 0;background-color:#f8fafc;border-radius:8px;">
+  <tr>
+    <td style="padding:14px 16px;color:#334155;font-size:14px;line-height:1.5;">
+      <strong style="color:#0f172a;">PDIs com atraso:</strong> {{ pdis_com_atraso }}<br>
+      <strong style="color:#0f172a;">Ações atrasadas:</strong> {{ acoes_atrasadas }}
+    </td>
+  </tr>
+</table>
+{% if top_areas %}
+<p style="margin:0 0 8px 0;font-weight:700;color:#0f172a;">Maiores focos por área</p>
+<ul style="margin:0 0 16px 0;padding-left:20px;color:#334155;">
+  {% for item in top_areas %}
+  <li style="margin:0 0 4px 0;">{{ item.nome }} — {{ item.acoes_atrasadas }} ação(ões)</li>
+  {% endfor %}
+</ul>
+{% endif %}
+{% if top_gestores %}
+<p style="margin:0 0 8px 0;font-weight:700;color:#0f172a;">Maiores focos por gestor</p>
+<ul style="margin:0 0 16px 0;padding-left:20px;color:#334155;">
+  {% for item in top_gestores %}
+  <li style="margin:0 0 4px 0;">{{ item.nome }} — {{ item.acoes_atrasadas }} ação(ões)</li>
+  {% endfor %}
+</ul>
+{% endif %}
+<p style="margin:0;">
+  Abra a listagem com filtro de atrasadas no Greenn People.
+</p>
+{% endblock %}

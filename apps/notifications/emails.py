@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
+from urllib.parse import urlencode
+
 from django.urls import reverse
 
 from apps.accounts.models import CustomUser
 from apps.core.emails import absolute_url, send_templated_email
 from apps.cycles.models import Ciclo
 from apps.pdi.models import AcaoPDI
+from apps.pdi.services.overdue_metrics import OrgOverdueAggregation
 from apps.reviews.models import Avaliacao, FeedbackContinuo
+
+REFERENCIA_DIGEST_PDI_ATRASOS = 'org:pdi_atrasos'
 
 
 def referencia_lembrete_etapa(avaliacao: Avaliacao) -> str:
@@ -24,6 +29,11 @@ def referencia_lembrete_pdi(acao: AcaoPDI) -> str:
 def referencia_atraso_pdi(acao: AcaoPDI) -> str:
     """Stable key for overdue PDI-action alerts (dono + gestor)."""
     return f'acao_pdi:{acao.pk}'
+
+
+def referencia_digest_pdi_atrasos() -> str:
+    """Stable org-level key for weekly overdue digest (US4)."""
+    return REFERENCIA_DIGEST_PDI_ATRASOS
 
 
 def referencia_feedback_continuo(feedback: FeedbackContinuo) -> str:
@@ -96,6 +106,36 @@ def send_atraso_pdi_email(acao: AcaoPDI, destinatario: CustomUser) -> None:
         to=destinatario.email,
         text_template='notifications/email/atraso_pdi_body.txt',
         html_template='notifications/email/atraso_pdi_body.html',
+        context=context,
+    )
+
+
+def send_digest_pdi_atrasos_email(
+    destinatario: CustomUser,
+    aggregation: OrgOverdueAggregation,
+) -> None:
+    """Send weekly org overdue digest to one active admin (US4)."""
+    list_path = reverse('pdi:list')
+    query = urlencode({'visao': 'equipe', 'atrasadas': '1'})
+    cta_url = absolute_url(f'{list_path}?{query}')
+    context = {
+        'user': destinatario,
+        'pdis_com_atraso': aggregation.pdis_com_atraso,
+        'acoes_atrasadas': aggregation.acoes_atrasadas,
+        'top_areas': aggregation.top_areas,
+        'top_gestores': aggregation.top_gestores,
+        'cta_url': cta_url,
+        'cta_label': 'Ver PDIs com atrasadas',
+    }
+    subject = _subject(
+        'notifications/email/digest_pdi_atrasos_subject.txt',
+        context,
+    )
+    send_templated_email(
+        subject=subject,
+        to=destinatario.email,
+        text_template='notifications/email/digest_pdi_atrasos_body.txt',
+        html_template='notifications/email/digest_pdi_atrasos_body.html',
         context=context,
     )
 
