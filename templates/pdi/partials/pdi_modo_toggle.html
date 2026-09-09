@@ -1,0 +1,51 @@
+{% comment %}
+  Toggle Cards | Tabela — DNA de ownership_visao_toggle (segment slate + ativo brand).
+  Só renderizar quando `mostrar_toggle_modo` (visão equipe permitida no backend).
+  Preserva querystring; troca só `modo` e limpa `page`.
+{% endcomment %}
+{% querystring modo=modo_cards page=None as cards_url %}
+{% querystring modo=modo_tabela page=None as tabela_url %}
+<nav
+  class="inline-flex shrink-0 rounded-lg border border-line bg-slate-100 p-1"
+  role="navigation"
+  aria-label="Modo de visualização"
+  data-component="pdi-modo-toggle"
+>
+  {% if modo != modo_tabela %}
+  <a
+    href="{{ cards_url }}"
+    hx-get="{{ cards_url }}"
+    hx-target="#list-container"
+    hx-swap="outerHTML"
+    hx-push-url="true"
+    class="rounded-md bg-brand-gradient px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
+    aria-current="page"
+  >Cards</a>
+  <a
+    href="{{ tabela_url }}"
+    hx-get="{{ tabela_url }}"
+    hx-target="#list-container"
+    hx-swap="outerHTML"
+    hx-push-url="true"
+    class="rounded-md px-4 py-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-slate-800"
+  >Tabela</a>
+  {% else %}
+  <a
+    href="{{ cards_url }}"
+    hx-get="{{ cards_url }}"
+    hx-target="#list-container"
+    hx-swap="outerHTML"
+    hx-push-url="true"
+    class="rounded-md px-4 py-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-slate-800"
+  >Cards</a>
+  <a
+    href="{{ tabela_url }}"
+    hx-get="{{ tabela_url }}"
+    hx-target="#list-container"
+    hx-swap="outerHTML"
+    hx-push-url="true"
+    class="rounded-md bg-brand-gradient px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
+    aria-current="page"
+  >Tabela</a>
+  {% endif %}
+</nav>

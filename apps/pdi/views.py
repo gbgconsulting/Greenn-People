@@ -20,6 +20,7 @@ from apps.accounts.services.scope import (
     VISAO_PROPRIAS,
     apply_ownership_visao,
     can_view_team_ownership_list,
+    get_visible_users,
     ownership_visao_equipe_label,
     resolve_ownership_visao,
     user_in_scope,
@@ -27,12 +28,29 @@ from apps.accounts.services.scope import (
 from apps.audit.services import log_scope_denied
 from apps.core.htmx import is_htmx
 from apps.core.mixins import HtmxPaginatedListMixin, ScopedObjectMixin
-from apps.pdi.forms import AcaoPDIForm, PDIForm
+from apps.organization.services.user_list import (
+    get_area_filter_options,
+    get_manager_filter_options,
+)
+from apps.pdi.forms import (
+    FAIXA_ATRASO_FILTER_CHOICES,
+    AcaoPDIForm,
+    PDIForm,
+    PDIListManagerialFiltersForm,
+)
 from apps.pdi.models import AcaoPDI, PDI
 from apps.pdi.services.lifecycle import (
     PDINotArchivableError,
+    PDINotCompletableError,
     archive_pdi,
+    complete_pdi,
     pdi_allows_action_mutations,
+    pdi_can_complete,
+)
+from apps.pdi.services.overdue_metrics import (
+    annotate_overdue_metrics,
+    filter_com_atrasadas,
+    filter_faixa_atraso,
 )
 from apps.pdi.services.progress import _PROGRESS_QUANT, calculate_pdi_progress
 
@@ -42,6 +60,21 @@ _HUB_FILTER_CHOICES = (
     (PDI.Status.CONCLUIDO, 'Concluídos'),
     (PDI.Status.ARQUIVADO, 'Arquivados'),
 )
+
+MODO_CARDS = 'cards'
+MODO_TABELA = 'tabela'
+
+
+def _resolve_list_modo(*, can_team: bool, visao: str, raw: str | None) -> str:
+    """Resolve ``?modo=`` — tabela só com visão equipe; senão força cards.
+
+    UI pode pedir ``modo=tabela``; AuthZ decide no backend (backend-scope-authz).
+    """
+    if not can_team or visao != VISAO_EQUIPE:
+        return MODO_CARDS
+    if (raw or '').strip() == MODO_TABELA:
+        return MODO_TABELA
+    return MODO_CARDS
 
 
 def _user_display_name(user) -> str:
@@ -112,9 +145,25 @@ def _hub_footer(pdi: PDI, *, is_self: bool) -> dict:
     }
 
 
+def _acoes_atrasadas_label(count: int) -> str:
+    """Label do badge rose no card — pluralização no backend, UI só renderiza."""
+    if count <= 0:
+        return ''
+    if count == 1:
+        return '1 atrasada'
+    return f'{count} atrasadas'
+
+
 def _pdi_list_row(pdi: PDI, *, viewer_id: int) -> dict:
     total_acoes = int(getattr(pdi, 'total_acoes', 0) or 0)
     concluidas = int(getattr(pdi, 'acoes_concluidas', 0) or 0)
+    # Annotate de ``annotate_overdue_metrics`` (T003/T005); default 0 se ausente.
+    acoes_atrasadas_count = int(getattr(pdi, 'acoes_atrasadas_count', 0) or 0)
+    # Métricas de tabela (US3 / T021): None quando sem atraso elegível / sem prazo.
+    raw_dias = getattr(pdi, 'dias_atraso_max', None)
+    dias_atraso_max = int(raw_dias) if raw_dias is not None else None
+    proximo_prazo = getattr(pdi, 'proximo_prazo', None)
+    dono = pdi.usuario
     progresso = _progress_from_counts(concluidas, total_acoes)
     is_self = pdi.usuario_id == viewer_id
     variant = _hub_card_variant(pdi, total_acoes)
@@ -127,6 +176,13 @@ def _pdi_list_row(pdi: PDI, *, viewer_id: int) -> dict:
         'is_self': is_self,
         'total_acoes': total_acoes,
         'acoes_concluidas': concluidas,
+        'acoes_atrasadas_count': acoes_atrasadas_count,
+        'acoes_atrasadas_label': _acoes_atrasadas_label(acoes_atrasadas_count),
+        'dias_atraso_max': dias_atraso_max,
+        'proximo_prazo': proximo_prazo,
+        'colaborador': _user_display_name(dono),
+        'gestor': getattr(dono, 'line_manager', None),
+        'area': getattr(dono, 'area', None),
         'hub_variant': variant,
         'hub_status_label': _hub_status_label(variant),
         'hub_cta_label': _hub_cta_label(variant),
@@ -215,6 +271,7 @@ def _acao_card_row(acao: AcaoPDI) -> dict:
 
 def _group_acoes(acoes) -> dict:
     """Agrupa ações por coluna do board — regra de negócio no backend."""
+    atrasadas: list[dict] = []
     em_andamento: list[dict] = []
     proximas: list[dict] = []
     concluidas: list[dict] = []
@@ -224,14 +281,20 @@ def _group_acoes(acoes) -> dict:
             concluidas.append(row)
         elif acao.status == AcaoPDI.Status.PENDENTE:
             proximas.append(row)
+        elif acao.status == AcaoPDI.Status.ATRASADA:
+            atrasadas.append(row)
         else:
             em_andamento.append(row)
     return {
+        'acoes_atrasadas': atrasadas,
         'acoes_em_andamento': em_andamento,
         'acoes_proximas': proximas,
         'acoes_concluidas': concluidas,
+        'total_atrasadas': len(atrasadas),
         'total_em_andamento': len(em_andamento),
-        'total_acoes': len(em_andamento) + len(proximas) + len(concluidas),
+        'total_acoes': (
+            len(atrasadas) + len(em_andamento) + len(proximas) + len(concluidas)
+        ),
     }
 
 
@@ -303,6 +366,48 @@ class PDIListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin,
             self.request.GET.get('visao'),
         )
 
+    def _can_team(self) -> bool:
+        return can_view_team_ownership_list(self.request.user)
+
+    def _managerial_filters_allowed(self) -> bool:
+        """Filtros gestor/área/faixa só na fatia equipe com permissão de time."""
+        return self._can_team() and self._ownership_visao() == VISAO_EQUIPE
+
+    def _resolved_modo(self) -> str:
+        return _resolve_list_modo(
+            can_team=self._can_team(),
+            visao=self._ownership_visao(),
+            raw=self.request.GET.get('modo'),
+        )
+
+    def _managerial_filters_form(self) -> PDIListManagerialFiltersForm | None:
+        """Form leve de filtros gerenciais; ``None`` se AuthZ não permitir."""
+        if hasattr(self, '_cached_managerial_filters_form'):
+            return self._cached_managerial_filters_form
+        if not self._managerial_filters_allowed():
+            self._cached_managerial_filters_form = None
+            return None
+        self._cached_managerial_filters_form = (
+            PDIListManagerialFiltersForm.from_request_get(
+                self.request.GET,
+                visible_users=get_visible_users(self.request.user),
+            )
+        )
+        return self._cached_managerial_filters_form
+
+    def _resolve_gestor_area_filters(self) -> tuple[int | None, int | None]:
+        """IDs de gestor/área limitados ao escopo; fora → ignorados (None)."""
+        form = self._managerial_filters_form()
+        if form is None:
+            return None, None
+        return form.gestor_id, form.area_id
+
+    def _resolve_faixa_atraso(self) -> str:
+        form = self._managerial_filters_form()
+        if form is None:
+            return ''
+        return form.faixa
+
     def get_queryset(self):
         qs = (
             super()
@@ -323,8 +428,9 @@ class PDIListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin,
                 prazo_min=Min('acoes__prazo'),
                 prazo_max=Max('acoes__prazo'),
             )
-            .order_by('usuario__nome', 'usuario__email', '-created_at', 'id')
         )
+        qs = annotate_overdue_metrics(qs)
+        qs = qs.order_by('usuario__nome', 'usuario__email', '-created_at', 'id')
         qs = apply_ownership_visao(
             qs,
             self.request.user,
@@ -343,6 +449,21 @@ class PDIListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin,
                 | Q(usuario__nome__icontains=busca)
                 | Q(usuario__email__icontains=busca),
             )
+        # ``atrasadas=1``: ≥1 ação atrasada; arquivados só com status=arquivado.
+        if self.request.GET.get('atrasadas', '').strip() == '1':
+            qs = filter_com_atrasadas(qs)
+            if status != PDI.Status.ARQUIVADO:
+                qs = qs.exclude(status=PDI.Status.ARQUIVADO)
+
+        # Filtros gerenciais (US3): Form valida escopo; IDs fora ignorados.
+        form = self._managerial_filters_form()
+        if form is not None:
+            if form.gestor_id is not None:
+                qs = qs.filter(usuario__line_manager_id=form.gestor_id)
+            if form.area_id is not None:
+                qs = qs.filter(usuario__area_id=form.area_id)
+            if form.faixa:
+                qs = filter_faixa_atraso(qs, form.faixa)
         return qs
 
     def get_context_data(self, **kwargs):
@@ -352,14 +473,17 @@ class PDIListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin,
         rows = [_pdi_list_row(pdi, viewer_id=viewer_id) for pdi in context['pdis']]
         status_filtro = self.request.GET.get('status', '').strip()
         busca = self.request.GET.get('q', '').strip()
+        atrasadas_filtro = self.request.GET.get('atrasadas', '').strip() == '1'
         visao = self._ownership_visao()
-        mostrar_toggle_visao = can_view_team_ownership_list(viewer)
+        mostrar_toggle_visao = self._can_team()
+        modo = self._resolved_modo()
         # Porta vazia só para colaborador puro sem PDIs (líder/admin veem o hub
         # com toggle mesmo sem PDI próprio).
         mostrar_empty_porta = (
             not rows
             and not status_filtro
             and not busca
+            and not atrasadas_filtro
             and not mostrar_toggle_visao
             and visao == VISAO_PROPRIAS
         )
@@ -370,6 +494,7 @@ class PDIListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin,
                 'status_choices': PDI.Status.choices,
                 'hub_filter_choices': _HUB_FILTER_CHOICES,
                 'busca': busca,
+                'atrasadas_filtro': atrasadas_filtro,
                 'pode_criar': True,
                 'mostrar_empty_porta': mostrar_empty_porta,
                 'visao': visao,
@@ -377,8 +502,28 @@ class PDIListView(LoginRequiredMixin, ScopedObjectMixin, HtmxPaginatedListMixin,
                 'visao_equipe_label': ownership_visao_equipe_label(viewer),
                 'visao_proprias': VISAO_PROPRIAS,
                 'visao_equipe': VISAO_EQUIPE,
+                'modo': modo,
+                'modo_cards': MODO_CARDS,
+                'modo_tabela': MODO_TABELA,
+                'mostrar_toggle_modo': mostrar_toggle_visao and visao == VISAO_EQUIPE,
             },
         )
+        # Opções e valores de filtros gerenciais: só quem pode ver equipe.
+        # Colaborador puro não recebe chaves (contrato AuthZ / T011).
+        if mostrar_toggle_visao:
+            visible = get_visible_users(viewer)
+            gestor_id, area_id = self._resolve_gestor_area_filters()
+            faixa = self._resolve_faixa_atraso()
+            context.update(
+                {
+                    'gestor_filtro': gestor_id,
+                    'area_filtro': area_id,
+                    'faixa_atraso_filtro': faixa,
+                    'filtro_gestores': get_manager_filter_options(visible),
+                    'filtro_areas': get_area_filter_options(visible),
+                    'filtro_faixas_atraso': FAIXA_ATRASO_FILTER_CHOICES,
+                },
+            )
         return context
 
 
@@ -482,6 +627,46 @@ class PDIArchiveView(LoginRequiredMixin, ScopedObjectMixin, SingleObjectMixin, V
         return HttpResponseRedirect(list_url)
 
 
+class PDICompleteView(LoginRequiredMixin, ScopedObjectMixin, SingleObjectMixin, View):
+    """Conclui PDI no escopo quando 100% das ações estão concluídas. POST only.
+
+    Pré-condições revalidadas em ``complete_pdi`` (UI não autoriza).
+    """
+
+    model = PDI
+    scope_user_field = 'usuario'
+    queryset = PDI.objects.select_related('usuario')
+    http_method_names = ['post', 'options']
+
+    def post(self, request, *args, **kwargs):
+        pdi = self.get_object()
+        detail_url = reverse('pdi:detail', kwargs={'pk': pdi.pk})
+        list_url = f"{reverse('pdi:list')}?status={PDI.Status.CONCLUIDO}"
+        try:
+            complete_pdi(pdi)
+        except PDINotCompletableError as exc:
+            if is_htmx(request):
+                response = HttpResponse('')
+                response['HX-Trigger'] = json.dumps(
+                    {
+                        'showMessage': {'message': str(exc), 'level': 'error'},
+                    },
+                )
+                return response
+            messages.error(request, str(exc))
+            return HttpResponseRedirect(detail_url)
+
+        messages.success(
+            request,
+            'PDI concluído. Você pode encontrá-lo no filtro Concluídos.',
+        )
+        if is_htmx(request):
+            response = HttpResponse('')
+            response['HX-Redirect'] = list_url
+            return response
+        return HttpResponseRedirect(list_url)
+
+
 class PDIDetailView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
     """Detalhe do PDI no escopo; IDOR → Http404 + ``log_scope_denied``."""
 
@@ -507,6 +692,7 @@ class PDIDetailView(LoginRequiredMixin, ScopedObjectMixin, DetailView):
                 'progresso': calculate_pdi_progress(pdi),
                 'status_choices': AcaoPDI.Status.choices,
                 'pode_editar_acoes': pdi_allows_action_mutations(pdi),
+                'can_complete': pdi_can_complete(pdi, acoes=acoes),
                 **_group_acoes(acoes),
             },
         )

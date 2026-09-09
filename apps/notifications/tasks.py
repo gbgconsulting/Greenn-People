@@ -8,17 +8,23 @@ from celery import shared_task
 from django.conf import settings
 from django.utils import timezone
 
+from apps.accounts.models import CustomUser
 from apps.cycles.models import Ciclo
 from apps.notifications.emails import (
+    referencia_atraso_pdi,
+    referencia_digest_pdi_atrasos,
     referencia_feedback_continuo,
     referencia_lembrete_etapa,
     referencia_lembrete_pdi,
+    send_atraso_pdi_email,
+    send_digest_pdi_atrasos_email,
     send_feedback_continuo_email,
     send_lembrete_etapa_email,
     send_lembrete_pdi_email,
 )
 from apps.notifications.models import NotificacaoLog, already_sent
 from apps.pdi.models import AcaoPDI, PDI
+from apps.pdi.services.overdue_metrics import aggregate_org_overdue_metrics
 from apps.reviews.models import Avaliacao, FeedbackContinuo
 
 
@@ -32,6 +38,14 @@ def _target_date() -> date:
 
 def _janela(target: date) -> str:
     return target.isoformat()
+
+
+def _janela_semana_iso(today: date | None = None) -> str:
+    """ISO week key ``YYYY-Www`` for digest dedupe (contract US4)."""
+    if today is None:
+        today = timezone.localdate()
+    iso = today.isocalendar()
+    return f'{iso.year}-W{iso.week:02d}'
 
 
 def _is_etapa_eligible(avaliacao: Avaliacao, target: date) -> bool:
@@ -54,6 +68,30 @@ def _is_pdi_eligible(acao: AcaoPDI, target: date) -> bool:
         and acao.pdi.usuario.is_active
         and acao.pdi.status != PDI.Status.ARQUIVADO
     )
+
+
+def _is_atraso_pdi_eligible(acao: AcaoPDI) -> bool:
+    """True if overdue alert may still be sent for this action."""
+    return (
+        acao.status == AcaoPDI.Status.ATRASADA
+        and acao.pdi.usuario_id is not None
+        and acao.pdi.status != PDI.Status.ARQUIVADO
+    )
+
+
+def _destinatarios_atraso_pdi(dono: CustomUser) -> list[CustomUser]:
+    """Owner plus active distinct line manager (contract US2)."""
+    destinatarios: list[CustomUser] = []
+    if dono.is_active:
+        destinatarios.append(dono)
+    gestor = getattr(dono, 'line_manager', None)
+    if (
+        gestor is not None
+        and gestor.is_active
+        and gestor.pk != dono.pk
+    ):
+        destinatarios.append(gestor)
+    return destinatarios
 
 
 def _log_send(
@@ -196,6 +234,144 @@ def enviar_lembrete_acao_pdi_vencendo() -> dict:
         'falhas': falhas,
         'pulados': pulados,
         'data_alvo': str(target),
+    }
+
+
+@shared_task(name='apps.notifications.tasks.enviar_alerta_acao_pdi_atrasada')
+def enviar_alerta_acao_pdi_atrasada(acao_id: int) -> dict:
+    """Alert PDI owner (+ line manager) when an action is overdue.
+
+    Destinatários = dono ∪ ``line_manager(dono)`` se ativo e ≠ dono.
+    Skips concluída / PDI arquivado / destinatário inativo. Dedupe diário via
+    ``already_sent(tipo=atraso_pdi, referencia=acao_pdi:{id}, janela=ISO)``.
+    Append-only ``NotificacaoLog`` through ``_log_send``. Does not touch
+    ``lembrete_pdi``.
+    """
+    try:
+        acao = AcaoPDI.objects.select_related(
+            'pdi',
+            'pdi__usuario',
+            'pdi__usuario__line_manager',
+        ).get(pk=acao_id)
+    except AcaoPDI.DoesNotExist:
+        return {
+            'enviados': 0,
+            'falhas': 0,
+            'pulados': 0,
+            'acao_id': acao_id,
+            'resultado': 'ausente',
+        }
+
+    # Fresh fetch avoids stale eligibility between enqueue and send.
+    acao.refresh_from_db()
+    acao.pdi.refresh_from_db()
+    acao.pdi.usuario.refresh_from_db()
+    if acao.pdi.usuario.line_manager_id:
+        acao.pdi.usuario.line_manager.refresh_from_db()
+
+    if not _is_atraso_pdi_eligible(acao):
+        return {
+            'enviados': 0,
+            'falhas': 0,
+            'pulados': 0,
+            'acao_id': acao_id,
+            'resultado': 'ineligivel',
+        }
+
+    janela = timezone.localdate().isoformat()
+    referencia = referencia_atraso_pdi(acao)
+    tipo = NotificacaoLog.Tipo.ATRASO_PDI
+    destinatarios = _destinatarios_atraso_pdi(acao.pdi.usuario)
+
+    enviados = 0
+    falhas = 0
+    pulados = 0
+    for destinatario in destinatarios:
+        if already_sent(destinatario.pk, tipo, referencia, janela):
+            pulados += 1
+            continue
+        if not destinatario.is_active:
+            pulados += 1
+            continue
+        result = _log_send(
+            destinatario_id=destinatario.pk,
+            tipo=tipo,
+            referencia=referencia,
+            janela=janela,
+            send_fn=lambda a=acao, d=destinatario: send_atraso_pdi_email(a, d),
+        )
+        if result == 'enviado':
+            enviados += 1
+        else:
+            falhas += 1
+
+    return {
+        'enviados': enviados,
+        'falhas': falhas,
+        'pulados': pulados,
+        'acao_id': acao_id,
+        'janela': janela,
+        'resultado': 'ok',
+    }
+
+
+@shared_task(name='apps.notifications.tasks.enviar_digest_pdi_atrasos')
+def enviar_digest_pdi_atrasos() -> dict:
+    """Weekly org digest of overdue PDIs for active admins (US4).
+
+    Silent exit when org overdue count is zero. Otherwise loops active
+    ``is_admin`` users with weekly dedupe
+    ``already_sent(tipo=digest_pdi_atrasos, referencia=org:pdi_atrasos,
+    janela=YYYY-Www)``. Append-only ``NotificacaoLog`` via ``_log_send``.
+    """
+    aggregation = aggregate_org_overdue_metrics()
+    if not aggregation.has_atrasos:
+        return {
+            'enviados': 0,
+            'falhas': 0,
+            'pulados': 0,
+            'resultado': 'silencio',
+            'pdis_com_atraso': 0,
+            'acoes_atrasadas': 0,
+        }
+
+    janela = _janela_semana_iso()
+    referencia = referencia_digest_pdi_atrasos()
+    tipo = NotificacaoLog.Tipo.DIGEST_PDI_ATRASOS
+    destinatarios = (
+        CustomUser.objects.filter(is_admin=True, is_active=True)
+        .order_by('pk')
+    )
+
+    enviados = 0
+    falhas = 0
+    pulados = 0
+    for destinatario in destinatarios.iterator():
+        if already_sent(destinatario.pk, tipo, referencia, janela):
+            pulados += 1
+            continue
+        result = _log_send(
+            destinatario_id=destinatario.pk,
+            tipo=tipo,
+            referencia=referencia,
+            janela=janela,
+            send_fn=lambda d=destinatario, a=aggregation: (
+                send_digest_pdi_atrasos_email(d, a)
+            ),
+        )
+        if result == 'enviado':
+            enviados += 1
+        else:
+            falhas += 1
+
+    return {
+        'enviados': enviados,
+        'falhas': falhas,
+        'pulados': pulados,
+        'resultado': 'ok',
+        'janela': janela,
+        'pdis_com_atraso': aggregation.pdis_com_atraso,
+        'acoes_atrasadas': aggregation.acoes_atrasadas,
     }
 
 

@@ -1,0 +1,10 @@
+Olá {{ user.nome }},
+
+Uma ação do PDI "{{ pdi.titulo }}" está atrasada (prazo: {{ prazo|date:"d/m/Y" }}):
+
+{{ acao.descricao }}
+
+Acesse o Greenn People para revisar e atualizar a ação:
+{{ cta_url }}
+
+Esta é uma mensagem automática — não responda este e-mail.

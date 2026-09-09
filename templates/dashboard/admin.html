@@ -70,6 +70,11 @@
   </div>
 
   <div class="managerial-panel">
+    {# US5 / T029: KPI scoped — independente do ciclo; zero = accent neutral #}
+    <div class="mb-6 grid max-w-sm grid-cols-1" aria-label="Atrasos de PDI">
+      {% include "dashboard/partials/pdi_atrasos_kpi.html" with value_size="lg" %}
+    </div>
+
     {% if visao == 'historico' %}
     <div class="grid grid-cols-1 gap-6 md:grid-cols-3" aria-label="Resumo destes ciclos">
       {% include "components/card.html" with label="Avançaram" value=history_kpis.evoluiu body="Pessoas que avançaram de etapa ou concluíram." accent="success" icon="trending_up" value_size="lg" %}

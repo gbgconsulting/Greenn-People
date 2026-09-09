@@ -13,6 +13,7 @@ urlpatterns = [
         name='archive_modal',
     ),
     path('<int:pk>/archive/', views.PDIArchiveView.as_view(), name='archive'),
+    path('<int:pk>/complete/', views.PDICompleteView.as_view(), name='complete'),
     path('<int:pk>/', views.PDIDetailView.as_view(), name='detail'),
     path(
         '<int:pk>/actions/partial/',

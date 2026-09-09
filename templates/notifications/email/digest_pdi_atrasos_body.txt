@@ -1,0 +1,17 @@
+Olá {{ user.nome }},
+
+Resumo semanal de atrasos em PDIs (organização):
+
+- PDIs com atraso: {{ pdis_com_atraso }}
+- Ações atrasadas: {{ acoes_atrasadas }}
+
+{% if top_areas %}Maiores focos por área:
+{% for item in top_areas %}- {{ item.nome }}: {{ item.acoes_atrasadas }} ação(ões)
+{% endfor %}{% endif %}
+{% if top_gestores %}Maiores focos por gestor:
+{% for item in top_gestores %}- {{ item.nome }}: {{ item.acoes_atrasadas }} ação(ões)
+{% endfor %}{% endif %}
+Acesse a listagem filtrada no Greenn People:
+{{ cta_url }}
+
+Esta é uma mensagem automática — não responda este e-mail.

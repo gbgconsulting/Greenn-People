@@ -30,6 +30,18 @@
     <div class="flex w-full flex-wrap items-center gap-2 md:w-auto md:shrink-0 md:justify-end">
       {% url 'pdi:list' as list_url %}
       {% include "components/button.html" with label="Voltar à lista" href=list_url variant="secondary" extra_class="shrink-0 whitespace-nowrap" %}
+      {% if can_complete %}
+      <form
+        method="post"
+        action="{% url 'pdi:complete' pdi.pk %}"
+        hx-post="{% url 'pdi:complete' pdi.pk %}"
+        hx-indicator="#htmx-indicator"
+        class="inline shrink-0"
+      >
+        {% csrf_token %}
+        {% include "components/button.html" with label="Concluir plano" type="submit" variant="outlined" extra_class="shrink-0 whitespace-nowrap" %}
+      </form>
+      {% endif %}
       {% if pode_editar_acoes %}
         {% url 'pdi:action_create_modal' pdi.pk as acao_create_modal_url %}
         {% include "components/button.html" with label="Nova ação" type="button" variant="primary" hx_get=acao_create_modal_url extra_class="shrink-0 whitespace-nowrap" %}

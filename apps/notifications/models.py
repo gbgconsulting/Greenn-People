@@ -10,6 +10,8 @@ class NotificacaoLog(models.Model):
         LEMBRETE_ETAPA = 'lembrete_etapa', 'Lembrete de etapa'
         LEMBRETE_PDI = 'lembrete_pdi', 'Lembrete de ação PDI'
         FEEDBACK_CONTINUO = 'feedback_continuo', 'Feedback contínuo'
+        ATRASO_PDI = 'atraso_pdi', 'Atraso de ação PDI'
+        DIGEST_PDI_ATRASOS = 'digest_pdi_atrasos', 'Digest de PDIs atrasados'
 
     class Status(models.TextChoices):
         ENVIADO = 'enviado', 'Enviado'

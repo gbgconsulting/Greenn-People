@@ -74,6 +74,7 @@ from apps.dashboard.services.structure import (
 from apps.cycles.services.stage import can_advance
 from apps.goals.forms import get_open_ciclo
 from apps.organization.models import Area, Cargo
+from apps.pdi.services.overdue_metrics import count_scoped_overdue_metrics
 from apps.reviews.forms import can_leader_assess
 from apps.reviews.models import Avaliacao
 from apps.reviews.services.continuous_feedback import continuous_feedback_create_allowed
@@ -486,6 +487,11 @@ class TeamDashboardView(
         context['visao'] = None
         context['chart_stage_history'] = None
         context['history_kpis'] = None
+        # US5 / T028: KPI de atrasos PDI — AuthZ no serviço; template só números.
+        context['pdi_atrasos'] = count_scoped_overdue_metrics(
+            self.request.user,
+            visao='equipe',
+        )
         self._inject_list_filters(context)
 
         membros: list[CustomUser] = list(context['object_list'])
@@ -1174,6 +1180,11 @@ class AdminDashboardView(LoginRequiredMixin, RequiresAdminMixin, TemplateView):
         context['visao'] = None
         context['chart_stage_history'] = None
         context['history_kpis'] = None
+        # US5 / T028: KPI de atrasos PDI — AuthZ no serviço; template só números.
+        context['pdi_atrasos'] = count_scoped_overdue_metrics(
+            self.request.user,
+            visao='equipe',
+        )
 
         # US3 / T031: tendência org só com GET ``visao=historico`` (sem path novo).
         if is_history_mode(self.request):

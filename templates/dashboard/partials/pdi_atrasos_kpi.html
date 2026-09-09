@@ -1,0 +1,16 @@
+{% comment %}
+  KPI de atrasos de PDI (US5 / T029).
+  Context: pdi_atrasos (ScopedOverdueCounts) — AuthZ só no backend.
+  accent warning = atenção crítica (DS do card); zero = neutral, sem rose de erro.
+{% endcomment %}
+{% if pdi_atrasos.has_atrasos %}
+  {% if pdi_atrasos.pdis_com_atraso == 1 %}
+    {% include "components/card.html" with label="Ações atrasadas" value=pdi_atrasos.acoes_atrasadas body="1 PDI com atraso no escopo." accent="warning" value_size=value_size footer_label="Ver PDIs atrasados" footer_href=pdi_atrasos.list_href extra_class=extra_class %}
+  {% else %}
+    {% with body=pdi_atrasos.pdis_com_atraso|stringformat:"d"|add:" PDIs com atraso no escopo." %}
+      {% include "components/card.html" with label="Ações atrasadas" value=pdi_atrasos.acoes_atrasadas body=body accent="warning" value_size=value_size footer_label="Ver PDIs atrasados" footer_href=pdi_atrasos.list_href extra_class=extra_class %}
+    {% endwith %}
+  {% endif %}
+{% else %}
+  {% include "components/card.html" with label="Ações atrasadas" value=0 body="Nenhuma ação atrasada no escopo." accent="neutral" value_size=value_size footer_label="Ver PDIs atrasados" footer_href=pdi_atrasos.list_href extra_class=extra_class %}
+{% endif %}
