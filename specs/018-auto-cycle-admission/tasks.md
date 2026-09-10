@@ -73,11 +73,11 @@ Monólito Django na raiz: `apps/cycles/`, `apps/core/`, `apps/reviews/`, `apps/g
 
 ### Implementation for User Story 1
 
-- [ ] T011 [US1] Implementar `open_auto_cohort` (ou equivalente) em `apps/cycles/services/auto_cohort.py`: `get_or_create` ciclo `origem=automatico` + `marco_competencia=YYYY-MM-01`; `data_inicio` = dia útil; `data_fim` = +20 dias; `ensure_avaliacao_for_user(user, ciclo=coorte)` para matriculáveis; `write_audit_log` na criação; status/events em `AutoCycleRun`/`AutoCycleEvent` ([contracts/auto-cohort-open-contract.md](./contracts/auto-cohort-open-contract.md))
-- [ ] T012 [US1] Criar task `run_auto_cycle_admission_daily` em `apps/cycles/tasks.py`: criar run → se não for 1º dia útil → `noop` + event `noop_dia` → senão orquestrar elegíveis + abertura idempotente; clock injetável para testes
-- [ ] T013 [US1] Registrar Beat `auto-cycle-admission-daily` em `config/celery.py` (ex.: 00:30, após overdue PDI) apontando para `apps.cycles.tasks.run_auto_cycle_admission_daily` — HTTP **não** é disparo primário
-- [ ] T014 [P] [US1] Contar/registrar ativos sem `data_entrada` como `pendencia_sem_admissao` no run (sem matricular) em `apps/cycles/services/auto_cohort.py`
-- [ ] T015 [US1] Cobrir lote + idempotência + noop de dia não-útil em `tests/test_auto_cohort_open.py` e calendário em `tests/test_calendar_br.py` (1º dia útil, feriado nacional, fim de semana) + predicado em `tests/test_marco_eligibility.py`
+- [X] T011 [US1] Implementar `open_auto_cohort` (ou equivalente) em `apps/cycles/services/auto_cohort.py`: `get_or_create` ciclo `origem=automatico` + `marco_competencia=YYYY-MM-01`; `data_inicio` = dia útil; `data_fim` = +20 dias; `ensure_avaliacao_for_user(user, ciclo=coorte)` para matriculáveis; `write_audit_log` na criação; status/events em `AutoCycleRun`/`AutoCycleEvent` ([contracts/auto-cohort-open-contract.md](./contracts/auto-cohort-open-contract.md))
+- [X] T012 [US1] Criar task `run_auto_cycle_admission_daily` em `apps/cycles/tasks.py`: criar run → se não for 1º dia útil → `noop` + event `noop_dia` → senão orquestrar elegíveis + abertura idempotente; clock injetável para testes
+- [X] T013 [US1] Registrar Beat `auto-cycle-admission-daily` em `config/celery.py` (ex.: 00:30, após overdue PDI) apontando para `apps.cycles.tasks.run_auto_cycle_admission_daily` — HTTP **não** é disparo primário
+- [X] T014 [P] [US1] Contar/registrar ativos sem `data_entrada` como `pendencia_sem_admissao` no run (sem matricular) em `apps/cycles/services/auto_cohort.py`
+- [X] T015 [US1] Cobrir lote + idempotência + noop de dia não-útil em `tests/test_auto_cohort_open.py` e calendário em `tests/test_calendar_br.py` (1º dia útil, feriado nacional, fim de semana) + predicado em `tests/test_marco_eligibility.py`
 
 **Checkpoint**: US1 independentemente testável; MVP do lote automático
 
