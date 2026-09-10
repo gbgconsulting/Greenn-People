@@ -91,8 +91,8 @@ Monólito Django na raiz: `apps/cycles/`, `apps/core/`, `apps/reviews/`, `apps/g
 
 ### Implementation for User Story 2
 
-- [ ] T016 [US2] Garantir em `apps/cycles/services/marco.py` + `auto_cohort.py` que a rotina **nunca** materializa k passados: go-live no meio do mês após o 1º dia útil **não** abre aquele mês “atrasado”; correção de `data_entrada` só considera próximo marco futuro a partir da correção ([research.md](./research.md) R5)
-- [ ] T017 [US2] Cobrir bootstrap zero-backfill em `tests/test_auto_bootstrap_no_backfill.py` (admissão antiga; meio do mês; sem data legado; pós-correção sem recuperar passado) alinhado a FR-005 / SC-002
+- [X] T016 [US2] Garantir em `apps/cycles/services/marco.py` + `auto_cohort.py` que a rotina **nunca** materializa k passados: go-live no meio do mês após o 1º dia útil **não** abre aquele mês “atrasado”; correção de `data_entrada` só considera próximo marco futuro a partir da correção ([research.md](./research.md) R5)
+- [X] T017 [US2] Cobrir bootstrap zero-backfill em `tests/test_auto_bootstrap_no_backfill.py` (admissão antiga; meio do mês; sem data legado; pós-correção sem recuperar passado) alinhado a FR-005 / SC-002
 
 **Checkpoint**: US1+US2 = automação segura para produção (lote + bootstrap)
 

@@ -3,6 +3,10 @@
 Contrato: ``contracts/auto-cohort-open-contract.md`` (FR-001, FR-006, FR-009).
 A task Beat (``run_auto_cycle_admission_daily``) decide noop de dia não-útil
 e cria o ``AutoCycleRun``; este módulo materializa ciclo + matrículas.
+
+Bootstrap (FR-005 / R5): defesa em profundidade — se chamado fora do 1º dia
+útil, **não** abre o mês “atrasado” nem matricula; zero backfill de k passados
+(candidatos só via ``next_future_marco`` / ``list_auto_marco_candidates``).
 """
 
 from __future__ import annotations
@@ -16,8 +20,10 @@ from django.utils import timezone
 
 from apps.audit.models import AuditLog
 from apps.audit.services import entity_type_for, write_audit_log
+from apps.core.calendar_br import first_business_day_of_month
 from apps.cycles.models import AutoCycleEvent, AutoCycleRun, Ciclo
 from apps.cycles.services.marco import (
+    is_auto_opening_day,
     list_auto_marco_candidates,
     user_blocked_by_open_cycle,
 )
@@ -184,6 +190,49 @@ def _enroll_matriculaveis(
     return matriculados, falhas
 
 
+def _refuse_late_month_open(
+    run: AutoCycleRun,
+    *,
+    ref: date,
+) -> None:
+    """Go-live / chamada fora do 1º dia útil: noop sem materializar o mês."""
+    primeiro = first_business_day_of_month(ref.year, ref.month)
+    run.era_primeiro_dia_util = False
+    run.marco_competencia = None
+    run.ciclo = None
+    run.matriculados = 0
+    run.alertas_ciclo_aberto = 0
+    run.excluidos_sem_admissao = 0
+    run.status = AutoCycleRun.Status.NOOP
+    run.mensagem = (
+        f'{ref.isoformat()} não é o 1º dia útil do mês '
+        f'({primeiro.isoformat()}); coorte não materializada '
+        '(FR-005 / R5 — sem abertura atrasada).'
+    )
+    run.save(
+        update_fields=[
+            'era_primeiro_dia_util',
+            'marco_competencia',
+            'ciclo',
+            'matriculados',
+            'alertas_ciclo_aberto',
+            'excluidos_sem_admissao',
+            'status',
+            'mensagem',
+            'updated_at',
+        ],
+    )
+    _append_event(
+        run,
+        tipo=AutoCycleEvent.Tipo.NOOP_DIA,
+        payload={
+            'data_referencia': ref.isoformat(),
+            'primeiro_dia_util': primeiro.isoformat(),
+            'motivo': 'abertura_atrasada_recusada',
+        },
+    )
+
+
 def open_auto_cohort(
     run: AutoCycleRun,
     *,
@@ -192,6 +241,8 @@ def open_auto_cohort(
     """Abre (ou reutiliza) a coorte automática do mês e matricula elegíveis.
 
     Pré-condição típica: caller já confirmou 1º dia útil e criou ``run``.
+    Defesa R5: se ``data_referencia`` ≠ 1º dia útil → noop sem criar ciclo
+    nem matrículas (go-live no meio do mês não abre aquele mês atrasado).
     Sem candidatos ao marco → não cria ciclo; fecha run em ``sucesso``.
     Falha ao criar ciclo → run ``falha`` (sem Avaliações órfãs).
     Falha ao matricular um user → event ``falha``; continua; run ``parcial``.
@@ -199,6 +250,11 @@ def open_auto_cohort(
     ref = data_referencia if data_referencia is not None else run.data_referencia
     if ref is None:
         ref = timezone.localdate()
+
+    # FR-005 / R5: nunca materializa mês “atrasado” após o 1º dia útil.
+    if not is_auto_opening_day(ref):
+        _refuse_late_month_open(run, ref=ref)
+        return None
 
     year, month = ref.year, ref.month
     marco_competencia = date(year, month, 1)
