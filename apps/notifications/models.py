@@ -12,6 +12,10 @@ class NotificacaoLog(models.Model):
         FEEDBACK_CONTINUO = 'feedback_continuo', 'Feedback contínuo'
         ATRASO_PDI = 'atraso_pdi', 'Atraso de ação PDI'
         DIGEST_PDI_ATRASOS = 'digest_pdi_atrasos', 'Digest de PDIs atrasados'
+        ALERTA_CICLO_AINDA_ABERTO = (
+            'alerta_ciclo_ainda_aberto',
+            'Alerta ciclo ainda aberto',
+        )
 
     class Status(models.TextChoices):
         ENVIADO = 'enviado', 'Enviado'

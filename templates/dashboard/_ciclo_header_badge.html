@@ -1,26 +1,49 @@
 {% comment %}
   Badge do ciclo no header (estrutura / aderência).
 
-  Segue ``ciclo_filtro`` (ciclo resolvido para a tela), não só a existência
-  de ciclo aberto — evita "Sem ciclo aberto" quando ``?ciclo=`` aponta para
-  arquivo ou quando o filtro já resolveu um ciclo.
+  Segue ``ciclo_filtro`` (ciclo resolvido para a tela). Multi-open: qualquer
+  ciclo com status aberto recebe chip emerald — não só o default
+  ``ciclo_aberto``. Quando N>1 abertos, indica a quantidade.
 
   Contexto:
     ciclo_filtro — ciclo atualmente exibido (pode ser None)
-    ciclo_aberto — ciclo aberto no sistema (pode ser None)
+    ciclo_aberto — default operacional (primeiro de get_open_ciclos)
+    ciclos_abertos — lista completa de abertos (multi-open)
 
   Parâmetros:
     extra_class — classes extras no badge (opcional)
 {% endcomment %}
 {% if ciclo_filtro %}
-  {% if ciclo_aberto and ciclo_filtro.pk == ciclo_aberto.pk %}
+  {% if ciclo_filtro.status == "aberto" %}
     <span class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-700 {{ extra_class }}">
       <span class="h-2 w-2 animate-pulse rounded-full bg-emerald-500" aria-hidden="true"></span>
-      Ativo · {{ ciclo_filtro.nome }}
+      Em andamento · {{ ciclo_filtro.nome }}
+      {% if ciclo_filtro.origem == "automatico" %}
+        · Automático
+      {% else %}
+        · Manual
+      {% endif %}
+      {% if ciclos_abertos|length > 1 %}
+        · {{ ciclos_abertos|length }} abertos
+      {% endif %}
     </span>
   {% else %}
-    {% include "components/badge_status.html" with status="arquivado" label=ciclo_filtro.nome extra_class=extra_class %}
+    <span class="inline-flex flex-wrap items-center gap-1.5 {{ extra_class }}">
+      {% include "components/badge_status.html" with status="arquivado" label=ciclo_filtro.nome %}
+      {% if ciclo_filtro.origem == "automatico" %}
+        {% include "components/badge_status.html" with status="ativo" label="Automático" %}
+      {% else %}
+        {% include "components/badge_status.html" with status="neutro" label="Manual" %}
+      {% endif %}
+    </span>
   {% endif %}
+{% elif ciclos_abertos|length > 1 %}
+  <span class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-700 {{ extra_class }}">
+    <span class="h-2 w-2 animate-pulse rounded-full bg-emerald-500" aria-hidden="true"></span>
+    {{ ciclos_abertos|length }} ciclos abertos
+  </span>
+{% elif ciclo_aberto %}
+  {% include "components/badge_status.html" with status="ativo" label=ciclo_aberto.nome extra_class=extra_class %}
 {% else %}
   {% include "components/badge_status.html" with status="arquivado" label="Sem ciclo aberto" extra_class=extra_class %}
 {% endif %}

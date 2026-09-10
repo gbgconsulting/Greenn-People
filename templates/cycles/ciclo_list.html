@@ -7,13 +7,17 @@
   <div>
     <h1 class="font-display text-2xl font-semibold text-slate-800">Configuração de Ciclos</h1>
     <p class="mt-1 max-w-2xl font-ui text-sm leading-relaxed text-slate-500">
-      Gerencie e acompanhe os ciclos de avaliação de desempenho.
-      Ao criar um ciclo com «Admitidos até», ele abre e inclui só os elegíveis.
-      Só um ciclo pode estar aberto por vez.
+      Gerencie ciclos manuais e automáticos de avaliação.
+      Vários ciclos podem ficar abertos ao mesmo tempo — manuais (com «Admitidos até»)
+      e coortes automáticas por admissão.
     </p>
   </div>
-  {% url 'cycles:ciclo_create' as create_url %}
-  {% include "components/button.html" with label="Novo ciclo" href=create_url variant="primary" %}
+  <div class="flex shrink-0 flex-wrap items-center gap-3">
+    {% url 'cycles:auto_governance' as governance_url %}
+    {% include "components/button.html" with label="Governança do automático" href=governance_url variant="secondary" %}
+    {% url 'cycles:ciclo_create' as create_url %}
+    {% include "components/button.html" with label="Novo ciclo" href=create_url variant="primary" %}
+  </div>
 </header>
 
 {% if rh_pre_open_checklist %}

@@ -24,12 +24,24 @@ _TEXTAREA = (
 )
 
 
-def get_open_ciclo() -> Ciclo | None:
-    return (
-        Ciclo.objects.filter(status=Ciclo.Status.ABERTO)
-        .order_by('-data_inicio')
-        .first()
+def get_open_ciclos():
+    """QuerySet canônico de ciclos ``aberto``, mais recente primeiro.
+
+    Ordenação: ``-data_inicio``, ``nome``. Com multi-open pode haver N.
+    """
+    return Ciclo.objects.filter(status=Ciclo.Status.ABERTO).order_by(
+        '-data_inicio',
+        'nome',
     )
+
+
+def get_open_ciclo() -> Ciclo | None:
+    """Default operacional: primeiro de ``get_open_ciclos()`` (ou ``None``).
+
+    Não significa “único aberto” — use ``get_open_ciclos()`` quando a lista
+    completa for necessária (seletor, topbar, governança).
+    """
+    return get_open_ciclos().first()
 
 
 def get_avaliacao_for_user(user, ciclo: Ciclo | None = None) -> Avaliacao | None:

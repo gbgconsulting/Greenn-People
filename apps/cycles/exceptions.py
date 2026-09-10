@@ -6,7 +6,7 @@ class CycleError(Exception):
 
 
 class CycleAlreadyOpenError(CycleError):
-    """Raised when opening would violate the single-open-cycle rule."""
+    """Raised when attempting to open a cycle that is already open."""
 
 
 class CycleMissingCutoffError(CycleError):

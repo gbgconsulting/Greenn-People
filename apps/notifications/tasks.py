@@ -11,11 +11,13 @@ from django.utils import timezone
 from apps.accounts.models import CustomUser
 from apps.cycles.models import Ciclo
 from apps.notifications.emails import (
+    referencia_alerta_ciclo_ainda_aberto,
     referencia_atraso_pdi,
     referencia_digest_pdi_atrasos,
     referencia_feedback_continuo,
     referencia_lembrete_etapa,
     referencia_lembrete_pdi,
+    send_alerta_ciclo_ainda_aberto_email,
     send_atraso_pdi_email,
     send_digest_pdi_atrasos_email,
     send_feedback_continuo_email,
@@ -372,6 +374,79 @@ def enviar_digest_pdi_atrasos() -> dict:
         'janela': janela,
         'pdis_com_atraso': aggregation.pdis_com_atraso,
         'acoes_atrasadas': aggregation.acoes_atrasadas,
+    }
+
+
+@shared_task(name='apps.notifications.tasks.enviar_alerta_ciclo_ainda_aberto')
+def enviar_alerta_ciclo_ainda_aberto(usuario_id: int) -> dict:
+    """Alert active admins that a collaborator still has an open cycle (US3).
+
+    Destinatários = ``is_admin`` ativos. Dedupe diário via
+    ``already_sent(tipo=alerta_ciclo_ainda_aberto, referencia=usuario:{id},
+    janela=ISO)``. Append-only ``NotificacaoLog`` through ``_log_send``.
+    Não matricula e não aborta o lote automático — só notifica RH.
+    """
+    try:
+        usuario_alertado = CustomUser.objects.get(pk=usuario_id)
+    except CustomUser.DoesNotExist:
+        return {
+            'enviados': 0,
+            'falhas': 0,
+            'pulados': 0,
+            'usuario_id': usuario_id,
+            'resultado': 'ausente',
+        }
+
+    ciclos_abertos = list(
+        Ciclo.objects.filter(
+            status=Ciclo.Status.ABERTO,
+            avaliacoes__usuario_id=usuario_alertado.pk,
+        )
+        .distinct()
+        .order_by('-data_inicio', '-pk'),
+    )
+
+    janela = timezone.localdate().isoformat()
+    referencia = referencia_alerta_ciclo_ainda_aberto(usuario_alertado)
+    tipo = NotificacaoLog.Tipo.ALERTA_CICLO_AINDA_ABERTO
+    destinatarios = (
+        CustomUser.objects.filter(is_admin=True, is_active=True)
+        .order_by('pk')
+    )
+
+    enviados = 0
+    falhas = 0
+    pulados = 0
+    for destinatario in destinatarios.iterator():
+        if already_sent(destinatario.pk, tipo, referencia, janela):
+            pulados += 1
+            continue
+        if not destinatario.email:
+            pulados += 1
+            continue
+        result = _log_send(
+            destinatario_id=destinatario.pk,
+            tipo=tipo,
+            referencia=referencia,
+            janela=janela,
+            send_fn=lambda d=destinatario: send_alerta_ciclo_ainda_aberto_email(
+                d,
+                usuario_alertado=usuario_alertado,
+                ciclos_abertos=ciclos_abertos,
+            ),
+        )
+        if result == 'enviado':
+            enviados += 1
+        else:
+            falhas += 1
+
+    return {
+        'enviados': enviados,
+        'falhas': falhas,
+        'pulados': pulados,
+        'usuario_id': usuario_id,
+        'janela': janela,
+        'resultado': 'ok',
     }
 
 

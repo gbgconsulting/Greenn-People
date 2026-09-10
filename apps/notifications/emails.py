@@ -164,6 +164,49 @@ def send_feedback_continuo_email(feedback: FeedbackContinuo) -> None:
     )
 
 
+def referencia_alerta_ciclo_ainda_aberto(usuario: CustomUser | int) -> str:
+    """Stable key for open-cycle alert to RH (dedupe per alerted user)."""
+    usuario_id = getattr(usuario, 'pk', usuario)
+    return f'usuario:{usuario_id}'
+
+
+def send_alerta_ciclo_ainda_aberto_email(
+    destinatario: CustomUser,
+    *,
+    usuario_alertado: CustomUser,
+    ciclos_abertos: list[Ciclo],
+) -> None:
+    """Notify one active admin that a collaborator still has an open cycle."""
+    primario = ciclos_abertos[0] if ciclos_abertos else None
+    if primario is not None:
+        cta_url = absolute_url(
+            reverse('cycles:ciclo_detail', kwargs={'pk': primario.pk}),
+        )
+        cta_label = 'Ver ciclo em aberto'
+    else:
+        cta_url = absolute_url(reverse('cycles:ciclo_list'))
+        cta_label = 'Ver ciclos'
+    context = {
+        'user': destinatario,
+        'usuario_alertado': usuario_alertado,
+        'ciclos_abertos': ciclos_abertos,
+        'ciclo_primario': primario,
+        'cta_url': cta_url,
+        'cta_label': cta_label,
+    }
+    subject = _subject(
+        'notifications/email/alerta_ciclo_ainda_aberto_subject.txt',
+        context,
+    )
+    send_templated_email(
+        subject=subject,
+        to=destinatario.email,
+        text_template='notifications/email/alerta_ciclo_ainda_aberto_body.txt',
+        html_template='notifications/email/alerta_ciclo_ainda_aberto_body.html',
+        context=context,
+    )
+
+
 def _subject(template_name: str, context: dict) -> str:
     from django.template.loader import render_to_string
 

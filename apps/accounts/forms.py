@@ -8,7 +8,10 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
 from apps.accounts.models import CustomUser
-from apps.reviews.services.enrollment import ensure_avaliacao_for_user
+from apps.reviews.services.enrollment import (
+    ensure_avaliacao_for_user,
+    resolve_mid_cycle_ciclo,
+)
 
 ALLOWED_EMAIL_DOMAIN = 'greenn.com.br'
 
@@ -66,7 +69,10 @@ class RegisterForm(UserCreationForm):
             user.save()
             if user.is_active:
                 transaction.on_commit(
-                    lambda u=user: ensure_avaliacao_for_user(u),
+                    lambda u=user: ensure_avaliacao_for_user(
+                        u,
+                        ciclo=resolve_mid_cycle_ciclo(),
+                    ),
                 )
         return user
 

@@ -46,6 +46,45 @@ def entity_type_for(obj: Model) -> str:
     return f'{obj._meta.app_label}.{obj._meta.object_name}'
 
 
+def log_entity_created(
+    *,
+    instance: Model,
+    fields: dict[str, Any] | None = None,
+    usuario=None,
+) -> list[AuditLog]:
+    """Append CREATE AuditLog rows for a newly persisted entity (FR-016).
+
+    One row per key field when ``fields`` is provided so quem/quando/por quê
+    of the creation can be reconstructed from the append-only trail.
+    ``usuario`` defaults to the audit actor context (``None`` for Celery/Beat).
+    """
+    entity_type = entity_type_for(instance)
+    entity_id = instance.pk
+    if not fields:
+        return [
+            write_audit_log(
+                acao=AuditLog.Acao.CREATE,
+                entity_type=entity_type,
+                entity_id=entity_id,
+                usuario=usuario,
+            ),
+        ]
+    logs: list[AuditLog] = []
+    for campo, valor in fields.items():
+        logs.append(
+            write_audit_log(
+                acao=AuditLog.Acao.CREATE,
+                entity_type=entity_type,
+                entity_id=entity_id,
+                campo=campo,
+                valor_anterior='',
+                valor_novo=serialize_audit_value(valor),
+                usuario=usuario,
+            ),
+        )
+    return logs
+
+
 def log_scope_denied(user, obj: Model) -> AuditLog:
     """RF-36: record access denied when the object exists but is out of scope."""
     return write_audit_log(

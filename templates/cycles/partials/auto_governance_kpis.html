@@ -1,0 +1,57 @@
+{% comment %}
+  Strip de KPIs da governança automática (US4 / T024).
+  Status Triad: emerald = entrantes; amber = pendência/alerta; rose = falha/atraso.
+  Zero = accent neutro (slate), nunca rose de falso alarme.
+  Requer: kpis (dict do snapshot_as_context).
+{% endcomment %}
+<section
+  class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5"
+  aria-label="Indicadores do período"
+  data-component="auto-governance-kpis"
+>
+  {% if kpis.entrantes %}
+    {% include "components/card.html" with label="Entrou no lote" value=kpis.entrantes body="Pessoas matriculadas no automático." accent="success" icon="check" %}
+  {% else %}
+    {% include "components/card.html" with label="Entrou no lote" value=0 body="Ninguém entrou no lote neste período." accent="neutral" %}
+  {% endif %}
+
+  {% if kpis.sem_admissao %}
+    {% include "components/card.html" with label="Sem data de entrada" value=kpis.sem_admissao body="Cadastro incompleto — fora do lote." accent="warning" icon="stable" %}
+  {% else %}
+    {% include "components/card.html" with label="Sem data de entrada" value=0 body="Sem pendências de cadastro." accent="neutral" %}
+  {% endif %}
+
+  {% if kpis.alertas %}
+    {% include "components/card.html" with label="Ciclo ainda aberto" value=kpis.alertas body="Atenção: não travou o lote." accent="warning" icon="hourglass" %}
+  {% else %}
+    {% include "components/card.html" with label="Ciclo ainda aberto" value=0 body="Nenhum alerta neste período." accent="neutral" %}
+  {% endif %}
+
+  {% if kpis.falhas %}
+  <div
+    class="group relative flex h-full flex-col overflow-hidden rounded-xl border border-rose-200 bg-surface-card p-4 sm:p-5"
+    data-kpi="falhas"
+  >
+    <div class="absolute inset-x-0 top-0 h-1 bg-rose-500/30 transition-colors group-hover:bg-rose-500" aria-hidden="true"></div>
+    <p class="mt-1 text-xs font-semibold uppercase tracking-wider text-slate-500">Falha na rotina</p>
+    <p class="mt-2 font-display text-2xl font-semibold tabular-nums tracking-tight text-rose-800">{{ kpis.falhas }}</p>
+    <p class="mt-2 text-sm leading-snug text-slate-500">Problema operacional no período.</p>
+  </div>
+  {% else %}
+    {% include "components/card.html" with label="Falha na rotina" value=0 body="Nenhuma falha registrada." accent="neutral" %}
+  {% endif %}
+
+  {% if kpis.atrasos_prazo %}
+  <div
+    class="group relative flex h-full flex-col overflow-hidden rounded-xl border border-rose-200 bg-surface-card p-4 sm:p-5"
+    data-kpi="atrasos-prazo"
+  >
+    <div class="absolute inset-x-0 top-0 h-1 bg-rose-500/30 transition-colors group-hover:bg-rose-500" aria-hidden="true"></div>
+    <p class="mt-1 text-xs font-semibold uppercase tracking-wider text-slate-500">Prazo estourado</p>
+    <p class="mt-2 font-display text-2xl font-semibold tabular-nums tracking-tight text-rose-800">{{ kpis.atrasos_prazo }}</p>
+    <p class="mt-2 text-sm leading-snug text-slate-500">Ciclos automáticos abertos além de 20 dias.</p>
+  </div>
+  {% else %}
+    {% include "components/card.html" with label="Prazo estourado" value=0 body="Nenhum ciclo automático atrasado." accent="neutral" %}
+  {% endif %}
+</section>

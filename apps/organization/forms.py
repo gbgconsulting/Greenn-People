@@ -6,7 +6,10 @@ from apps.accounts.models import CustomUser
 from apps.core.forms import active_choices_queryset
 from apps.organization.models import Area, Cargo
 from apps.organization.services.display import CARGO_NIVEL_LABELS
-from apps.reviews.services.enrollment import ensure_avaliacao_for_user
+from apps.reviews.services.enrollment import (
+    ensure_avaliacao_for_user,
+    resolve_mid_cycle_ciclo,
+)
 
 _INPUT = (
     'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm '
@@ -204,6 +207,9 @@ class UserUpdateForm(forms.ModelForm):
             data_entrada_changed = 'data_entrada' in self.changed_data
             if reactivated or data_entrada_changed:
                 transaction.on_commit(
-                    lambda u=user: ensure_avaliacao_for_user(u),
+                    lambda u=user: ensure_avaliacao_for_user(
+                        u,
+                        ciclo=resolve_mid_cycle_ciclo(),
+                    ),
                 )
         return user

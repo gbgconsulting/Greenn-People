@@ -48,10 +48,11 @@
     >Ciclo</label>
     {% if pill %}
     {# Status fora do <select> — evita sobreposição com texto/seta nativos. #}
+    {# Multi-open: "Em andamento" se o selecionado está aberto (não só o default). #}
     <div class="inline-flex w-full max-w-full items-stretch overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-      <span class="inline-flex shrink-0 items-center gap-1.5 border-r border-slate-100 bg-slate-50 px-2.5 text-[11px] font-semibold {% if ciclo_selecionado and ciclo_aberto and ciclo_selecionado.pk == ciclo_aberto.pk %}text-emerald-700{% elif ciclo_filtro and ciclo_aberto and ciclo_filtro.pk == ciclo_aberto.pk %}text-emerald-700{% else %}text-slate-500{% endif %}">
-        <span class="size-2 shrink-0 rounded-full {% if ciclo_selecionado and ciclo_aberto and ciclo_selecionado.pk == ciclo_aberto.pk %}bg-emerald-500{% elif ciclo_filtro and ciclo_aberto and ciclo_filtro.pk == ciclo_aberto.pk %}bg-emerald-500{% else %}bg-slate-400{% endif %}" aria-hidden="true"></span>
-        {% if ciclo_selecionado and ciclo_aberto and ciclo_selecionado.pk == ciclo_aberto.pk %}Em andamento{% elif ciclo_filtro and ciclo_aberto and ciclo_filtro.pk == ciclo_aberto.pk %}Em andamento{% elif ciclo_selecionado or ciclo_filtro %}Encerrado{% else %}Ciclo{% endif %}
+      <span class="inline-flex shrink-0 items-center gap-1.5 border-r border-slate-100 bg-slate-50 px-2.5 text-[11px] font-semibold {% if ciclo_selecionado.status == 'aberto' or ciclo_filtro.status == 'aberto' %}text-emerald-700{% elif ciclo_selecionado or ciclo_filtro %}text-slate-500{% else %}text-slate-500{% endif %}">
+        <span class="size-2 shrink-0 rounded-full {% if ciclo_selecionado.status == 'aberto' or ciclo_filtro.status == 'aberto' %}bg-emerald-500{% elif ciclo_selecionado or ciclo_filtro %}bg-slate-400{% else %}bg-slate-400{% endif %}" aria-hidden="true"></span>
+        {% if ciclo_selecionado.status == "aberto" or ciclo_filtro.status == "aberto" %}Em andamento{% elif ciclo_selecionado or ciclo_filtro %}Encerrado{% else %}Ciclo{% endif %}
       </span>
       <select
         id="{{ field_id }}"
@@ -60,16 +61,16 @@
         onchange="this.form.submit()"
         {% if not framed and not hide_hint %}aria-describedby="{{ field_id }}-arquivo-hint"{% endif %}
       >
-        <optgroup label="Em andamento">
+        <optgroup label="{% if opts.operacional|length > 1 %}Em andamento ({{ opts.operacional|length }}){% else %}Em andamento{% endif %}">
           {% for c in opts.operacional %}
-          <option value="{{ c.pk }}"{% if selected_pk == c.pk or selected_pk == c.pk|stringformat:"d" or not selected_pk %} selected{% endif %}>{{ c.nome }}</option>
+          <option value="{{ c.pk }}"{% if selected_pk == c.pk or selected_pk == c.pk|stringformat:"d" or not selected_pk %} selected{% endif %}>{{ c.nome }}{% if c.origem == "automatico" %} · Automático{% else %} · Manual{% endif %}</option>
           {% empty %}
           <option value=""{% if not selected_pk %} selected{% endif %}>Nenhum ciclo aberto</option>
           {% endfor %}
         </optgroup>
         <optgroup label="Encerrados">
           {% for c in opts.arquivo %}
-          <option value="{{ c.pk }}"{% if selected_pk == c.pk or selected_pk == c.pk|stringformat:"d" %} selected{% endif %}>{{ c.nome }}</option>
+          <option value="{{ c.pk }}"{% if selected_pk == c.pk or selected_pk == c.pk|stringformat:"d" %} selected{% endif %}>{{ c.nome }}{% if c.origem == "automatico" %} · Automático{% endif %}</option>
           {% empty %}
           {% if opts.q %}
           <option value="" disabled>Nenhum ciclo encerrado com esse nome</option>
@@ -86,16 +87,16 @@
       onchange="this.form.submit()"
       {% if not framed and not hide_hint %}aria-describedby="{{ field_id }}-arquivo-hint"{% endif %}
     >
-      <optgroup label="Em andamento">
+      <optgroup label="{% if opts.operacional|length > 1 %}Em andamento ({{ opts.operacional|length }}){% else %}Em andamento{% endif %}">
         {% for c in opts.operacional %}
-        <option value="{{ c.pk }}"{% if selected_pk == c.pk or selected_pk == c.pk|stringformat:"d" or not selected_pk %} selected{% endif %}>{{ c.nome }}</option>
+        <option value="{{ c.pk }}"{% if selected_pk == c.pk or selected_pk == c.pk|stringformat:"d" or not selected_pk %} selected{% endif %}>{{ c.nome }}{% if c.origem == "automatico" %} · Automático{% else %} · Manual{% endif %}</option>
         {% empty %}
         <option value=""{% if not selected_pk %} selected{% endif %}>Nenhum ciclo aberto</option>
         {% endfor %}
       </optgroup>
       <optgroup label="Encerrados">
         {% for c in opts.arquivo %}
-        <option value="{{ c.pk }}"{% if selected_pk == c.pk or selected_pk == c.pk|stringformat:"d" %} selected{% endif %}>{{ c.nome }}{% if c.data_inicio %} · {{ c.data_inicio|date:"d/m/Y" }}{% endif %}</option>
+        <option value="{{ c.pk }}"{% if selected_pk == c.pk or selected_pk == c.pk|stringformat:"d" %} selected{% endif %}>{{ c.nome }}{% if c.data_inicio %} · {{ c.data_inicio|date:"d/m/Y" }}{% endif %}{% if c.origem == "automatico" %} · Automático{% endif %}</option>
         {% empty %}
         {% if opts.q %}
         <option value="" disabled>Nenhum ciclo encerrado com esse nome</option>
@@ -106,6 +107,9 @@
     {% endif %}
     {% if not framed and not hide_hint %}
     <p id="{{ field_id }}-arquivo-hint" class="mt-1 font-ui text-xs text-ink-muted{% if pill %} text-right text-[11px] text-slate-400{% endif %}">
+      {% if opts.operacional|length > 1 %}
+        {{ opts.operacional|length }} ciclos abertos ·
+      {% endif %}
       {{ opts.arquivo_total|default:0 }} ciclo{{ opts.arquivo_total|default:0|pluralize }} encerrado{{ opts.arquivo_total|default:0|pluralize }}{% if pill %} no seletor{% endif %}
     </p>
     {% endif %}

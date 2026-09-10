@@ -22,11 +22,26 @@
 
   <div class="flex flex-1 flex-col p-5 sm:p-6">
     <div class="mb-4">
-      {% if group == 'operacional' %}
-        {% include "components/badge_status.html" with status="ativo" label="Aberto" extra_class="mb-2" %}
-      {% else %}
-        {% include "components/badge_status.html" with status="arquivado" label="Encerrado" extra_class="mb-2" %}
-      {% endif %}
+      <div class="mb-2 flex flex-wrap items-center gap-1.5">
+        {% if group == 'operacional' %}
+          {% include "components/badge_status.html" with status="ativo" label="Aberto" %}
+          {% if ciclo.prazo_estourado %}
+            {% include "components/badge_status.html" with status="atrasada" label="Prazo estourado" %}
+          {% endif %}
+        {% else %}
+          {% include "components/badge_status.html" with status="arquivado" label="Encerrado" %}
+        {% endif %}
+        {% if ciclo.origem == 'automatico' %}
+          {% include "components/badge_status.html" with status="ativo" label="Automático" %}
+          {% if ciclo.marco_competencia %}
+          <span class="inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 px-2 py-0.5 font-ui text-[11px] font-medium text-slate-600">
+            Marco {{ ciclo.marco_competencia|date:"m/Y" }}
+          </span>
+          {% endif %}
+        {% else %}
+          {% include "components/badge_status.html" with status="neutro" label="Manual" %}
+        {% endif %}
+      </div>
       <h3 class="font-display text-lg font-medium tracking-tight text-slate-800">
         <a
           href="{% url 'cycles:ciclo_detail' ciclo.pk %}"
@@ -97,6 +112,12 @@
   <div class="border-t border-slate-200 bg-white px-4 py-3 sm:px-5">
     {% if group == 'operacional' %}
     <nav class="flex flex-wrap items-center justify-end gap-2" aria-label="Ações do ciclo">
+      {% if ciclo.origem == 'automatico' %}
+      <a
+        href="{% url 'cycles:auto_governance' %}"
+        class="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-line bg-white px-3 font-ui text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100"
+      >Governança</a>
+      {% endif %}
       <a
         href="{% url 'cycles:ciclo_detail' ciclo.pk %}"
         class="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-line bg-white px-3 font-ui text-xs font-medium text-slate-700 transition-colors hover:bg-slate-100"
@@ -123,6 +144,12 @@
     </nav>
     {% else %}
     <nav class="flex flex-wrap items-center justify-end gap-x-3 gap-y-2" aria-label="Ações do ciclo">
+      {% if ciclo.origem == 'automatico' %}
+      <a
+        href="{% url 'cycles:auto_governance' %}"
+        class="shrink-0 whitespace-nowrap font-ui text-sm font-medium text-slate-600 hover:underline"
+      >Governança</a>
+      {% endif %}
       <a
         href="{% url 'cycles:ciclo_detail' ciclo.pk %}"
         class="shrink-0 whitespace-nowrap font-ui text-sm font-medium text-emerald-700 hover:underline"

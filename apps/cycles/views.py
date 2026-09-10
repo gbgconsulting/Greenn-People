@@ -9,7 +9,14 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse, reverse_lazy
 from django.views import View
-from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    DetailView,
+    ListView,
+    TemplateView,
+    UpdateView,
+)
 from django.views.generic.detail import SingleObjectMixin
 
 from apps.accounts.services.scope import get_visible_users
@@ -19,10 +26,14 @@ from apps.cycles.exceptions import (
     CycleMissingCutoffError,
     CycleNotOpenError,
 )
-from apps.cycles.forms import CicloForm
+from apps.cycles.forms import CicloForm, GovernancePeriodFilterForm
 from apps.cycles.models import Ciclo
 from apps.cycles.services.cycle import close_cycle, open_cycle
 from apps.cycles.services.eligibility import preview_admission_counts
+from apps.cycles.services.governance import (
+    get_governance_snapshot,
+    snapshot_as_context,
+)
 from apps.cycles.services.objetivo_list import (
     apply_objetivo_list_filters,
     get_base_objetivo_list_queryset,
@@ -44,7 +55,7 @@ from apps.dashboard.models import AderenciaSnapshot
 from apps.dashboard.services.eligible_leaders import filter_adherence_snapshots
 from apps.dashboard.services.structure import build_structure_coverage
 from apps.dashboard.views import aderencia_status
-from apps.goals.forms import ObjetivoEstrategicoForm, get_open_ciclo
+from apps.goals.forms import ObjetivoEstrategicoForm, get_open_ciclos
 from apps.goals.models import ObjetivoEstrategico
 from apps.reviews.models import Avaliacao
 from apps.reviews.services.guidance import build_rh_pre_open_checklist
@@ -117,7 +128,7 @@ class CicloListView(AdminCyclesMixin, HtmxPaginatedListMixin, ListView):
     paginate_by = 5
 
     def get_queryset(self):
-        """Arquivo paginado; o aberto vai para ``ciclo_operacional``."""
+        """Arquivo paginado; abertos vão para ``ciclos_operacionais``."""
         return (
             _annotated_ciclos()
             .filter(status=Ciclo.Status.ENCERRADO)
@@ -125,16 +136,22 @@ class CicloListView(AdminCyclesMixin, HtmxPaginatedListMixin, ListView):
         )
 
     def get_context_data(self, **kwargs):
-        """Checklist RH avisório + destaque do ciclo aberto (T018).
+        """Checklist RH avisório + todos os ciclos abertos (multi-open).
 
-        Não condiciona Abrir / ``CicloOpenView`` / ``open_cycle``.
+        ``ciclo_operacional`` permanece o default (primeiro de
+        ``get_open_ciclos()``) para compatibilidade; a grade itera
+        ``ciclos_operacionais``. Não condiciona Abrir / ``open_cycle``.
         """
         context = super().get_context_data(**kwargs)
         context.update(_rh_pre_open_checklist_context())
-        aberto = get_open_ciclo()
-        if aberto is not None:
-            aberto = _annotated_ciclos().filter(pk=aberto.pk).first()
-        context['ciclo_operacional'] = aberto
+        aberto_pks = [c.pk for c in get_open_ciclos()]
+        operacionais = list(
+            _annotated_ciclos()
+            .filter(pk__in=aberto_pks)
+            .order_by('-data_inicio', 'nome')
+        ) if aberto_pks else []
+        context['ciclos_operacionais'] = operacionais
+        context['ciclo_operacional'] = operacionais[0] if operacionais else None
         paginator = context.get('paginator')
         context['arquivo_total'] = paginator.count if paginator is not None else 0
         return context
@@ -144,8 +161,8 @@ class CicloCreateView(AdminCyclesMixin, CreateView):
     """Cria o ciclo e, em seguida, abre + matricula elegíveis via ``open_cycle``.
 
     Persistência inicial como ``encerrado``; ``open_cycle`` aplica o gate de
-    corte, a regra de um-aberto e a matrícula. Se já houver ciclo aberto, o
-    cadastro permanece encerrado (com ``admitidos_ate``) para Abrir depois.
+    corte 015 e a matrícula. Múltiplos ciclos abertos são permitidos (018);
+    ``CycleAlreadyOpenError`` só ocorre ao tentar reabrir o mesmo ciclo.
     """
 
     model = Ciclo
@@ -431,6 +448,32 @@ class CicloDetailView(AdminCyclesMixin, DetailView):
             empty_message=empty_kind_message(EMPTY_KIND_SEM_NOTA),
             has_data=False,
         )
+
+
+class AutoGovernanceView(AdminCyclesMixin, TemplateView):
+    """Superfície de governança do automático — somente leitura (US4 / T023).
+
+    AuthZ = ``AdminCyclesMixin`` (LoginRequired + RequiresAdmin). GET monta
+    snapshot via ``get_governance_snapshot``; **não** abre coorte, **não**
+    dispara Beat, **não** processa o lote do mês.
+
+    Template: ``auto_governance.html`` + partials (T024).
+    Contratos: governance-surface-contract + backend-scope-authz.
+    """
+
+    template_name = 'cycles/auto_governance.html'
+    http_method_names = ['get', 'head', 'options']
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        form = GovernancePeriodFilterForm.from_request_get(self.request.GET)
+        year, month = form.resolved_year_month()
+        snapshot = get_governance_snapshot(year=year, month=month)
+        context.update(snapshot_as_context(snapshot))
+        context['filter_form'] = form
+        context['periodo_ano'] = year
+        context['periodo_mes'] = month
+        return context
 
 
 class CicloOpenView(AdminCyclesMixin, SingleObjectMixin, View):

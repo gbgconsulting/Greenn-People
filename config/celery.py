@@ -20,10 +20,15 @@ app.autodiscover_tasks()
 # RF-31 — reminder e-mails (stage / PDI) N days before deadline
 # RF-26 — daily adherence snapshots for open cycles
 # US4 — weekly org digest of overdue PDIs for admins (same morning window as reminders)
+# 018 — abertura automática de ciclo por admissão (após overdue PDI; HTTP não é disparo)
 app.conf.beat_schedule = {
     'mark-overdue-pdi-actions-daily': {
         'task': 'apps.pdi.tasks.mark_overdue_pdi_actions',
         'schedule': crontab(hour=0, minute=15),
+    },
+    'auto-cycle-admission-daily': {
+        'task': 'apps.cycles.tasks.run_auto_cycle_admission_daily',
+        'schedule': crontab(hour=0, minute=30),
     },
     'enviar-lembrete-prazo-etapa-daily': {
         'task': 'apps.notifications.tasks.enviar_lembrete_prazo_etapa',
