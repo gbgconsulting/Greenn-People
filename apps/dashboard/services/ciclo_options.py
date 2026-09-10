@@ -1,10 +1,12 @@
 """Resolução de ciclo operacional e opções agrupadas do seletor.
 
-Default das homes gerenciais = ciclo aberto via ``get_open_ciclo()``.
-Query ``?ciclo=<pk>`` só como intenção explícita (arquivo pontual).
+Default das homes gerenciais = ciclo aberto via ``get_open_ciclo()``
+(primeiro de ``get_open_ciclos()``). Grupo ``operacional`` lista **todos**
+os abertos. Query ``?ciclo=<pk>`` só como intenção explícita (arquivo pontual).
 
 Este módulo **MUST NOT**:
 - fazer fallback silencioso para ciclo encerrado;
+- truncar ``operacional`` em um único aberto;
 - chamar ``get_visible_users`` (builders/views recebem ``visible`` já resolvido).
 """
 
@@ -13,7 +15,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, TypedDict
 
 from apps.cycles.models import Ciclo
-from apps.goals.forms import get_open_ciclo
+from apps.goals.forms import get_open_ciclo, get_open_ciclos
 from apps.reviews.models import Avaliacao
 
 if TYPE_CHECKING:
@@ -65,10 +67,14 @@ def _user_participates(user: AbstractBaseUser, ciclo: Ciclo) -> bool:
 
 
 def _default_personal_ciclo(user: AbstractBaseUser) -> Ciclo | None:
-    """Aberto só se o usuário participa; **nunca** fallback para encerrado."""
-    aberto = get_open_ciclo()
-    if aberto is not None and _user_participates(user, aberto):
-        return aberto
+    """Primeiro aberto (ordem canônica) em que o usuário participa.
+
+    **Nunca** faz fallback para encerrado. Com multi-open, percorre
+    ``get_open_ciclos()`` e devolve o primeiro com ``Avaliacao`` do usuário.
+    """
+    for aberto in get_open_ciclos():
+        if _user_participates(user, aberto):
+            return aberto
     return None
 
 
@@ -110,14 +116,13 @@ def resolve_personal_ciclo(
 def grouped_ciclo_options(*, q: str | None = None) -> GroupedCicloOptions:
     """Opções para ``<optgroup>`` Operacional / Arquivo.
 
-    - Operacional: no máximo o ciclo ``aberto`` (via ``get_open_ciclo()``).
+    - Operacional: **todos** os ciclos ``aberto`` (via ``get_open_ciclos()``).
     - Arquivo: ``encerrado``, ordenado por ``-data_inicio`` (depois ``-pk``).
     - Se o arquivo tiver mais de ``ARCHIVE_FILTER_THRESHOLD`` ciclos e ``q``
       não-vazio, filtra ``nome__icontains``; caso contrário lista o arquivo
       completo (o template só exibe o campo de busca quando ``show_q_filter``).
     """
-    aberto = get_open_ciclo()
-    operacional: list[Ciclo] = [aberto] if aberto is not None else []
+    operacional: list[Ciclo] = list(get_open_ciclos())
 
     arquivo_qs = Ciclo.objects.filter(status=Ciclo.Status.ENCERRADO).order_by(
         '-data_inicio',
@@ -146,7 +151,7 @@ def grouped_ciclo_options_for_user(
     """Seletor do Meu painel: só ciclos em que o usuário tem ``Avaliacao``.
 
     Mesmo shape de ``grouped_ciclo_options`` para reusar ``_ciclo_selector.html``.
-    Operacional só inclui o aberto se houver participação; arquivo só encerrados
+    Operacional = todos os abertos com participação; arquivo só encerrados
     com avaliação do usuário.
     """
     user_pk = getattr(user, 'pk', None)
@@ -160,10 +165,9 @@ def grouped_ciclo_options_for_user(
     )
     participated = set(participated_ids)
 
-    aberto = get_open_ciclo()
-    operacional: list[Ciclo] = (
-        [aberto] if aberto is not None and aberto.pk in participated else []
-    )
+    operacional: list[Ciclo] = [
+        c for c in get_open_ciclos() if c.pk in participated
+    ]
 
     arquivo_qs = Ciclo.objects.filter(
         status=Ciclo.Status.ENCERRADO,

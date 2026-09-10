@@ -19,9 +19,10 @@ from apps.reviews.services.enrollment import ensure_avaliacao_for_user
 
 
 def open_cycle(ciclo: Ciclo, *, admitidos_ate: date | None = None) -> Ciclo:
-    """Open ``ciclo`` with admission cutoff, enforcing a single open cycle.
+    """Open ``ciclo`` with admission cutoff (multiple open cycles allowed).
 
     Resolves ``admitidos_ate`` from the keyword arg or the locked row.
+    Raises ``CycleAlreadyOpenError`` if this cycle is already open.
     Raises ``CycleMissingCutoffError`` before opening if still missing.
     Creates evaluations only for users eligible via ``ensure_avaliacao_for_user``.
     """
@@ -30,17 +31,6 @@ def open_cycle(ciclo: Ciclo, *, admitidos_ate: date | None = None) -> Ciclo:
 
         if locked.status == Ciclo.Status.ABERTO:
             raise CycleAlreadyOpenError('Este ciclo já está aberto.')
-
-        other_open = (
-            Ciclo.objects.select_for_update()
-            .filter(status=Ciclo.Status.ABERTO)
-            .exclude(pk=locked.pk)
-            .exists()
-        )
-        if other_open:
-            raise CycleAlreadyOpenError(
-                'Já existe um ciclo aberto. Encerre-o antes de abrir outro.',
-            )
 
         resolved = (
             admitidos_ate if admitidos_ate is not None else locked.admitidos_ate

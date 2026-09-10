@@ -6,7 +6,7 @@ from typing import Any
 
 from django.http import HttpRequest
 
-from apps.goals.forms import get_open_ciclo
+from apps.goals.forms import get_open_ciclos
 from apps.reviews.services.pending_counts import (
     LeaderPendingBadge,
     resolve_leader_pending_badge,
@@ -14,10 +14,21 @@ from apps.reviews.services.pending_counts import (
 
 
 def ciclo_aberto(request: HttpRequest) -> dict[str, Any]:
-    """Expõe o ciclo aberto para a topbar; anônimo não recebe bloco de ciclo."""
+    """Expõe default + lista de ciclos abertos para o shell.
+
+    - ``ciclo_aberto``: default operacional (primeiro de ``get_open_ciclos()``),
+      **não** implica unicidade.
+    - ``ciclos_abertos``: lista completa de abertos (multi-open honesto).
+
+    Anônimo: ambos vazios/``None``.
+    """
     if not getattr(request, 'user', None) or not request.user.is_authenticated:
-        return {'ciclo_aberto': None}
-    return {'ciclo_aberto': get_open_ciclo()}
+        return {'ciclo_aberto': None, 'ciclos_abertos': []}
+    abertos = list(get_open_ciclos())
+    return {
+        'ciclo_aberto': abertos[0] if abertos else None,
+        'ciclos_abertos': abertos,
+    }
 
 
 def leader_pending_badge(request: HttpRequest) -> dict[str, Any]:
