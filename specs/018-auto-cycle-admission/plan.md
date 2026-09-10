@@ -92,6 +92,39 @@ MVP = US1–US4. US5 é proteção de arquivo e compatibilidade.
 
 **FAIL do plan se**: UI decide elegibilidade/abertura/alerta; HTTP processa o lote do mês; bootstrap recupera atrasados; alerta bloqueia lote; Opção B; lib de feriados sem justificativa; segunda paleta/fonte “só automático”.
 
+### Evidência T031 (smoke denylist)
+
+Revisão 2026-09-10 — varredura estática + asserts de superfície + predicado de marco:
+
+| Non-goal / path | Resultado | Evidência |
+|---|---|---|
+| Stage / approval / scope / PDI / 9-box | **OK** | Diff vazio desde início 018 nos paths do contrato; smoke de superfície + limiares 0.33/0.66 |
+| Opção B | **OK** | Elegibilidade por série +6m (`next_future_marco` / `user_is_auto_candidate`) |
+| Backfill de marcos | **OK** | `next_future_marco(jan/2022, set/2026) == jan/2027`; suite `test_auto_bootstrap_no_backfill` |
+| Feriado municipal | **OK** | `calendar_br.national_holidays` sem SP/RJ/BH municipais; sem `holidays`/`workalendar` em deps |
+| Papel RH novo / `is_rh` | **OK** | Sem campo `is_rh`; RH = `is_admin`; sem DRF/app nova |
+| Lote via pageview HTTP | **OK** | `AutoGovernanceView.http_method_names` = GET/HEAD/OPTIONS; sem import da task Beat |
+
+Suite: `pytest tests/test_auto_denylist_smoke.py` → **13 passed**. Checklist em [contracts/non-goals-denylist.md](./contracts/non-goals-denylist.md).
+
+### Evidência T034 (Constitution Check pós-implementação)
+
+Revisão 2026-09-10 — re-check I–VI + Visual/DS contra código vivo (não só design):
+
+| Gate | Status | Evidência no código |
+|---|---|---|
+| **I. Django-First** | ✅ PASS | `apps/core/calendar_br.py` local (Páscoa + federais); sem `holidays`/`workalendar`/`djangorestframework` em `requirements.txt`; DTL/HTMX governança |
+| **II. Escopo backend** | ✅ PASS | `AutoGovernanceView` ⊂ `AdminCyclesMixin`/`RequiresAdminMixin`; AuthZ em view, não em template |
+| **III. Imutabilidade** | ✅ PASS | Snapshot Avaliação preservado (US5); events/`AuditLog` append-only; encerrados fora da rotina |
+| **IV. Modularidade** | ✅ PASS | Domínio em `cycles` + `core.calendar_br` + `notifications`/`audit`/`reviews`; sem app Django nova |
+| **V. Reprodutibilidade** | ✅ PASS | Stage/fórmulas/9-box/PDI fora do corte 018 (T031 denylist) |
+| **VI. Assíncrono** | ✅ PASS | Beat `auto-cycle-admission-daily` → `run_auto_cycle_admission_daily` em `config/celery.py` (00:30) |
+| **Visual / DS** | ✅ PASS | `auto_governance.html` + partials: Fraunces/Source Sans 3, Status Triad emerald/amber/rose, Lush Professional |
+| **HTTP só lê** | ✅ PASS | `AutoGovernanceView.http_method_names = ['get','head','options']`; `views.py` **sem** import de `open_auto_cohort` / task Beat |
+| **Zero lib feriados** | ✅ PASS | Assert denylist + inspeção `requirements.txt` |
+
+Smoke estático: `pytest tests/test_auto_denylist_smoke.py` → **13 passed** (incl. GET-only governança + deps).
+
 ## Project Structure
 
 ### Documentation (this feature)
@@ -169,7 +202,8 @@ tests/
 ├── test_auto_open_cycle_alert.py
 ├── test_multi_open_ciclo.py
 ├── test_auto_governance_authz.py
-└── regressões 015 / mid-cycle / denylist
+├── test_auto_denylist_smoke.py   # T031 — non-goals / denylist
+└── regressões 015 / mid-cycle
 ```
 
 **Structure Decision**: Monólito por apps de domínio existentes. Sem app nova. UI = extensão da governança de ciclos (admin), não ilha visual.

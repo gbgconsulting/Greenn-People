@@ -14,8 +14,28 @@
         <span>Visão gerencial</span>
       </p>
       <h1 class="font-display text-3xl font-semibold tracking-tight text-slate-800">{{ ciclo.nome }}</h1>
+      <div class="mt-3 flex flex-wrap items-center gap-1.5">
+        {% if ciclo.status == "aberto" %}
+          {% include "components/badge_status.html" with status="ativo" label="Aberto" %}
+        {% else %}
+          {% include "components/badge_status.html" with status="arquivado" label=ciclo.get_status_display %}
+        {% endif %}
+        {% if ciclo.origem == "automatico" %}
+          {% include "components/badge_status.html" with status="ativo" label="Automático" %}
+        {% else %}
+          {% include "components/badge_status.html" with status="neutro" label="Manual" %}
+        {% endif %}
+        {% if ciclo.origem == "automatico" and ciclo.marco_competencia %}
+          <span class="inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 px-2 py-0.5 font-ui text-xs font-medium text-slate-600">
+            Marco {{ ciclo.marco_competencia|date:"m/Y" }}
+          </span>
+        {% endif %}
+      </div>
       <p class="mt-2 text-base leading-relaxed text-slate-500">
         Visão deste ciclo: andamento das avaliações, cobertura e aderência dos gestores.
+        {% if ciclo.status == "aberto" and ciclos_abertos|length > 1 %}
+          Há {{ ciclos_abertos|length }} ciclos abertos no momento — estes números são só de {{ ciclo.nome }}.
+        {% endif %}
       </p>
       <p class="mt-2 text-sm text-slate-500">
         {{ ciclo.data_inicio|date:"d/m/Y" }} — {{ ciclo.data_fim|date:"d/m/Y" }}
@@ -25,7 +45,10 @@
       {% if ciclo.status == "aberto" %}
         <span class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-700">
           <span class="h-2 w-2 animate-pulse rounded-full bg-emerald-500" aria-hidden="true"></span>
-          Ativo · {{ ciclo.get_status_display }}
+          Em andamento
+          {% if ciclos_abertos|length > 1 %}
+            · {{ ciclos_abertos|length }} abertos
+          {% endif %}
         </span>
       {% else %}
         {% include "components/badge_status.html" with status="arquivado" label=ciclo.get_status_display %}
@@ -33,6 +56,10 @@
       <div class="flex flex-wrap gap-3">
         {% url 'cycles:ciclo_list' as ciclos_url %}
         {% include "components/button.html" with label="Voltar à lista" href=ciclos_url variant="secondary" %}
+        {% if ciclo.origem == "automatico" %}
+          {% url 'cycles:auto_governance' as governance_url %}
+          {% include "components/button.html" with label="Governança" href=governance_url variant="secondary" %}
+        {% endif %}
         {% url 'dashboard:adherence' as adherence_url %}
         {% include "components/button.html" with label="Ver aderência" href=adherence_url variant="secondary" %}
         {% if ciclo.status == "aberto" %}

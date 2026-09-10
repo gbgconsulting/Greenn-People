@@ -170,22 +170,76 @@ def test_open_cycle_sem_corte_falha_status_intacto_zero_avaliacoes(
 
 
 @pytest.mark.django_db
-def test_open_cycle_um_aberto_intacto(ciclo_aberto):
-    """T-open-4: já existe aberto → CycleAlreadyOpenError intacto."""
+def test_open_cycle_segundo_aberto_convive_com_corte(ciclo_aberto):
+    """T-open-4 / 018 SC-009: outro aberto não bloqueia; corte 015 continua obrigatório."""
     outro = _make_encerrado(nome='Segundo Ciclo Concorrente')
 
-    with pytest.raises(CycleAlreadyOpenError):
-        open_cycle(outro, admitidos_ate=CUTOFF)
+    with pytest.raises(CycleMissingCutoffError):
+        open_cycle(outro)
 
     outro.refresh_from_db()
     assert outro.status == Ciclo.Status.ENCERRADO
     ciclo_aberto.refresh_from_db()
     assert ciclo_aberto.status == Ciclo.Status.ABERTO
 
+    opened = open_cycle(outro, admitidos_ate=CUTOFF)
+    opened.refresh_from_db()
+    ciclo_aberto.refresh_from_db()
+
+    assert opened.status == Ciclo.Status.ABERTO
+    assert opened.admitidos_ate == CUTOFF
+    assert ciclo_aberto.status == Ciclo.Status.ABERTO
+    assert (
+        Ciclo.objects.filter(status=Ciclo.Status.ABERTO).count() == 2
+    )
+
+
+@pytest.mark.django_db
+def test_open_cycle_manual_com_auto_aberto_convive(lider, area, cargo_colab):
+    """US5 / SC-009: abrir manual 015 com automático já aberto → ambos ``aberto``."""
+    _close_all_open()
+    today = date.today()
+    auto = Ciclo.objects.create(
+        nome='Coorte Auto Julho',
+        data_inicio=today,
+        data_fim=today + timedelta(days=20),
+        status=Ciclo.Status.ABERTO,
+        origem=Ciclo.Origem.AUTOMATICO,
+        marco_competencia=date(today.year, today.month, 1),
+    )
+    manual = _make_encerrado(nome='Ciclo Manual Com Auto Aberto')
+    _make_user(
+        email='manual-auto-elegivel@test.greenn.com.br',
+        nome='Elegível Manual+Auto',
+        lider=lider,
+        area=area,
+        cargo_colab=cargo_colab,
+        data_entrada=CUTOFF,
+    )
+
+    opened = open_cycle(manual, admitidos_ate=CUTOFF)
+    opened.refresh_from_db()
+    auto.refresh_from_db()
+
+    assert opened.status == Ciclo.Status.ABERTO
+    assert opened.origem == Ciclo.Origem.MANUAL
+    assert opened.admitidos_ate == CUTOFF
+    assert auto.status == Ciclo.Status.ABERTO
+    assert auto.origem == Ciclo.Origem.AUTOMATICO
+    assert set(
+        Ciclo.objects.filter(status=Ciclo.Status.ABERTO).values_list(
+            'origem', flat=True,
+        )
+    ) == {Ciclo.Origem.MANUAL, Ciclo.Origem.AUTOMATICO}
+    assert Avaliacao.objects.filter(
+        ciclo=opened,
+        usuario__email='manual-auto-elegivel@test.greenn.com.br',
+    ).count() == 1
+
 
 @pytest.mark.django_db
 def test_open_cycle_reenvio_ciclo_ja_aberto_nao_duplica(ciclo_aberto, colaborador):
-    """T-open-5: reabrir o mesmo ciclo → erro existente; sem duplicar Avaliações."""
+    """T-open-5: reabrir o mesmo ciclo → CycleAlreadyOpenError; sem duplicar Avaliações."""
     before = Avaliacao.objects.filter(ciclo=ciclo_aberto).count()
     assert Avaliacao.objects.filter(ciclo=ciclo_aberto, usuario=colaborador).count() == 1
 
@@ -322,7 +376,7 @@ def test_ciclo_rejeita_data_fim_antes_de_data_inicio():
 
 @pytest.mark.django_db
 def test_ciclo_create_unifica_abrir_e_matricula_elegiveis(admin, lider, area, cargo_colab):
-    """Create + open: elegíveis matriculados; inelegíveis fora; um-aberto."""
+    """Create + open: elegíveis matriculados; inelegíveis fora; corte obrigatório."""
     _close_all_open()
     today = date.today()
     elegivel = _make_user(
@@ -382,34 +436,44 @@ def test_ciclo_create_unifica_abrir_e_matricula_elegiveis(admin, lider, area, ca
 
 
 @pytest.mark.django_db
-def test_ciclo_create_com_outro_aberto_salva_encerrado_sem_matricular(
+def test_ciclo_create_com_outro_aberto_abre_e_matricula(
     admin, ciclo_aberto, lider, area, cargo_colab,
 ):
-    """Se já há ciclo aberto: cria encerrado, não matricula, avisa."""
+    """018 multi-open: create com outro aberto abre o novo e matricula nele."""
     today = date.today()
-    before = Avaliacao.objects.filter(ciclo=ciclo_aberto).count()
+    before_existente = Avaliacao.objects.filter(ciclo=ciclo_aberto).count()
+    elegivel = _make_user(
+        email='create-multi-elegivel@test.greenn.com.br',
+        nome='Elegível Create Multi',
+        lider=lider,
+        area=area,
+        cargo_colab=cargo_colab,
+        data_entrada=CUTOFF,
+    )
     client = Client()
     client.force_login(admin)
     response = client.post(
         reverse('cycles:ciclo_create'),
         data={
-            'nome': 'Ciclo Em Espera',
+            'nome': 'Ciclo Multi Aberto',
             'data_inicio': today.isoformat(),
             'data_fim': (today + timedelta(days=30)).isoformat(),
             'admitidos_ate': CUTOFF.isoformat(),
         },
     )
     assert response.status_code == 302
-    novo = Ciclo.objects.get(nome='Ciclo Em Espera')
-    assert novo.status == Ciclo.Status.ENCERRADO
+    novo = Ciclo.objects.get(nome='Ciclo Multi Aberto')
+    assert novo.status == Ciclo.Status.ABERTO
     assert novo.admitidos_ate == CUTOFF
-    assert Avaliacao.objects.filter(ciclo=novo).count() == 0
-    assert Avaliacao.objects.filter(ciclo=ciclo_aberto).count() == before
+    assert Avaliacao.objects.filter(ciclo=novo, usuario=elegivel).count() == 1
+    assert Avaliacao.objects.filter(ciclo=ciclo_aberto).count() == before_existente
     ciclo_aberto.refresh_from_db()
     assert ciclo_aberto.status == Ciclo.Status.ABERTO
+    assert Ciclo.objects.filter(status=Ciclo.Status.ABERTO).count() == 2
 
     texts = [str(m.message).lower() for m in get_messages(response.wsgi_request)]
-    assert any('não foi aberto' in t for t in texts)
+    assert any('criado e aberto' in t for t in texts)
+    assert not any('não foi aberto' in t for t in texts)
 
 
 # --- T015/T016 [US2]: preview de contagens ------------------------------------

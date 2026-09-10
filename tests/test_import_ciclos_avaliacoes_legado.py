@@ -60,7 +60,11 @@ from apps.accounts.services.legacy_import.report import (
     record_orfao_ciclo,
     record_orfao_usuario,
 )
-from apps.cycles.exceptions import CycleAlreadyOpenError, CycleNotOpenError
+from apps.cycles.exceptions import (
+    CycleAlreadyOpenError,
+    CycleMissingCutoffError,
+    CycleNotOpenError,
+)
 from apps.cycles.models import Ciclo
 from apps.cycles.services.cycle import close_cycle, open_cycle
 from apps.cycles.services.legacy_import import (
@@ -406,14 +410,31 @@ def test_c1_schema_null_unique_e_open_close_intacto_apos_import():
     nulo.solides_id = None
     nulo.save(update_fields=['solides_id'])
 
-    opened = open_cycle(nulo)
+    # Corte 015 obrigatório na abertura manual; multi-open permite N abertos.
+    opened = open_cycle(nulo, admitidos_ate=date(2025, 12, 31))
     assert opened.status == Ciclo.Status.ABERTO
-    with pytest.raises(CycleAlreadyOpenError):
+    assert opened.admitidos_ate == date(2025, 12, 31)
+
+    with pytest.raises(CycleMissingCutoffError):
         open_cycle(outro)
+
+    segundo = open_cycle(outro, admitidos_ate=date(2025, 6, 30))
+    assert segundo.status == Ciclo.Status.ABERTO
+    assert segundo.admitidos_ate == date(2025, 6, 30)
+    opened.refresh_from_db()
+    assert opened.status == Ciclo.Status.ABERTO
+    assert Ciclo.objects.filter(status=Ciclo.Status.ABERTO).count() == 2
+
+    with pytest.raises(CycleAlreadyOpenError):
+        open_cycle(opened, admitidos_ate=date(2025, 12, 31))
+
     closed = close_cycle(opened)
     assert closed.status == Ciclo.Status.ENCERRADO
     with pytest.raises(CycleNotOpenError):
         close_cycle(closed)
+    segundo.refresh_from_db()
+    assert segundo.status == Ciclo.Status.ABERTO
+    close_cycle(segundo)
 
     for ciclo in Ciclo.objects.filter(solides_id__in=_SOLIDES_CICLOS):
         assert ciclo.status == Ciclo.Status.ENCERRADO

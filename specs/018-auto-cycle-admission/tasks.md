@@ -139,10 +139,10 @@ Monólito Django na raiz: `apps/cycles/`, `apps/core/`, `apps/reviews/`, `apps/g
 
 ### Implementation for User Story 5
 
-- [ ] T028 [US5] Atualizar regressões 015 em `tests/test_open_cycle_admission_cutoff.py` (e correlatos) que assertavam `CycleAlreadyOpenError` por segundo aberto — passar a esperar convivência manual+auto / N abertos; manter corte `admitidos_ate` obrigatório na abertura manual
-- [ ] T029 [P] [US5] Ajustar copy/UI multi-open em `templates/cycles/ciclo_list.html`, `_ciclo_card.html`, `ciclo_detail.html` e `templates/dashboard/_ciclo_selector.html` / badges de origem — sem mentir “só um ciclo vigente” ([contracts/multi-open-ciclo-contract.md](./contracts/multi-open-ciclo-contract.md))
-- [ ] T030 [US5] Cobrir convivência multi-open + enrollment com `ciclo=` explícito em `tests/test_multi_open_ciclo.py`; snapshot: editar `data_entrada` pós-matrícula não apaga Avaliação; rotina em ciclo encerrado = 0 create/delete (SC-008)
-- [ ] T031 [US5] Smoke denylist: confirmar que stage/fórmulas/PDI/escopo hierárquico e non-goals (Opção B, backfill, feriado municipal, papel novo) permanecem fora — checklist alinhado a [contracts/non-goals-denylist.md](./contracts/non-goals-denylist.md)
+- [X] T028 [US5] Atualizar regressões 015 em `tests/test_open_cycle_admission_cutoff.py` (e correlatos) que assertavam `CycleAlreadyOpenError` por segundo aberto — passar a esperar convivência manual+auto / N abertos; manter corte `admitidos_ate` obrigatório na abertura manual
+- [X] T029 [P] [US5] Ajustar copy/UI multi-open em `templates/cycles/ciclo_list.html`, `_ciclo_card.html`, `ciclo_detail.html` e `templates/dashboard/_ciclo_selector.html` / badges de origem — sem mentir “só um ciclo vigente” ([contracts/multi-open-ciclo-contract.md](./contracts/multi-open-ciclo-contract.md))
+- [X] T030 [US5] Cobrir convivência multi-open + enrollment com `ciclo=` explícito em `tests/test_multi_open_ciclo.py`; snapshot: editar `data_entrada` pós-matrícula não apaga Avaliação; rotina em ciclo encerrado = 0 create/delete (SC-008)
+- [X] T031 [US5] Smoke denylist: confirmar que stage/fórmulas/PDI/escopo hierárquico e non-goals (Opção B, backfill, feriado municipal, papel novo) permanecem fora — checklist alinhado a [contracts/non-goals-denylist.md](./contracts/non-goals-denylist.md)
 
 **Checkpoint**: Arquivo e manual 015 protegidos; multi-open honesto no produto
 
@@ -152,10 +152,10 @@ Monólito Django na raiz: `apps/cycles/`, `apps/core/`, `apps/reviews/`, `apps/g
 
 **Purpose**: Validação ponta a ponta e consistência visual/observabilidade
 
-- [ ] T032 [P] Rodar suite quickstart em `specs/018-auto-cycle-admission/quickstart.md` (V1–V8) via pytest dos módulos listados + revisão visual vs [contracts/ui-visual-consistency.md](./contracts/ui-visual-consistency.md)
-- [ ] T033 [P] Revisar falha parcial: event `falha` + run `parcial`/`falha` em `apps/cycles/services/auto_cohort.py` sem Avaliações órfãs do marco; reexecução idempotente
-- [ ] T034 Confirmar Constitution Check do [plan.md](./plan.md) ainda PASS (I–VI + visual); HTTP governança só lê; Beat é o disparo; zero lib de feriados externa
-- [ ] T035 [P] Management command opcional de ops/teste (invocar rotina com `--date`) em `apps/cycles/management/commands/` **sem** substituir o Beat como caminho de produção
+- [X] T032 [P] Rodar suite quickstart em `specs/018-auto-cycle-admission/quickstart.md` (V1–V8) via pytest dos módulos listados + revisão visual vs [contracts/ui-visual-consistency.md](./contracts/ui-visual-consistency.md)
+- [X] T033 [P] Revisar falha parcial: event `falha` + run `parcial`/`falha` em `apps/cycles/services/auto_cohort.py` sem Avaliações órfãs do marco; reexecução idempotente
+- [X] T034 Confirmar Constitution Check do [plan.md](./plan.md) ainda PASS (I–VI + visual); HTTP governança só lê; Beat é o disparo; zero lib de feriados externa
+- [X] T035 [P] Management command opcional de ops/teste (invocar rotina com `--date`) em `apps/cycles/management/commands/` **sem** substituir o Beat como caminho de produção
 
 ---
 

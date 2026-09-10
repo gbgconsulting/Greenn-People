@@ -33,6 +33,11 @@
         {% endif %}
         {% if ciclo.origem == 'automatico' %}
           {% include "components/badge_status.html" with status="ativo" label="Automático" %}
+          {% if ciclo.marco_competencia %}
+          <span class="inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 px-2 py-0.5 font-ui text-[11px] font-medium text-slate-600">
+            Marco {{ ciclo.marco_competencia|date:"m/Y" }}
+          </span>
+          {% endif %}
         {% else %}
           {% include "components/badge_status.html" with status="neutro" label="Manual" %}
         {% endif %}

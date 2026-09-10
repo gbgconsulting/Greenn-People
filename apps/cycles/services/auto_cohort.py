@@ -119,13 +119,34 @@ def _get_or_create_coorte(
         return ciclo, False
 
 
+def _already_in_auto_coorte(
+    user: CustomUser,
+    *,
+    marco_competencia: date,
+) -> bool:
+    """True se já existe Avaliação na coorte automática deste marco (FR-009)."""
+    return Avaliacao.objects.filter(
+        usuario_id=user.pk,
+        ciclo__origem=Ciclo.Origem.AUTOMATICO,
+        ciclo__marco_competencia=marco_competencia,
+    ).exists()
+
+
 def _partition_candidates(
     candidates: list[CustomUser],
+    *,
+    marco_competencia: date,
 ) -> tuple[list[CustomUser], list[CustomUser]]:
-    """Separa alertados (ciclo aberto) de matriculáveis (FR-008)."""
+    """Separa alertados (ciclo aberto) de matriculáveis (FR-008).
+
+    Quem já está na coorte automática deste marco é ignorado (nem alerta
+    nem re-matrícula) — reexecução idempotente após sucesso/parcial.
+    """
     alertados: list[CustomUser] = []
     matriculaveis: list[CustomUser] = []
     for user in candidates:
+        if _already_in_auto_coorte(user, marco_competencia=marco_competencia):
+            continue
         if user_blocked_by_open_cycle(user):
             alertados.append(user)
         else:
@@ -371,7 +392,10 @@ def open_auto_cohort(
         )
         return None
 
-    alertados, matriculaveis = _partition_candidates(candidates)
+    alertados, matriculaveis = _partition_candidates(
+        candidates,
+        marco_competencia=marco_competencia,
+    )
     # FR-008: events antes da coorte; alerta nunca adia/aborta o lote.
     n_alertas = _register_alertas_ciclo_aberto(run, alertados)
 
@@ -381,6 +405,7 @@ def open_auto_cohort(
             data_inicio=ref,
         )
     except Exception as exc:  # noqa: BLE001 — falha estrutural do lote
+        # Sem ciclo → zero Avaliações do marco (não chama enroll).
         run.status = AutoCycleRun.Status.FALHA
         run.ciclo = None
         run.matriculados = 0

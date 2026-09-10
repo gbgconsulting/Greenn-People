@@ -75,6 +75,6 @@ Confirmar ausência de: Opção B, backfill de marcos passados, feriado municipa
 
 ## Done when
 
-- [ ] V1–V8 passam em base de teste controlada
+- [x] V1–V8 passam em base de teste controlada (T032 — 47 passed nos módulos do Setup; V8 revisão visual vs `ui-visual-consistency.md`)
 - [ ] Constitution gates do [plan.md](./plan.md) continuam PASS
-- [ ] Denylist [non-goals-denylist.md](./contracts/non-goals-denylist.md) respeitada
+- [x] Denylist [non-goals-denylist.md](./contracts/non-goals-denylist.md) respeitada (T031 — `tests/test_auto_denylist_smoke.py`)

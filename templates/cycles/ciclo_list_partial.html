@@ -10,10 +10,17 @@
 {% endif %}
 
 <section class="mb-8" aria-labelledby="ciclo-operacional-heading" data-ciclo-group="operacional">
-  <h2
-    id="ciclo-operacional-heading"
-    class="font-ui text-xs font-medium uppercase tracking-wider text-ink-muted"
-  >Em andamento</h2>
+  <div class="flex flex-wrap items-baseline justify-between gap-2">
+    <h2
+      id="ciclo-operacional-heading"
+      class="font-ui text-xs font-medium uppercase tracking-wider text-ink-muted"
+    >Em andamento</h2>
+    {% if ciclos_operacionais %}
+    <p class="font-ui text-xs text-ink-muted" data-field="operacional-count">
+      {{ ciclos_operacionais|length }} ciclo{{ ciclos_operacionais|length|pluralize }} aberto{{ ciclos_operacionais|length|pluralize }}
+    </p>
+    {% endif %}
+  </div>
 
   <div class="mt-4 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
     {# CTA de criação só na página principal (não no arquivo paginado). #}
@@ -31,22 +38,22 @@
       </span>
       <span class="font-display text-lg font-medium text-slate-800">Criar novo ciclo</span>
       <span class="mt-2 max-w-xs font-ui text-sm leading-relaxed text-slate-500">
-        Inicie a configuração de um novo ciclo de avaliação.
+        Manual com «Admitidos até» — pode coexistir com coortes automáticas abertas.
       </span>
     </a>
     {% endif %}
 
-    {% if ciclo_operacional %}
-      {% include "cycles/_ciclo_card.html" with ciclo=ciclo_operacional group="operacional" %}
-    {% else %}
+    {% for ciclo in ciclos_operacionais %}
+      {% include "cycles/_ciclo_card.html" with ciclo=ciclo group="operacional" %}
+    {% empty %}
     <div
       class="rounded-xl border border-line bg-surface-card px-4 py-2{% if not page_obj or page_obj.number == 1 %} md:col-span-1 xl:col-span-2{% else %} col-span-full{% endif %}"
       data-ciclo-group="operacional"
       data-empty="operacional"
     >
-      {% include "components/empty_state.html" with title="Nenhum ciclo aberto" message="Não há ciclo aberto. O arquivo histórico continua acessível abaixo." %}
+      {% include "components/empty_state.html" with title="Nenhum ciclo aberto" message="Não há ciclo aberto no momento. Manuais e automáticos podem ficar abertos juntos quando houver atividade." %}
     </div>
-    {% endif %}
+    {% endfor %}
   </div>
 </section>
 
@@ -66,7 +73,7 @@
       {% include "cycles/_ciclo_card.html" with ciclo=ciclo group="arquivo" %}
     {% empty %}
     <div class="col-span-full rounded-xl border border-line bg-surface-card px-4 py-2" data-empty="arquivo">
-      {% if ciclo_operacional %}
+      {% if ciclos_operacionais %}
         {% include "components/empty_state.html" with title="Nenhum ciclo no arquivo" message="Ciclos encerrados aparecerão aqui, paginados." %}
       {% else %}
         {% url 'cycles:ciclo_create' as create_url %}

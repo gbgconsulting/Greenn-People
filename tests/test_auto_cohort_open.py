@@ -1,11 +1,14 @@
-"""T015 [US1]: lote no 1º dia útil, idempotência e noop de dia não-útil.
+"""T015 [US1] + T033: lote, idempotência, noop e falha parcial.
 
 Quickstart V1/V2; contratos auto-cohort-open + SC-001 / SC-005.
+T033: event ``falha`` + run ``parcial``/``falha``; sem Avaliações órfãs;
+reexecução idempotente após parcial.
 """
 
 from __future__ import annotations
 
 from datetime import date, timedelta
+from unittest.mock import patch
 
 import pytest
 from django.utils import timezone
@@ -16,6 +19,7 @@ from apps.core.calendar_br import first_business_day_of_month
 from apps.cycles.models import AutoCycleEvent, AutoCycleRun, Ciclo
 from apps.cycles.tasks import run_auto_cycle_admission_daily
 from apps.reviews.models import Avaliacao
+from apps.reviews.services import enrollment as enrollment_svc
 
 DEFAULT_PASSWORD = 'TestPass123!'
 
@@ -218,6 +222,12 @@ def test_idempotencia_reexecucao_mesmo_dia(lider, area, cargo_colab):
     for user in seed['elegiveis']:
         assert Avaliacao.objects.filter(ciclo=ciclo, usuario=user).count() == 1
 
+    # Já na coorte do marco: sem alerta FR-008 falso na reexecução.
+    assert run2.alertas_ciclo_aberto == 0
+    assert not run2.events.filter(
+        tipo=AutoCycleEvent.Tipo.ALERTA_CICLO_ABERTO,
+    ).exists()
+
 
 @pytest.mark.django_db
 def test_noop_em_dia_nao_util(lider, area, cargo_colab):
@@ -252,3 +262,146 @@ def test_noop_nao_atrasa_coorte_ja_aberta(lider, area, cargo_colab):
         ).count()
         == 1
     )
+
+
+# --- T033: falha parcial / falha de coorte / reexecução idempotente ----------
+
+
+@pytest.mark.django_db
+def test_falha_parcial_matricula_continua_demais_run_parcial(
+    lider,
+    area,
+    cargo_colab,
+):
+    """Falha ao matricular 1 user → event ``falha``; demais OK; run ``parcial``."""
+    seed = _seed_v1(lider, area, cargo_colab)
+    falho = seed['elegiveis'][0]
+    ok_users = seed['elegiveis'][1:]
+
+    real_ensure = enrollment_svc.ensure_avaliacao_for_user
+
+    def _ensure_flaky(user, *args, **kwargs):
+        if user.pk == falho.pk:
+            raise RuntimeError('falha simulada na matrícula')
+        return real_ensure(user, *args, **kwargs)
+
+    with patch(
+        'apps.cycles.services.auto_cohort.ensure_avaliacao_for_user',
+        side_effect=_ensure_flaky,
+    ):
+        result = run_auto_cycle_admission_daily(data_referencia=REF_FIRST)
+
+    assert result['status'] == AutoCycleRun.Status.PARCIAL
+    assert result['matriculados'] == 9
+
+    ciclo = Ciclo.objects.get(
+        origem=Ciclo.Origem.AUTOMATICO,
+        marco_competencia=MARCO_JUL,
+    )
+    assert Avaliacao.objects.filter(ciclo=ciclo).count() == 9
+    assert not Avaliacao.objects.filter(ciclo=ciclo, usuario=falho).exists()
+    for user in ok_users:
+        assert Avaliacao.objects.filter(ciclo=ciclo, usuario=user).count() == 1
+
+    run = AutoCycleRun.objects.get(pk=result['run_id'])
+    falhas = list(run.events.filter(tipo=AutoCycleEvent.Tipo.FALHA))
+    assert len(falhas) == 1
+    assert falhas[0].usuario_id == falho.pk
+    assert falhas[0].ciclo_id == ciclo.pk
+    assert falhas[0].payload.get('motivo') == 'excecao_matricula'
+    assert run.events.filter(tipo=AutoCycleEvent.Tipo.MATRICULA).count() == 9
+
+
+@pytest.mark.django_db
+def test_falha_criar_ciclo_run_falha_sem_avaliacoes_orfas(
+    lider,
+    area,
+    cargo_colab,
+):
+    """Falha ao criar ciclo → run ``falha``; zero Avaliações do marco."""
+    _seed_v1(lider, area, cargo_colab)
+
+    with patch(
+        'apps.cycles.services.auto_cohort._get_or_create_coorte',
+        side_effect=RuntimeError('falha simulada na coorte'),
+    ):
+        result = run_auto_cycle_admission_daily(data_referencia=REF_FIRST)
+
+    assert result['status'] == AutoCycleRun.Status.FALHA
+    assert result['ciclo_id'] is None
+    assert result['matriculados'] == 0
+
+    assert not Ciclo.objects.filter(
+        origem=Ciclo.Origem.AUTOMATICO,
+        marco_competencia=MARCO_JUL,
+    ).exists()
+    assert Avaliacao.objects.count() == 0
+
+    run = AutoCycleRun.objects.get(pk=result['run_id'])
+    falha = run.events.get(tipo=AutoCycleEvent.Tipo.FALHA)
+    assert falha.usuario_id is None
+    assert falha.payload.get('motivo') == 'falha_coorte'
+    assert 'falha simulada' in (falha.payload.get('erro') or '')
+
+
+@pytest.mark.django_db
+def test_reexecucao_apos_parcial_completa_sem_duplicar(
+    lider,
+    area,
+    cargo_colab,
+):
+    """Após parcial: reexecução matricula o falho; 0 duplicatas; sem alerta falso."""
+    seed = _seed_v1(lider, area, cargo_colab)
+    falho = seed['elegiveis'][0]
+
+    real_ensure = enrollment_svc.ensure_avaliacao_for_user
+    fail_once = {'done': False}
+
+    def _ensure_fail_once(user, *args, **kwargs):
+        if user.pk == falho.pk and not fail_once['done']:
+            fail_once['done'] = True
+            raise RuntimeError('falha transitória')
+        return real_ensure(user, *args, **kwargs)
+
+    with patch(
+        'apps.cycles.services.auto_cohort.ensure_avaliacao_for_user',
+        side_effect=_ensure_fail_once,
+    ):
+        first = run_auto_cycle_admission_daily(data_referencia=REF_FIRST)
+
+    assert first['status'] == AutoCycleRun.Status.PARCIAL
+    assert first['matriculados'] == 9
+
+    second = run_auto_cycle_admission_daily(data_referencia=REF_FIRST)
+
+    assert second['status'] == AutoCycleRun.Status.SUCESSO
+    assert second['matriculados'] == 1
+
+    assert (
+        Ciclo.objects.filter(
+            origem=Ciclo.Origem.AUTOMATICO,
+            marco_competencia=MARCO_JUL,
+        ).count()
+        == 1
+    )
+    ciclo = Ciclo.objects.get(
+        origem=Ciclo.Origem.AUTOMATICO,
+        marco_competencia=MARCO_JUL,
+    )
+    assert Avaliacao.objects.filter(ciclo=ciclo).count() == 10
+    for user in seed['elegiveis']:
+        assert Avaliacao.objects.filter(ciclo=ciclo, usuario=user).count() == 1
+
+    run2 = AutoCycleRun.objects.get(pk=second['run_id'])
+    assert run2.events.filter(tipo=AutoCycleEvent.Tipo.COORTE_REUSADA).exists()
+    assert run2.events.filter(tipo=AutoCycleEvent.Tipo.MATRICULA).count() == 1
+    assert run2.events.filter(
+        tipo=AutoCycleEvent.Tipo.MATRICULA,
+        usuario=falho,
+    ).exists()
+    # Já matriculados na coorte do marco não geram alerta FR-008 na reexecução.
+    assert run2.alertas_ciclo_aberto == 0
+    assert not run2.events.filter(
+        tipo=AutoCycleEvent.Tipo.ALERTA_CICLO_ABERTO,
+    ).exists()
+    assert not run2.events.filter(tipo=AutoCycleEvent.Tipo.FALHA).exists()

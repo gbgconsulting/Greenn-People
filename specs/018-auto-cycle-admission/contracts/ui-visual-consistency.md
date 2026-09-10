@@ -65,17 +65,17 @@
 
 ## Checklist de aceite visual (gate de PR)
 
-- [ ] `h1` Fraunces / `font-display`
-- [ ] Corpo/tabela Source Sans 3
-- [ ] Emerald brand sem azul genérico / roxo / glow
-- [ ] `rounded-lg` em botões/inputs/badges
-- [ ] Um CTA primário dominante na viewport de governança
-- [ ] Rose só para prazo estourado ou falha real
-- [ ] Alerta de ciclo aberto = amber/neutro enfatizado — **não** rose
-- [ ] Filtros avançados em `<details>` / segment bar
-- [ ] Tabela alinhada a listagens ciclos/cadastros/PDI (não inventar grid)
-- [ ] Empty/zero neutros (slate)
-- [ ] Sem segunda tipografia/paleta “só automático”
+- [x] `h1` Fraunces / `font-display`
+- [x] Corpo/tabela Source Sans 3
+- [x] Emerald brand sem azul genérico / roxo / glow
+- [x] `rounded-lg` em botões/inputs/badges
+- [x] Um CTA primário dominante na viewport de governança
+- [x] Rose só para prazo estourado ou falha real
+- [x] Alerta de ciclo aberto = amber/neutro enfatizado — **não** rose
+- [x] Filtros avançados em `<details>` / segment bar
+- [x] Tabela alinhada a listagens ciclos/cadastros/PDI (não inventar grid)
+- [x] Empty/zero neutros (slate)
+- [x] Sem segunda tipografia/paleta “só automático”
 
 ## Denylist visual
 

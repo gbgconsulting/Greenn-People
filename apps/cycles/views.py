@@ -55,7 +55,7 @@ from apps.dashboard.models import AderenciaSnapshot
 from apps.dashboard.services.eligible_leaders import filter_adherence_snapshots
 from apps.dashboard.services.structure import build_structure_coverage
 from apps.dashboard.views import aderencia_status
-from apps.goals.forms import ObjetivoEstrategicoForm, get_open_ciclo
+from apps.goals.forms import ObjetivoEstrategicoForm, get_open_ciclos
 from apps.goals.models import ObjetivoEstrategico
 from apps.reviews.models import Avaliacao
 from apps.reviews.services.guidance import build_rh_pre_open_checklist
@@ -128,7 +128,7 @@ class CicloListView(AdminCyclesMixin, HtmxPaginatedListMixin, ListView):
     paginate_by = 5
 
     def get_queryset(self):
-        """Arquivo paginado; o aberto vai para ``ciclo_operacional``."""
+        """Arquivo paginado; abertos vão para ``ciclos_operacionais``."""
         return (
             _annotated_ciclos()
             .filter(status=Ciclo.Status.ENCERRADO)
@@ -136,16 +136,22 @@ class CicloListView(AdminCyclesMixin, HtmxPaginatedListMixin, ListView):
         )
 
     def get_context_data(self, **kwargs):
-        """Checklist RH avisório + destaque do ciclo aberto (T018).
+        """Checklist RH avisório + todos os ciclos abertos (multi-open).
 
-        Não condiciona Abrir / ``CicloOpenView`` / ``open_cycle``.
+        ``ciclo_operacional`` permanece o default (primeiro de
+        ``get_open_ciclos()``) para compatibilidade; a grade itera
+        ``ciclos_operacionais``. Não condiciona Abrir / ``open_cycle``.
         """
         context = super().get_context_data(**kwargs)
         context.update(_rh_pre_open_checklist_context())
-        aberto = get_open_ciclo()
-        if aberto is not None:
-            aberto = _annotated_ciclos().filter(pk=aberto.pk).first()
-        context['ciclo_operacional'] = aberto
+        aberto_pks = [c.pk for c in get_open_ciclos()]
+        operacionais = list(
+            _annotated_ciclos()
+            .filter(pk__in=aberto_pks)
+            .order_by('-data_inicio', 'nome')
+        ) if aberto_pks else []
+        context['ciclos_operacionais'] = operacionais
+        context['ciclo_operacional'] = operacionais[0] if operacionais else None
         paginator = context.get('paginator')
         context['arquivo_total'] = paginator.count if paginator is not None else 0
         return context
@@ -155,8 +161,8 @@ class CicloCreateView(AdminCyclesMixin, CreateView):
     """Cria o ciclo e, em seguida, abre + matricula elegíveis via ``open_cycle``.
 
     Persistência inicial como ``encerrado``; ``open_cycle`` aplica o gate de
-    corte, a regra de um-aberto e a matrícula. Se já houver ciclo aberto, o
-    cadastro permanece encerrado (com ``admitidos_ate``) para Abrir depois.
+    corte 015 e a matrícula. Múltiplos ciclos abertos são permitidos (018);
+    ``CycleAlreadyOpenError`` só ocorre ao tentar reabrir o mesmo ciclo.
     """
 
     model = Ciclo
