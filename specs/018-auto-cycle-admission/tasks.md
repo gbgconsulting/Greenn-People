@@ -105,10 +105,10 @@ Monólito Django na raiz: `apps/cycles/`, `apps/core/`, `apps/reviews/`, `apps/g
 
 ### Implementation for User Story 3
 
-- [ ] T018 [US3] Em `apps/cycles/services/auto_cohort.py`, particionar candidatos: com ≥1 ciclo `aberto` → events `alerta_ciclo_aberto` **sem** matricular (FR-008); demais → matrícula; alerta **nunca** aborta/adia o lote ([contracts/auto-cohort-open-contract.md](./contracts/auto-cohort-open-contract.md))
-- [ ] T019 [P] [US3] Implementar envio de e-mail aos `is_admin` ativos em `apps/notifications/emails.py` + task/helper em `apps/notifications/tasks.py` com dedupe `already_sent` (destinatário+tipo+referência+janela do dia); templates `templates/notifications/email/alerta_ciclo_ainda_aberto_{subject,body}.{txt,html}` reusando `templates/emails/base.html`
-- [ ] T020 [US3] Confirmar na criação da coorte que `data_fim = data_inicio + timedelta(days=20)` (corridos) e que atraso pós-prazo fica sinalizável para governança (rose só atraso real) — sem auto-close hard obrigatório nesta feature
-- [ ] T021 [US3] Cobrir alerta não-bloqueante + prazo 20d + dedupe de e-mail em `tests/test_auto_open_cycle_alert.py`
+- [X] T018 [US3] Em `apps/cycles/services/auto_cohort.py`, particionar candidatos: com ≥1 ciclo `aberto` → events `alerta_ciclo_aberto` **sem** matricular (FR-008); demais → matrícula; alerta **nunca** aborta/adia o lote ([contracts/auto-cohort-open-contract.md](./contracts/auto-cohort-open-contract.md))
+- [X] T019 [P] [US3] Implementar envio de e-mail aos `is_admin` ativos em `apps/notifications/emails.py` + task/helper em `apps/notifications/tasks.py` com dedupe `already_sent` (destinatário+tipo+referência+janela do dia); templates `templates/notifications/email/alerta_ciclo_ainda_aberto_{subject,body}.{txt,html}` reusando `templates/emails/base.html`
+- [X] T020 [US3] Confirmar na criação da coorte que `data_fim = data_inicio + timedelta(days=20)` (corridos) e que atraso pós-prazo fica sinalizável para governança (rose só atraso real) — sem auto-close hard obrigatório nesta feature
+- [X] T021 [US3] Cobrir alerta não-bloqueante + prazo 20d + dedupe de e-mail em `tests/test_auto_open_cycle_alert.py`
 
 **Checkpoint**: Prazo e esteira não-bloqueante verificáveis; US1–US3 prontos
 

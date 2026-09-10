@@ -1,0 +1,34 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Ciclo ainda aberto — Greenn People{% endblock %}
+
+{% block content %}
+<p style="margin:0 0 12px 0;">Olá {{ user.nome }},</p>
+<p style="margin:0 0 12px 0;">
+  <strong>{{ usuario_alertado.nome }}</strong>
+  ({{ usuario_alertado.email }}) segue com ciclo(s) em aberto e
+  <strong>não</strong> foi matriculado(a) automaticamente no novo marco.
+</p>
+{% if ciclos_abertos %}
+<p style="margin:0 0 8px 0;font-weight:700;color:#0f172a;">Ciclo(s) em aberto</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 16px 0;background-color:#fffbeb;border-radius:8px;border:1px solid #fde68a;">
+  <tr>
+    <td style="padding:14px 16px;color:#92400e;font-size:14px;line-height:1.55;">
+      {% for ciclo in ciclos_abertos %}
+      <div style="margin:0 0 {% if not forloop.last %}10px{% else %}0{% endif %} 0;">
+        <strong style="color:#78350f;">{{ ciclo.nome }}</strong><br>
+        {{ ciclo.data_inicio|date:"d/m/Y" }} – {{ ciclo.data_fim|date:"d/m/Y" }}
+      </div>
+      {% endfor %}
+    </td>
+  </tr>
+</table>
+{% else %}
+<p style="margin:0 0 16px 0;color:#64748b;">
+  Não foi possível identificar o ciclo em aberto no momento.
+</p>
+{% endif %}
+<p style="margin:0;">
+  O lote dos demais elegíveis segue normalmente. Acompanhe no Greenn People.
+</p>
+{% endblock %}

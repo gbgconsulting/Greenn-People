@@ -11,7 +11,7 @@ Bootstrap (FR-005 / R5): defesa em profundidade — se chamado fora do 1º dia
 
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date
 from typing import TYPE_CHECKING
 
 from django.contrib.auth import get_user_model
@@ -27,6 +27,7 @@ from apps.cycles.services.marco import (
     list_auto_marco_candidates,
     user_blocked_by_open_cycle,
 )
+from apps.cycles.services.prazo import data_fim_from_inicio
 from apps.reviews.models import Avaliacao
 from apps.reviews.services.enrollment import ensure_avaliacao_for_user
 
@@ -47,8 +48,6 @@ _MESES_PT_ABREV = (
     'Nov',
     'Dez',
 )
-
-_PRAZO_DIAS_CORRIDOS = 20
 
 
 def _nome_coorte(year: int, month: int) -> str:
@@ -81,7 +80,8 @@ def _get_or_create_coorte(
     defaults = {
         'nome': _nome_coorte(marco_competencia.year, marco_competencia.month),
         'data_inicio': data_inicio,
-        'data_fim': data_inicio + timedelta(days=_PRAZO_DIAS_CORRIDOS),
+        # FR-006 / R4: 20 dias corridos; atraso sinalizável, sem auto-close.
+        'data_fim': data_fim_from_inicio(data_inicio),
         'status': Ciclo.Status.ABERTO,
     }
     try:
@@ -111,6 +111,53 @@ def _partition_candidates(
         else:
             matriculaveis.append(user)
     return alertados, matriculaveis
+
+
+def _open_cycles_blocking(user: CustomUser) -> list[Ciclo]:
+    """Ciclos ``aberto`` em que o usuário já tem Avaliação (FR-008)."""
+    return list(
+        Ciclo.objects.filter(
+            status=Ciclo.Status.ABERTO,
+            avaliacoes__usuario_id=user.pk,
+        )
+        .distinct()
+        .order_by('-data_inicio', '-pk'),
+    )
+
+
+def _register_alertas_ciclo_aberto(
+    run: AutoCycleRun,
+    alertados: list[CustomUser],
+) -> int:
+    """Persiste events ``alerta_ciclo_aberto``; não matricula; não aborta o lote.
+
+    FR-008 / contrato passo 5: alerta é observabilidade — o lote segue com
+    criação da coorte e matrícula dos demais independentemente destes events.
+    E-mail aos ``is_admin`` ativos com dedupe diário (falha de envio não
+    interrompe o lote).
+    """
+    from apps.notifications.tasks import enviar_alerta_ciclo_ainda_aberto
+
+    count = 0
+    for user in alertados:
+        abertos = _open_cycles_blocking(user)
+        primario = abertos[0] if abertos else None
+        _append_event(
+            run,
+            tipo=AutoCycleEvent.Tipo.ALERTA_CICLO_ABERTO,
+            usuario=user,
+            ciclo=primario,
+            payload={
+                'motivo': 'ciclo_ainda_aberto',
+                'ciclos_abertos_ids': [c.pk for c in abertos],
+            },
+        )
+        try:
+            enviar_alerta_ciclo_ainda_aberto(user.pk)
+        except Exception:  # noqa: BLE001 — e-mail nunca aborta/adia o lote
+            pass
+        count += 1
+    return count
 
 
 def _register_pendencias_sem_admissao(run: AutoCycleRun) -> int:
@@ -301,8 +348,9 @@ def open_auto_cohort(
         )
         return None
 
-    _alertados, matriculaveis = _partition_candidates(candidates)
-    # Alertas/e-mail (T018) ficam fora desta fatia.
+    alertados, matriculaveis = _partition_candidates(candidates)
+    # FR-008: events antes da coorte; alerta nunca adia/aborta o lote.
+    n_alertas = _register_alertas_ciclo_aberto(run, alertados)
 
     try:
         ciclo, created = _get_or_create_coorte(
@@ -313,6 +361,7 @@ def open_auto_cohort(
         run.status = AutoCycleRun.Status.FALHA
         run.ciclo = None
         run.matriculados = 0
+        run.alertas_ciclo_aberto = n_alertas
         run.excluidos_sem_admissao = excluidos_sem_admissao
         run.mensagem = f'Falha ao criar/obter ciclo da coorte: {exc}'[:1000]
         run.save(
@@ -320,6 +369,7 @@ def open_auto_cohort(
                 'status',
                 'ciclo',
                 'matriculados',
+                'alertas_ciclo_aberto',
                 'excluidos_sem_admissao',
                 'mensagem',
                 'updated_at',
@@ -375,12 +425,12 @@ def open_auto_cohort(
     run.status = status
     run.ciclo = ciclo
     run.matriculados = matriculados
-    run.alertas_ciclo_aberto = len(_alertados)
+    run.alertas_ciclo_aberto = n_alertas
     run.excluidos_sem_admissao = excluidos_sem_admissao
     run.mensagem = (
         f'Coorte {"criada" if created else "reutilizada"}; '
         f'{matriculados} matriculado(s); '
-        f'{len(_alertados)} com ciclo aberto (sem matrícula nesta fatia); '
+        f'{n_alertas} alerta(s) ciclo aberto (sem matrícula); '
         f'{excluidos_sem_admissao} sem data de entrada; '
         f'{falhas} falha(s).'
     )

@@ -20,7 +20,11 @@ class Ciclo(TimeStampedModel):
     data_inicio = models.DateField('data de início')
     data_fim = models.DateField(
         'data de fim',
-        help_text='Informativo; o encerramento é manual.',
+        help_text=(
+            'Prazo operacional da avaliação (automático: ativação + 20 dias '
+            'corridos). O encerramento do ciclo permanece manual — sem '
+            'auto-close hard.'
+        ),
     )
     status = models.CharField(
         'status',
@@ -74,6 +78,13 @@ class Ciclo(TimeStampedModel):
 
     def __str__(self) -> str:
         return self.nome
+
+    @property
+    def prazo_estourado(self) -> bool:
+        """Atraso real pós-``data_fim`` com ciclo ainda aberto (rose na UI)."""
+        from apps.cycles.services.prazo import is_prazo_estourado
+
+        return is_prazo_estourado(self)
 
     def clean(self):
         super().clean()

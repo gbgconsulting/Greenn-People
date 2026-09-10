@@ -1,0 +1,12 @@
+Olá {{ user.nome }},
+
+{{ usuario_alertado.nome }} ({{ usuario_alertado.email }}) segue com ciclo(s) em aberto e não foi matriculado(a) automaticamente no novo marco.
+
+{% if ciclos_abertos %}Ciclo(s) em aberto:
+{% for ciclo in ciclos_abertos %}- {{ ciclo.nome }} ({{ ciclo.data_inicio|date:"d/m/Y" }} – {{ ciclo.data_fim|date:"d/m/Y" }})
+{% endfor %}{% else %}Não foi possível identificar o ciclo em aberto no momento.
+{% endif %}
+O lote dos demais elegíveis segue normalmente. Acesse o Greenn People para acompanhar:
+{{ cta_url }}
+
+Esta é uma mensagem automática — não responda este e-mail.
