@@ -11,6 +11,7 @@ import pytest
 from django.utils import timezone
 
 from apps.accounts.models import CustomUser
+from apps.audit.models import AuditLog
 from apps.core.calendar_br import first_business_day_of_month
 from apps.cycles.models import AutoCycleEvent, AutoCycleRun, Ciclo
 from apps.cycles.tasks import run_auto_cycle_admission_daily
@@ -143,6 +144,33 @@ def test_lote_abre_coorte_e_matricula_elegiveis(lider, area, cargo_colab):
     assert run.events.filter(tipo=AutoCycleEvent.Tipo.COORTE_CRIADA).exists()
     assert run.events.filter(tipo=AutoCycleEvent.Tipo.MATRICULA).count() == 10
 
+    # FR-016 / T026: AuditLog CREATE na coorte + events com quem/quando/por quê.
+    create_logs = AuditLog.objects.filter(
+        acao=AuditLog.Acao.CREATE,
+        entity_type='cycles.Ciclo',
+        entity_id=ciclo.pk,
+    )
+    assert create_logs.count() >= 1
+    campos = set(create_logs.values_list('campo', flat=True))
+    assert {'origem', 'marco_competencia', 'data_inicio', 'data_fim', 'status'} <= campos
+    assert create_logs.filter(campo='origem', valor_novo=Ciclo.Origem.AUTOMATICO).exists()
+
+    coorte_ev = run.events.get(tipo=AutoCycleEvent.Tipo.COORTE_CRIADA)
+    assert coorte_ev.payload.get('motivo') == 'abertura_automatica_marco'
+    assert coorte_ev.payload.get('ator') == 'sistema_beat'
+    assert coorte_ev.payload.get('run_id') == run.pk
+    assert coorte_ev.criado_em is not None
+
+    pend = run.events.filter(tipo=AutoCycleEvent.Tipo.PENDENCIA_SEM_ADMISSAO).first()
+    assert pend is not None
+    assert pend.usuario_id is not None
+    assert pend.payload.get('motivo') == 'data_entrada_ausente'
+
+    mat = run.events.filter(tipo=AutoCycleEvent.Tipo.MATRICULA).first()
+    assert mat is not None
+    assert mat.usuario_id is not None
+    assert mat.payload.get('motivo') == 'elegivel_marco_admissao'
+
 
 @pytest.mark.django_db
 def test_idempotencia_reexecucao_mesmo_dia(lider, area, cargo_colab):
@@ -173,6 +201,19 @@ def test_idempotencia_reexecucao_mesmo_dia(lider, area, cargo_colab):
     assert run2.events.filter(tipo=AutoCycleEvent.Tipo.COORTE_REUSADA).exists()
     assert not run2.events.filter(tipo=AutoCycleEvent.Tipo.COORTE_CRIADA).exists()
     assert run2.events.filter(tipo=AutoCycleEvent.Tipo.MATRICULA).count() == 0
+
+    # Idempotência: CREATE AuditLog só na primeira materialização (6 campos).
+    assert (
+        AuditLog.objects.filter(
+            acao=AuditLog.Acao.CREATE,
+            entity_type='cycles.Ciclo',
+            entity_id=ciclo.pk,
+        ).count()
+        == 6
+    )
+
+    reused = run2.events.get(tipo=AutoCycleEvent.Tipo.COORTE_REUSADA)
+    assert reused.payload.get('motivo') == 'idempotencia_mesmo_marco'
 
     for user in seed['elegiveis']:
         assert Avaliacao.objects.filter(ciclo=ciclo, usuario=user).count() == 1

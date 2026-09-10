@@ -18,8 +18,7 @@ from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
-from apps.audit.models import AuditLog
-from apps.audit.services import entity_type_for, write_audit_log
+from apps.audit.services import log_entity_created
 from apps.core.calendar_br import first_business_day_of_month
 from apps.cycles.models import AutoCycleEvent, AutoCycleRun, Ciclo
 from apps.cycles.services.marco import (
@@ -62,12 +61,33 @@ def _append_event(
     ciclo: Ciclo | None = None,
     payload: dict | None = None,
 ) -> AutoCycleEvent:
+    """Persiste event append-only com metadados mínimos de reconstrução (FR-016)."""
+    body = dict(payload or {})
+    # quem/quando/por quê: ator de sistema quando não há usuário de negócio.
+    body.setdefault('ator', 'sistema_beat' if usuario is None else 'usuario')
+    body.setdefault('run_id', run.pk)
+    body.setdefault('data_referencia', run.data_referencia.isoformat())
     return AutoCycleEvent.objects.create(
         run=run,
         tipo=tipo,
         usuario=usuario,
         ciclo=ciclo,
-        payload=payload or {},
+        payload=body,
+    )
+
+
+def _audit_coorte_criada(ciclo: Ciclo) -> None:
+    """Trilha técnica append-only na criação do ciclo automático (FR-016 / R12)."""
+    log_entity_created(
+        instance=ciclo,
+        fields={
+            'origem': ciclo.origem,
+            'marco_competencia': ciclo.marco_competencia,
+            'data_inicio': ciclo.data_inicio,
+            'data_fim': ciclo.data_fim,
+            'status': ciclo.status,
+            'nome': ciclo.nome,
+        },
     )
 
 
@@ -220,7 +240,10 @@ def _enroll_matriculaveis(
                     tipo=AutoCycleEvent.Tipo.MATRICULA,
                     usuario=user,
                     ciclo=ciclo,
-                    payload={'avaliacao_id': avaliacao.pk},
+                    payload={
+                        'motivo': 'elegivel_marco_admissao',
+                        'avaliacao_id': avaliacao.pk,
+                    },
                 )
         except Exception as exc:  # noqa: BLE001 — falha parcial do lote
             falhas += 1
@@ -383,22 +406,18 @@ def open_auto_cohort(
         return None
 
     if created:
-        write_audit_log(
-            acao=AuditLog.Acao.CREATE,
-            entity_type=entity_type_for(ciclo),
-            entity_id=ciclo.pk,
-            campo='status',
-            valor_anterior='',
-            valor_novo=ciclo.status,
-        )
+        _audit_coorte_criada(ciclo)
         _append_event(
             run,
             tipo=AutoCycleEvent.Tipo.COORTE_CRIADA,
             ciclo=ciclo,
             payload={
+                'motivo': 'abertura_automatica_marco',
+                'origem': Ciclo.Origem.AUTOMATICO,
                 'marco_competencia': marco_competencia.isoformat(),
                 'data_inicio': ciclo.data_inicio.isoformat(),
                 'data_fim': ciclo.data_fim.isoformat(),
+                'ciclo_id': ciclo.pk,
             },
         )
     else:
@@ -406,7 +425,12 @@ def open_auto_cohort(
             run,
             tipo=AutoCycleEvent.Tipo.COORTE_REUSADA,
             ciclo=ciclo,
-            payload={'marco_competencia': marco_competencia.isoformat()},
+            payload={
+                'motivo': 'idempotencia_mesmo_marco',
+                'origem': Ciclo.Origem.AUTOMATICO,
+                'marco_competencia': marco_competencia.isoformat(),
+                'ciclo_id': ciclo.pk,
+            },
         )
 
     matriculados, falhas = _enroll_matriculaveis(

@@ -121,12 +121,12 @@ Monólito Django na raiz: `apps/cycles/`, `apps/core/`, `apps/reviews/`, `apps/g
 
 ### Implementation for User Story 4
 
-- [ ] T022 [US4] Criar `apps/cycles/services/governance.py` com queries agregadas do período (entrantes/`matricula`, pendências sem admissão, alertas, falhas, runs) a partir de `AutoCycleRun`/`AutoCycleEvent`
-- [ ] T023 [US4] Adicionar views admin de governança em `apps/cycles/views.py` (`RequiresAdminMixin`/`AdminCyclesMixin` apenas) + rotas em `apps/cycles/urls.py`; Form/filtros leves em `apps/cycles/forms.py` se necessário — **sem** processar lote do mês na request ([contracts/governance-surface-contract.md](./contracts/governance-surface-contract.md), [contracts/backend-scope-authz.md](./contracts/backend-scope-authz.md))
-- [ ] T024 [P] [US4] Criar templates `templates/cycles/auto_governance.html` (+ partials se HTMX) no DNA de listagens de ciclos: Fraunces h1, Source Sans 3, Lush Professional, `rounded-lg`, KPIs Status Triad (emerald/amber/rose), um CTA primário soberano, empty states guiados, copy RH (FR-022) — [contracts/ui-visual-consistency.md](./contracts/ui-visual-consistency.md)
-- [ ] T025 [US4] Linkar governança a partir de `templates/cycles/ciclo_list.html` / `_ciclo_card.html` (copy multi-open honesta + entrada à superfície) sem segundo CTA primário competindo
-- [ ] T026 [US4] Garantir `write_audit_log` na criação do ciclo automático e events append-only suficientes para reconstruir quem/quando/por quê (FR-016) em `apps/cycles/services/auto_cohort.py` + `apps/audit/services.py`
-- [ ] T027 [US4] Cobrir AuthZ + superfície em `tests/test_auto_governance_authz.py` (admin 200 com blocos; líder/colaborador 403; sem leak de fila org)
+- [X] T022 [US4] Criar `apps/cycles/services/governance.py` com queries agregadas do período (entrantes/`matricula`, pendências sem admissão, alertas, falhas, runs) a partir de `AutoCycleRun`/`AutoCycleEvent`
+- [X] T023 [US4] Adicionar views admin de governança em `apps/cycles/views.py` (`RequiresAdminMixin`/`AdminCyclesMixin` apenas) + rotas em `apps/cycles/urls.py`; Form/filtros leves em `apps/cycles/forms.py` se necessário — **sem** processar lote do mês na request ([contracts/governance-surface-contract.md](./contracts/governance-surface-contract.md), [contracts/backend-scope-authz.md](./contracts/backend-scope-authz.md))
+- [X] T024 [P] [US4] Criar templates `templates/cycles/auto_governance.html` (+ partials se HTMX) no DNA de listagens de ciclos: Fraunces h1, Source Sans 3, Lush Professional, `rounded-lg`, KPIs Status Triad (emerald/amber/rose), um CTA primário soberano, empty states guiados, copy RH (FR-022) — [contracts/ui-visual-consistency.md](./contracts/ui-visual-consistency.md)
+- [X] T025 [US4] Linkar governança a partir de `templates/cycles/ciclo_list.html` / `_ciclo_card.html` (copy multi-open honesta + entrada à superfície) sem segundo CTA primário competindo
+- [X] T026 [US4] Garantir `write_audit_log` na criação do ciclo automático e events append-only suficientes para reconstruir quem/quando/por quê (FR-016) em `apps/cycles/services/auto_cohort.py` + `apps/audit/services.py`
+- [X] T027 [US4] Cobrir AuthZ + superfície em `tests/test_auto_governance_authz.py` (admin 200 com blocos; líder/colaborador 403; sem leak de fila org)
 
 **Checkpoint**: MVP completo (US1–US4) — automação + governança aceitáveis para RH
 

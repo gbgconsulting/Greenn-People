@@ -1,0 +1,73 @@
+{% comment %}
+  Tabela nominativa de eventos por pessoa (US4 / T024).
+  DNA leader-team-table / registry — hover slate, empty guiado.
+  Params:
+    section_id, heading, events, col_situacao, empty_title, empty_message,
+    empty_cta_label (opt), empty_cta_href (opt), row_tone (opt: amber|rose|neutral)
+{% endcomment %}
+<section class="mb-8" aria-labelledby="{{ section_id }}-heading" data-gov-section="{{ section_id }}">
+  <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+    <h2 id="{{ section_id }}-heading" class="font-display text-lg font-medium tracking-tight text-slate-800">
+      {{ heading }}
+    </h2>
+  </div>
+
+  <div class="overflow-hidden rounded-xl border border-line bg-surface-card shadow-sm">
+    <div class="registry-table-scroll min-w-0 overflow-x-auto">
+      <table class="leader-team-table">
+        <thead>
+          <tr>
+            <th scope="col" class="col-colaborador">Pessoa</th>
+            <th scope="col">Situação</th>
+            <th scope="col" class="whitespace-nowrap">Quando</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ev in events %}
+          <tr class="group border-b border-slate-100 hover:bg-slate-50/80">
+            <td class="col-colaborador">
+              {% if ev.usuario %}
+              <span class="block truncate font-ui text-sm font-semibold text-slate-800" title="{{ ev.usuario.nome|default:ev.usuario.email }}">
+                {{ ev.usuario.nome|default:ev.usuario.email }}
+              </span>
+              {% if ev.usuario.email %}
+              <p class="truncate font-ui text-xs text-slate-500">{{ ev.usuario.email }}</p>
+              {% endif %}
+              {% else %}
+              <span class="font-ui text-sm text-slate-400">—</span>
+              {% endif %}
+            </td>
+            <td class="font-ui text-sm text-slate-600">
+              {% if row_tone == 'amber' %}
+                {% include "components/badge_status.html" with status="pendente" label=col_situacao|default:"Atenção" %}
+              {% elif row_tone == 'rose' %}
+                {% include "components/badge_status.html" with status="atrasada" label=col_situacao|default:"Falha" %}
+              {% else %}
+                {% include "components/badge_status.html" with status="ativo" label=col_situacao|default:"Entrou no lote" %}
+              {% endif %}
+              {% if ev.ciclo %}
+              <p class="mt-1 truncate font-ui text-xs text-slate-500" title="{{ ev.ciclo.nome }}">
+                {{ ev.ciclo.nome }}
+              </p>
+              {% endif %}
+            </td>
+            <td class="whitespace-nowrap font-ui text-sm tabular-nums text-slate-600">
+              {{ ev.criado_em|date:"d/m/Y H:i" }}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="3" class="!py-10">
+              {% if empty_cta_label and empty_cta_href %}
+                {% include "components/empty_state.html" with title=empty_title message=empty_message cta_label=empty_cta_label cta_href=empty_cta_href %}
+              {% else %}
+                {% include "components/empty_state.html" with title=empty_title message=empty_message %}
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

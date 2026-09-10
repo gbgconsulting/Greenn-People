@@ -9,7 +9,14 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse, reverse_lazy
 from django.views import View
-from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    DetailView,
+    ListView,
+    TemplateView,
+    UpdateView,
+)
 from django.views.generic.detail import SingleObjectMixin
 
 from apps.accounts.services.scope import get_visible_users
@@ -19,10 +26,14 @@ from apps.cycles.exceptions import (
     CycleMissingCutoffError,
     CycleNotOpenError,
 )
-from apps.cycles.forms import CicloForm
+from apps.cycles.forms import CicloForm, GovernancePeriodFilterForm
 from apps.cycles.models import Ciclo
 from apps.cycles.services.cycle import close_cycle, open_cycle
 from apps.cycles.services.eligibility import preview_admission_counts
+from apps.cycles.services.governance import (
+    get_governance_snapshot,
+    snapshot_as_context,
+)
 from apps.cycles.services.objetivo_list import (
     apply_objetivo_list_filters,
     get_base_objetivo_list_queryset,
@@ -431,6 +442,32 @@ class CicloDetailView(AdminCyclesMixin, DetailView):
             empty_message=empty_kind_message(EMPTY_KIND_SEM_NOTA),
             has_data=False,
         )
+
+
+class AutoGovernanceView(AdminCyclesMixin, TemplateView):
+    """Superfície de governança do automático — somente leitura (US4 / T023).
+
+    AuthZ = ``AdminCyclesMixin`` (LoginRequired + RequiresAdmin). GET monta
+    snapshot via ``get_governance_snapshot``; **não** abre coorte, **não**
+    dispara Beat, **não** processa o lote do mês.
+
+    Template: ``auto_governance.html`` + partials (T024).
+    Contratos: governance-surface-contract + backend-scope-authz.
+    """
+
+    template_name = 'cycles/auto_governance.html'
+    http_method_names = ['get', 'head', 'options']
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        form = GovernancePeriodFilterForm.from_request_get(self.request.GET)
+        year, month = form.resolved_year_month()
+        snapshot = get_governance_snapshot(year=year, month=month)
+        context.update(snapshot_as_context(snapshot))
+        context['filter_form'] = form
+        context['periodo_ano'] = year
+        context['periodo_mes'] = month
+        return context
 
 
 class CicloOpenView(AdminCyclesMixin, SingleObjectMixin, View):

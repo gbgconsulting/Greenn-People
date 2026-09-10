@@ -1,0 +1,73 @@
+{% comment %}
+  Histórico de execuções do período (US4 / T024).
+  Copy RH — sem jargão de Beat/Celery. Rose só em falha real.
+  Requer: runs
+{% endcomment %}
+<section class="mb-8" aria-labelledby="gov-runs-heading" data-gov-section="runs">
+  <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+    <h2 id="gov-runs-heading" class="font-display text-lg font-medium tracking-tight text-slate-800">
+      Execuções do período
+    </h2>
+  </div>
+
+  <div class="overflow-hidden rounded-xl border border-line bg-surface-card shadow-sm">
+    <div class="registry-table-scroll min-w-0 overflow-x-auto">
+      <table class="leader-team-table">
+        <thead>
+          <tr>
+            <th scope="col" class="whitespace-nowrap">Referência</th>
+            <th scope="col">Resultado</th>
+            <th scope="col" class="text-center">Entrou</th>
+            <th scope="col" class="text-center">Sem admissão</th>
+            <th scope="col" class="text-center">Ciclo aberto</th>
+            <th scope="col" class="whitespace-nowrap">Executado em</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for run in runs %}
+          <tr class="group border-b border-slate-100 hover:bg-slate-50/80">
+            <td class="whitespace-nowrap font-ui text-sm tabular-nums text-slate-700">
+              {{ run.data_referencia|date:"d/m/Y" }}
+              {% if not run.era_primeiro_dia_util %}
+              <p class="mt-0.5 font-ui text-xs text-slate-400">Fora do 1º dia útil</p>
+              {% endif %}
+            </td>
+            <td>
+              {% if run.status == 'sucesso' %}
+                {% include "components/badge_status.html" with status="ativo" label="Sucesso" %}
+              {% elif run.status == 'parcial' %}
+                {% include "components/badge_status.html" with status="pendente" label="Parcial" %}
+              {% elif run.status == 'falha' %}
+                {% include "components/badge_status.html" with status="atrasada" label="Falha" %}
+              {% else %}
+                {% include "components/badge_status.html" with status="neutro" label="Sem abertura" %}
+              {% endif %}
+              {% if run.ciclo %}
+              <p class="mt-1 truncate font-ui text-xs text-slate-500" title="{{ run.ciclo.nome }}">
+                {{ run.ciclo.nome }}
+              </p>
+              {% endif %}
+            </td>
+            <td class="text-center font-ui text-sm tabular-nums text-slate-700">{{ run.matriculados }}</td>
+            <td class="text-center font-ui text-sm tabular-nums {% if run.excluidos_sem_admissao %}text-amber-700{% else %}text-slate-400{% endif %}">
+              {{ run.excluidos_sem_admissao }}
+            </td>
+            <td class="text-center font-ui text-sm tabular-nums {% if run.alertas_ciclo_aberto %}text-amber-700{% else %}text-slate-400{% endif %}">
+              {{ run.alertas_ciclo_aberto }}
+            </td>
+            <td class="whitespace-nowrap font-ui text-sm tabular-nums text-slate-600">
+              {{ run.executado_em|date:"d/m/Y H:i" }}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="!py-10">
+              {% include "components/empty_state.html" with title="Nenhum lote automático neste período" message="A rotina ainda não registrou execução neste mês. No 1º dia útil do mês o lote abre sozinho." %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

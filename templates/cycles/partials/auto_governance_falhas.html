@@ -1,0 +1,55 @@
+{% comment %}
+  Falhas da rotina (rose — falha real). Sem stack trace na UI (FR-022).
+  Requer: falhas
+{% endcomment %}
+<section class="mb-8" aria-labelledby="gov-falhas-heading" data-gov-section="falhas">
+  <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+    <h2 id="gov-falhas-heading" class="font-display text-lg font-medium tracking-tight text-slate-800">
+      Falhas da rotina
+    </h2>
+  </div>
+
+  <div class="overflow-hidden rounded-xl border border-line bg-surface-card shadow-sm">
+    <div class="registry-table-scroll min-w-0 overflow-x-auto">
+      <table class="leader-team-table">
+        <thead>
+          <tr>
+            <th scope="col" class="col-colaborador">Pessoa</th>
+            <th scope="col">O que aconteceu</th>
+            <th scope="col" class="whitespace-nowrap">Quando</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ev in falhas %}
+          <tr class="group border-b border-slate-100 hover:bg-slate-50/80">
+            <td class="col-colaborador">
+              {% if ev.usuario %}
+              <span class="block truncate font-ui text-sm font-semibold text-slate-800">
+                {{ ev.usuario.nome|default:ev.usuario.email }}
+              </span>
+              {% else %}
+              <span class="font-ui text-sm text-slate-400">Rotina</span>
+              {% endif %}
+            </td>
+            <td class="font-ui text-sm text-slate-700">
+              {% include "components/badge_status.html" with status="atrasada" label="Falha na rotina" %}
+              <p class="mt-1 max-w-md font-ui text-xs leading-relaxed text-slate-500">
+                {{ ev.payload.motivo|default:"Não foi possível concluir esta etapa do lote." }}
+              </p>
+            </td>
+            <td class="whitespace-nowrap font-ui text-sm tabular-nums text-slate-600">
+              {{ ev.criado_em|date:"d/m/Y H:i" }}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="3" class="!py-10">
+              {% include "components/empty_state.html" with title="Nenhuma falha neste período" message="A rotina concluiu sem erros operacionais registrados." %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

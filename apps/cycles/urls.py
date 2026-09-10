@@ -7,6 +7,12 @@ app_name = 'cycles'
 urlpatterns = [
     path('', views.CicloListView.as_view(), name='ciclo_list'),
     path('new/', views.CicloCreateView.as_view(), name='ciclo_create'),
+    # Antes de <int:pk>/ — governança automática (somente leitura; US4 / T023).
+    path(
+        'auto/governance/',
+        views.AutoGovernanceView.as_view(),
+        name='auto_governance',
+    ),
     path(
         '<int:pk>/edit/',
         views.CicloUpdateView.as_view(),

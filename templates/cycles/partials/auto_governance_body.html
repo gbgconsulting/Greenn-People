@@ -1,0 +1,18 @@
+{% comment %}
+  Corpo da governança (T024) — isolado para eventual swap HTMX do filtro.
+  Requer contexto completo de AutoGovernanceView / snapshot_as_context.
+  CTAs de empty = mensagem guiada apenas; CTA primário soberano fica no header.
+{% endcomment %}
+
+{% include "cycles/partials/auto_governance_filters.html" %}
+{% include "cycles/partials/auto_governance_kpis.html" %}
+
+{% include "cycles/partials/auto_governance_people_table.html" with section_id="entrantes" heading="Entrou no lote" events=entrantes col_situacao="Entrou no lote" row_tone="emerald" empty_title="Ninguém entrou no lote" empty_message="Neste período a rotina não matriculou ninguém. Confira se houve 1º dia útil e elegíveis com data de entrada." %}
+
+{% include "cycles/partials/auto_governance_people_table.html" with section_id="sem-admissao" heading="Sem data de entrada" events=pendencias_sem_admissao col_situacao="Sem data de entrada" row_tone="amber" empty_title="Nenhuma pendência sem data de entrada" empty_message="Todos os ativos neste período têm data de admissão cadastrada." %}
+
+{% include "cycles/partials/auto_governance_people_table.html" with section_id="alertas" heading="Ciclo ainda aberto" events=alertas_ciclo_aberto col_situacao="Ciclo ainda aberto" row_tone="amber" empty_title="Nenhum alerta de ciclo aberto" empty_message="Ninguém ficou de fora do lote por já ter ciclo aberto." %}
+
+{% include "cycles/partials/auto_governance_falhas.html" %}
+{% include "cycles/partials/auto_governance_atrasos.html" %}
+{% include "cycles/partials/auto_governance_runs.html" %}
